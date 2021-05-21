@@ -1,4 +1,6 @@
-How to use **snakemake_aDNA_mapping**
+TODO
+
+How to use **MAPache**
 
 
 This pipeline maps (ancient) DNA libraries to the (human) genome as follows.
