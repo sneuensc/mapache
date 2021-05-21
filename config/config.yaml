@@ -1,0 +1,151 @@
+SOFTWARE:
+    picard_jar: '/dcsrsoft/spack/hetre/v1.1/spack/opt/spack/linux-rhel8-zen2/gcc-9.3.0/picard-2.24.0-chhvrkteehvqdqnlpjekni6zpws2axwp/bin/picard.jar'
+    gatk3_jar: '/dcsrsoft/spack/hetre/v1.1/spack/opt/spack/linux-rhel8-zen2/gcc-9.3.0/gatk-3.8-1-7qp7l7msades25m72tqvffww47nw5yow/bin/GenomeAnalysisTK.jar'
+
+ENVMODULES:
+    samtools:       "gcc samtools/1.12"
+    bowtie2:        "gcc bowtie2/2.4.2"
+    bwa:            "gcc bwa/0.7.17"
+    picard:         "gcc picard/2.24.0"
+    gatk3:          "gcc gatk/3.8-1"
+    fastqc:         "gcc fastqc/0.11.9"
+    r:              "gcc r/4.0.4"
+    adapterremoval: ""
+    mapdamage:      ""
+    multiqc:        ""
+
+##########################################################################################
+##########################################################################################
+
+#workdir: 
+SAMPLES: config/samples.txt
+
+GENOME: 
+    hg19: /work/FAC/FBM/DBC/amalaspi/popgen/reference_human/hs.build37.1/hs.build37.1.fa 
+
+#email: samuel.neuenschwander@unil.ch
+
+delim: '\s+'
+#delim: ' '
+#delim: "\t"
+
+## global variables to define about resource increments after job failure
+## 0: no change between failures
+## 1: doubling after each failure
+memory_increment_ratio: 1
+runtime_increment_ratio: 0
+
+## indexing
+indexing:
+    mem: 16
+    threads: 1
+    time: 2
+    bwa_params: ""
+    bowtie2_params: ""
+    samtools_params: ""
+    picard_params: ""
+
+##########################################################################################
+## FASTQ level
+
+# adapter_removal (optional)
+adapterremoval:
+    run: True
+    params: ' --minlength 30'
+    threads: 4 
+    mem: 4 ## in GB
+    time: 2
+
+## mapping (bwa_aln, bwa_mem, bowtie2)
+mapping:
+    bwa_aln_params: '-l 1024'   
+    bwa_samse_params: '-n 3'
+    bwa_mem_params: ''
+    bowtie2_params: ''
+    threads: 4
+    mem: 16
+    time: 30
+mapper: 'bwa_aln'
+
+
+## samtools_sort
+sorting:
+    threads: 4
+    mem: 16
+    time: 10
+
+
+## samtools_filter
+filtering:
+    threads: 4
+    mem: 16
+    time: 2
+
+##########################################################################################
+## library level
+
+## merge_bam_fastq2library
+## merge_bam_library2sample
+merging:
+    threads: 4
+    mem: 16
+    time: 2
+
+## extract_duplicates (optional)
+## in this case parameter 'rmdup_params' has NOT to be set to 'REMOVE_DUPLICATES=true'
+markduplicates:
+    run: True  ## remove, mark, extract
+    params: 'REMOVE_DUPLICATES=true'
+    threads: 4
+    mem: 16
+    time: 2
+    extract_duplicates: False
+
+
+## mapDamage (optional, by default not run: see below)
+mapdamage:
+    run_rescale: False
+    params: ''
+    time: 2
+    threads: 1 ## hardcoded at 1
+    mem: 8
+
+bamdamage:
+    run: False
+    params: ''
+    fraction: 0
+    time: 2
+    threads: 1 ## hardcoded at 1
+    mem: 8
+
+
+##########################################################################################
+## sample level
+
+## realign and samtools_index (optional)
+realign:
+    run: True
+    threads: 4
+    mem: 16
+    time: 4
+
+## samtools_calmd (optional)
+compute_md:
+    run: True
+    threads: 4
+    mem: 16
+    time: 2
+
+
+##################
+## stats on the final bam file
+stats:
+    run_depth: True
+
+## mds
+    run_bammds: False
+
+## deamination (has to be added to the library and final bam file)
+    run_damage: 'bamdamage'        #("False", "mapDamage", "bamdamage")
+    bamdamage_fraction: 5000
+    bamdamage_params: ' --rlength 300 '

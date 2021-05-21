@@ -1,0 +1,14 @@
+ID	Data1	Data2	MAPQ	LB	PL	SM
+Kou01_1II_fq	reads/Kou01_II_MuL18-2_S16_L001_R1_001.fastq.gz	NULL	30	Kou01_1II_lib	ILLUMINA	Kou01
+Kou01_1I_fq	reads/Kou01_I_MuL18-5_S19_L001_R1_001.fastq.gz	NULL	30	Kou01_1I_lib	ILLUMINA	Kou01
+Kou03_1II_fq	reads/Kou03_II_MuL18-4_S18_L001_R1_001.fastq.gz	reads/Kou03_II_MuL18-4_S18_L001_R2_001.fastq.gz	30	Kou03_1II_lib	ILLUMINA	Kou03
+Kou03_1IV_fq	reads/Kou03_IV_MuL39-1_S1_L001_R1_001.fastq.gz	reads/Kou03_IV_MuL39-1_S1_L001_R2_001.fastq.gz	30	Kou03_1IV_lib	ILLUMINA	Kou03
+Log02_1II_fq	reads/Log02_II_S22_L001_R1_001.fastq.gz	reads/Log02_II_S22_L001_R2_001.fastq.gz	30	Log02_1II_lib	ILLUMINA	Log02
+Log02_1I_fq	reads/Log02_I_S17_L001_R1_001.fastq.gz	reads/Log02_I_S17_L001_R2_001.fastq.gz	30	Log02_1I_lib	ILLUMINA	Log02
+Log04_1III_fq	reads/Log04_III_MuL39-2_S2_L001_R1_001.fastq.gz	reads/Log04_III_MuL39-2_S2_L001_R2_001.fastq.gz	30	Log04_1III_lib	ILLUMINA	Log04
+Log04_1II_fq	reads/Log04_II_MuL28-4_S19_L001_R1_001.fastq.gz	reads/Log04_II_MuL28-4_S19_L001_R2_001.fastq.gz	30	Log04_1II_lib	ILLUMINA	Log04
+Log04_1I_fq	reads/Log04_I_MuL24-8_S24_L001_R1_001.fastq.gz	reads/Log04_I_MuL24-8_S24_L001_R2_001.fastq.gz	30	Log04_1I_lib	ILLUMINA	Log04
+Mik15_1I_fq	reads/Mik15_I_MuL39-5_S5_L001_R1_001.fastq.gz	reads/Mik15_I_MuL39-5_S5_L001_R2_001.fastq.gz	30	Mik15_1I_lib	ILLUMINA	Mik15
+Pta08_1III_fq	reads/Pta08_III_MuL39-3_S3_L001_R1_001.fastq.gz	reads/Pta08_III_MuL39-3_S3_L001_R2_001.fastq.gz	30	Pta08_1III_lib	ILLUMINA	Pta08
+Pta08_1II_fq	reads/Pta08_II_MuL28-9_S22_L001_R1_001.fastq.gz	reads/Pta08_II_MuL28-9_S22_L001_R2_001.fastq.gz	30	Pta08_1II_lib	ILLUMINA	Pta08
+Pta08_1I_fq	reads/Pta08_I_MuL27-8_S30_L001_R1_001.fastq.gz	reads/Pta08_I_MuL27-8_S30_L001_R2_001.fastq.gz	30	Pta08_1I_lib	ILLUMINA	Pta08

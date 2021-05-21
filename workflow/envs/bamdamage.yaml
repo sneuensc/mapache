@@ -1,0 +1,7 @@
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - R = 3.5.1
+  - samtools = 1.4
+  

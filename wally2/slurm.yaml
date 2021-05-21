@@ -1,0 +1,21 @@
+# Partitions to remove from submit list
+blacklist:
+    - axiom
+    - debug
+    
+
+# Syntax for slurm submission options
+options:
+    threads: --cpus-per-task={}
+    memory: --mem={}
+    log: --output={}.cluster.o --error={}.cluster.e
+    runtime: --time={}
+    partition: --partition={}
+    account: --account={}
+    reservation: --reservation={}
+
+# Scheduler settings
+scheduler:
+    partitions_file: 'partitions.yaml'  # File where partition information will be stored
+    partitions_update_days: 30  # Rate at which to update partition information, in days
+

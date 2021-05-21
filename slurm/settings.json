@@ -1,0 +1,6 @@
+{
+    "SBATCH_DEFAULTS": "",
+    "CLUSTER_NAME": "curnagl",
+    "CLUSTER_CONFIG": "",
+    "ADVANCED_ARGUMENT_CONVERSION": "yes"
+}

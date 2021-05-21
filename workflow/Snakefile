@@ -1,0 +1,285 @@
+"""
+Author: Samuel Neuenschwander, Frederic Michaud
+Affiliation: DBC, UNIL
+Aim: Map ancient DNA libraries to a reference genome
+Date: 28/10/2019
+Run: snakemake -s Snakefile   
+"""
+
+import pandas as pd
+import numpy as np
+import itertools
+
+
+
+configfile: "config/config.yaml"
+
+## default values
+SAMPLES               = config.get("SAMPLES", "samples.txt")
+email                 = config.get("email", "")
+delim                 = config.get("delim", "\s+")
+mapper                = config.get("mapping", {}).get("mapper", "bwa_aln") 
+
+## mapping options
+run_adapter_removal   = bool(config.get("adapterremoval", {}).get("run", True))
+run_remove_duplicates = bool(config.get("markduplicates", {}).get("run", True))
+run_mapDamage_rescale = bool(config.get("mapdamage", {}).get("run_rescale", False)) 
+run_realign           = bool(config.get("realign", {}).get("run", True)) 
+run_compute_md        = bool(config.get("compute_md", {}).get("run", True))  
+
+## stats
+run_damage            = config.get("stats", {}).get("run_damage", 'False')
+run_depth             = bool(config.get("stats", {}).get("run_depth", 'False'))
+run_bammds            = bool(config.get("stats", {}).get("run_bammds", 'False'))
+
+## retry failed jobs
+memory_increment_ratio  = float(config.get("memory_increment_ratio", 1)) 
+runtime_increment_ratio = float(config.get("runtime_increment_ratio", 0))
+
+## software versions
+module_samtools       = config.get("ENVMODULES", {}).get("samtools", "")
+module_bowtie2        = config.get("ENVMODULES", {}).get("bowtie2", "")
+module_bwa            = config.get("ENVMODULES", {}).get("bwa", "")
+module_picard         = config.get("ENVMODULES", {}).get("picard", "")
+module_gatk3          = config.get("ENVMODULES", {}).get("gatk3", "")
+module_fastqc         = config.get("ENVMODULES", {}).get("fastqc", "")
+module_r              = config.get("ENVMODULES", {}).get("r", "")
+module_adapterremoval = config.get("ENVMODULES", {}).get("adapterremoval", "")
+module_mapdamage      = config.get("ENVMODULES", {}).get("mapdamage", "")
+module_multiqc        = config.get("ENVMODULES", {}).get("multiqc", "")
+
+def RequiredModules():
+	"""Returns list of required module names."""
+	return [ module_bwa,
+			module_bowtie2,
+			module_samtools,
+			module_gatk3,
+			module_picard,
+			module_fastqc,
+			module_adapterremoval,
+			module_mapdamage,
+			module_multiqc,
+			module_r
+		]
+		
+## test if the genome is defined
+if "GENOME" in config.keys():
+    GENOME = config["GENOME"] 
+else:
+    print("ERROR: Parameter GENOME required, but not set!")
+    os._exit(0)
+
+## if the bam files have to be rescaled mapDamage has to be run
+if run_mapDamage_rescale and config.get("stats", {}).get("run_damage", "False") != 'mapDamage':
+    print("ERROR: To use 'mapdamage:run_rescale' the parameter 'stats:run_damage' has to be set to 'mapDamage'!")
+    os._exit(0)
+
+
+## if one wants to extract the duplicates, MarkDuplicate has to mark the duplicates in order to extract them
+extract_duplicates = bool(config.get("markduplicates", {}).get("extract_duplicates", "False"))
+if  extract_duplicates and 'REMOVE_DUPLICATES=true' in config.get("markduplicates", {}).get("params", ""):
+    print("ERROR: To use 'markduplicates:extract_duplicates' the parameter 'markduplicates:params' has NOT to contain 'REMOVE_DUPLICATES=true'!")
+    os._exit(0)
+
+##########################################################################################
+## read the sample file
+# SAMPLES="samples.txt"
+db = pd.read_csv(SAMPLES, sep=delim)
+
+
+## check number of columns and column names
+if len(db.columns) == 6:
+	paired_end=0		## single-end library
+	if not set(['ID','Data', 'MAPQ', 'LB', 'PL', 'SM']).issubset(db.columns):
+		print("ERROR: The column names in the sample file are wrong! Expected are for single-end reads: ID, Data, MAPQ, LB, PL, SM")
+		os._exit(0)	
+elif len(db.columns) == 7:
+	adaptrem_params = config["adaptrem_params"] if "adaptrem_params" in config.keys() else ''
+	if '--collapse' in adaptrem_params:
+		paired_end=1	## paired-end libraries, which are collapsed with adapterremoval
+	else:
+		paired_end=2	## paired-end libraries, which are mapped as paired-end
+
+	if not set(['ID','Data1', 'Data2', 'MAPQ', 'LB', 'PL', 'SM']).issubset(db.columns):
+		print("ERROR: The column names in the sample file are wrong! Expected are for paired-end reads: ID, Data1, Data2, MAPQ, LB, PL, SM")
+		os._exit(0)	
+		
+
+else: 
+	print("ERROR: The number of columns in the sample file is wrong (got "+len(db.columns)+" columns)!")
+	os._exit(0)	
+
+
+## check if all IDs per LB and SM are unique
+all_fastq = db.groupby(['ID','LB','SM'])['ID'].agg(['count']).reset_index()
+if max(all_fastq['count']) > 1:
+	print("ERROR: The LB's have to be unique within a sample!")
+	os._exit(0)	
+
+## Building dictionnary for libraries
+all_libraries = db.groupby(['LB','SM'])['ID'].agg(['count']).reset_index()
+
+
+## Building dictionary for samples
+all_samples = np.unique(db["SM"])
+sample_to_library = {}
+for sample in all_samples:
+    sample_to_library[str(sample)] = list(all_libraries[all_libraries["SM"]==sample]["LB"])
+    
+    
+## get incremental memory allocation when jobs fail
+## 'startStr' is the first memory allocation in GB
+## input is in GB; output in MB; default is 2GB, but can be changed by a rule
+
+## get incremental memory allocation when jobs fail
+## 'start' is the first memory allocation in GB (default 4GB)
+## input is in GB; output is in MB;
+## global variable memory_increment_ratio defines by how much (ratio) the memory is increased if not defined specifically
+def get_memory_alloc(module, attempt, default=2):
+	mem_start = int(config.get(module, {}).get("mem", default))
+	mem_incre = int(config.get(module, {}).get("mem_increment", memory_increment_ratio*mem_start))
+	return int(1024 * ((attempt-1) * mem_incre + mem_start))
+	
+	
+def convert_time(seconds): 
+    day = seconds // (24 * 3600) 
+    seconds = seconds % (24 * 3600) 
+    hour = seconds // 3600
+    seconds %= 3600
+    minutes = seconds // 60
+    seconds %= 60  
+    return "%d-%02d:%02d:%02d" % (day, hour, minutes, seconds) 
+	
+	
+## get incremental time allocation when jobs fail
+## 'start' is the first time allocation in hours (default 12h)
+## input is in hours; output is in minutes;
+## global variable runtime_increment_ratio defines by how much (ratio) the time is increased if not defined specifically
+def get_runtime_alloc(module, attempt, default=12):
+	time_start = int(config.get(module, {}).get("time", default))
+	time_incre = int(config.get(module, {}).get("time_increment", runtime_increment_ratio*time_start))
+	return int(60 * ((attempt-1) * time_incre + time_start))
+	#return convert_time(60*60 * ((attempt-1) * time_incre + time_start))
+	
+	
+## get the number of threads of the given parameter
+def get_threads(module, default=1):
+	return int(config.get(module, {}).get("threads", default))
+
+
+## define how to quantify the deamination pattern
+def get_damage(run_damage):
+	files=[]
+	if run_damage == 'bamdamage':
+		for genome in config["GENOME"]:
+			files+=[("results/03_sample/{SM}/{LB}/library_bamdamage/{LB}.{genome}.dam.svg").
+				format(SM=row['SM'], LB=row['LB'], genome=genome) for index, row in all_libraries.iterrows()]
+	elif run_damage == 'mapDamage':
+		for genome in config["GENOME"]:
+			files+=[("{SM}/{LB}/library_mapDamage/{LB}.{genome}_results_mapDamage/Fragmisincorporation_plot.pdf").
+				format(SM=row['SM'], LB=row['LB'], genome=genome) for index, row in all_libraries.iterrows()]
+
+	return (files)
+	
+	
+	
+##########################################################################################
+include : "rules/Snakefile_index.smk"
+include : "rules/Snakefile_stats.smk"
+include : "rules/Snakefile_fastq.smk"
+include : "rules/Snakefile_library.smk"
+include : "rules/Snakefile_sample.smk"
+##########################################################################################
+##########################################################################################
+localrules: all, dag, mapping, stats, check_software_modules ## executed locally on a cluster
+
+## rules all
+rule all:
+    """
+    Computes all
+    """
+    input:
+       # "logs/check_software_modules.done",
+        expand("results/03_sample/03_final_sample/01_bam/{id_sample}.{id_genome}.bam", id_sample=all_samples, id_genome=config["GENOME"]),
+        expand("results/03_sample/03_final_sample/01_bam_low_qual/{id_sample}.{id_genome}.bam", id_sample=all_samples, id_genome=config["GENOME"]),
+        expand("results/03_sample/03_final_sample/01_bam_duplicate/{id_sample}.{id_genome}.bam", id_sample=all_samples, id_genome=config["GENOME"]) if extract_duplicates else [],
+        expand("results/04_stats/fastq_stats.{id_genome}.csv", id_genome=config["GENOME"]),
+        expand("results/04_sstats/library_stats.{id_genome}.csv", id_genome=config["GENOME"]),
+        expand("results/04_sstats/sample_stats.{id_genome}.csv", id_genome=config["GENOME"]),
+        expand("results/04_sstats/sample_depth.{id_genome}.csv", id_genome=config["GENOME"]) if run_depth else [],
+        #get_damage(run_damage),
+        expand("results/04_sstats/1_nb_reads.{id_genome}.svg", id_genome=config["GENOME"]),
+        expand("results/04_sstats/2_mapped.{id_genome}.svg", id_genome=config["GENOME"]),
+        expand("results/04_sstats/3_endogenous.{id_genome}.svg", id_genome=config["GENOME"]),
+        expand("results/04_sstats/4_duplication.{id_genome}.svg", id_genome=config["GENOME"])
+
+
+## rules dag (just pipeline)
+rule dag:
+    """
+    Computes just the mapping (used to get a nice DAG)
+    """
+    input:
+        expand("results/03_sample/03_final_sample/01_bam/{id_sample}.{id_genome}.bam", id_sample=all_samples, id_genome=config["GENOME"])
+
+
+rule mapping:
+    """
+    Computes just what is needed to get the final mapping (without any stats)
+    """
+    input:
+       # "logs/check_software_modules.done",
+        expand("results/03_sample/03_final_sample/01_bam/{id_sample}.{id_genome}.bam", id_sample=all_samples, id_genome=config["GENOME"]),
+        expand("results/03_sample/03_final_sample/01_bam_low_qual/{id_sample}.{id_genome}.bam", id_sample=all_samples, id_genome=config["GENOME"]),
+        expand("results/03_sample/03_final_sample/01_bam_duplicate/{id_sample}.{id_genome}.bam", id_sample=all_samples, id_genome=config["GENOME"]) if extract_duplicates else [],
+        expand("results/03_sample/04_stats/01_summary/sample_stats.{id_genome}.csv", id_genome=config["GENOME"])
+
+rule stats:
+    """
+    Computes all statistics
+    """
+    input:
+        expand("results/04_stats/fastq_stats.{id_genome}.csv", id_genome=config["GENOME"]),
+        expand("results/04_sstats/library_stats.{id_genome}.csv", id_genome=config["GENOME"]),
+        expand("results/04_sstats/sample_stats.{id_genome}.csv", id_genome=config["GENOME"]),
+        expand("results/04_sstats/sample_depth.{id_genome}.csv", id_genome=config["GENOME"]) if run_depth else [],
+        #get_damage(run_damage),
+        expand("results/04_sstats/1_nb_reads.{id_genome}.svg", id_genome=config["GENOME"]),
+        expand("results/04_sstats/2_mapped.{id_genome}.svg", id_genome=config["GENOME"]),
+        expand("results/04_sstats/3_endogenous.{id_genome}.svg", id_genome=config["GENOME"]),
+        expand("results/04_sstats/4_duplication.{id_genome}.svg", id_genome=config["GENOME"])
+
+    
+onsuccess:
+    print("Wow, \'snakemake_aDNA_mapping\' finshied successfully!")
+    if email != "":
+        print("sending email to {}".format(email))
+        shell('mail -s "Snakemake workflow \'snakemake_aDNA_mapping\' finshied successfully" {email} < {log}')
+
+onerror:
+    print("An error occurred, stored to 'snakemake.run.log'")
+    shell("cat {log} > snakemake.run.log")
+    if email != "":
+        print("sending email to {}".format(email))
+        shell('mail -s "Snakemake workflow \'snakemake_aDNA_mapping\' has terminated with error(s)" {email} < {log}')
+        
+##########################################################################################
+
+
+rule check_software_modules:
+    """
+    Checks if software modules are available
+    """
+    output: 
+        touch("logs/check_software_modules.done")
+    params: 
+        modules=RequiredModules()
+    message: "--- Loading required modules"
+    threads: 1
+    shell: "{params.modules}"
+
+
+
+
+##########################################################################################
+##########################################################################################

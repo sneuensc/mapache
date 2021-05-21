@@ -1,0 +1,16 @@
+# Default values for snakemake runtime arguments
+
+# number of times to restart a failed job
+restart-times: 1
+# Maximum number of jobs to submit concurrently
+jobs: 999
+# Number of cores used by local snakemake rules
+local-cores: 1
+# Maximum number of jobs to submit per second
+max-jobs-per-second: 5
+# Maximum number of job status checks per second
+max-status-checks-per-second: 10
+# Cluster submission script
+cluster: "submit.py"
+# Cluster job status script
+cluster-status: "status.py"
