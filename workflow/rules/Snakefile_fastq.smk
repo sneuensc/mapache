@@ -23,7 +23,7 @@ def get_fastq_for_mapping(wildcards):
 		if paired_end == 1 and str(get_from_sample_file("Data2", wildcards.id_sample, wildcards.id_library, wildcards.id_fastq)[0])!="nan":
 			folder=f"results/01_fastq/01_trimmed/01_files_trim_collapsed/{wildcards.id_sample}/{wildcards.id_library}"
 		else:
-			folder=f"results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{wildcards.id_library}"
+			folder=f"results/01_fastq/01_trimmed/01_files_trim/{wildcards.id_sample}/{wildcards.id_library}"
 	else:
 		folder=f"results/01_fastq/00_reads/01_files_orig/{wildcards.id_sample}/{wildcards.id_library}"
 
@@ -72,7 +72,7 @@ def get_bwa_aln_output(wildcards):
 ## get all files ready
 
 localrules: get_fastq, get_fasta ## executed locally on a cluster
-ruleorder: genome_index_bwa > get_fasta
+#ruleorder: genome_index_bwa > get_fasta
 
 ## all rules for fastq files
 rule get_fastq:
@@ -114,12 +114,11 @@ rule get_fasta:
         orig_prefix = os.path.basename(filename)
 
         ## get and create the new reference folder
-        new_prefix = params.prefix
-        new_dir=os.path.abspath('results/00_reference/' + new_prefix)
+        new_dir=os.path.abspath(f"results/00_reference/{wildcards.id_genome}")
         os.makedirs(new_dir, exist_ok=True)
 
         ## symlink and rename the reference
-        path_to = os.path.join(new_dir, new_prefix + '.fasta')
+        path_to = os.path.join(new_dir, f"{wildcards.id_genome}.fasta")
         os.symlink(fasta, path_to)
 
 
@@ -243,7 +242,7 @@ rule mapping_bwa_aln_se:
     Align reads to the reference
     """
     input:
-        multiext("results/00_reference/{{id_genome}}/{{id_genome}}.fasta", ".sa", ".amb", ".ann", ".bwt", ".pac"),
+        multiext("results/00_reference/{id_genome}/{id_genome}.fasta", ".sa", ".amb", ".ann", ".bwt", ".pac"),
         ref="results/00_reference/{id_genome}/{id_genome}.fasta",
         fastq=get_fastq_for_mapping
     output:
@@ -272,7 +271,7 @@ rule mapping_bwa_aln_pe:
     Align reads to the reference
     """
     input:
-        multiext("results/00_reference/{{id_genome}}/{{id_genome}}.fasta", ".sa", ".amb", ".ann", ".bwt", ".pac"),
+        multiext("results/00_reference/{id_genome}/{id_genome}.fasta", ".sa", ".amb", ".ann", ".bwt", ".pac"),
         ref="results/00_reference/{id_genome}/{id_genome}.fasta",
         fastq=lambda wildcards: get_fastq_for_mapping_pe(wildcards.id_sample, wildcards.id_library, wildcards.id_fastq, wildcards.id_read)
     output:
@@ -302,7 +301,7 @@ rule mapping_bwa_samse:
     Creates bam file from sai file for SE reads
     """
     input:
-        multiext("results/00_reference/{{id_genome}}/{{id_genome}}.fasta", ".sa", ".amb", ".ann", ".bwt", ".pac"),
+        multiext("results/00_reference/{id_genome}/{id_genome}.fasta", ".sa", ".amb", ".ann", ".bwt", ".pac"),
         ref="results/00_reference/{id_genome}/{id_genome}.fasta",
         fastq=get_fastq_for_mapping,
         sai="results/01_fastq/02_mapped/01_bwa_aln/{id_sample}/{id_library}/{id_fastq}.{id_genome}.sai"
@@ -339,7 +338,7 @@ rule mapping_bwa_sampe:
     Creates bam file from sai file for PE reads
     """
     input:
-        multiext("results/00_reference/{{id_genome}}/{{id_genome}}.fasta", ".sa", ".amb", ".ann", ".bwt", ".pac"),
+        multiext("results/00_reference/{id_genome}/{id_genome}.fasta", ".sa", ".amb", ".ann", ".bwt", ".pac"),
         ref="results/00_reference/{id_genome}/{id_genome}.fasta",
         fastq=get_fastq_for_mapping,	## should get both pairs
         sai1="results/01_fastq/02_mapped/01_bwa_aln/{id_sample}/{id_library}/{id_fastq}.{id_genome}_R1.sai",
@@ -378,7 +377,7 @@ rule mapping_bwa_mem:
     Map reads to genome using bwa mem
     """
     input:
-        multiext("results/00_reference/{{id_genome}}/{{id_genome}}.fasta", ".sa", ".amb", ".ann", ".bwt", ".pac"),
+        multiext("results/00_reference/{id_genome}/{id_genome}.fasta", ".sa", ".amb", ".ann", ".bwt", ".pac"),
         ref="results/00_reference/{id_genome}/{id_genome}.fasta",
         fastq=get_fastq_for_mapping
     output:
@@ -414,7 +413,7 @@ rule mapping_bowtie2:
     Map reads to genome using bowtie2
     """
     input:
-        multiext("results/00_reference/{{id_genome}}/{{id_genome}}.fasta", ".1.bt2", ".2.bt2", ".3.bt2", ".4.bt2", ".rev.1.bt2", ".rev.2.bt2"),
+        multiext("results/00_reference/{id_genome}/{id_genome}.fasta", ".1.bt2", ".2.bt2", ".3.bt2", ".4.bt2", ".rev.1.bt2", ".rev.2.bt2"),
         ref="results/00_reference/{id_genome}/{id_genome}.fasta",
         fastq=get_fastq_for_mapping
     output:

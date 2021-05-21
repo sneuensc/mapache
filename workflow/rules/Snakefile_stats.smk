@@ -102,65 +102,6 @@ def get_multiqc(group):
     return (file)
 
 
-
-##########################################################################################
-#localrules: write_summary_statistics, plot_summary_statistics, write_depth_statistics, plot_depth_statistics ## executed locally on a cluster
-#ruleorder: depth > depth_library
-
-## rules all
-rule write_summary_statistics:
-    """
-    Write the summary statistic tables
-    """
-    input:
-        fastqc_orig = get_multiqc('orig'),
-        fastqc_trim = get_multiqc('trim'),
-        #flagstat_fastq_mapping = "stats/multiqc_flagstat_fastq_mapping.{id_genome}_data/multiqc_samtools_flagstat.txt",
-        flagstat_fastq_final = "stats/multiqc_flagstat_fastq_final.{id_genome}_data/multiqc_samtools_flagstat.txt",
-        flagstat_library_final = "stats/multiqc_flagstat_library_final.{id_genome}_data/multiqc_samtools_flagstat.txt", 
-        flagstat_flagstat_SAMPLE = "stats/multiqc_flagstat_SAMPLE.{id_genome}_data/multiqc_samtools_flagstat.txt"
-    output: 
-        fastq_stats = report("stats/fastq_stats.{id_genome}.csv", caption="../report/fastq_stats.rst", category="Mapping statistics table"),
-        library_stats = report("stats/library_stats.{id_genome}.csv", caption="../report/library_stats.rst", category="Mapping statistics table"),
-        sample_stats = report("stats/sample_stats.{id_genome}.csv", caption="../report/sample_stats.rst", category="Mapping statistics table")      
-    log: 
-        "logs/stats/stats_per_reference/write_summary_tables_{id_genome}.log"
-    params:
-        SAMPLES = SAMPLES,
-        delim = delim
-    message: "--- WRITE SUMMARY STATISTICS OF {wildcards.id_genome}"
-    script:
-        "../scripts/create_summary_tables.py"
-
-
-rule plot_summary_statistics:
-    """
-    Plot summary statistics
-    """
-    input:
-        fastq_stats = "stats/fastq_stats.{id_genome}.csv",
-        library_stats = "stats/library_stats.{id_genome}.csv",
-        sample_stats = "stats/sample_stats.{id_genome}.csv"
-    output: 
-        plot_1_nb_reads = report("stats/1_nb_reads.{id_genome}.svg", caption="../report/1_nb_reads.rst", category="Mapping statistics plots"),        
-        plot_2_mapped = report("stats/2_mapped.{id_genome}.svg", caption="../report/2_mapped.rst", category="Mapping statistics plots"),        
-        plot_3_endogenous = report("stats/3_endogenous.{id_genome}.svg", caption="../report/3_endogenous.rst", category="Mapping statistics plots"),        
-        plot_4_duplication = report("stats/4_duplication.{id_genome}.svg", caption="../report/4_duplication.rst", category="Mapping statistics plots")      
-    log: 
-        "logs/stats/stats_per_reference/{id_genome}.log"
-    params:
-        SAMPLES = SAMPLES,
-        delim = delim
-    conda:
-        "../envs/r.yaml"
-    envmodules:
-        module_r
-    message: "--- PLOT SUMMARY STATISTICS OF {wildcards.id_genome}"
-    script:
-        "../scripts/plot_stats.R"
-
-
-
 ##########################################################################################
 ##########################################################################################
 ## individual stats
@@ -386,5 +327,29 @@ rule write_summary_stats_sample:
         .to_csv(output[0], index = None, header=True)
 
 
-
+rule plot_summary_statistics:
+    """
+    Plot summary statistics
+    """
+    input:
+        fastq_stats = "results/01_fastq/05_stats/02_summary/fastq_stats.{id_genome}.csv",
+        library_stats = "results/02_library/04_stats/02_summary/library_stats.{id_genome}.csv",
+        sample_stats = "results/03_sample/04_stats/01_summary/sample_stats.{id_genome}.csv"
+    output: 
+        plot_1_nb_reads = report("results/03_sample/04_stats/01_summary/1_nb_reads.{id_genome}.svg", caption="../report/1_nb_reads.rst", category="Mapping statistics plots"),        
+        plot_2_mapped = report("results/03_sample/04_stats/01_summary/2_mapped.{id_genome}.svg", caption="../report/2_mapped.rst", category="Mapping statistics plots"),        
+        plot_3_endogenous = report("results/03_sample/04_stats/01_summary/3_endogenous.{id_genome}.svg", caption="../report/3_endogenous.rst", category="Mapping statistics plots"),        
+        plot_4_duplication = report("results/03_sample/04_stats/01_summary/4_duplication.{id_genome}.svg", caption="../report/4_duplication.rst", category="Mapping statistics plots")      
+    log: 
+        "results/logs/03_sample/04_stats/01_summary/plot_summary_statistics_{id_genome}.log"
+    params:
+    	SAMPLES = SAMPLES,
+    	delim = delim
+    conda:
+    	"../envs/r.yaml"
+    envmodules:
+    	module_r
+    message: "--- PLOT SUMMARY STATISTICS OF {wildcards.id_genome}"
+    script:
+    	"../scripts/plot_stats.R"
 
