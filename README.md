@@ -1,4 +1,6 @@
-TODO
+Readme is under construction.
+
+!!! Please consult the Wiki on how to install and use MAPache !!!
 
 How to use **MAPache**
 
