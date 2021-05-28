@@ -4,6 +4,8 @@ Readme is under construction.
 
 How to use **MAPache**
 
+Do not continue here
+
 
 This pipeline maps (ancient) DNA libraries to the (human) genome as follows.
 ```
