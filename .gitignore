@@ -3,3 +3,4 @@ report.html
 results
 snakemake.run.log
 wally2/__pycache__
+dag.svg
