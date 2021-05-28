@@ -204,10 +204,10 @@ rule all:
         expand("results/03_sample/03_final_sample/01_bam_low_qual/{id_sample}.{id_genome}.bam", id_sample=all_samples, id_genome=config["GENOME"]),
         expand("results/03_sample/03_final_sample/01_bam_duplicate/{id_sample}.{id_genome}.bam", id_sample=all_samples, id_genome=config["GENOME"]) if extract_duplicates else [],
         expand("results/03_sample/04_stats/01_summary/sample_stats.{id_genome}.csv", id_genome=config["GENOME"]),
-        expand("results/03_sample/04_stats/01_summary/1_nb_reads.{id_genome}.svg", id_genome=config["GENOME"]),
-        expand("results/03_sample/04_stats/01_summary/2_mapped.{id_genome}.svg", id_genome=config["GENOME"]),
-        expand("results/03_sample/04_stats/01_summary/3_endogenous.{id_genome}.svg", id_genome=config["GENOME"]),
-        expand("results/03_sample/04_stats/01_summary/4_duplication.{id_genome}.svg", id_genome=config["GENOME"])
+        expand("results/03_sample/04_stats/01_summary/1_nb_reads.{id_genome}.png", id_genome=config["GENOME"]),
+        expand("results/03_sample/04_stats/01_summary/2_mapped.{id_genome}.png", id_genome=config["GENOME"]),
+        expand("results/03_sample/04_stats/01_summary/3_endogenous.{id_genome}.png", id_genome=config["GENOME"]),
+        expand("results/03_sample/04_stats/01_summary/4_duplication.{id_genome}.png", id_genome=config["GENOME"])
 
 
 ## rules dag (just pipeline)
@@ -238,10 +238,10 @@ rule stats:
         expand("results/03_sample/04_stats/01_summary/sample_stats.{id_genome}.csv", id_genome=config["GENOME"]),
         #expand("results/04_stats/sample_depth.{id_genome}.csv", id_genome=config["GENOME"]) if run_depth else [],
         #get_damage(run_damage),
-        expand("results/03_sample/04_stats/01_summary/1_nb_reads.{id_genome}.svg", id_genome=config["GENOME"]),
-        expand("results/03_sample/04_stats/01_summary/2_mapped.{id_genome}.svg", id_genome=config["GENOME"]),
-        expand("results/03_sample/04_stats/01_summary/3_endogenous.{id_genome}.svg", id_genome=config["GENOME"]),
-        expand("results/03_sample/04_stats/01_summary/4_duplication.{id_genome}.svg", id_genome=config["GENOME"])
+        expand("results/03_sample/04_stats/01_summary/1_nb_reads.{id_genome}.png", id_genome=config["GENOME"]),
+        expand("results/03_sample/04_stats/01_summary/2_mapped.{id_genome}.png", id_genome=config["GENOME"]),
+        expand("results/03_sample/04_stats/01_summary/3_endogenous.{id_genome}.png", id_genome=config["GENOME"]),
+        expand("results/03_sample/04_stats/01_summary/4_duplication.{id_genome}.png", id_genome=config["GENOME"])
 
     
 onsuccess:

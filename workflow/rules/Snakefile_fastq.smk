@@ -432,15 +432,13 @@ rule mapping_bowtie2:
     threads: 
     	get_threads("mapping", 4)
     conda:
-    	"env/bowtie2.yaml"
+    	"../envs/bowtie2.yaml"
     envmodules:
     	module_bowtie2,
     	module_samtools
     message: "--- BOWTIE2 {input.fastq}"
     script:
-    	"""
-    	../scripts/mapping_bowtie2.py
-    	"""
+    	"../scripts/mapping_bowtie2.py"
 
 
 ##########################################################################################

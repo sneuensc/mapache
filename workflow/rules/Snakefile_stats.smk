@@ -160,7 +160,8 @@ rule multiqc_fastqc:
     input:
         fastq = get_fastqc_for_multiqc
     output:
-        html = report("results/{folder}/multiqc_fastqc_{group}.html", category=" Quality control"),
+        #html = report("results/{folder}/multiqc_fastqc_{group}.html", category=" Quality control"),
+        html = "results/{folder}/multiqc_fastqc_{group}.html",
         txt = "results/{folder}/multiqc_fastqc_{group}_data/multiqc_fastqc.txt"
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("multiqc_mem", attempt, 2),
@@ -261,7 +262,7 @@ rule write_summary_stats_library:
         fastq = "results/01_fastq/05_stats/02_summary/fastq_stats.{id_genome}.csv",
         final = "results/02_library/04_stats/01_multiqc/multiqc_flagstat_final.{id_genome}_data/multiqc_samtools_flagstat.txt"
     output: 
-        fastq_stats = report("results/02_library/04_stats/02_summary/library_stats.{id_genome}.csv", caption="../report/library_stats.rst", category="Mapping statistics table")
+       fastq_stats = report("results/02_library/04_stats/02_summary/library_stats.{id_genome}.csv", caption="../report/library_stats.rst", category="Mapping statistics table")
     log: 
         "results/logs/01_fastq/05_stats/02_summary/fastq_stats.{id_genome}.log"
     message: "--- WRITE LIBRARY SUMMARY STATISTICS OF {wildcards.id_genome}"
@@ -336,15 +337,12 @@ rule plot_summary_statistics:
         library_stats = "results/02_library/04_stats/02_summary/library_stats.{id_genome}.csv",
         sample_stats = "results/03_sample/04_stats/01_summary/sample_stats.{id_genome}.csv"
     output: 
-        plot_1_nb_reads = report("results/03_sample/04_stats/01_summary/1_nb_reads.{id_genome}.svg", caption="../report/1_nb_reads.rst", category="Mapping statistics plots"),        
-        plot_2_mapped = report("results/03_sample/04_stats/01_summary/2_mapped.{id_genome}.svg", caption="../report/2_mapped.rst", category="Mapping statistics plots"),        
-        plot_3_endogenous = report("results/03_sample/04_stats/01_summary/3_endogenous.{id_genome}.svg", caption="../report/3_endogenous.rst", category="Mapping statistics plots"),        
-        plot_4_duplication = report("results/03_sample/04_stats/01_summary/4_duplication.{id_genome}.svg", caption="../report/4_duplication.rst", category="Mapping statistics plots")      
+        plot_1_nb_reads = report("results/03_sample/04_stats/01_summary/1_nb_reads.{id_genome}.png", caption="../report/1_nb_reads.rst", category="Mapping statistics plots"),
+        plot_2_mapped = report("results/03_sample/04_stats/01_summary/2_mapped.{id_genome}.png", caption="../report/2_mapped.rst", category="Mapping statistics plots"),        
+        plot_3_endogenous = report("results/03_sample/04_stats/01_summary/3_endogenous.{id_genome}.png", caption="../report/3_endogenous.rst", category="Mapping statistics plots"),        
+        plot_4_duplication = report("results/03_sample/04_stats/01_summary/4_duplication.{id_genome}.png", caption="../report/4_duplication.rst", category="Mapping statistics plots")      
     log: 
         "results/logs/03_sample/04_stats/01_summary/plot_summary_statistics_{id_genome}.log"
-    params:
-    	SAMPLES = SAMPLES,
-    	delim = delim
     conda:
     	"../envs/r.yaml"
     envmodules:
