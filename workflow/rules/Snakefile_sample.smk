@@ -139,13 +139,20 @@ rule realign:
     message: "--- GATK INDELREALIGNER {input.bam}"
     shell:
         """
-        java -Djava.io.tmpdir=/tmp/ -XX:ParallelGCThreads={threads} -XX:+UseParallelGC \
-        	-XX:-UsePerfData -Xms15000m -Xmx15000m -jar {params.GATK} \
-        	-I {input.bam} -R {input.ref} -T RealignerTargetCreator -o {output.intervals} 2> {log}; \
-        java -Djava.io.tmpdir=/tmp/ -XX:ParallelGCThreads={threads} -XX:+UseParallelGC \
-        	-XX:-UsePerfData -Xms15000m -Xmx15000m -jar {params.GATK} \
-        	-I {input.bam} -T IndelRealigner -R {input.ref} -targetIntervals \
-        	{output.intervals} -o {output.bam} 2>> {log};
+     	jar={params.GATK};
+        if [ "${{jar: -4}}" == ".jar" ]; then
+       		java -Djava.io.tmpdir=/tmp/ -XX:ParallelGCThreads={threads} -XX:+UseParallelGC \
+        		-XX:-UsePerfData -Xms15000m -Xmx15000m -jar {params.GATK} \
+        		-I {input.bam} -R {input.ref} -T RealignerTargetCreator -o {output.intervals} 2> {log}; \
+        	java -Djava.io.tmpdir=/tmp/ -XX:ParallelGCThreads={threads} -XX:+UseParallelGC \
+        		-XX:-UsePerfData -Xms15000m -Xmx15000m -jar {params.GATK} \
+        		-I {input.bam} -T IndelRealigner -R {input.ref} -targetIntervals \
+        		{output.intervals} -o {output.bam} 2>> {log};
+        else
+       		{params.GATK} -I {input.bam} -R {input.ref} -T RealignerTargetCreator -o {output.intervals} 2> {log}; \
+        	{params.GATK} -I {input.bam} -T IndelRealigner -R {input.ref} -targetIntervals \
+        		{output.intervals} -o {output.bam} 2>> {log};
+        fi
         """
 
             
