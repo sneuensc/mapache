@@ -1,6 +1,6 @@
 SOFTWARE:
-    picard_jar: '/dcsrsoft/spack/hetre/v1.1/spack/opt/spack/linux-rhel8-zen2/gcc-9.3.0/picard-2.24.0-chhvrkteehvqdqnlpjekni6zpws2axwp/bin/picard.jar'
-    gatk3_jar: '/dcsrsoft/spack/hetre/v1.1/spack/opt/spack/linux-rhel8-zen2/gcc-9.3.0/gatk-3.8-1-7qp7l7msades25m72tqvffww47nw5yow/bin/GenomeAnalysisTK.jar'
+    picard_jar: 'picard'
+    gatk3_jar: 'GenomeAnalysisTK'
 
 ENVMODULES:
     samtools:       "gcc samtools/1.12"
