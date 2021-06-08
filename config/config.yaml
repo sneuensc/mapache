@@ -21,7 +21,7 @@ ENVMODULES:
 SAMPLES: config/samples.txt
 
 GENOME: 
-    hg19: /work/FAC/FBM/DBC/amalaspi/popgen/reference_human/hs.build37.1/hs.build37.1.fa 
+    hg19: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/hs.build37.1/hs.build37.1.fa 
 
 #email: samuel.neuenschwander@unil.ch
 
@@ -140,7 +140,8 @@ compute_md:
 ##################
 ## stats on the final bam file
 stats:
-    run_depth: True
+    sample:
+        depth: True
 
 ## mds
     run_bammds: False
