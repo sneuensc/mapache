@@ -207,7 +207,10 @@ rule all:
         expand("results/03_sample/04_stats/01_summary/1_nb_reads.{id_genome}.png", id_genome=config["GENOME"]),
         expand("results/03_sample/04_stats/01_summary/2_mapped.{id_genome}.png", id_genome=config["GENOME"]),
         expand("results/03_sample/04_stats/01_summary/3_endogenous.{id_genome}.png", id_genome=config["GENOME"]),
-        expand("results/03_sample/04_stats/01_summary/4_duplication.{id_genome}.png", id_genome=config["GENOME"])
+        expand("results/03_sample/04_stats/01_summary/4_duplication.{id_genome}.png", id_genome=config["GENOME"]),
+        "results/03_sample/03_final_sample/01_bam/ind1.hg19_depth.txt",
+        "results/03_sample/03_final_sample/01_bam/ind2.hg19_depth.txt"
+       # expand("results/03_sample/04_stats/02_depth/{id_sample}.{id_genome}_depth.txt", id_sample=all_samples, id_genome=config["GENOME"])  #if bool(config.get("stats", {}).get("sample", {}).get("depth", "False"))
 
 
 ## rules dag (just pipeline)
@@ -245,17 +248,17 @@ rule stats:
 
     
 onsuccess:
-    print("Wow, \'snakemake_aDNA_mapping\' finshied successfully!")
+    print("Wow, \'snakemake_aDNA_mapping\' finished successfully!")
     if email != "":
         print("sending email to {}".format(email))
-        shell('mail -s "Snakemake workflow \'snakemake_aDNA_mapping\' finshied successfully" {email} < {log}')
+        shell('mail -s "Snakemake workflow \'snakemake_aDNA_mapping\' finished successfully" {email} < {log}')
 
 onerror:
     print("An error occurred, stored to 'snakemake.run.log'")
     shell("cat {log} > snakemake.run.log")
     if email != "":
         print("sending email to {}".format(email))
-        shell('mail -s "Snakemake workflow \'snakemake_aDNA_mapping\' has terminated with error(s)" {email} < {log}')
+        shell('mail -s "Snakemake workflow \'snakemake_aDNA_mapping\' finished with error(s)" {email} < {log}')
         
 ##########################################################################################
 
