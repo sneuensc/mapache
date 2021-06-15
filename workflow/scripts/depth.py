@@ -19,6 +19,8 @@ parser.add_argument("--malelimit", action="store", type=float, dest="malelimit",
 parser.add_argument("--femalelimit", action="store", type=float, dest="femalelimit",help="Lower R_y limit for assignment as XX/female",default=0.016)                                                      
 parser.add_argument("--digits", action="store", type=int, dest="digits",help="Number of decimal digits in R_y output",default=4)
 parser.add_argument("--noheader", action="store_true", dest="noheader",help="Do not print header describing the columns in the output",default=False)
+parser.add_argument("--female", action="store", dest="femaleStr",help="Female chromosome name",default="X")
+parser.add_argument("--male", action="store", dest="maleStr",help="Male chromosome name",default="Y")
 
 args = parser.parse_args()
 
@@ -48,7 +50,7 @@ s = 0
 with samfile as bam_file:
    for alignedRead in bam_file:
       total_count += 1
-      if alignedRead.flag == 4L:
+      if alignedRead.flag == 4:
          not_aligned += 1
          continue
       refname = samfile.getrname( alignedRead.rname )
@@ -57,47 +59,51 @@ with samfile as bam_file:
       s += alignedRead.rlen
 
 
-print 'Counted %i, with %i not aligned' % (total_count, not_aligned)
+print ('Counted %i, with %i not aligned' % (total_count, not_aligned))
 
 if total_count > 0:
-    print 'Average length of mapped reads %g' % (s/total_count)
+    print ('Average length of mapped reads %g' % (s/total_count))
 else:
-	print 'There are no mapped reads %g' % (total_count)
-
+	print ('There are no mapped reads %g' % (total_count)
+)
 # output
-print 'Average depth of %s:' % args.i
-print 'Chrom\tAvgReadDepth\tSumReadLength\tChromLength\tAverageReadLength'
+print ('Average depth of %s:' % args.i)
+print ('Chrom\tAvgReadDepth\tSumReadLength\tChromLength\tAverageReadLength')
 totalLength = 0
 totalReadlength = 0
 totalReadCount = 0
 chrY_counts = None ; chrX_counts = None;
 
 for key in d_counts.keys():
-    if 'Y' in key:
+    if maleStr in key:
         chrY_counts = d_counts[key]
-    if 'X' in key:
+    else:
+    	chrY_counts = 0
+    if femaleStr in key:
         chrX_counts = d_counts[key]
+    else:
+    	chrX_counts = 0
 
     totalLength += refl[key]
     totalReadlength += d_sums[key]
     totalReadCount += d_counts[key]
     avg = d_sums[key] / refl[key]
     avgReadL = 1.0*d_sums[key]/d_counts[key]
-    print '%s: %.3f\t%i\t%i\t%.1f' % (key, avg, d_sums[key], refl[key], avgReadL)
+    print('%s: %.3f\t%i\t%i\t%.1f' % (key, avg, d_sums[key], refl[key], avgReadL))
 
 
 if total_count > 0:
     totalAvgReadL = 1.0*totalReadlength/totalReadCount
-    print 'Total: %.3f\t%i\t%i\t%.1f' % (totalReadlength / totalLength, totalReadlength, totalLength, totalAvgReadL)
+    print ('Total: %.3f\t%i\t%i\t%.1f' % (totalReadlength / totalLength, totalReadlength, totalLength, totalAvgReadL))
 else:
-    print 'Total: %.3f\t%i\t%i\t%.1f' % (0, 0, 0, 0)
+    print ('Total: %.3f\t%i\t%i\t%.1f' % (0, 0, 0, 0))
 
 
-if chrY_counts and chrX_counts:
-    print "Sex assignment (found chroms containing X or Y)"
-    print 'nreads on Y: ',chrY_counts
-    print 'nreads on X: ',chrX_counts                                                                            
-
+if chrX_counts > 0:
+    print ("Sex assignment (found chroms containing X or Y)")
+    print ('nreads on Y: ',chrY_counts)
+    print ('nreads on X: ',chrX_counts)
+    
     n = chrY_counts+chrX_counts  
     Ry = 1.*chrY_counts/n
 
@@ -122,7 +128,7 @@ if chrY_counts and chrX_counts:
         gender='Not Assigned'
 
     if args.noheader == False:
-        print 'Nseqs\tNchrY+NchrX\tNchrY\tR_y\tSE\t95% CI\tAssignment'
-        print total_count,'\t',n,'\t',chrY_counts,'\t',round(Ry,args.digits),'\t',round(SE,args.digits),'\t',str(round(Ry-confinterval,args.digits))+'-'+str(round(Ry+confinterval,args.digits)),'\t',gender
+        print ('Nseqs\tNchrY+NchrX\tNchrY\tR_y\tSE\t95% CI\tAssignment')
+        print (total_count,'\t',n,'\t',chrY_counts,'\t',round(Ry,args.digits),'\t',round(SE,args.digits),'\t',str(round(Ry-confinterval,args.digits))+'-'+str(round(Ry+confinterval,args.digits)),'\t',gender)
 
 
