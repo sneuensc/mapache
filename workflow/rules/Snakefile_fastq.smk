@@ -97,7 +97,7 @@ rule get_fasta:
     Symlink and rename the reference (.fasta/.fa) to a new folder.
     """
     input:
-       fasta=lambda wildcards: config.get("GENOME", {}).get(wildcards.id_genome, [])
+       fasta=lambda wildcards: get_param3('GENOME', wildcards.id_genome, 'fasta', '')
     output:
         fasta="results/00_reference/{id_genome}/{id_genome}.fasta",
     params:

@@ -40,7 +40,7 @@ rule merge_bam_library2sample:
     input:
     	mapped=lambda wildcards: [("results/02_library/03_final_library/01_bam/{SM}/{LB}.{genome}.bam").
     		format(LB=LB, SM=wildcards.id_sample, genome=wildcards.id_genome) 
-    		for LB in sample_to_library[wildcards.id_sample]]
+    		for LB in samples[wildcards.id_sample].keys()]
     output:
         "results/03_sample/00_merged_library/01_bam/{id_sample}.{id_genome}.bam"
     resources:
@@ -66,7 +66,7 @@ rule merge_bam_library2sample_low_qual:
     input:
     	lambda wildcards: [("results/02_library/03_final_library/01_bam_low_qual/{SM}/{LB}.{genome}.bam").
     		format(LB=LB, SM=wildcards.id_sample, genome=wildcards.id_genome) 
-    		for LB in sample_to_library[wildcards.id_sample]]
+    		for LB in samples[wildcards.id_sample].keys()]
     output:
         "results/03_sample/00_merged_library/01_bam_low_qual/{id_sample}.{id_genome}.bam"
     resources:

@@ -21,7 +21,10 @@ ENVMODULES:
 SAMPLES: config/samples.txt
 
 GENOME: 
-    hg19: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/hs.build37.1/hs.build37.1.fa 
+    hg19: 
+        fasta: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/hs.build37.1/hs.build37.1.fa 
+        maleChr: "Y"
+        femaleChr: "X"
 
 #email: samuel.neuenschwander@unil.ch
 
@@ -141,6 +144,9 @@ compute_md:
 ## stats on the final bam file
 stats:
     sample:
+        depth: True
+        
+    library:
         depth: True
 
 ## mds

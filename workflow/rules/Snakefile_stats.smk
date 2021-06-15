@@ -32,7 +32,7 @@ def get_flagstat_for_multiqc(wildcards):
     elif wildcards.folder1 == "02_library":
         filename = [("results/{level}/03_final_library/01_bam/{SM}/{LB}.{genome}_flagstat.txt").format(level=wildcards.folder1, group=wildcards.group, SM=row['SM'], LB=row['LB'], genome=wildcards.id_genome) for index, row in all_libraries.iterrows()]
     elif wildcards.folder1 == "03_sample":	
-        filename=expand("results/{level}/03_final_sample/01_bam/{id_sample}.{id_genome}_flagstat.txt", level=wildcards.folder1, id_sample=all_samples, group=wildcards.group, id_genome=wildcards.id_genome)
+        filename=expand("results/{level}/03_final_sample/01_bam/{id_sample}.{id_genome}_flagstat.txt", level=wildcards.folder1, id_sample=samples.keys(), group=wildcards.group, id_genome=wildcards.id_genome)
     else:
         print(f"ERROR: This should never happen: error in def get_flagstat_for_multiqc ({wildcards.folder1}, {wildcards.folder2}, {wildcards.group})!")
         os._exit(0)
@@ -351,3 +351,22 @@ rule plot_summary_statistics:
     script:
     	"../scripts/plot_stats.R"
 
+
+##########################################################################################
+rule depth_compute:
+    """
+    Compute the read depth per chromosome 
+    """
+    input:
+        "results/{folder}/{file}.{id_genome}.bam"
+    output:
+        "results/{folder}/{file}.{id_genome}_depth.txt"
+    resources:
+        memory=lambda wildcards, attempt: get_memory_alloc("mem", attempt, 2),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("time", attempt, 1)
+    log:
+        "results/logs/{folder}/{file}.{id_genome}.log"
+    threads: 1
+    message: "--- COMPUTE DEPTH OF {input}"
+    shell:
+        "workflow/scripts/depth.py {input} > {output} 2> {log}"
