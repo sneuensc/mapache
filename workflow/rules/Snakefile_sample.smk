@@ -1,34 +1,5 @@
 ##########################################################################################
 ## all rules for the samples
-
-def get_final_bam(id_sample, id_genome):
-    if run_compute_md:
-        bam = "results/03_sample/02_md_flag/01_md_flag/{id_sample}.{id_genome}.bam"
-    elif run_realign:
-        bam = "results/03_sample/01_realigned/01_realign/{id_sample}.{id_genome}.bam"
-    else:
-        bam = "results/03_sample/00_merged_library/01_bam/{id_sample}.{id_genome}.bam"
-    return (bam)
-
-
-def get_md_flag_bam(id_sample, id_genome):
-    if run_realign:
-        bam = "results/03_sample/01_realigned/01_realign/{id_sample}.{id_genome}.bam"
-    else:
-        bam = "results/03_sample/00_merged_library/01_bam/{id_sample}.{id_genome}.bam"
-    return (bam)
-
-## the function makes a reverse symlink, by moving the file to the new location and then symlink it back to the original location
-def symlink_rev2(input, output):
-	shell("mv {input} {output}")
-	shell("ln -srf {output} {input}")
-	shell("touch {output}")
-    
-def symlink_rev(input, output):
-	shell("ln -srf {input} {output}")
-
-    
-##########################################################################################
 ##########################################################################################
 localrules: get_final_bam ## executed locally on a cluster
 ruleorder:  merge_bam_library2sample_low_qual  > get_final_bam 

@@ -5,27 +5,12 @@ Aim: Map ancient DNA libraries to a reference genome
 Date: 28/10/2019
 """
 
-import pandas as pd
-import numpy as np
-import itertools
-
-## functions to read the config file
-def get_param1(key, default):
-    return config.get(key, default)
-
-def get_param2(key1, key2, default):
-    return config.get(key1, {}).get(key2, default)
-
-def get_param3(key1, key2, key3, default):
-    return config.get(key1, {}).get(key2, {}).get(key3, default)    
-
-## convert string to boolean
-def str2bool(v):
-    return str(v).lower() in ("yes", "true", "t", "1")
-
 ##########################################################################################
 ## read the config file
 configfile: "config/config.yaml"
+
+include : "rules/common.smk"
+
 
 ## default values
 SAMPLES               = get_param1("SAMPLES", "samples.txt")
@@ -60,20 +45,6 @@ module_r              = get_param2("ENVMODULES", "r", "")
 module_adapterremoval = get_param2("ENVMODULES", "adapterremoval", "")
 module_mapdamage      = get_param2("ENVMODULES", "mapdamage", "")
 module_multiqc        = get_param2("ENVMODULES", "multiqc", "")
-
-def RequiredModules():
-    """Returns list of required module names."""
-    return [ module_bwa,
-            module_bowtie2,
-            module_samtools,
-            module_gatk3,
-            module_picard,
-            module_fastqc,
-            module_adapterremoval,
-            module_mapdamage,
-            module_multiqc,
-            module_r
-        ]
 
         
 ##########################################################################################
@@ -126,7 +97,7 @@ elif len(db.columns) == 7:
         print("ERROR: The column names in the sample file are wrong! Expected are for paired-end reads: ID, Data1, Data2, MAPQ, LB, PL, SM")
         os._exit(0)    
 else: 
-    print("ERROR: The number of columns in the sample file is wrong (got "+len(db.columns)+" columns)!")
+    print(f"ERROR: The number of columns in the sample file is wrong ({len(db.columns)} columns)!")
     os._exit(0)
 
 
@@ -160,62 +131,7 @@ for index, row in db.iterrows():
 all_libraries = db.groupby(['LB','SM'])['ID'].agg(['count']).reset_index()
 
 
-## get incremental memory allocation when jobs fail
-## 'startStr' is the first memory allocation in GB
-## input is in GB; output in MB; default is 2GB, but can be changed by a rule
 
-## get incremental memory allocation when jobs fail
-## 'start' is the first memory allocation in GB (default 4GB)
-## input is in GB; output is in MB;
-## global variable memory_increment_ratio defines by how much (ratio) the memory is increased if not defined specifically
-def get_memory_alloc(module, attempt, default=2):
-    mem_start = int(config.get(module, {}).get("mem", default))
-    mem_incre = int(config.get(module, {}).get("mem_increment", memory_increment_ratio*mem_start))
-    return int(1024 * ((attempt-1) * mem_incre + mem_start))
-    
-    
-def convert_time(seconds): 
-    day = seconds // (24 * 3600) 
-    seconds = seconds % (24 * 3600) 
-    hour = seconds // 3600
-    seconds %= 3600
-    minutes = seconds // 60
-    seconds %= 60  
-    return "%d-%02d:%02d:%02d" % (day, hour, minutes, seconds) 
-    
-    
-## get incremental time allocation when jobs fail
-## 'start' is the first time allocation in hours (default 12h)
-## input is in hours; output is in minutes;
-## global variable runtime_increment_ratio defines by how much (ratio) the time is increased if not defined specifically
-def get_runtime_alloc(module, attempt, default=12):
-    time_start = int(config.get(module, {}).get("time", default))
-    time_incre = int(config.get(module, {}).get("time_increment", runtime_increment_ratio*time_start))
-    return int(60 * ((attempt-1) * time_incre + time_start))
-    #return convert_time(60*60 * ((attempt-1) * time_incre + time_start))
-    
-    
-## get the number of threads of the given parameter
-def get_threads(module, default=1):
-    return int(config.get(module, {}).get("threads", default))
-
-
-## define how to quantify the deamination pattern
-def get_damage(run_damage):
-    files=[]
-    if run_damage == 'bamdamage':
-        for genome in GENOME:
-            files+=[("results/03_sample/{SM}/{LB}/library_bamdamage/{LB}.{genome}.dam.svg").
-                format(SM=row['SM'], LB=row['LB'], genome=genome) for index, row in all_libraries.iterrows()]
-    elif run_damage == 'mapDamage':
-        for genome in GENOME:
-            files+=[("{SM}/{LB}/library_mapDamage/{LB}.{genome}_results_mapDamage/Fragmisincorporation_plot.pdf").
-                format(SM=row['SM'], LB=row['LB'], genome=genome) for index, row in all_libraries.iterrows()]
-
-    return (files)
-    
-
-    
 ##########################################################################################
 include : "rules/Snakefile_index.smk"
 include : "rules/Snakefile_stats.smk"

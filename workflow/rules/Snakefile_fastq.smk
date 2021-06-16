@@ -1,73 +1,5 @@
 ##########################################################################################
 ## all rules for fastq files
-
-def get_from_sample_file(col, SM, LB, ID):
-    filename = db[(db["ID"]==ID) & (db["LB"]==LB) & (db["SM"]==SM)][col].values
-    return(filename)
-
-
-def get_fastq_of_ID(id_sample, id_library, id_fastq):
-	if "_R1" == id_fastq[-3:]:
-		filename = get_from_sample_file("Data1", id_sample, id_library, id_fastq[:-3])
-	elif "_R2" == id_fastq[-3:]:
-		filename = get_from_sample_file("Data2", id_sample, id_library, id_fastq[:-3])
-	elif paired_end != 0:   ## SE library in a paired-end sample file
-		filename = get_from_sample_file("Data1", id_sample, id_library, id_fastq)
-	else:
-		filename = get_from_sample_file("Data", id_sample, id_library, id_fastq)
-	return(filename)
-	
-	
-def get_fastq_for_mapping(wildcards):
-	if run_adapter_removal:
-		if paired_end == 1 and str(get_from_sample_file("Data2", wildcards.id_sample, wildcards.id_library, wildcards.id_fastq)[0])!="nan":
-			folder=f"results/01_fastq/01_trimmed/01_files_trim_collapsed/{wildcards.id_sample}/{wildcards.id_library}"
-		else:
-			folder=f"results/01_fastq/01_trimmed/01_files_trim/{wildcards.id_sample}/{wildcards.id_library}"
-	else:
-		folder=f"results/01_fastq/00_reads/01_files_orig/{wildcards.id_sample}/{wildcards.id_library}"
-
-	if paired_end == 2:
-		filename=[f"{folder}/{wildcards.id_fastq}_R1.fastq.gz", f"{folder}/{wildcards.id_fastq}_R2.fastq.gz"]
-	else:
-		filename=[f"{folder}/{wildcards.id_fastq}.fastq.gz"]
-	return (filename)
-
-def get_fastq_for_mapping_pe(id_sample, id_library, id_fastq, id_read):
-	if run_adapter_removal:
-		folder=f"results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}"
-	else:
-		folder=f"results/01_fastq/00_reads/01_files_orig/{id_sample}/{id_library}"
-
-	return (f"{folder}/{id_fastq}_R{id_read}.fastq.gz")
-
-
-def get_bam_for_sorting(id_sample, id_library, id_fastq, id_genome):
-	if mapper == "bwa_aln":
-		if paired_end == 2 and str(get_from_sample_file("Data2", id_sample, id_library, id_fastq)[0]) != "nan":
-			folder="02_bwa_sampe"
-		else:
-			folder="02_bwa_samse"
-	elif mapper == "bwa_mem":
-		folder="02_bwa_mem"
-	elif mapper == "bowtie2":
-		folder="02_bowtie2"
-	else:
-		print("ERROR: The parameter mapper is not correctly specified: "+mapper+" is unknown!")
-		os._exit(0)
-	return (f"results/01_fastq/02_mapped/{folder}/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam")
-
-
-def get_bwa_aln_output(wildcards):
-	if "_R1" == wildcards.id_genome[-3:]:
-		file=f"results/01_fastq/02_mapped/01_bwa_aln/{id_sample}/{id_library}/{id_fastq}.{id_genome}_R1.sai"	
-	elif "_R2" == wildcards.id_genome[-3:]:
-		file=f"results/01_fastq/02_mapped/01_bwa_aln/{id_sample}/{id_library}/{id_fastq}.{id_genome}_R2.sai"	
-	else:
-		file=f"results/01_fastq/02_mapped/01_bwa_aln/{id_sample}/{id_library}/{id_fastq}.{id_genome}.sai"	
-	return (file)
-
-	
 ##########################################################################################
 ## get all files ready
 
@@ -136,14 +68,13 @@ rule adapter_removal_se:
     input:
         "results/01_fastq/00_reads/01_files_orig/{id_sample}/{id_library}/{id_fastq}.fastq.gz"
     output:
-        "results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.fastq.gz",
-        "results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.discarded.gz",
-        "results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.settings"
+        fastq = "results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.fastq.gz",
+        discard = "results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.discarded.gz",
+        setting = "results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.settings"
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("adapterremoval", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("adapterremoval", attempt, 24)
     params:
-        prefix="results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}",
         adaptrem_params = config.get("adapterremoval", {}).get("params", "--minlength 30")
     log:
         "results/logs/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.log"
@@ -155,8 +86,8 @@ rule adapter_removal_se:
     shell:
         """
         AdapterRemoval --threads {threads} {params.adaptrem_params} --file1 {input} \
-                --basename {params.prefix} --trimns --trimqualities --gzip \
-                --output1 {params.prefix}.fastq.gz 2> {log};
+                --basename {{{output.fastq}%%.fastq.gz}} --trimns --trimqualities --gzip \
+                --output1 {output.fastq} 2> {log};
         """
 
 
@@ -177,7 +108,6 @@ rule adapter_removal_pe:
         memory=lambda wildcards, attempt: get_memory_alloc("adapterremoval", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("adapterremoval", attempt, 24)
     params:
-        prefix="results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}",
         adaptrem_params = config.get("adapterremoval", {}).get("params", "--minlength 30")
     log:
         "results/logs/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.log"
@@ -189,8 +119,8 @@ rule adapter_removal_pe:
     shell:
         """
         AdapterRemoval --threads {threads} {params.adaptrem_params} --file1 {input.R1} \
-                --file2 {input.R2} --basename {params.prefix} --trimns --trimqualities --gzip \
-                --output1 {params.prefix}_R1.fastq.gz --output2 {params.prefix}_R2.fastq.gz 2> {log};
+                --file2 {input.R2} --basename {{{output.R1}%%_R1.fastq.gz}} --trimns --trimqualities --gzip \
+                --output1 {output.R1} --output2 {output.R2} 2> {log};
         """
 
 
@@ -202,18 +132,17 @@ rule adapter_removal_collapse:
         R1="results/01_fastq/00_reads/01_files_orig/{id_sample}/{id_library}/{id_fastq}_R1.fastq.gz",
         R2="results/01_fastq/00_reads/01_files_orig/{id_sample}/{id_library}/{id_fastq}_R2.fastq.gz"
     output:
-        "results/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}.fastq.gz",
-        "results/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}_truncated.fastq.gz",
-        "results/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}_R1.fastq.gz",
-        "results/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}_R2.fastq.gz",
-        "results/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}.singleton.truncated.gz",
-        "results/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}.discarded.gz",
-        "results/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}.settings"
+        R = "results/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}.fastq.gz",
+        trunc = "results/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}_truncated.fastq.gz",
+        R1 = "results/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}_R1.fastq.gz",
+        R2 = "results/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}_R2.fastq.gz",
+        strunc = "results/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}.singleton.truncated.gz",
+        disc = "results/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}.discarded.gz",
+        settingd = "results/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}.settings"
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("adapterremoval", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("adapterremoval", attempt, 24)
     params:
-        prefix="results/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}",
         adaptrem_params = config.get("adapterremoval", {}).get("params", "--minlength 30")
     log:
         "results/logs/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}.log"
@@ -225,10 +154,10 @@ rule adapter_removal_collapse:
     shell:
         """
         AdapterRemoval --threads {threads} {params.adaptrem_params} --file1 {input.R1} \
-                --file2 {input.R2} --basename {params.prefix} --trimns --trimqualities --gzip \
-                --output1 {params.prefix}_R1.fastq.gz --output2 {params.prefix}_R2.fastq.gz \
-                --outputcollapsed {params.prefix}.fastq.gz \
-                --outputcollapsedtruncated {params.prefix}_truncated.fastq.gz 2> {log};
+                --file2 {input.R2} --basename {{{output.R}%%.fastq.gz}} --trimns --trimqualities --gzip \
+                --output1 {output.R1} --output2 {output.R2} \
+                --outputcollapsed {output.R} \
+                --outputcollapsedtruncated {output.trunc} 2> {log};
         """
 
 

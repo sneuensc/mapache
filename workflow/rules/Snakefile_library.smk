@@ -1,32 +1,5 @@
 ##########################################################################################
 ## all rules for libraries
-
-def get_final_bam_library(id_sample, id_library, id_genome):
-    if run_mapDamage_rescale:
-        bam = "results/02_library/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}.bam"
-    elif extract_duplicates:
-        bam = "results/02_library/01_duplicated/01_rmdup/{id_sample}/{id_library}.{id_genome}_mapped.bam"
-    elif run_remove_duplicates:
-        bam = "results/02_library/01_duplicated/01_rmdup/{id_sample}/{id_library}.{id_genome}.bam"
-    else:
-        bam = "results/02_library/00_merged_fastq/01_bam/{id_sample}/{id_library}.{id_genome}.bam"
-    return (bam)
-
-
-def get_mapDamage_bam(id_sample, id_library, id_genome, index = False):
-	if extract_duplicates:
-		bam="results/02_library/01_duplicated/01_rmdup/{id_sample}/{id_library}.{id_genome}_mapped.bam"
-	elif run_remove_duplicates:
-		bam="results/02_library/01_duplicated/01_rmdup/{id_sample}/{id_library}.{id_genome}.bam"
-	else: 
-		bam="results/02_library/00_merged_fastq/01_bam/{id_sample}/{id_library}.{id_genome}.bam"
-	if index:
-		bam = bam + ".bai"
-
-	return (bam)
-
-
-##########################################################################################
 ##########################################################################################
 
 rule merge_bam_fastq2library:
@@ -157,8 +130,8 @@ rule mapDamage_stats:
         bam=lambda wildcards: get_mapDamage_bam(wildcards.id_sample, wildcards.id_library, wildcards.id_genome)
     output:
         #directory("results/02_library/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}_results_mapDamage"),
-        report("results/02_library/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}_results_mapDamage/Fragmisincorporation_plot.pdf", category="Damage pattern"),
-        report("results/02_library/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}_results_mapDamage/Length_plot.pdf", category="Read length distribution")
+        deamination = report("results/02_library/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}_results_mapDamage/Fragmisincorporation_plot.pdf", category="Damage pattern"),
+        length = report("results/02_library/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}_results_mapDamage/Length_plot.pdf", category="Read length distribution")
     log:
         "results/logs/02_library/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}_stats.log"
     threads: 1
@@ -166,14 +139,13 @@ rule mapDamage_stats:
         memory=lambda wildcards, attempt: get_memory_alloc("mapdamage", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapdamage", attempt, 24)
     params:
-        prefix="results/02_library/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}",
         mapDamage_params = config.get("mapdamage", {}).get("params", "") 
     conda:
     	"../envs/mapdamage.yaml"
     message: "--- MAPDAMAGE {input.bam}"
     shell:
         """
-        mapDamage -i {input.bam} -r {input.ref} -d {params.prefix}_results_mapDamage \
+        mapDamage -i {input.bam} -r {input.ref} -d $(dirname {output.deamination}) \
         {params.mapDamage_params} --merge-reference-sequences 2> {log};
         """
 
@@ -183,26 +155,25 @@ rule mapDamage_rescale:
     Run mapDamage to rescale bam file
     """
     input:
-        ref="results/00_reference/{id_genome}/{id_genome}.fasta",
-        bam=lambda wildcards: get_mapDamage_bam(wildcards.id_sample, wildcards.id_library, wildcards.genome),
-        stats="results/02_library/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}_results_mapDamage/Fragmisincorporation_plot.pdf"
+        ref = "results/00_reference/{id_genome}/{id_genome}.fasta",
+        bam = lambda wildcards: get_mapDamage_bam(wildcards.id_sample, wildcards.id_library, wildcards.genome),
+        deamination = "results/02_library/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}_results_mapDamage/Fragmisincorporation_plot.pdf"
     output:
-        "results/02_library/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}.bam"
+        bam = "results/02_library/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}.bam"
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("mapdamage", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("mapdamage", attempt, 24)
+        memory = lambda wildcards, attempt: get_memory_alloc("mapdamage", attempt, 4),
+        runtime = lambda wildcards, attempt: get_runtime_alloc("mapdamage", attempt, 24)
     log:
         "results/logs/02_library/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}_rescale.log"
     threads: 1
     params:
-        prefix="results/02_library/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}",
         mapDamage_params = config.get("mapdamage", {}).get("params", "")
     conda:
     	"../envs/mapdamage.yaml"
     message: "--- MAPDAMAGE {input.bam}"
     shell:
     	"""
-    	mapDamage -i {input.bam} -r {input.ref} -d {params.prefix}_results_mapDamage \
+    	mapDamage -i {input.bam} -r {input.ref} -d $(dirname {input.deamination}) \
         {params.mapDamage_params} --merge-reference-sequences --rescale-only --rescale-out {output} 2>> {log};
         """
         
