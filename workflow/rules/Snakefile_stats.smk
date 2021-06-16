@@ -1,4 +1,7 @@
 ## functions
+import pathlib
+
+
 ## get the bam file name to run samtools flagstat
 def get_bam_for_flagstsat_lib(wildcards):
     if wildcards.group == "fastq_mapping":
@@ -38,11 +41,17 @@ def get_flagstat_for_multiqc(wildcards):
         os._exit(0)
     return(filename)
 
+## get the individual depth files to combien them
+def get_depth_files(wildcards):
+    parts = pathlib.Path(wildcards.folder).parts
+    if parts[0] == "02_library":
+        filename = [("results/02_library/03_final_library/01_bam/{SM}/{LB}.{genome}_depth.txt").format(SM=row['SM'], LB=row['LB'], genome=wildcards.id_genome) for index, row in db.iterrows()]
+    else:
+        filename = [("results/03_sample/03_final_sample/01_bam/{SM}.{genome}_depth.txt").format(SM=SM, genome=wildcards.id_genome) for SM in samples.keys()]
+    return(filename)
+
 
 def get_fastq_for_fastqc(group, id_sample, id_library, id_fastq):
-    #if group == 'trim' and paired_end == 1 and str(get_from_sample_file("Data2", id_sample, id_library, id_fastq)[0])!="nan":
-    #    group = 'trim_collapse'
-        
     return (("{id_sample}/{id_library}/fastq_files_{group}/{id_fastq}.fastq.gz").format(id_sample=id_sample, id_library=id_library, group=group, id_fastq=id_fastq))
 
 
@@ -77,14 +86,6 @@ def get_fastqc_for_multiqc(wildcards):
     else:
         folder = f"{folder}/01_trimmed/01_files_trim"
     fastqc = [("{folder}/{SM}/{LB}/{ID}_fastqc.zip").format(folder=folder, ID=row['ID'], SM=row['SM'], LB=row['LB']) for index, row in db.iterrows()]
-#     inStr = wildcards.group.split('_')
-#     if len(inStr) == 1: ## single-end or collapsed
-#         fastqc = [("{folder}/{SM}/{LB}/{ID}_fastqc.zip").format(group=wildcards.group, ID=row['ID'], SM=row['SM'], LB=row['LB']) for index, row in db.iterrows()]
-#     elif inStr[1] == 'collapsed': ## collapsed
-#         fastqc = [("{folder}/{SM}/{LB}/{ID}_fastqc.zip").format(group=wildcards.group, ID=row['ID'], SM=row['SM'], LB=row['LB']) for index, row in db.iterrows()]
-#     else:    ## R1 or R2 (caution: there may be single end libs)
-#         #fastqc = [("{folder}/{SM}/{LB}/{ID}_{R}_fastqc.zip").format(group=inStr[0], R=inStr[1], ID=row['ID'], SM=row['SM'], LB=row['LB']) for index, row in db.iterrows()]
-#         fastqc = [(f"{folder}/{SM}/{LB}/{ID}_{R}_fastqc.zip").format(group=inStr[0], R=inStr[1], ID=row['ID'], SM=row['SM'], LB=row['LB']) for index, row in db.iterrows()]
     return (fastqc)
 
 
@@ -353,6 +354,7 @@ rule plot_summary_statistics:
 
 
 ##########################################################################################
+## read depth and sex de3termination
 rule depth_compute:
     """
     Compute the read depth per chromosome 
@@ -370,3 +372,35 @@ rule depth_compute:
     message: "--- COMPUTE DEPTH OF {input}"
     shell:
         "workflow/scripts/depth.py {input} > {output} 2> {log}"
+        
+        
+rule concat_depth_statistics:
+    input:
+        get_depth_files
+    output:
+        report("results/{folder}/depth_stats_{id_genome}.csv", caption="../report/sample_depth.rst", category="Mapping statistics table")
+    threads: 1
+    log:
+        "results/logs/{folder}/depth_stats_{id_genome}.log"
+    message: "--- COMBINE DETH STATISTICS TO {output} ---"
+    script:
+    	"../scripts/depth_concat.py"
+
+
+rule plot_depth_statistics:
+    input:
+        sample_depth = "results/{folder}/depth_stats_{id_genome}.csv"
+    output:
+        plot_5_AvgReadDepth = report("results/{folder}/5_AvgReadDepth.{id_genome}.svg", caption="../report/5_AvgReadDepth.rst", category="Mapping statistics plots"),
+        plot_6_AvgReadDepth_MT = report("results/{folder}/6_AvgReadDepth_MT.{id_genome}.svg", caption="../report/6_AvgReadDepth_MT.rst", category="Mapping statistics plots"),
+        plot_7_Sex = report("results/{folder}/7_Sex.{id_genome}.svg", caption="../report/7_Sex.rst", category="Mapping statistics plots")
+    threads: 1
+    log:
+        "results/logs/{folder}/depth_stats_plot.{id_genome}.csv.log"
+    conda:
+    	"../envs/r.yaml"
+    envmodules:
+    	module_r
+    message: "--- PLOT DEPTH STATISTICS OF {input}"
+    script:    	
+    	"../scripts/plot_depth.R"
