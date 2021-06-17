@@ -75,7 +75,7 @@ rule adapter_removal_se:
         memory=lambda wildcards, attempt: get_memory_alloc("adapterremoval", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("adapterremoval", attempt, 24)
     params:
-        adaptrem_params = config.get("adapterremoval", {}).get("params", "--minlength 30")
+        params = get_param2("adapterremoval", "params", "--minlength 30 --trimns --trimqualities")
     log:
         "results/logs/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.log"
     threads: 
@@ -85,8 +85,8 @@ rule adapter_removal_se:
     message: "--- ADAPTERREMOVAL  {input}"            
     shell:
         """
-        AdapterRemoval --threads {threads} {params.adaptrem_params} --file1 {input} \
-                --basename {{{output.fastq}%%.fastq.gz}} --trimns --trimqualities --gzip \
+        AdapterRemoval --threads {threads} {params.params} --file1 {input} \
+                --basename {{{output.fastq}%%.fastq.gz}} --gzip \
                 --output1 {output.fastq} 2> {log};
         """
 
@@ -108,7 +108,7 @@ rule adapter_removal_pe:
         memory=lambda wildcards, attempt: get_memory_alloc("adapterremoval", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("adapterremoval", attempt, 24)
     params:
-        adaptrem_params = config.get("adapterremoval", {}).get("params", "--minlength 30")
+        params = get_param2("adapterremoval", "params", "--minlength 30 --trimns --trimqualities")
     log:
         "results/logs/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.log"
     threads: 
@@ -118,8 +118,8 @@ rule adapter_removal_pe:
     message: "--- ADAPTERREMOVAL {input.R1} {input.R2}"            
     shell:
         """
-        AdapterRemoval --threads {threads} {params.adaptrem_params} --file1 {input.R1} \
-                --file2 {input.R2} --basename {{{output.R1}%%_R1.fastq.gz}} --trimns --trimqualities --gzip \
+        AdapterRemoval --threads {threads} {params.params} --file1 {input.R1} \
+                --file2 {input.R2} --basename {{{output.R1}%%_R1.fastq.gz}} --gzip \
                 --output1 {output.R1} --output2 {output.R2} 2> {log};
         """
 
@@ -143,7 +143,7 @@ rule adapter_removal_collapse:
         memory=lambda wildcards, attempt: get_memory_alloc("adapterremoval", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("adapterremoval", attempt, 24)
     params:
-        adaptrem_params = config.get("adapterremoval", {}).get("params", "--minlength 30")
+        params = get_param2("adapterremoval", "params", "--minlength 30 --trimns --trimqualities")
     log:
         "results/logs/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}.log"
     threads: 
@@ -153,8 +153,8 @@ rule adapter_removal_collapse:
     message: "--- ADAPTERREMOVAL {input.R1} {input.R2}"            
     shell:
         """
-        AdapterRemoval --threads {threads} {params.adaptrem_params} --file1 {input.R1} \
-                --file2 {input.R2} --basename {{{output.R}%%.fastq.gz}} --trimns --trimqualities --gzip \
+        AdapterRemoval --threads {threads} {params.params} --file1 {input.R1} \
+                --file2 {input.R2} --basename {{{output.R}%%.fastq.gz}} --gzip \
                 --output1 {output.R1} --output2 {output.R2} \
                 --outputcollapsed {output.R} \
                 --outputcollapsedtruncated {output.trunc} 2> {log};
