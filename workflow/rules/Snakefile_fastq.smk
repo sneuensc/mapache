@@ -85,8 +85,9 @@ rule adapter_removal_se:
     message: "--- ADAPTERREMOVAL  {input}"            
     shell:
         """
+        out={output.fastq};
         AdapterRemoval --threads {threads} {params.params} --file1 {input} \
-                --basename {{{output.fastq}%%.fastq.gz}} --gzip \
+                --basename ${{out%%.fastq.gz}} --gzip \
                 --output1 {output.fastq} 2> {log};
         """
 
