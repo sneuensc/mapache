@@ -3,7 +3,7 @@
 import os
 
 ## get the reference
-fasta=snakemake.params.fasta
+fasta=snakemake.input.orig
 filename, file_extension = os.path.splitext(fasta)
 orig_dir = os.path.abspath(os.path.dirname(filename))
 orig_prefix = os.path.basename(filename)
