@@ -101,15 +101,15 @@ def get_from_sample_file(col, SM, LB, ID):
     return(filename)
 
 
-def get_fastq_of_ID(id_sample, id_library, id_fastq):
-	if "_R1" == id_fastq[-3:]:
-		filename = get_from_sample_file("Data1", id_sample, id_library, id_fastq[:-3])
-	elif "_R2" == id_fastq[-3:]:
-		filename = get_from_sample_file("Data2", id_sample, id_library, id_fastq[:-3])
+def get_fastq_of_ID(wildcards):
+	if "_R1" == wildcards.id_fastq[-3:]:
+		filename = get_from_sample_file("Data1", wildcards.id_sample, wildcards.id_library, wildcards.id_fastq[:-3])
+	elif "_R2" == wildcards.id_fastq[-3:]:
+		filename = get_from_sample_file("Data2", wildcards.id_sample, wildcards.id_library, wildcards.id_fastq[:-3])
 	elif paired_end != 0:   ## SE library in a paired-end sample file
-		filename = get_from_sample_file("Data1", id_sample, id_library, id_fastq)
+		filename = get_from_sample_file("Data1", wildcards.id_sample, wildcards.id_library, wildcards.id_fastq)
 	else:
-		filename = get_from_sample_file("Data", id_sample, id_library, id_fastq)
+		filename = get_from_sample_file("Data", wildcards.id_sample, wildcards.id_library, wildcards.id_fastq)
 	return(filename)
 	
 	

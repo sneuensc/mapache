@@ -12,7 +12,7 @@ rule get_fastq:
     Symlink and rename all fastq files to a common folder (makes the DAG readable)
     """
     input:
-        fastq=lambda wildcards: get_fastq_of_ID(wildcards.id_sample, wildcards.id_library, wildcards.id_fastq)
+        get_fastq_of_ID
     output:
         "results/01_fastq/00_reads/01_files_orig/{id_sample}/{id_library}/{id_fastq}.fastq.gz"
     threads: 1
@@ -35,23 +35,11 @@ rule get_fasta:
     params:
         prefix="{id_genome}"
     threads: 1
-    message: "--- GET REFERENCE  {input}"            
-    run:
-        import os
-
-        ## get the folder containing the references (and its indexes)
-        fasta=input.fasta
-        filename, file_extension = os.path.splitext(fasta)
-        orig_dir = os.path.abspath(os.path.dirname(filename))
-        orig_prefix = os.path.basename(filename)
-
-        ## get and create the new reference folder
-        new_dir=os.path.abspath(f"results/00_reference/{wildcards.id_genome}")
-        os.makedirs(new_dir, exist_ok=True)
-
-        ## symlink and rename the reference
-        path_to = os.path.join(new_dir, f"{wildcards.id_genome}.fasta")
-        os.symlink(fasta, path_to)
+    message: "--- GET REFERENCE  {input}" 
+    shell:
+    	"""
+    	ln -srf {input} {output}
+    	"""
 
 
 
