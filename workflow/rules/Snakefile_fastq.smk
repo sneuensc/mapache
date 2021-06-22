@@ -52,7 +52,7 @@ rule adapter_removal_se:
     Remove adapter and low quality bases at the edges
     """
     input:
-        "{folder}/01_files_orig/{id_sample}/{id_library}/{id_fastq}.fastq.gz"
+        "{folder}/00_reads/01_files_orig/{id_sample}/{id_library}/{id_fastq}.fastq.gz"
     output:
         fastq = "{folder}/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.fastq.gz",
         discard = "{folder}/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.discarded.gz",
