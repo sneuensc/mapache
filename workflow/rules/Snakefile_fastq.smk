@@ -105,9 +105,9 @@ rule adapter_removal_pe:
     message: "--- ADAPTERREMOVAL {input.R1} {input.R2}"            
     shell:
         """
-        out={output.fastq};
+        out={output.R1};
         AdapterRemoval --threads {threads} {params} --file1 {input.R1} \
-                --file2 {input.R2} --basename ${{out%%.fastq.gz}} --gzip \
+                --file2 {input.R2} --basename ${{out%%_R1.fastq.gz}} --gzip \
                 --output1 {output.R1} --output2 {output.R2} 2> {log};
         """
 
@@ -141,7 +141,7 @@ rule adapter_removal_collapse:
     message: "--- ADAPTERREMOVAL {input.R1} {input.R2}"            
     shell:
         """
-        out={output.fastq};
+        out={output.R};
         AdapterRemoval --threads {threads} {params} --file1 {input.R1} \
                 --file2 {input.R2} --basename ${{out%%.fastq.gz}} --gzip \
                 --output1 {output.R1} --output2 {output.R2} \
