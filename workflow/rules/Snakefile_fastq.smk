@@ -14,7 +14,7 @@ rule get_fastq:
     input:
         get_fastq_of_ID
     output:
-        "results/01_fastq/00_reads/01_files_orig/{id_sample}/{id_library}/{id_fastq}.fastq.gz"
+        "{folder}/00_reads/01_files_orig/{id_sample}/{id_library}/{id_fastq}.fastq.gz"
     threads: 1
     message: "--- GET FASTQ FILES  {input}"            
     shell:
@@ -52,18 +52,18 @@ rule adapter_removal_se:
     Remove adapter and low quality bases at the edges
     """
     input:
-        "results/01_fastq/00_reads/01_files_orig/{id_sample}/{id_library}/{id_fastq}.fastq.gz"
+        "{folder}/01_files_orig/{id_sample}/{id_library}/{id_fastq}.fastq.gz"
     output:
-        fastq = "results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.fastq.gz",
-        discard = "results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.discarded.gz",
-        setting = "results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.settings"
+        fastq = "{folder}/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.fastq.gz",
+        discard = "{folder}/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.discarded.gz",
+        setting = "{folder}/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.settings"
     resources:
         memory = lambda wildcards, attempt: get_memory_alloc("adapterremoval", attempt, 4),
         runtime = lambda wildcards, attempt: get_runtime_alloc("adapterremoval", attempt, 24)
     params:
         get_param2("adapterremoval", "params", "--minlength 30 --trimns --trimqualities")
     log:
-        "results/logs/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.log"
+        "{folder}/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.log"
     threads: 
     	get_threads("adapterremoval", 4)
     conda:
@@ -83,21 +83,21 @@ rule adapter_removal_pe:
     Remove adapter and low quality bases at the edges
     """
     input:
-        R1 = "results/01_fastq/00_reads/01_files_orig/{id_sample}/{id_library}/{id_fastq}_R1.fastq.gz",
-        R2 = "results/01_fastq/00_reads/01_files_orig/{id_sample}/{id_library}/{id_fastq}_R2.fastq.gz"
+        R1 = "{folder}/00_reads/01_files_orig/{id_sample}/{id_library}/{id_fastq}_R1.fastq.gz",
+        R2 = "{folder}/00_reads/01_files_orig/{id_sample}/{id_library}/{id_fastq}_R2.fastq.gz"
     output:
-        R1 = "results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}_R1.fastq.gz",
-        R2 = "results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}_R2.fastq.gz",
-        singleton = "results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.singleton.truncated.gz",
-        discarded = "results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.discarded.gz",
-        settings = "results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.settings"
+        R1 = "{folder}/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}_R1.fastq.gz",
+        R2 = "{folder}/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}_R2.fastq.gz",
+        singleton = "{folder}/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.singleton.truncated.gz",
+        discarded = "{folder}/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.discarded.gz",
+        settings = "{folder}/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.settings"
     resources:
         memory = lambda wildcards, attempt: get_memory_alloc("adapterremoval", attempt, 4),
         runtime = lambda wildcards, attempt: get_runtime_alloc("adapterremoval", attempt, 24)
     params:
         get_param2("adapterremoval", "params", "--minlength 30 --trimns --trimqualities")
     log:
-        "results/logs/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.log"
+        "{folder}/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.log"
     threads: 
     	get_threads("adapterremoval", 4)
     conda:
@@ -117,23 +117,23 @@ rule adapter_removal_collapse:
     Remove adapter and low quality bases at the edges and collapse paired-end reads
     """
     input:
-        R1 = "results/01_fastq/00_reads/01_files_orig/{id_sample}/{id_library}/{id_fastq}_R1.fastq.gz",
-        R2 = "results/01_fastq/00_reads/01_files_orig/{id_sample}/{id_library}/{id_fastq}_R2.fastq.gz"
+        R1 = "{folder}/00_reads/01_files_orig/{id_sample}/{id_library}/{id_fastq}_R1.fastq.gz",
+        R2 = "{folder}/00_reads/01_files_orig/{id_sample}/{id_library}/{id_fastq}_R2.fastq.gz"
     output:
-        R = "results/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}.fastq.gz",
-        trunc = "results/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}_truncated.fastq.gz",
-        R1 = "results/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}_R1.fastq.gz",
-        R2 = "results/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}_R2.fastq.gz",
-        strunc = "results/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}.singleton.truncated.gz",
-        disc = "results/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}.discarded.gz",
-        settingd = "results/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}.settings"
+        R = "{folder}/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}.fastq.gz",
+        trunc = "{folder}/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}_truncated.fastq.gz",
+        R1 = "{folder}/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}_R1.fastq.gz",
+        R2 = "{folder}/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}_R2.fastq.gz",
+        strunc = "{folder}/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}.singleton.truncated.gz",
+        disc = "{folder}/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}.discarded.gz",
+        settingd = "{folder}/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}.settings"
     resources:
         memory = lambda wildcards, attempt: get_memory_alloc("adapterremoval", attempt, 4),
         runtime = lambda wildcards, attempt: get_runtime_alloc("adapterremoval", attempt, 24)
     params:
         get_param2("adapterremoval", "params", "--minlength 30 --trimns --trimqualities")
     log:
-        "results/logs/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}.log"
+        "{folder}/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}.log"
     threads: 
     	get_threads("adapterremoval", 4)
     conda:
@@ -164,14 +164,14 @@ rule mapping_bwa_aln_se:
         ref = "results/00_reference/{id_genome}/{id_genome}.fasta",
         fastq = get_fastq_for_mapping
     output:
-        "results/01_fastq/02_mapped/01_bwa_aln/{id_sample}/{id_library}/{id_fastq}.{id_genome}.sai"
+        "{folder}/02_mapped/01_bwa_aln/{id_sample}/{id_library}/{id_fastq}.{id_genome}.sai"
     resources:
         memory = lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime = lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24)
     params:
         config.get("mapping", {}).get("bwa_aln_params", "-l 1024")
     log:
-        "results/logs/01_fastq/02_mapped/01_bwa_aln/{id_sample}/{id_library}/{id_fastq}.{id_genome}.log"
+        "{folder}/02_mapped/01_bwa_aln/{id_sample}/{id_library}/{id_fastq}.{id_genome}.log"
     threads: 
     	get_threads("mapping", 4)
     conda:
@@ -193,14 +193,14 @@ rule mapping_bwa_aln_pe:
         ref = "results/00_reference/{id_genome}/{id_genome}.fasta",
         fastq = lambda wildcards: get_fastq_for_mapping_pe(wildcards.id_sample, wildcards.id_library, wildcards.id_fastq, wildcards.id_read)
     output:
-        "results/01_fastq/02_mapped/01_bwa_aln/{id_sample}/{id_library}/{id_fastq}.{id_genome}_R{id_read}.sai"
+        "{folder}/02_mapped/01_bwa_aln/{id_sample}/{id_library}/{id_fastq}.{id_genome}_R{id_read}.sai"
     resources:
         memory = lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime = lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24)
     params:
         config.get("mapping", {}).get("bwa_aln_params", "-l 1024") 
     log:
-        "results/logs/01_fastq/02_mapped/01_bwa_aln/{id_sample}/{id_library}/{id_fastq}.{id_genome}_R{id_read}.log"
+        "{folder}/02_mapped/01_bwa_aln/{id_sample}/{id_library}/{id_fastq}.{id_genome}_R{id_read}.log"
     threads: 
     	get_threads("mapping", 4)
     conda:
@@ -222,9 +222,9 @@ rule mapping_bwa_samse:
         multiext("results/00_reference/{id_genome}/{id_genome}.fasta", ".sa", ".amb", ".ann", ".bwt", ".pac"),
         ref="results/00_reference/{id_genome}/{id_genome}.fasta",
         fastq=get_fastq_for_mapping,
-        sai="results/01_fastq/02_mapped/01_bwa_aln/{id_sample}/{id_library}/{id_fastq}.{id_genome}.sai"
+        sai="{folder}/02_mapped/01_bwa_aln/{id_sample}/{id_library}/{id_fastq}.{id_genome}.sai"
     output:
-        "results/01_fastq/02_mapped/02_bwa_samse/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"
+        "{folder}/02_mapped/02_bwa_samse/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24)
@@ -235,7 +235,7 @@ rule mapping_bwa_samse:
         PL=lambda wildcards: get_from_sample_file("PL", wildcards.id_sample, wildcards.id_library, wildcards.id_fastq)[0],
         bwa_samse_params = config.get("mapping", {}).get("bwa_samse_params", "-n 3")
     log:
-        "results/logs/01_fastq/02_mapped/01_bwa_aln/{id_sample}/{id_library}/{id_fastq}.{id_genome}.log"
+        "{folder}/02_mapped/01_bwa_aln/{id_sample}/{id_library}/{id_fastq}.{id_genome}.log"
     threads: 1
     conda:
     	"../envs/bwa.yaml"
@@ -259,10 +259,10 @@ rule mapping_bwa_sampe:
         multiext("results/00_reference/{id_genome}/{id_genome}.fasta", ".sa", ".amb", ".ann", ".bwt", ".pac"),
         ref="results/00_reference/{id_genome}/{id_genome}.fasta",
         fastq=get_fastq_for_mapping,	## should get both pairs
-        sai1="results/01_fastq/02_mapped/01_bwa_aln/{id_sample}/{id_library}/{id_fastq}.{id_genome}_R1.sai",
-        sai2="results/01_fastq/02_mapped/01_bwa_aln/{id_sample}/{id_library}/{id_fastq}.{id_genome}_R2.sai"
+        sai1="{folder}/02_mapped/01_bwa_aln/{id_sample}/{id_library}/{id_fastq}.{id_genome}_R1.sai",
+        sai2="{folder}/02_mapped/01_bwa_aln/{id_sample}/{id_library}/{id_fastq}.{id_genome}_R2.sai"
     output:
-        "results/01_fastq/02_mapped/02_bwa_sampe/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"
+        "{folder}/02_mapped/02_bwa_sampe/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24)
@@ -273,7 +273,7 @@ rule mapping_bwa_sampe:
         PL=lambda wildcards: get_from_sample_file("PL", wildcards.id_sample, wildcards.id_library, wildcards.id_fastq)[0],
         bwa_samse_params = config.get("mapping", {}).get("bwa_samse_params", "-n 3")
     log:
-        "results/logs/01_fastq/02_mapped/02_bwa_sampe/{id_sample}/{id_library}/{id_fastq}.{id_genome}.log"
+        "{folder}/02_mapped/02_bwa_sampe/{id_sample}/{id_library}/{id_fastq}.{id_genome}.log"
     threads: 1
     conda:
     	"../envs/bwa.yaml"
@@ -299,7 +299,7 @@ rule mapping_bwa_mem:
         ref="results/00_reference/{id_genome}/{id_genome}.fasta",
         fastq=get_fastq_for_mapping
     output:
-        "results/01_fastq/02_mapped/02_bwa_mem/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"
+        "{folder}/02_mapped/02_bwa_mem/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24)
@@ -310,7 +310,7 @@ rule mapping_bwa_mem:
         PL=lambda wildcards: get_from_sample_file("PL", wildcards.id_sample, wildcards.id_library, wildcards.id_fastq)[0],
         bwa_mem_params = config.get("mapping", {}).get("bwa_mem_params", "")
     log:
-        "results/logs/01_fastq/02_mapped/02_bwa_mem/{id_sample}/{id_library}/{id_fastq}.{id_genome}.log"
+        "{folder}/02_mapped/02_bwa_mem/{id_sample}/{id_library}/{id_fastq}.{id_genome}.log"
     threads: 
     	get_threads("mapping", 4)
     conda:
@@ -335,7 +335,7 @@ rule mapping_bowtie2:
         ref="results/00_reference/{id_genome}/{id_genome}.fasta",
         fastq=get_fastq_for_mapping
     output:
-        "results/01_fastq/02_mapped/02_bwa_bowtie2/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"
+        "{folder}/02_mapped/02_bwa_bowtie2/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24)
@@ -346,7 +346,7 @@ rule mapping_bowtie2:
         PL=lambda wildcards: get_from_sample_file("PL", wildcards.id_sample, wildcards.id_library, wildcards.id_fastq)[0],
         bowtie2_params = config.get("mapping", {}).get("bowtie2_params", "")
     log:
-        "results/logs/01_fastq/02_mapped/02_bwa_bowtie2/{id_sample}/{id_library}/{id_fastq}.{id_genome}.log"
+        "{folder}/02_mapped/02_bwa_bowtie2/{id_sample}/{id_library}/{id_fastq}.{id_genome}.log"
     threads: 
     	get_threads("mapping", 4)
     conda:
@@ -369,12 +369,12 @@ rule samtools_sort:
     input:
         lambda wildcards: get_bam_for_sorting(wildcards.id_sample, wildcards.id_library, wildcards.id_fastq, wildcards.id_genome)
     output:
-        "results/01_fastq/02_mapped/03_bam_sort/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"
+        "{folder}/02_mapped/03_bam_sort/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("sorting", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("sorting", attempt, 24)
     log:
-        "results/logs/01_fastq/02_mapped/03_bam_sort/{id_sample}/{id_library}/{id_fastq}.{id_genome}.log"
+        "{folder}/02_mapped/03_bam_sort/{id_sample}/{id_library}/{id_fastq}.{id_genome}.log"
     threads: 
     	get_threads("sorting", 4)
     conda:
@@ -396,17 +396,17 @@ rule samtools_filter:
     Filter mappings following quality
     """
     input:
-        "results/01_fastq/02_mapped/03_bam_sort/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"
+        "{folder}/02_mapped/03_bam_sort/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"
     output:
-        mapped="results/01_fastq/03_filtered/01_bam_filter/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam",
-        low_qual="results/01_fastq/03_filtered/01_bam_filter_low_qual/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"
+        mapped="{folder}/03_filtered/01_bam_filter/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam",
+        low_qual="{folder}/03_filtered/01_bam_filter_low_qual/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"
     params:
         q=lambda wildcards: int(get_from_sample_file("MAPQ", wildcards.id_sample, wildcards.id_library, wildcards.id_fastq))
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("filtering", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("filtering", attempt, 24)
     log:
-        "results/logs/01_fastq/03_filtered/01_bam_filter/{id_sample}/{id_library}/{id_fastq}.{id_genome}.log"
+        "{folder}/03_filtered/01_bam_filter/{id_sample}/{id_library}/{id_fastq}.{id_genome}.log"
     threads: 
     	get_threads("filtering", 4)
     conda:
@@ -427,9 +427,9 @@ rule get_final_fastq:
 	Get the final bam file form the fastq part
 	"""
 	input:
-		"results/01_fastq/03_filtered/01_bam_filter/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"
+		"{folder}/03_filtered/01_bam_filter/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"
 	output:
-		"results/01_fastq/04_final_fastq/01_bam/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"
+		"{folder}/04_final_fastq/01_bam/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"
 	message: "--- GET FINAL BAM {input} (FASTQ LEVEL)"
 	run:
 		symlink_rev(input, output)
@@ -439,9 +439,9 @@ rule get_final_fastq_low_qual:
 	Get the final bam file from the fastq part
 	"""
 	input:
-		"results/01_fastq/03_filtered/01_bam_filter_low_qual/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"
+		"{folder}/03_filtered/01_bam_filter_low_qual/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"
 	output:
-		"results/01_fastq/04_final_fastq/01_bam_low_qual/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"	
+		"{folder}/04_final_fastq/01_bam_low_qual/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"	
 	message: "--- GET FINAL LOW_QUAL BAM {input} (FASTQ LEVEL)"
 	run:
 		symlink_rev(input, output)

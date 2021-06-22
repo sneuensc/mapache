@@ -11,14 +11,14 @@ rule merge_bam_fastq2library:
         	format(FQ=FQ, LB=wildcards.id_library, SM=wildcards.id_sample, genome=wildcards.id_genome) 
             for FQ in db.loc[(db['LB']==wildcards.id_library) & (db['SM']==wildcards.id_sample)]['ID']]
     output:
-        "results/02_library/00_merged_fastq/01_bam/{id_sample}/{id_library}.{id_genome}.bam"
+        "{folder}/00_merged_fastq/01_bam/{id_sample}/{id_library}.{id_genome}.bam"
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24)
     threads: 
         get_threads("merging", 4)
     log:
-        "results/logs/02_library/00_merged_fastq/01_bam/{id_sample}/{id_library}.{id_genome}.log"
+        "{folder}/00_merged_fastq/01_bam/{id_sample}/{id_library}.{id_genome}.log"
     conda:
     	"../envs/samtools.yaml"
     envmodules:
@@ -37,14 +37,14 @@ rule merge_bam_fastq2library_low_qual:
         	format(FQ=FQ, LB=wildcards.id_library, SM=wildcards.id_sample, genome=wildcards.id_genome) 
             for FQ in db.loc[(db['LB']==wildcards.id_library) & (db['SM']==wildcards.id_sample)]['ID']]
     output:
-        "results/02_library/00_merged_fastq/01_bam_low_qual/{id_sample}/{id_library}.{id_genome}.bam"
+        "{folder}/00_merged_fastq/01_bam_low_qual/{id_sample}/{id_library}.{id_genome}.bam"
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24)
     threads: 
     	get_threads("merging", 4)
     log:
-        "results/logs/02_library/00_merged_fastq/01_bam_low_qual/{id_sample}/{id_library}.{id_genome}.log"
+        "{folder}/00_merged_fastq/01_bam_low_qual/{id_sample}/{id_library}.{id_genome}.log"
     conda:
     	"../envs/samtools.yaml"
     envmodules:
@@ -59,10 +59,10 @@ rule remove_duplicates:
     Remove duplicated mappings
     """
     input:
-        "results/02_library/00_merged_fastq/01_bam/{id_sample}/{id_library}.{id_genome}.bam"
+        "{folder}/00_merged_fastq/01_bam/{id_sample}/{id_library}.{id_genome}.bam"
     output:
-        bam="results/02_library/01_duplicated/01_rmdup/{id_sample}/{id_library}.{id_genome}.bam",
-        stats="results/02_library/01_duplicated/01_rmdup/{id_sample}/{id_library}.{id_genome}.stats"
+        bam="{folder}/01_duplicated/01_rmdup/{id_sample}/{id_library}.{id_genome}.bam",
+        stats="{folder}/01_duplicated/01_rmdup/{id_sample}/{id_library}.{id_genome}.stats"
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("markduplicates", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("markduplicates", attempt, 24)
@@ -72,7 +72,7 @@ rule remove_duplicates:
     threads: 
     	get_threads("markduplicates", 4)
     log:
-        "results/logs/02_library/01_duplicated/01_rmdup/{id_sample}/{id_library}.{id_genome}.log"
+        "{folder}/01_duplicated/01_rmdup/{id_sample}/{id_library}.{id_genome}.log"
     conda:
     	"../envs/picard.yaml"
     envmodules:
@@ -99,17 +99,17 @@ rule samtools_extract_duplicates:
     Extract duplicates of bam file
     """
     input:
-        "results/02_library/01_duplicated/01_rmdup/{id_sample}/{id_library}.{id_genome}.bam"
+        "{folder}/01_duplicated/01_rmdup/{id_sample}/{id_library}.{id_genome}.bam"
     output:
-        mapped="results/02_library/01_duplicated/01_rmdup/{id_sample}/{id_library}.{id_genome}_mapped.bam",
-        dup="results/02_library/01_duplicated/01_rmdup/{id_sample}/{id_library}.{id_genome}_duplicates.bam"
+        mapped="{folder}/01_duplicated/01_rmdup/{id_sample}/{id_library}.{id_genome}_mapped.bam",
+        dup="{folder}/01_duplicated/01_rmdup/{id_sample}/{id_library}.{id_genome}_duplicates.bam"
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("markduplicates", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("markduplicates", attempt, 24)
     threads: 
     	get_threads("markduplicates", 4)
     log:
-        "results/logs/02_library/01_duplicated/01_rmdup/{id_sample}/{id_library}.{id_genome}_extract_duplicates.log"
+        "{folder}/01_duplicated/01_rmdup/{id_sample}/{id_library}.{id_genome}_extract_duplicates.log"
     conda:
     	"../envs/samtools.yaml"
     envmodules:
@@ -129,11 +129,11 @@ rule mapDamage_stats:
         ref="results/00_reference/{id_genome}/{id_genome}.fasta",
         bam=lambda wildcards: get_mapDamage_bam(wildcards.id_sample, wildcards.id_library, wildcards.id_genome)
     output:
-        #directory("results/02_library/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}_results_mapDamage"),
-        deamination = report("results/02_library/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}_results_mapDamage/Fragmisincorporation_plot.pdf", category="Damage pattern"),
-        length = report("results/02_library/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}_results_mapDamage/Length_plot.pdf", category="Read length distribution")
+        #directory("{folder}/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}_results_mapDamage"),
+        deamination = report("{folder}/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}_results_mapDamage/Fragmisincorporation_plot.pdf", category="Damage pattern"),
+        length = report("{folder}/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}_results_mapDamage/Length_plot.pdf", category="Read length distribution")
     log:
-        "results/logs/02_library/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}_stats.log"
+        "{folder}/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}_stats.log"
     threads: 1
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("mapdamage", attempt, 4),
@@ -157,14 +157,14 @@ rule mapDamage_rescale:
     input:
         ref = "results/00_reference/{id_genome}/{id_genome}.fasta",
         bam = lambda wildcards: get_mapDamage_bam(wildcards.id_sample, wildcards.id_library, wildcards.genome),
-        deamination = "results/02_library/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}_results_mapDamage/Fragmisincorporation_plot.pdf"
+        deamination = "{folder}/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}_results_mapDamage/Fragmisincorporation_plot.pdf"
     output:
-        bam = "results/02_library/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}.bam"
+        bam = "{folder}/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}.bam"
     resources:
         memory = lambda wildcards, attempt: get_memory_alloc("mapdamage", attempt, 4),
         runtime = lambda wildcards, attempt: get_runtime_alloc("mapdamage", attempt, 24)
     log:
-        "results/logs/02_library/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}_rescale.log"
+        "{folder}/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}_rescale.log"
     threads: 1
     params:
         mapDamage_params = config.get("mapdamage", {}).get("params", "")
@@ -186,7 +186,7 @@ rule get_final_library:
 	input:
 		lambda wildcards: get_final_bam_library(wildcards.id_sample, wildcards.id_library, wildcards.id_genome)
 	output:
-		"results/02_library/03_final_library/01_bam/{id_sample}/{id_library}.{id_genome}.bam"
+		"{folder}/03_final_library/01_bam/{id_sample}/{id_library}.{id_genome}.bam"
 	message: "--- GET FINAL BAM {input} (LIBRARY LEVEL)"
 	run:
 		symlink_rev(input, output)
@@ -196,9 +196,9 @@ rule get_final_library_low_qual:
 	Get the final bam file of the library part
 	"""
 	input:
-		"results/02_library/00_merged_fastq/01_bam_low_qual/{id_sample}/{id_library}.{id_genome}.bam"
+		"{folder}/00_merged_fastq/01_bam_low_qual/{id_sample}/{id_library}.{id_genome}.bam"
 	output:
-		"results/02_library/03_final_library/01_bam_low_qual/{id_sample}/{id_library}.{id_genome}.bam"	
+		"{folder}/03_final_library/01_bam_low_qual/{id_sample}/{id_library}.{id_genome}.bam"	
 	message: "--- GET FINAL LOW_QUAL BAM {input} (LIBRARY LEVEL)"
 	run:
 		symlink_rev(input, output)
@@ -208,9 +208,9 @@ rule get_final_library_lduplicate:
 	Get the final duplicate bam file of the library part
 	"""
 	input:
-		"results/02_library/01_duplicated/01_rmdup/{id_sample}/{id_library}.{id_genome}_duplicates.bam"
+		"{folder}/01_duplicated/01_rmdup/{id_sample}/{id_library}.{id_genome}_duplicates.bam"
 	output:
-		"results/02_library/03_final_library/01_bam_duplicate/{id_sample}/{id_library}.{id_genome}.bam"	
+		"{folder}/03_final_library/01_bam_duplicate/{id_sample}/{id_library}.{id_genome}.bam"	
 	message: "--- GET FINAL DUPLICATE BAM {input} (LIBRARY LEVEL)"
 	run:
 		symlink_rev(input, output)

@@ -253,27 +253,28 @@ def get_bam_for_flagstsat_lib(wildcards):
 
 ## get the stat file names to run multiqc
 def get_flagstat_for_multiqc(wildcards):
-    if wildcards.folder1 == "01_fastq":
+    parts = pathlib.Path(wildcards.folder).parts
+    if parts[1] == "01_fastq":
         if wildcards.group == "final":
-            filename = [("results/{level}/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{genome}_flagstat.txt").format(level=wildcards.folder1, group=wildcards.group, ID=row['ID'], SM=row['SM'], LB=row['LB'], genome=wildcards.id_genome) for index, row in db.iterrows()]
+            filename = [("results/{level}/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{genome}_flagstat.txt").format(level=parts[1], group=wildcards.group, ID=row['ID'], SM=row['SM'], LB=row['LB'], genome=wildcards.id_genome) for index, row in db.iterrows()]
         elif wildcards.group == "mapped":
-            filename = [("results/{level}/02_mapped/03_bam_sort/{SM}/{LB}/{ID}.{genome}_flagstat.txt").format(level=wildcards.folder1, group=wildcards.group, ID=row['ID'], SM=row['SM'], LB=row['LB'], genome=wildcards.id_genome) for index, row in db.iterrows()]
+            filename = [("results/{level}/02_mapped/03_bam_sort/{SM}/{LB}/{ID}.{genome}_flagstat.txt").format(level=parts[1], group=wildcards.group, ID=row['ID'], SM=row['SM'], LB=row['LB'], genome=wildcards.id_genome) for index, row in db.iterrows()]
         else:
-            print(f"ERROR: This should never happen: error in def get_flagstat_for_multiqc ({wildcards.folder1}, {wildcards.folder2}, {wildcards.group})!")
+            print(f"ERROR: This should never happen: error in def get_flagstat_for_multiqc ({wildcards.folder}, {wildcards.group})!")
             os._exit(0)
-    elif wildcards.folder1 == "02_library":
-        filename = [("results/{level}/03_final_library/01_bam/{SM}/{LB}.{genome}_flagstat.txt").format(level=wildcards.folder1, group=wildcards.group, SM=row['SM'], LB=row['LB'], genome=wildcards.id_genome) for index, row in all_libraries.iterrows()]
-    elif wildcards.folder1 == "03_sample":	
-        filename=expand("results/{level}/03_final_sample/01_bam/{id_sample}.{id_genome}_flagstat.txt", level=wildcards.folder1, id_sample=list(samples), group=wildcards.group, id_genome=wildcards.id_genome)
+    elif parts[1] == "02_library":
+        filename = [("results/{level}/03_final_library/01_bam/{SM}/{LB}.{genome}_flagstat.txt").format(level=parts[1], group=wildcards.group, SM=row['SM'], LB=row['LB'], genome=wildcards.id_genome) for index, row in all_libraries.iterrows()]
+    elif parts[1] == "03_sample":	
+        filename=expand("results/{level}/03_final_sample/01_bam/{id_sample}.{id_genome}_flagstat.txt", level=parts[1], id_sample=list(samples), group=wildcards.group, id_genome=wildcards.id_genome)
     else:
-        print(f"ERROR: This should never happen: error in def get_flagstat_for_multiqc ({wildcards.folder1}, {wildcards.folder2}, {wildcards.group})!")
+        print(f"ERROR: This should never happen: error in def get_flagstat_for_multiqc ({wildcards.folder}, {wildcards.group})!")
         os._exit(0)
     return(filename)
 
 ## get the individual depth files to combien them
 def get_depth_files(wildcards):
     parts = pathlib.Path(wildcards.folder).parts
-    if parts[0] == "02_library":
+    if parts[1] == "02_library":
         filename = [("results/02_library/03_final_library/01_bam/{SM}/{LB}.{genome}_depth.txt").format(SM=row['SM'], LB=row['LB'], genome=wildcards.id_genome) for index, row in db.iterrows()]
     else:
         filename = [("results/03_sample/03_final_sample/01_bam/{SM}.{genome}_depth.txt").format(SM=SM, genome=wildcards.id_genome) for SM in list(samples)]
