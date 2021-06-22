@@ -16,7 +16,7 @@ rule genome_index_bwa:
         memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12)
     params:
-        bwa_index_params = get_param2("indexing", "bwa_params", "")
+        get_param2("indexing", "bwa_params", "")
     log:
         "results/logs/index/{folder}/bwa_index_{id_genome}.log"
     threads: 
@@ -43,7 +43,7 @@ rule genome_index_bowtie2:
         memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12)
     params:
-        bowtie2_index_params = get_param2("indexing", "bowtie2_params", "")
+        get_param2("indexing", "bowtie2_params", "")
     log:
         "results/logs/index/{folder}/bowtie2_build_{id_genome}.log"
     threads: 
@@ -69,7 +69,7 @@ rule samtools_index_fasta:
         memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12)
     params:
-        samtools_index_params = get_param2("indexing", "samtools_params", "")      
+        get_param2("indexing", "samtools_params", "")      
     log:
         "results/logs/index/{folder}/samtools_fasta_{id_genome}.log"
     threads: 
@@ -94,8 +94,6 @@ rule genome_index_picard:
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12)
-    params:
-        picard_index_params = get_param2("indexing", "picard_params", "")
     log:
         "results/logs/index/{folder}/picard_{id_genome}.log"
     threads: 

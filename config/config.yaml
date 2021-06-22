@@ -43,10 +43,10 @@ indexing:
     mem: 16
     threads: 1
     time: 2
-    bwa_params: ""
-    bowtie2_params: ""
-    samtools_params: ""
-    picard_params: ""
+    bwa_params: ''
+    bowtie2_params: ''
+    samtools_params: ''
+    picard_params: ''
 
 ##########################################################################################
 ## FASTQ level

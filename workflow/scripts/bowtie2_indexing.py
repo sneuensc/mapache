@@ -25,4 +25,4 @@ elif all([os.path.isfile(f) for f in files2]):  ## foo.fa.ext
 		path_to = os.path.join(new_dir, os.path.basename(item).replace(orig_prefix + file_extension, new_prefix + '.fasta'))
 		os.symlink(item, path_to)
 else:                                           ## create the index
-	shell("bowtie2-build {snakemake.params.bowtie2_index_params} --threads {snakemake.threads}  {snakemake.input.fasta}  {input.fasta} > {log}")
+	shell("bowtie2-build {snakemake.params[0]} --threads {snakemake.threads}  {snakemake.input.fasta} > {log}")
