@@ -1,7 +1,7 @@
 ##########################################################################################
 ## all rules for fastq files
 ##########################################################################################
-## get all files ready
+## get/rename reference and fastq files
 
 localrules: get_fastq, get_fasta ## executed locally on a cluster
 #ruleorder: genome_index_bwa > get_fasta
@@ -29,11 +29,9 @@ rule get_fasta:
     Symlink and rename the reference (.fasta/.fa) to a new folder.
     """
     input:
-       fasta=lambda wildcards: get_param3('GENOME', wildcards.id_genome, 'fasta', '')
+       lambda wildcards: get_param3('GENOME', wildcards.id_genome, 'fasta', '')
     output:
-        fasta="results/00_reference/{id_genome}/{id_genome}.fasta",
-    params:
-        prefix="{id_genome}"
+        "results/00_reference/{id_genome}/{id_genome}.fasta",
     threads: 1
     message: "--- GET REFERENCE  {input}" 
     shell:
@@ -60,10 +58,10 @@ rule adapter_removal_se:
         discard = "results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.discarded.gz",
         setting = "results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.settings"
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("adapterremoval", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("adapterremoval", attempt, 24)
+        memory = lambda wildcards, attempt: get_memory_alloc("adapterremoval", attempt, 4),
+        runtime = lambda wildcards, attempt: get_runtime_alloc("adapterremoval", attempt, 24)
     params:
-        params = get_param2("adapterremoval", "params", "--minlength 30 --trimns --trimqualities")
+        get_param2("adapterremoval", "params", "--minlength 30 --trimns --trimqualities")
     log:
         "results/logs/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.log"
     threads: 
@@ -74,7 +72,7 @@ rule adapter_removal_se:
     shell:
         """
         out={output.fastq};
-        AdapterRemoval --threads {threads} {params.params} --file1 {input} \
+        AdapterRemoval --threads {threads} {params} --file1 {input} \
                 --basename ${{out%%.fastq.gz}} --gzip \
                 --output1 {output.fastq} 2> {log};
         """
@@ -85,19 +83,19 @@ rule adapter_removal_pe:
     Remove adapter and low quality bases at the edges
     """
     input:
-        R1="results/01_fastq/00_reads/01_files_orig/{id_sample}/{id_library}/{id_fastq}_R1.fastq.gz",
-        R2="results/01_fastq/00_reads/01_files_orig/{id_sample}/{id_library}/{id_fastq}_R2.fastq.gz"
+        R1 = "results/01_fastq/00_reads/01_files_orig/{id_sample}/{id_library}/{id_fastq}_R1.fastq.gz",
+        R2 = "results/01_fastq/00_reads/01_files_orig/{id_sample}/{id_library}/{id_fastq}_R2.fastq.gz"
     output:
-        R1="results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}_R1.fastq.gz",
-        R2="results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}_R2.fastq.gz",
-        singleton="results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.singleton.truncated.gz",
-        discarded="results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.discarded.gz",
-        settings="results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.settings"
+        R1 = "results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}_R1.fastq.gz",
+        R2 = "results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}_R2.fastq.gz",
+        singleton = "results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.singleton.truncated.gz",
+        discarded = "results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.discarded.gz",
+        settings = "results/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.settings"
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("adapterremoval", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("adapterremoval", attempt, 24)
+        memory = lambda wildcards, attempt: get_memory_alloc("adapterremoval", attempt, 4),
+        runtime = lambda wildcards, attempt: get_runtime_alloc("adapterremoval", attempt, 24)
     params:
-        params = get_param2("adapterremoval", "params", "--minlength 30 --trimns --trimqualities")
+        get_param2("adapterremoval", "params", "--minlength 30 --trimns --trimqualities")
     log:
         "results/logs/01_fastq/01_trimmed/01_files_trim/{id_sample}/{id_library}/{id_fastq}.log"
     threads: 
@@ -107,8 +105,9 @@ rule adapter_removal_pe:
     message: "--- ADAPTERREMOVAL {input.R1} {input.R2}"            
     shell:
         """
-        AdapterRemoval --threads {threads} {params.params} --file1 {input.R1} \
-                --file2 {input.R2} --basename {{{output.R1}%%_R1.fastq.gz}} --gzip \
+        out={output.fastq};
+        AdapterRemoval --threads {threads} {params} --file1 {input.R1} \
+                --file2 {input.R2} --basename ${{out%%.fastq.gz}} --gzip \
                 --output1 {output.R1} --output2 {output.R2} 2> {log};
         """
 
@@ -118,8 +117,8 @@ rule adapter_removal_collapse:
     Remove adapter and low quality bases at the edges and collapse paired-end reads
     """
     input:
-        R1="results/01_fastq/00_reads/01_files_orig/{id_sample}/{id_library}/{id_fastq}_R1.fastq.gz",
-        R2="results/01_fastq/00_reads/01_files_orig/{id_sample}/{id_library}/{id_fastq}_R2.fastq.gz"
+        R1 = "results/01_fastq/00_reads/01_files_orig/{id_sample}/{id_library}/{id_fastq}_R1.fastq.gz",
+        R2 = "results/01_fastq/00_reads/01_files_orig/{id_sample}/{id_library}/{id_fastq}_R2.fastq.gz"
     output:
         R = "results/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}.fastq.gz",
         trunc = "results/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}_truncated.fastq.gz",
@@ -129,10 +128,10 @@ rule adapter_removal_collapse:
         disc = "results/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}.discarded.gz",
         settingd = "results/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}.settings"
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("adapterremoval", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("adapterremoval", attempt, 24)
+        memory = lambda wildcards, attempt: get_memory_alloc("adapterremoval", attempt, 4),
+        runtime = lambda wildcards, attempt: get_runtime_alloc("adapterremoval", attempt, 24)
     params:
-        params = get_param2("adapterremoval", "params", "--minlength 30 --trimns --trimqualities")
+        get_param2("adapterremoval", "params", "--minlength 30 --trimns --trimqualities")
     log:
         "results/logs/01_fastq/01_trimmed/01_files_trim_collapsed/{id_sample}/{id_library}/{id_fastq}.log"
     threads: 
@@ -142,8 +141,9 @@ rule adapter_removal_collapse:
     message: "--- ADAPTERREMOVAL {input.R1} {input.R2}"            
     shell:
         """
-        AdapterRemoval --threads {threads} {params.params} --file1 {input.R1} \
-                --file2 {input.R2} --basename {{{output.R}%%.fastq.gz}} --gzip \
+        out={output.fastq};
+        AdapterRemoval --threads {threads} {params} --file1 {input.R1} \
+                --file2 {input.R2} --basename ${{out%%.fastq.gz}} --gzip \
                 --output1 {output.R1} --output2 {output.R2} \
                 --outputcollapsed {output.R} \
                 --outputcollapsedtruncated {output.trunc} 2> {log};
@@ -161,15 +161,15 @@ rule mapping_bwa_aln_se:
     """
     input:
         multiext("results/00_reference/{id_genome}/{id_genome}.fasta", ".sa", ".amb", ".ann", ".bwt", ".pac"),
-        ref="results/00_reference/{id_genome}/{id_genome}.fasta",
-        fastq=get_fastq_for_mapping
+        ref = "results/00_reference/{id_genome}/{id_genome}.fasta",
+        fastq = get_fastq_for_mapping
     output:
         "results/01_fastq/02_mapped/01_bwa_aln/{id_sample}/{id_library}/{id_fastq}.{id_genome}.sai"
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24)
+        memory = lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
+        runtime = lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24)
     params:
-        bwa_aln_params = config.get("mapping", {}).get("bwa_aln_params", "-l 1024")
+        config.get("mapping", {}).get("bwa_aln_params", "-l 1024")
     log:
         "results/logs/01_fastq/02_mapped/01_bwa_aln/{id_sample}/{id_library}/{id_fastq}.{id_genome}.log"
     threads: 
@@ -181,7 +181,7 @@ rule mapping_bwa_aln_se:
     message: "--- BWA ALN  {input.fastq}"
     shell:
         """
-        bwa aln {params.bwa_aln_params} -t {threads} {input.ref} -f {output} {input.fastq} 2> {log}
+        bwa aln {params} -t {threads} {input.ref} -f {output} {input.fastq} 2> {log}
         """
 
 rule mapping_bwa_aln_pe:
@@ -190,15 +190,15 @@ rule mapping_bwa_aln_pe:
     """
     input:
         multiext("results/00_reference/{id_genome}/{id_genome}.fasta", ".sa", ".amb", ".ann", ".bwt", ".pac"),
-        ref="results/00_reference/{id_genome}/{id_genome}.fasta",
-        fastq=lambda wildcards: get_fastq_for_mapping_pe(wildcards.id_sample, wildcards.id_library, wildcards.id_fastq, wildcards.id_read)
+        ref = "results/00_reference/{id_genome}/{id_genome}.fasta",
+        fastq = lambda wildcards: get_fastq_for_mapping_pe(wildcards.id_sample, wildcards.id_library, wildcards.id_fastq, wildcards.id_read)
     output:
         "results/01_fastq/02_mapped/01_bwa_aln/{id_sample}/{id_library}/{id_fastq}.{id_genome}_R{id_read}.sai"
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24)
+        memory = lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
+        runtime = lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24)
     params:
-        bwa_aln_params = config.get("mapping", {}).get("bwa_aln_params", "-l 1024") 
+        config.get("mapping", {}).get("bwa_aln_params", "-l 1024") 
     log:
         "results/logs/01_fastq/02_mapped/01_bwa_aln/{id_sample}/{id_library}/{id_fastq}.{id_genome}_R{id_read}.log"
     threads: 
@@ -210,7 +210,7 @@ rule mapping_bwa_aln_pe:
     message: "--- BWA ALN  {input.fastq}"
     shell:
         """
-        bwa aln {params.bwa_aln_params} -t {threads} {input.ref} -f {output} {input.fastq} 2> {log}
+        bwa aln {params} -t {threads} {input.ref} -f {output} {input.fastq} 2> {log}
         """
 
 
