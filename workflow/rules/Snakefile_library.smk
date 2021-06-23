@@ -126,8 +126,8 @@ rule mapDamage_stats:
     Run mapDamage to quantify the deamination pattern
     """
     input:
-        ref="results/00_reference/{id_genome}/{id_genome}.fasta",
-        bam=lambda wildcards: get_mapDamage_bam(wildcards.id_sample, wildcards.id_library, wildcards.id_genome)
+        ref = "results/00_reference/{id_genome}/{id_genome}.fasta",
+        bam = get_mapDamage_bam
     output:
         #directory("{folder}/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}_results_mapDamage"),
         deamination = report("{folder}/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}_results_mapDamage/Fragmisincorporation_plot.pdf", category="Damage pattern"),
@@ -136,8 +136,8 @@ rule mapDamage_stats:
         "{folder}/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}_stats.log"
     threads: 1
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("mapdamage", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("mapdamage", attempt, 24)
+        memory = lambda wildcards, attempt: get_memory_alloc("mapdamage", attempt, 4),
+        runtime = lambda wildcards, attempt: get_runtime_alloc("mapdamage", attempt, 24)
     params:
         mapDamage_params = config.get("mapdamage", {}).get("params", "") 
     conda:
@@ -156,7 +156,7 @@ rule mapDamage_rescale:
     """
     input:
         ref = "results/00_reference/{id_genome}/{id_genome}.fasta",
-        bam = lambda wildcards: get_mapDamage_bam(wildcards.id_sample, wildcards.id_library, wildcards.genome),
+        bam = get_mapDamage_bam,
         deamination = "{folder}/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}_results_mapDamage/Fragmisincorporation_plot.pdf"
     output:
         bam = "{folder}/02_rescaled/01_mapDamage/{id_sample}/{id_library}.{id_genome}.bam"
@@ -184,7 +184,7 @@ rule get_final_library:
 	Get the final bam file of the library part
 	"""
 	input:
-		lambda wildcards: get_final_bam_library(wildcards.id_sample, wildcards.id_library, wildcards.id_genome)
+		get_final_bam_library
 	output:
 		"{folder}/03_final_library/01_bam/{id_sample}/{id_library}.{id_genome}.bam"
 	message: "--- GET FINAL BAM {input} (LIBRARY LEVEL)"

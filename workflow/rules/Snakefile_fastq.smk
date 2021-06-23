@@ -191,7 +191,7 @@ rule mapping_bwa_aln_pe:
     input:
         multiext("results/00_reference/{id_genome}/{id_genome}.fasta", ".sa", ".amb", ".ann", ".bwt", ".pac"),
         ref = "results/00_reference/{id_genome}/{id_genome}.fasta",
-        fastq = lambda wildcards: get_fastq_for_mapping_pe(wildcards.id_sample, wildcards.id_library, wildcards.id_fastq, wildcards.id_read)
+        fastq = get_fastq_for_mapping_pe
     output:
         "{folder}/02_mapped/01_bwa_aln/{id_sample}/{id_library}/{id_fastq}.{id_genome}_R{id_read}.sai"
     resources:
@@ -235,7 +235,7 @@ rule mapping_bwa_samse:
         PL=lambda wildcards: get_from_sample_file("PL", wildcards.id_sample, wildcards.id_library, wildcards.id_fastq)[0],
         bwa_samse_params = config.get("mapping", {}).get("bwa_samse_params", "-n 3")
     log:
-        "{folder}/02_mapped/01_bwa_aln/{id_sample}/{id_library}/{id_fastq}.{id_genome}.log"
+        "{folder}/02_mapped/02_bwa_samse/{id_sample}/{id_library}/{id_fastq}.{id_genome}.log"
     threads: 1
     conda:
     	"../envs/bwa.yaml"
@@ -367,7 +367,7 @@ rule samtools_sort:
     Sort bam file with samtools
     """
     input:
-        lambda wildcards: get_bam_for_sorting(wildcards.id_sample, wildcards.id_library, wildcards.id_fastq, wildcards.id_genome)
+        get_bam_for_sorting
     output:
         "{folder}/02_mapped/03_bam_sort/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"
     resources:

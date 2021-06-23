@@ -162,7 +162,7 @@ rule write_summary_stats_library:
     output: 
        fastq_stats = report("results/02_library/04_stats/02_summary/library_stats.{id_genome}.csv", caption="../report/library_stats.rst", category="Mapping statistics table")
     log: 
-        "results/01_fastq/05_stats/02_summary/fastq_stats.{id_genome}.log"
+        "results/02_library/04_stats/02_summary/library_stats.{id_genome}.log"
     message: "--- WRITE LIBRARY SUMMARY STATISTICS OF {wildcards.id_genome}"
     run:
         import pandas as pd
@@ -207,7 +207,7 @@ rule write_summary_stats_sample:
     output: 
         sample_stats = report("results/03_sample/04_stats/01_summary/sample_stats.{id_genome}.csv", caption="../report/sample_stats.rst", category="Mapping statistics table")
     log: 
-        "results/01_fastq/05_stats/02_summary/fastq_stats.{id_genome}.log"
+        "results/03_sample/04_stats/01_summary/sample_stats.{id_genome}.log"
     message: "--- WRITE SAMPLE SUMMARY STATISTICS OF {wildcards.id_genome}"
     run:
         import pandas as pd

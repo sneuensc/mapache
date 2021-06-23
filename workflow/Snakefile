@@ -140,7 +140,7 @@ include : "rules/Snakefile_library.smk"
 include : "rules/Snakefile_sample.smk"
 ##########################################################################################
 ##########################################################################################
-localrules: all, dag, mapping, stats, check_software_modules ## executed locally on a cluster
+localrules: all, dag, mapping, stats ## executed locally on a cluster
 
 ## rules all
 rule all:
@@ -221,17 +221,17 @@ onerror:
 ##########################################################################################
 
 
-rule check_software_modules:
-    """
-    Checks if software modules are available
-    """
-    output: 
-        touch("logs/check_software_modules.done")
-    params: 
-        modules=RequiredModules()
-    message: "--- Loading required modules"
-    threads: 1
-    shell: "{params.modules}"
+# rule check_software_modules:
+#     """
+#     Checks if software modules are available
+#     """
+#     output: 
+#         touch("logs/check_software_modules.done")
+#     params: 
+#         modules=RequiredModules()
+#     message: "--- Loading required modules"
+#     threads: 1
+#     shell: "{params.modules}"
 
 
 

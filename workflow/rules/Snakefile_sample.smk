@@ -126,23 +126,24 @@ rule realign:
         fi
         """
 
-            
+
 rule samtools_calmd:
     """
     Recompute the md flag.
     """
     input:
-        ref="results/00_reference/{id_genome}/{id_genome}.fasta",
-        bam=lambda wildcards: get_md_flag_bam(wildcards.id_sample, wildcards.id_genome)
+        ref = "results/00_reference/{id_genome}/{id_genome}.fasta",
+        #bam=lambda wildcards: get_md_flag_bam(wildcards.id_sample, wildcards.id_genome)
+        bam = get_md_flag_bam
     output:
-        "{folder}/02_md_flag/01_md_flag/{id_sample}.{id_genome}.bam"
+        "results/03_sample/02_md_flag/01_md_flag/{id_sample}.{id_genome}.bam"
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("calmd", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("calmd", attempt, 24)
+        memory = lambda wildcards, attempt: get_memory_alloc("calmd", attempt, 4),
+        runtime = lambda wildcards, attempt: get_runtime_alloc("calmd", attempt, 24)
     threads: 
     	get_threads("calmd", 4)
     log:
-        "{folder}/02_md_flag/01_md_flag/{id_sample}.{id_genome}.log"
+        "results/03_sample/02_md_flag/01_md_flag/{id_sample}.{id_genome}.log"
     conda:
     	"../envs/samtools.yaml"
     envmodules:
@@ -152,21 +153,22 @@ rule samtools_calmd:
         """
         samtools calmd --threads {threads} {input.bam} {input.ref} 2> {log} | samtools view -bS - > {output}
         """
-        
-        
+
+
 rule get_final_bam:
     """
     Get the final bam files 
     """
     input:
-        lambda wildcards: get_final_bam(wildcards.id_sample, wildcards.id_genome)
+        get_final_bam
     output:
         "{folder}/03_final_sample/01_bam/{id_sample}.{id_genome}.bam"
     threads: 1
     message: "--- SIMLINKK FINAL BAM"
     run:
         symlink_rev(input, output)
-        
+
+
 rule get_final_bam_low_qual:
     """
     Get the final bam files 
@@ -179,7 +181,8 @@ rule get_final_bam_low_qual:
     message: "--- SIMLINKK FINAL LOW_QUAL BAM"
     run:
         symlink_rev(input, output)
-        
+
+
 rule move_final_bam_duplicate:
     """
     Get the final bam files
