@@ -122,7 +122,7 @@ rule samtools_index_bam:
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 24)
     threads: 1
     log:
-        "r{folder}/samtools_bam_{file}.log"
+        "{folder}/samtools_bam_{file}.log"
     conda:
     	"../envs/samtools.yaml"
     envmodules:

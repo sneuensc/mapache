@@ -289,7 +289,7 @@ rule plot_depth_statistics:
         sample_depth = "{folder}/depth_stats_{id_genome}.csv"
     output:
         plot_5_AvgReadDepth = report("{folder}/5_AvgReadDepth.{id_genome}.svg", caption="../report/5_AvgReadDepth.rst", category="Mapping statistics plots"),
-        plot_6_AvgReadDepth_MT = report("r{folder}/6_AvgReadDepth_MT.{id_genome}.svg", caption="../report/6_AvgReadDepth_MT.rst", category="Mapping statistics plots"),
+        plot_6_AvgReadDepth_MT = report("{folder}/6_AvgReadDepth_MT.{id_genome}.svg", caption="../report/6_AvgReadDepth_MT.rst", category="Mapping statistics plots"),
         plot_7_Sex = report("{folder}/7_Sex.{id_genome}.svg", caption="../report/7_Sex.rst", category="Mapping statistics plots")
     threads: 1
     log:
