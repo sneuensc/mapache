@@ -11,16 +11,16 @@ rule merge_bam_library2sample:
     input:
     	mapped=lambda wildcards: [("results/02_library/03_final_library/01_bam/{SM}/{LB}.{genome}.bam").
     		format(LB=LB, SM=wildcards.id_sample, genome=wildcards.id_genome) 
-    		for LB in samples[wildcards.id_sample].keys()]
+    		for LB in list(samples[wildcards.id_sample])]
     output:
-        "results/03_sample/00_merged_library/01_bam/{id_sample}.{id_genome}.bam"
+        "{folder}/00_merged_library/01_bam/{id_sample}.{id_genome}.bam"
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24)
     threads: 
     	get_threads("merging", 4)
     log:
-        "results/logs/03_sample/00_merged_library/01_bam/{id_sample}.{id_genome}.log"
+        "{folder}/00_merged_library/01_bam/{id_sample}.{id_genome}.log"
     conda:
     	"../envs/samtools.yaml"
     envmodules:
@@ -37,16 +37,16 @@ rule merge_bam_library2sample_low_qual:
     input:
     	lambda wildcards: [("results/02_library/03_final_library/01_bam_low_qual/{SM}/{LB}.{genome}.bam").
     		format(LB=LB, SM=wildcards.id_sample, genome=wildcards.id_genome) 
-    		for LB in samples[wildcards.id_sample].keys()]
+    		for LB in list(samples[wildcards.id_sample])]
     output:
-        "results/03_sample/00_merged_library/01_bam_low_qual/{id_sample}.{id_genome}.bam"
+        "{folder}/00_merged_library/01_bam_low_qual/{id_sample}.{id_genome}.bam"
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24)
     threads: 
     	get_threads("merging", 4)
     log:
-        "results/logs/03_sample/00_merged_library/01_bam_low_qual/{id_sample}.{id_genome}.log"
+        "{folder}/00_merged_library/01_bam_low_qual/{id_sample}.{id_genome}.log"
     conda:
     	"../envs/samtools.yaml"
     envmodules:
@@ -63,14 +63,14 @@ rule merge_bam_library2sample_duplicates:
     input:
         low_qual=lambda wildcards: get_bams_of_sample_low_cov("library_rmdup", "_duplicates.bam", wildcards.id_sample, wildcards.id_genome)
     output:
-        "results/03_sample/00_merged_library/01_bam_duplicate/{id_sample}.{id_genome}.bam"
+        "{folder}/00_merged_library/01_bam_duplicate/{id_sample}.{id_genome}.bam"
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24)
     threads: 
     	get_threads("merging", 4)
     log:
-        "results/logs/03_sample/00_merged_library/01_bam_duplicate/{id_sample}.{id_genome}.log"
+        "{folder}/00_merged_library/01_bam_duplicate/{id_sample}.{id_genome}.log"
     conda:
     	"../envs/samtools.yaml"
     envmodules:
@@ -88,12 +88,12 @@ rule realign:
         ref="results/00_reference/{id_genome}/{id_genome}.fasta",
         fai="results/00_reference/{id_genome}/{id_genome}.fasta.fai",
         dict="results/00_reference/{id_genome}/{id_genome}.dict",
-        bam="results/03_sample/00_merged_library/01_bam/{id_sample}.{id_genome}.bam",
-        bai="results/03_sample/00_merged_library/01_bam/{id_sample}.{id_genome}.bai"
+        bam="{folder}/00_merged_library/01_bam/{id_sample}.{id_genome}.bam",
+        bai="{folder}/00_merged_library/01_bam/{id_sample}.{id_genome}.bai"
     output:
-        bam="results/03_sample/01_realigned/01_realign/{id_sample}.{id_genome}.bam",
-        intervals="results/03_sample/01_realigned/01_realign/{id_sample}.{id_genome}.intervals",
-        bai="results/03_sample/01_realigned/01_realign/{id_sample}.{id_genome}.bai"
+        bam="{folder}/01_realigned/01_realign/{id_sample}.{id_genome}.bam",
+        intervals="{folder}/01_realigned/01_realign/{id_sample}.{id_genome}.intervals",
+        bai="{folder}/01_realigned/01_realign/{id_sample}.{id_genome}.bai"
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("realign", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("realign", attempt, 24)
@@ -102,7 +102,7 @@ rule realign:
     params:
     	GATK = config.get("SOFTWARE", {}).get("gatk3_jar", "GenomeAnalysisTK.jar")  
     log:
-        "results/logs/03_sample/01_realigned/01_realign/{id_sample}.{id_genome}.log"
+        "{folder}/01_realigned/01_realign/{id_sample}.{id_genome}.log"
     conda:
     	"../envs/gatk3.yaml"
     envmodules:
@@ -126,23 +126,24 @@ rule realign:
         fi
         """
 
-            
+
 rule samtools_calmd:
     """
     Recompute the md flag.
     """
     input:
-        ref="results/00_reference/{id_genome}/{id_genome}.fasta",
-        bam=lambda wildcards: get_md_flag_bam(wildcards.id_sample, wildcards.id_genome)
+        ref = "results/00_reference/{id_genome}/{id_genome}.fasta",
+        #bam=lambda wildcards: get_md_flag_bam(wildcards.id_sample, wildcards.id_genome)
+        bam = get_md_flag_bam
     output:
         "results/03_sample/02_md_flag/01_md_flag/{id_sample}.{id_genome}.bam"
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("calmd", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("calmd", attempt, 24)
+        memory = lambda wildcards, attempt: get_memory_alloc("calmd", attempt, 4),
+        runtime = lambda wildcards, attempt: get_runtime_alloc("calmd", attempt, 24)
     threads: 
     	get_threads("calmd", 4)
     log:
-        "results/logs/03_sample/02_md_flag/01_md_flag/{id_sample}.{id_genome}.log"
+        "results/03_sample/02_md_flag/01_md_flag/{id_sample}.{id_genome}.log"
     conda:
     	"../envs/samtools.yaml"
     envmodules:
@@ -152,42 +153,44 @@ rule samtools_calmd:
         """
         samtools calmd --threads {threads} {input.bam} {input.ref} 2> {log} | samtools view -bS - > {output}
         """
-        
-        
+
+
 rule get_final_bam:
     """
     Get the final bam files 
     """
     input:
-        lambda wildcards: get_final_bam(wildcards.id_sample, wildcards.id_genome)
+        get_final_bam
     output:
-        "results/03_sample/03_final_sample/01_bam/{id_sample}.{id_genome}.bam"
+        "{folder}/03_final_sample/01_bam/{id_sample}.{id_genome}.bam"
     threads: 1
     message: "--- SIMLINKK FINAL BAM"
     run:
         symlink_rev(input, output)
-        
+
+
 rule get_final_bam_low_qual:
     """
     Get the final bam files 
     """
     input:
-        "results/03_sample/00_merged_library/01_bam_low_qual/{id_sample}.{id_genome}.bam"
+        "{folder}/00_merged_library/01_bam_low_qual/{id_sample}.{id_genome}.bam"
     output:
-        "results/03_sample/03_final_sample/01_bam_low_qual/{id_sample}.{id_genome}.bam"
+        "{folder}/03_final_sample/01_bam_low_qual/{id_sample}.{id_genome}.bam"
     threads: 1
     message: "--- SIMLINKK FINAL LOW_QUAL BAM"
     run:
         symlink_rev(input, output)
-        
+
+
 rule move_final_bam_duplicate:
     """
     Get the final bam files
     """
     input:
-        "results/03_sample/00_merged_library/01_bam_duplicate/{id_sample}.{id_genome}.bam"
+        "{folder}/00_merged_library/01_bam_duplicate/{id_sample}.{id_genome}.bam"
     output:
-        "results/03_sample/03_final_sample/01_bam_duplicate/{id_sample}.{id_genome}.bam"
+        "{folder}/03_final_sample/01_bam_duplicate/{id_sample}.{id_genome}.bam"
     threads: 1
     message: "--- SIMLINKK FINAL DUPLICATE BAM"
     run:

@@ -3,7 +3,7 @@
 import os
 
 ## get the reference
-fasta=snakemake.params.fasta
+fasta = snakemake.input.orig
 filename, file_extension = os.path.splitext(fasta)
 orig_dir = os.path.abspath(os.path.dirname(filename))
 orig_prefix = os.path.basename(filename)
@@ -11,6 +11,7 @@ orig_prefix = os.path.basename(filename)
 ## get the new reference folder
 new_prefix = snakemake.wildcards.id_genome
 new_dir=os.path.abspath('results/00_reference/' + new_prefix)
+
 
 ## check if the indexes are present
 ext = [".sa", ".amb", ".ann", ".bwt", ".pac"] 
@@ -25,4 +26,4 @@ elif all([os.path.isfile(f) for f in files2]):  ## foo.fa.ext
 		path_to = os.path.join(new_dir, os.path.basename(item).replace(orig_prefix + file_extension, new_prefix + '.fasta'))
 		os.symlink(item, path_to)
 else:                                           ## create the index
-	shell("bwa index {snakemake.params.bwa_index_params} {snakemake.input.fasta} 2> {snakemake.log}")
+	shell("bwa index {snakemake.params[0]} {snakemake.input.fasta} 2> {snakemake.log}")

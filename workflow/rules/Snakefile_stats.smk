@@ -9,12 +9,12 @@ rule fastqc:
     Quality control of fastq file by fastqc (SE or R1)
     """
     input:
-        "results/{folder}/{file}.fastq.gz"
+        "{folder}/{file}.fastq.gz"
     output:
-        html="results/{folder}/{file}_fastqc.html",
-        zip="results/{folder}/{file}_fastqc.zip"
+        html="{folder}/{file}_fastqc.html",
+        zip="{folder}/{file}_fastqc.zip"
     log:
-        "results/logs/{folder}/{file}_fastqc.log"
+        "{folder}/{file}_fastqc.log"
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("fastqc_mem", attempt, 2),
         runtime=lambda wildcards, attempt: get_runtime_alloc("fastqc_time", attempt, 1)
@@ -32,15 +32,15 @@ rule samtools_flagstat:
     Compute samtools falgstat on bam file
     """
     input:
-        bam="results/{folder}/{file}.bam"
+        bam="{folder}/{file}.bam"
     output:
-        "results/{folder}/{file}_flagstat.txt"
+        "{folder}/{file}_flagstat.txt"
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("samtools_flagstat_mem", attempt, 2),
         runtime=lambda wildcards, attempt: get_runtime_alloc("samtools_flagstat_time", attempt, 1)
     params: ""
     log:
-        "results/logs/{folder}/{file}_flagstat.log"
+        "{folder}/{file}_flagstat.log"
     conda:
         "../envs/samtools.yaml"
     envmodules:
@@ -58,14 +58,14 @@ rule multiqc_fastqc:
     input:
         fastq = get_fastqc_for_multiqc
     output:
-        #html = report("results/{folder}/multiqc_fastqc_{group}.html", category=" Quality control"),
-        html = "results/{folder}/multiqc_fastqc_{group}.html",
-        txt = "results/{folder}/multiqc_fastqc_{group}_data/multiqc_fastqc.txt"
+        #html = report("{folder}/multiqc_fastqc_{group}.html", category=" Quality control"),
+        html = "{folder}/multiqc_fastqc_{group}.html",
+        txt = "{folder}/multiqc_fastqc_{group}_data/multiqc_fastqc.txt"
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("multiqc_mem", attempt, 2),
         runtime=lambda wildcards, attempt: get_runtime_alloc("multiqc_time", attempt, 1)
     log:
-        "results/logs/{folder}/multiqc_fastqc_{group}.log"
+        "{folder}/multiqc_fastqc_{group}.log"
     conda:
         "../envs/multiqc.yaml"
     message: "--- MULTIQC fastqc_{wildcards.group}: {input}"
@@ -83,13 +83,13 @@ rule multiqc_flagstat:
     input:
         get_flagstat_for_multiqc
     output:
-        html = "results/{folder1}/{folder2}/{folder3}/multiqc_flagstat_{group}.{id_genome}.html",
-        txt = "results/{folder1}/{folder2}/{folder3}/multiqc_flagstat_{group}.{id_genome}_data/multiqc_samtools_flagstat.txt"
+        html = "{folder}/multiqc_flagstat_{group}.{id_genome}.html",
+        txt = "{folder}/multiqc_flagstat_{group}.{id_genome}_data/multiqc_samtools_flagstat.txt"
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("multiqc_mem", attempt, 2),
         runtime=lambda wildcards, attempt: get_runtime_alloc("multiqc_time", attempt, 1)
     log:
-        "results/logs/{folder1}/{folder2}/{folder3}/multiqc_flagstat_{group}.{id_genome}.log"
+        "{folder}/multiqc_flagstat_{group}.{id_genome}.log"
     conda:
         "../envs/multiqc.yaml"
     message: "--- MULTIQC flagstat_{wildcards.group}: {input}"
@@ -105,13 +105,13 @@ rule write_summary_stats_fastq:
     Combine fastq statistics across files and write them to file
     """
     input:
-        orig = "results/01_fastq/05_stats/01_multiqc/multiqc_fastqc_orig_data/multiqc_fastqc.txt",
-        trim = "results/01_fastq/05_stats/01_multiqc/multiqc_fastqc_trim_data/multiqc_fastqc.txt",
-        final = "results/01_fastq/05_stats/01_multiqc/multiqc_flagstat_final.{id_genome}_data/multiqc_samtools_flagstat.txt"
+        orig = "{folder}/01_multiqc/multiqc_fastqc_orig_data/multiqc_fastqc.txt",
+        trim = "{folder}/01_multiqc/multiqc_fastqc_trim_data/multiqc_fastqc.txt",
+        final = "{folder}/01_multiqc/multiqc_flagstat_final.{id_genome}_data/multiqc_samtools_flagstat.txt"
     output: 
-        fastq_stats = report("results/01_fastq/05_stats/02_summary/fastq_stats.{id_genome}.csv", caption="../report/fastq_stats.rst", category="Mapping statistics table")
+        fastq_stats = report("{folder}/02_summary/fastq_stats.{id_genome}.csv", caption="../report/fastq_stats.rst", category="Mapping statistics table")
     log: 
-        "results/logs/01_fastq/05_stats/02_summary/fastq_stats.{id_genome}.log"
+        "{folder}/02_summary/fastq_stats.{id_genome}.log"
     message: "--- WRITE FASTQ SUMMARY STATISTICS OF {wildcards.id_genome}"
     run:
         import pandas as pd
@@ -162,7 +162,7 @@ rule write_summary_stats_library:
     output: 
        fastq_stats = report("results/02_library/04_stats/02_summary/library_stats.{id_genome}.csv", caption="../report/library_stats.rst", category="Mapping statistics table")
     log: 
-        "results/logs/01_fastq/05_stats/02_summary/fastq_stats.{id_genome}.log"
+        "results/02_library/04_stats/02_summary/library_stats.{id_genome}.log"
     message: "--- WRITE LIBRARY SUMMARY STATISTICS OF {wildcards.id_genome}"
     run:
         import pandas as pd
@@ -207,7 +207,7 @@ rule write_summary_stats_sample:
     output: 
         sample_stats = report("results/03_sample/04_stats/01_summary/sample_stats.{id_genome}.csv", caption="../report/sample_stats.rst", category="Mapping statistics table")
     log: 
-        "results/logs/01_fastq/05_stats/02_summary/fastq_stats.{id_genome}.log"
+        "results/03_sample/04_stats/01_summary/sample_stats.{id_genome}.log"
     message: "--- WRITE SAMPLE SUMMARY STATISTICS OF {wildcards.id_genome}"
     run:
         import pandas as pd
@@ -240,7 +240,7 @@ rule plot_summary_statistics:
         plot_3_endogenous = report("results/03_sample/04_stats/01_summary/3_endogenous.{id_genome}.png", caption="../report/3_endogenous.rst", category="Mapping statistics plots"),        
         plot_4_duplication = report("results/03_sample/04_stats/01_summary/4_duplication.{id_genome}.png", caption="../report/4_duplication.rst", category="Mapping statistics plots")      
     log: 
-        "results/logs/03_sample/04_stats/01_summary/plot_summary_statistics_{id_genome}.log"
+        "results/03_sample/04_stats/01_summary/plot_summary_statistics_{id_genome}.log"
     conda:
     	"../envs/r.yaml"
     envmodules:
@@ -257,14 +257,14 @@ rule depth_compute:
     Compute the read depth per chromosome 
     """
     input:
-        "results/{folder}/{file}.{id_genome}.bam"
+        "{folder}/{file}.{id_genome}.bam"
     output:
-        "results/{folder}/{file}.{id_genome}_depth.txt"
+        "{folder}/{file}.{id_genome}_depth.txt"
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("mem", attempt, 2),
         runtime=lambda wildcards, attempt: get_runtime_alloc("time", attempt, 1)
     log:
-        "results/logs/{folder}/{file}.{id_genome}.log"
+        "{folder}/{file}.{id_genome}.log"
     threads: 1
     message: "--- COMPUTE DEPTH OF {input}"
     shell:
@@ -275,10 +275,10 @@ rule concat_depth_statistics:
     input:
         get_depth_files
     output:
-        report("results/{folder}/depth_stats_{id_genome}.csv", caption="../report/sample_depth.rst", category="Mapping statistics table")
+        report("{folder}/depth_stats_{id_genome}.csv", caption="../report/sample_depth.rst", category="Mapping statistics table")
     threads: 1
     log:
-        "results/logs/{folder}/depth_stats_{id_genome}.log"
+        "{folder}/depth_stats_{id_genome}.log"
     message: "--- COMBINE DETH STATISTICS TO {output} ---"
     script:
     	"../scripts/depth_concat.py"
@@ -286,14 +286,14 @@ rule concat_depth_statistics:
 
 rule plot_depth_statistics:
     input:
-        sample_depth = "results/{folder}/depth_stats_{id_genome}.csv"
+        sample_depth = "{folder}/depth_stats_{id_genome}.csv"
     output:
-        plot_5_AvgReadDepth = report("results/{folder}/5_AvgReadDepth.{id_genome}.svg", caption="../report/5_AvgReadDepth.rst", category="Mapping statistics plots"),
-        plot_6_AvgReadDepth_MT = report("results/{folder}/6_AvgReadDepth_MT.{id_genome}.svg", caption="../report/6_AvgReadDepth_MT.rst", category="Mapping statistics plots"),
-        plot_7_Sex = report("results/{folder}/7_Sex.{id_genome}.svg", caption="../report/7_Sex.rst", category="Mapping statistics plots")
+        plot_5_AvgReadDepth = report("{folder}/5_AvgReadDepth.{id_genome}.svg", caption="../report/5_AvgReadDepth.rst", category="Mapping statistics plots"),
+        plot_6_AvgReadDepth_MT = report("{folder}/6_AvgReadDepth_MT.{id_genome}.svg", caption="../report/6_AvgReadDepth_MT.rst", category="Mapping statistics plots"),
+        plot_7_Sex = report("{folder}/7_Sex.{id_genome}.svg", caption="../report/7_Sex.rst", category="Mapping statistics plots")
     threads: 1
     log:
-        "results/logs/{folder}/depth_stats_plot.{id_genome}.csv.log"
+        "{folder}/depth_stats_plot.{id_genome}.csv.log"
     conda:
     	"../envs/r.yaml"
     envmodules:

@@ -3,7 +3,7 @@
 import os
 
 ## get the reference
-fasta=snakemake.params.fasta
+fasta=snakemake.input.orig
 filename, file_extension = os.path.splitext(fasta)
 orig_dir = os.path.abspath(os.path.dirname(filename))
 orig_prefix = os.path.basename(filename)
@@ -25,4 +25,4 @@ elif all([os.path.isfile(f) for f in files2]):  ## foo.fa.ext
 		path_to = os.path.join(new_dir, os.path.basename(item).replace(orig_prefix + file_extension, new_prefix + '.fasta'))
 		os.symlink(item, path_to)
 else:                                           ## create the index
-	shell("samtools faidx {snakemake.params.samtools_index_params}  {snakemake.input.fasta} > {snakemake.log}")
+	shell("samtools faidx {snakemake.params[0]}  {snakemake.input.fasta} > {snakemake.log}")
