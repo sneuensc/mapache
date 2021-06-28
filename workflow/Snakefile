@@ -45,6 +45,7 @@ module_r              = get_param2("ENVMODULES", "r", "")
 module_adapterremoval = get_param2("ENVMODULES", "adapterremoval", "")
 module_mapdamage      = get_param2("ENVMODULES", "mapdamage", "")
 module_multiqc        = get_param2("ENVMODULES", "multiqc", "")
+module_bedtools       = get_param2("ENVMODULES", "bedtools", "")
 
         
 ##########################################################################################
@@ -134,13 +135,19 @@ all_libraries = db.groupby(['LB','SM'])['ID'].agg(['count']).reset_index()
 
 ##########################################################################################
 include : "rules/Snakefile_index.smk"
-include : "rules/Snakefile_stats.smk"
+include : "rules/Snakefile_stats_diana.smk"
 include : "rules/Snakefile_fastq.smk"
 include : "rules/Snakefile_library.smk"
 include : "rules/Snakefile_sample.smk"
 ##########################################################################################
 ##########################################################################################
 localrules: all, dag, mapping, stats ## executed locally on a cluster
+
+
+input_stats = ["results/04_stats/03_final_tables/SM.csv",
+        "results/04_stats/03_final_tables/LB.csv",
+        "results/04_stats/03_final_tables/FASTQ.csv"]
+
 
 ## rules all
 rule all:
@@ -154,17 +161,18 @@ rule all:
         expand("results/03_sample/03_final_sample/01_bam_low_qual/{id_sample}.{id_genome}.bam", id_sample=list(samples), id_genome=GENOME),
         expand("results/03_sample/03_final_sample/01_bam_duplicate/{id_sample}.{id_genome}.bam", id_sample=list(samples), id_genome=GENOME) if extract_duplicates else [],
         ## summary statistics
-        expand("results/03_sample/04_stats/01_summary/sample_stats.{id_genome}.csv", id_genome=GENOME),
-        expand("results/03_sample/04_stats/01_summary/1_nb_reads.{id_genome}.png", id_genome=GENOME),
-        expand("results/03_sample/04_stats/01_summary/2_mapped.{id_genome}.png", id_genome=GENOME),
-        expand("results/03_sample/04_stats/01_summary/3_endogenous.{id_genome}.png", id_genome=GENOME),
-        expand("results/03_sample/04_stats/01_summary/4_duplication.{id_genome}.png", id_genome=GENOME),
+        #expand("results/03_sample/04_stats/01_summary/sample_stats.{id_genome}.csv", id_genome=GENOME),
+        #expand("results/03_sample/04_stats/01_summary/1_nb_reads.{id_genome}.png", id_genome=GENOME),
+        #expand("results/03_sample/04_stats/01_summary/2_mapped.{id_genome}.png", id_genome=GENOME),
+        #expand("results/03_sample/04_stats/01_summary/3_endogenous.{id_genome}.png", id_genome=GENOME),
+        #expand("results/03_sample/04_stats/01_summary/4_duplication.{id_genome}.png", id_genome=GENOME),
         ## extended statistics at library level
         #expand("results/02_library/03_final_library/01_bam/{id_sample}/{id_library}.{id_genome}_depth.txt", id_sample=list(samples), id_genome=GENOME) if str2bool(get_param3("stats", "library", "depth", "False")) else [],
         ## extended statistics at sample level
-        expand("results/03_sample/04_stats/01_summary/5_AvgReadDepth.{id_genome}.svg", id_genome=GENOME) if str2bool(get_param3("stats", "sample", "depth", "False")) else [],
-        expand("results/03_sample/04_stats/01_summary/6_AvgReadDepth_MT.{id_genome}.svg", id_genome=GENOME) if str2bool(get_param3("stats", "sample", "depth", "False")) else [],
-        expand("results/03_sample/04_stats/01_summary/7_Sex.{id_genome}.svg", id_genome=GENOME) if str2bool(get_param3("stats", "sample", "depth", "False")) else []
+        #expand("results/03_sample/04_stats/01_summary/5_AvgReadDepth.{id_genome}.svg", id_genome=GENOME) if str2bool(get_param3("stats", "sample", "depth", "False")) else [],
+        #expand("results/03_sample/04_stats/01_summary/6_AvgReadDepth_MT.{id_genome}.svg", id_genome=GENOME) if str2bool(get_param3("stats", "sample", "depth", "False")) else [],
+        #expand("results/03_sample/04_stats/01_summary/7_Sex.{id_genome}.svg", id_genome=GENOME) if str2bool(get_param3("stats", "sample", "depth", "False")) else [],
+        input_stats
 
         #expand("results/03_sample/04_stats/01_summary/depth_stats_{id_genome}.csv", id_genome=GENOME)
        # expand("results/03_sample/03_final_sample/01_bam/{id_sample}.{id_genome}_depth.txt", id_sample=list(samples), id_genome=GENOME) if str2bool(get_param3("stats", "sample", "depth", "False")) else []

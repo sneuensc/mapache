@@ -1,32 +1,6 @@
 #-----------------------------------------------------------------------------#
 import pandas as pd
-configfile: "config/config.yaml"
 
-genomes = list(config["GENOME"].keys())
-
-input_data = pd.read_csv("samples.txt", sep = "\s+")
-samples = list(input_data.SM.unique())
-
-sm_lb_id = {
-    sample: {
-        lib: {
-            fastq for fastq in input_data[input_data.SM == sample][input_data.LB == lib]["ID"]
-        }
-        for lib in input_data[input_data.SM == sample]["LB"]
-    }
-    for sample in samples
-}
-
-
-#-----------------------------------------------------------------------------#
-
-rule all_stats_by_level:
-    input:
-        ["results/04_stats/03_final_tables/SM.csv",
-        "results/04_stats/03_final_tables/LB.csv",
-        "results/04_stats/03_final_tables/FASTQ.csv"]
-
-#-----------------------------------------------------------------------------#
 
 
 #-----------------------------------------------------------------------------#
@@ -42,14 +16,14 @@ rule fastqc:
         html="results/04_stats/01_sparse_stats/{file}_fastqc.html",
         zip="results/04_stats/01_sparse_stats/{file}_fastqc.zip"
     log:
-        "results/logs/04_stats/01_sparse_stats/{file}_fastqc.log"
-    # resources:
-    #     memory=lambda wildcards, attempt: get_memory_alloc("fastqc_mem", attempt, 2),
-    #     runtime=lambda wildcards, attempt: get_runtime_alloc("fastqc_time", attempt, 1)
-    # conda:
-    # 	"../envs/fastqc.yaml"
-    # envmodules:
-    # 	module_fastqc
+        "results/04_stats/01_sparse_stats/{file}_fastqc.log"
+    resources:
+        memory=lambda wildcards, attempt: get_memory_alloc("fastqc_mem", attempt, 2),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("fastqc_time", attempt, 1)
+    conda:
+    	"../envs/fastqc.yaml"
+    envmodules:
+    	module_fastqc
     message: "--- FASTQC {input}"
     shell:
         "fastqc --quiet --outdir $(dirname {output.html}) {input} 2> {log}"
@@ -62,15 +36,15 @@ rule samtools_flagstat:
         bam="results/{file}.bam"
     output:
         "results/04_stats/01_sparse_stats/{file}_flagstat.txt"
-    # resources:
-    #     memory=lambda wildcards, attempt: get_memory_alloc("samtools_flagstat_mem", attempt, 2),
-    #     runtime=lambda wildcards, attempt: get_runtime_alloc("samtools_flagstat_time", attempt, 1)
+    resources:
+        memory=lambda wildcards, attempt: get_memory_alloc("samtools_flagstat_mem", attempt, 2),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("samtools_flagstat_time", attempt, 1)
     log:
-        "results/logs/04_stats/01_sparse_stats/{file}_flagstat.log"
-    # conda:
-    #     "../envs/samtools.yaml"
-    # envmodules:
-    #     module_samtools
+        "results/04_stats/01_sparse_stats/{file}_flagstat.log"
+    conda:
+        "../envs/samtools.yaml"
+    envmodules:
+        module_samtools
     message: "--- SAMTOOLS FLAGSTAT {input}"        
     shell:
         "samtools flagstat --threads {threads} {input} > {output} 2> {log};"
@@ -81,19 +55,21 @@ rule multiqc_fastqc:
     """
     input:
         # {folder} is "01_fastq/00_reads/01_files_orig" or "01_fastq/01_trimmed/01_files_trim"
-        lambda wildcards: [f"results/04_stats/01_sparse_stats/{wildcards.folder}/{SM}/{LB}/{ID}_fastqc.zip" for SM in samples for LB in sm_lb_id[SM] for ID in sm_lb_id[SM][LB]]
+        lambda wildcards: [f"results/04_stats/01_sparse_stats/{wildcards.folder}/{SM}/{LB}/{ID}_fastqc.zip" for SM in samples for LB in samples[SM] for ID in samples[SM][LB]]
     output:
         html =  "results/04_stats/01_sparse_stats/{folder}/multiqc_fastqc.html",
         txt =  "results/04_stats/01_sparse_stats/{folder}/multiqc_fastqc_data/multiqc_fastqc.txt"
         #html = report("results/{dir_stats}/{folder}/multiqc_fastqc.html", category=" Quality control"),
-    # resources:
-    #     memory=lambda wildcards, attempt: get_memory_alloc("multiqc_mem", attempt, 2),
-    #     runtime=lambda wildcards, attempt: get_runtime_alloc("multiqc_time", attempt, 1)
+    resources:
+        memory=lambda wildcards, attempt: get_memory_alloc("multiqc_mem", attempt, 2),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("multiqc_time", attempt, 1)
     log:
-        "results/logs/04_stats/{folder}/multiqc_fastqc.log"
-    # conda:
-    #     "../envs/multiqc.yaml"
-    #message: "--- MULTIQC fastqc: {input}"
+        "results/04_stats/{folder}/multiqc_fastqc.log"
+    conda:
+        "../envs/multiqc.yaml"
+    envmodules:
+        module_multiqc
+    message: "--- MULTIQC fastqc: {input}"
     shell:
         """
         multiqc -n $(basename {output.html}) -f -d -o $(dirname {output.html}) {input}  2> {log}
@@ -104,6 +80,13 @@ rule bedtools_genomecov:
         bam = "results/{dir}/{file}.bam"
     output:
         genomecov = "results/04_stats/01_sparse_stats/{dir}/{file}.genomecov"
+    log:
+        "results/04_stats/01_sparse_stats/{dir}/{file}.genomecov.log"
+    conda:
+        "../envs/bedtools.yaml"
+    envmodules:
+        module_bedtools
+    message: "--- BEDTOOLS GENOMECOV of {input.bam}"        
     shell:
         """
         bedtools genomecov -ibam {input.bam} > {output.genomecov}
@@ -114,6 +97,13 @@ rule read_length:
         bam = "results/{file}.bam"
     output:
         length = "results/04_stats/01_sparse_stats/{file}.length"
+    log:
+        "results/04_stats/01_sparse_stats/{file}.length.log"
+    conda:
+        "../envs/samtools.yaml"
+    envmodules:
+        module_samtools
+    message: "--- READ LENGTH of {input}"        
     shell:
         """
         samtools view {input.bam} | workflow/scripts/read_length.pl -o {output.length}
@@ -134,6 +124,13 @@ rule assign_sex:
         sex = "results/04_stats/01_sparse_stats/{file}.sex"
     params:
         sex_params = " ".join([f"--{key}={sex_params[key]}" for key in sex_params.keys()])
+    log:
+        "results/04_stats/01_sparse_stats/{file}.sex.log"
+    conda:
+    	"../envs/r.yaml"
+    envmodules:
+    	module_r
+    message: "--- SEX ASSIGNEMENT {input}"
     shell:
         """
         Rscript workflow/scripts/sex_assignation.r \
@@ -153,6 +150,13 @@ rule merge_stats_per_fastq:
         length_fastq_mapped_highQ   = "results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{genome}.length",
     output:
         "results/04_stats/02_separate_tables/{genome}/{SM}/{LB}/{ID}/stats.csv"
+    log:
+        "results/04_stats/02_separate_tables/{genome}/{SM}/{LB}/{ID}/stats.log"
+    conda:
+    	"../envs/r.yaml"
+    envmodules:
+    	module_r
+    message: "--- MERGE FASTQ LEVEL STATS"
     shell:
         """
         Rscript workflow/scripts/merge_stats_per_fastq.R \
@@ -169,7 +173,7 @@ rule merge_stats_per_fastq:
 
 rule merge_stats_per_lb:
     input:
-        fastq_stats         = lambda wildcards: [f"results/04_stats/02_separate_tables/{wildcards.genome}/{wildcards.SM}/{wildcards.LB}/{ID}/stats.csv" for ID in sm_lb_id[wildcards.SM][wildcards.LB]],
+        fastq_stats         = lambda wildcards: [f"results/04_stats/02_separate_tables/{wildcards.genome}/{wildcards.SM}/{wildcards.LB}/{ID}/stats.csv" for ID in samples[wildcards.SM][wildcards.LB]],
         flagstat_raw        = "results/04_stats/01_sparse_stats/02_library/00_merged_fastq/01_bam/{SM}/{LB}.{genome}_flagstat.txt",       
         flagstat_unique     = "results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{genome}_flagstat.txt",      
         length_unique       = "results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{genome}.length",      
@@ -179,6 +183,13 @@ rule merge_stats_per_lb:
         "results/04_stats/02_separate_tables/{genome}/{SM}/{LB}/stats.csv"
     params:
         chrs_selected = "--chrs_selected=" + config["stats"]["library"]["depth_chromosomes"] if "depth_chromosomes" in config["stats"]["library"] else ""
+    log:
+        "results/04_stats/02_separate_tables/{genome}/{SM}/{LB}/stats.log"
+    conda:
+    	"../envs/r.yaml"
+    envmodules:
+    	module_r
+    message: "--- MERGE LIBRARY LEVEL STATS"
     shell:
         """
         list_fastq_stats=$(echo {input.fastq_stats} |sed 's/ /,/g')
@@ -198,7 +209,7 @@ rule merge_stats_per_lb:
 
 rule merge_stats_per_sm:
     input:
-        lb_stats           = lambda wildcards: [f"results/04_stats/02_separate_tables/{wildcards.genome}/{wildcards.SM}/{LB}/stats.csv" for LB in sm_lb_id[wildcards.SM]],
+        lb_stats           = lambda wildcards: [f"results/04_stats/02_separate_tables/{wildcards.genome}/{wildcards.SM}/{LB}/stats.csv" for LB in samples[wildcards.SM]],
         flagstat_unique    = "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{genome}_flagstat.txt",      
         length_unique      = "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{genome}.length",
         genomecov_unique   = "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{genome}.genomecov",
@@ -207,6 +218,13 @@ rule merge_stats_per_sm:
         "results/04_stats/02_separate_tables/{genome}/{SM}/stats.csv"
     params:
         chrs_selected = "--chrs_selected=" + config["stats"]["sample"]["depth_chromosomes"] if "depth_chromosomes" in config["stats"]["sample"] else ""
+    log:
+        "results/04_stats/02_separate_tables/{genome}/{SM}/stats.log"
+    conda:
+    	"../envs/r.yaml"
+    envmodules:
+    	module_r
+    message: "--- MERGE SAMPLE LEVEL STATS"
     shell:
         """
         list_lb_stats=$(echo {input.lb_stats} |sed 's/ /,/g')
@@ -228,11 +246,11 @@ rule merge_stats_per_sm:
 
 def path_stats_by_level(level):
     if level == "FASTQ":
-        paths = [f"results/04_stats/02_separate_tables/{genome}/{SM}/{LB}/{ID}/stats.csv" for genome in genomes for SM in samples for LB in sm_lb_id[SM] for ID in sm_lb_id[SM][LB]]
+        paths = [f"results/04_stats/02_separate_tables/{genome}/{SM}/{LB}/{ID}/stats.csv" for genome in GENOME for SM in samples for LB in samples[SM] for ID in samples[SM][LB]]
     elif level == "LB":
-        paths = [f"results/04_stats/02_separate_tables/{genome}/{SM}/{LB}/stats.csv" for genome in genomes for SM in samples for LB in sm_lb_id[SM]]
+        paths = [f"results/04_stats/02_separate_tables/{genome}/{SM}/{LB}/stats.csv" for genome in GENOME for SM in samples for LB in samples[SM]]
     elif level == "SM":
-        paths = [f"results/04_stats/02_separate_tables/{genome}/{SM}/stats.csv" for genome in genomes for SM in samples]
+        paths = [f"results/04_stats/02_separate_tables/{genome}/{SM}/stats.csv" for genome in GENOME for SM in samples]
     return paths
 
 
@@ -241,6 +259,8 @@ rule merge_stats_by_level:
         paths = lambda wildcards: path_stats_by_level(wildcards.level)
     output:
         "results/04_stats/03_final_tables/{level}.csv"
+    log:
+        "results/04_stats/03_final_tables/{level}.log"
     run:
         import pandas as pd
         df_list = [pd.read_csv(file) for file in input]
