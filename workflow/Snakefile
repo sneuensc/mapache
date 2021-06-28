@@ -135,7 +135,7 @@ all_libraries = db.groupby(['LB','SM'])['ID'].agg(['count']).reset_index()
 
 ##########################################################################################
 include : "rules/Snakefile_index.smk"
-include : "rules/Snakefile_stats_diana.smk"
+include : "rules/Snakefile_stats.smk"
 include : "rules/Snakefile_fastq.smk"
 include : "rules/Snakefile_library.smk"
 include : "rules/Snakefile_sample.smk"
