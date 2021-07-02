@@ -103,24 +103,12 @@ mappability_correction  = get_args(argsL, "mappability_correction", sex_system[[
 sex_with_larger_ratio   = get_args(argsL, "sex_with_larger_ratio", sex_system[[system]]$sex_with_larger_ratio)
 sex_to_autosomes        = get_args(argsL, "sex_to_autosomes", sex_system[[system]]$sex_to_autosomes)
 name_second_sex         = get_args(argsL, "name_second_sex", sex_system[[system]]$name_second_sex)
+autosomes               = get_args(argsL, "autosomes", 1:22)
 
 output_file             = get_args(argsL, "out", "sex.out")
 SM                      = get_args(argsL, "SM", NA)
 LB                      = get_args(argsL, "LB", NA)
 ID                      = get_args(argsL, "ID", NA)
-
-if("autosomes" %in% argsL){
-    if(":" %in% argsL$autosomes){
-        autosomes <- strsplit(argsL$autosomes, ":")[[1]]
-        autosomes <- autosomes[1]:autosomes[2]
-    }else if("," %in% argsL$autosomes){
-        autosomes <- strsplit(argsL$autosomes, ",")[[1]]
-    }else{
-        stop("Please specify autosomes separated by a colon or by comma without spaces.")
-    }
-}else{
-    autosomes <- 1:22
-}
 
 # get coverage on autosomes and sex chromosomes
 genomecov <- read.table(argsL$genomecov)

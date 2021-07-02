@@ -56,11 +56,10 @@ get_args <- function(argsL, name){
 # ID = "lib1_R1_002_fq"
 # genome = "hg19"
 # output_file = "out.fq.stats"
-# path_multiqc_orig = "results/04_stats/01_fastq/00_reads/01_files_orig/multiqc_fastqc_data/multiqc_fastqc.txt"  # raw sequenced reads
-# path_multiqc_trim = "results/04_stats/01_fastq/01_trimmed/01_files_trim/multiqc_fastqc_data/multiqc_fastqc.txt" # raw trimmed reads
-# path_flagstat_mapped = "results/04_stats/01_fastq/02_mapped/03_bam_sort/ind1/lib1_lb/lib1_R1_002_fq.hg19_flagstat.txt"      # mapped and low-qual reads
-# path_flagstat_mapped_highQ = "results/04_stats/01_fastq/04_final_fastq/01_bam/ind1/lib1_lb/lib1_R1_002_fq.hg19_flagstat.txt"       # mapped and high-qual reads
-# path_length_mapped_highQ = "results/04_stats/01_fastq/04_final_fastq/01_bam/ind1/lib1_lb/lib1_R1_002_fq.hg19.length"
+# path_multiqc_orig = "results/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/multiqc_fastqc_data/multiqc_fastqc.txt"  # raw sequenced reads
+# path_multiqc_trim = "results/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_files_trim/multiqc_fastqc_data/multiqc_fastqc.txt" # raw trimmed reads
+# path_flagstat_mapped_highQ = "results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/ind1/lib1_lb/lib1_R1_002_fq.hg19_flagstat.txt"       # mapped and high-qual reads
+# path_length_mapped_highQ = "results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/ind1/lib1_lb/lib1_R1_002_fq.hg19.length"
 ID = get_args(argsL, "ID")
 LB = get_args(argsL, "LB")
 SM = get_args(argsL, "SM")

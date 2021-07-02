@@ -70,19 +70,18 @@ path_flagstat_unique = get_args(argsL, "path_flagstat_unique")
 path_length_unique = get_args(argsL, "path_length_unique")
 path_genomecov_unique = get_args(argsL, "path_genomecov_unique")
 path_sex_unique = get_args(argsL, "path_sex_unique")
-chrs_selected = get_args(argsL, "chrs_selected", NA)
+chrs_selected = get_args(argsL, "chrs_selected", NULL)
 
 
-# SM = "ind1"
-# genome = "hg19"
-# output_file = "sample.stats"
-# path_list_stats_lb   = "results/04_stats/TABLES/hg19/ind1/lib1_lb/stats.csv,results/04_stats/TABLES/hg19/ind1/lib2_lb/stats.csv"
-# path_flagstat_unique    = "results/04_stats/03_sample/03_final_sample/01_bam/ind1.hg19_flagstat.txt"  
-# path_length_unique      = "results/04_stats/03_sample/03_final_sample/01_bam/ind1.hg19.length"
-# path_genomecov_unique   = "results/04_stats/03_sample/03_final_sample/01_bam/ind1.hg19.genomecov"    
-# path_sex_unique         = "results/04_stats/03_sample/03_final_sample/01_bam/ind1.hg19.sex"
-# chrs_selected = c("X","Y", "MT")
-# chrs_selected = unlist(strsplit("X,Y,MT", ","))
+# SM                      = "ind2"
+# genome                  = "GRCh38"
+# output_file             = "results/04_stats/02_separate_tables/GRCh38/ind2/stats.csv"
+# path_list_stats_lb      = "results/04_stats/02_separate_tables/GRCh38/ind2/lib3_lb/stats.csv"
+# path_flagstat_unique    = "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/ind2.GRCh38_flagstat.txt"  
+# path_length_unique      = "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/ind2.GRCh38.length"
+# path_genomecov_unique   = "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/ind2.GRCh38.genomecov"    
+# path_sex_unique         = "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/ind2.GRCh38.sex"
+# chrs_selected           = "chrX,chrY,chrMT"
 #-----------------------------------------------------------------------------#
 
 stats_lb = do.call(rbind, lapply(strsplit(path_list_stats_lb, ",")[[1]], read.csv ))
@@ -140,9 +139,16 @@ my_stats = data.frame(
     Sex = Sex,
     read_depth = read_depth
 )
-
-if(is.character(chrs_selected)){
+if(!is.null(chrs_selected)){
     chrs_selected = unlist(strsplit(chrs_selected, ","))
+    
+	## warn if some chromosomes are unknown
+	unknown = setdiff(chrs_selected, unique(genomecov_unique$chr))
+	if(length(unknown)>0){
+		print(paste0("Warning: The chromosome name '",unknown, "' is not valid in genome '", genome, "'. Ignoring it."))
+		chrs_selected <- chrs_selected[!chrs_selected %in% unknown]
+	}
+	
     DoC_chrs_selected =  do.call(cbind, lapply(chrs_selected, function(chr) calc_DoC(genomecov_unique,chr)  ))
     colnames(DoC_chrs_selected) = paste0("depth_", chrs_selected)
     my_stats = cbind(my_stats, DoC_chrs_selected)

@@ -64,7 +64,7 @@ rule multiqc_fastqc:
         memory=lambda wildcards, attempt: get_memory_alloc("multiqc_mem", attempt, 2),
         runtime=lambda wildcards, attempt: get_runtime_alloc("multiqc_time", attempt, 1)
     log:
-        "results/04_stats/{folder}/multiqc_fastqc.log"
+        "results/04_stats/01_sparse_stats/{folder}/multiqc_fastqc.log"
     conda:
         "../envs/multiqc.yaml"
     envmodules:
@@ -115,22 +115,44 @@ def is_quick(file_name, dict):
     return file_name
 
 
-sex_params = config["stats"]["sex"]["sex_params"] if "sex_params" in config["stats"]["sex"].keys() else {}
+#sex_params = config["genome"]["sex"]["sex_params"] if "sex_params" in config["genome"]["sex"].keys() else {}
+
+## check if the input is a python command
+def eval_if_possible(x):
+    try:
+        return(",".join(map(str, eval(x))))
+    except:
+        return(x)   
+
+
+## replace any element of the list 
+def eval_list(x):
+    return (list(map(eval_if_possible, x)))
+
+
+## replace any element of the list 
+def eval_list_to_csv(x):
+    return (",".join(eval_list(x)))
+
+
+def get_sex_params(genome):
+    sex_params = get_param2('GENOME',genome,{})
+    return (" ".join([f"--{key}='{eval_if_possible(sex_params[key])}'" for key in sex_params.keys()]))
 
 rule assign_sex:
     input:
-        genomecov = "results/04_stats/01_sparse_stats/{file}.genomecov"
+        genomecov = "results/04_stats/01_sparse_stats/{file}.{genome}.genomecov"
     output:
-        sex = "results/04_stats/01_sparse_stats/{file}.sex"
+        sex = "results/04_stats/01_sparse_stats/{file}.{genome}.sex"
     params:
-        sex_params = " ".join([f"--{key}={sex_params[key]}" for key in sex_params.keys()])
+        sex_params = lambda wildcards: get_sex_params(wildcards.genome)
     log:
-        "results/04_stats/01_sparse_stats/{file}.sex.log"
+        "results/04_stats/01_sparse_stats/{file}.{genome}.sex.log"
     conda:
     	"../envs/r.yaml"
     envmodules:
     	module_r
-    message: "--- SEX ASSIGNEMENT {input}"
+    message: "--- SEX ASSIGNEMENT {input} '{params.sex_params}'"
     shell:
         """
         Rscript workflow/scripts/sex_assignation.r \
@@ -141,6 +163,10 @@ rule assign_sex:
 
 #-----------------------------------------------------------------------------#
 ## merging individual stats
+# path_multiqc_orig = "results/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/multiqc_fastqc_data/multiqc_fastqc.txt"  # raw sequenced reads
+# path_multiqc_trim = "results/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_files_trim/multiqc_fastqc_data/multiqc_fastqc.txt" # raw trimmed reads
+# path_flagstat_mapped_highQ = "results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/ind1/lib1_lb/lib1_R1_002_fq.hg19_flagstat.txt"       # mapped and high-qual reads
+# path_length_mapped_highQ = "results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/ind1/lib1_lb/lib1_R1_002_fq.hg19.length"
 
 rule merge_stats_per_fastq:
     input:
@@ -171,6 +197,27 @@ rule merge_stats_per_fastq:
             --path_length_mapped_highQ={input.length_fastq_mapped_highQ}
         """          
 
+## get all chromosome names given in the stats part and check if the name is given in the genome part. In this case overtake it
+## Example config:
+## GENOME: 
+##    GRCh38: 
+##        maleChr: chrY
+##        femaleChr: chrX
+##        mtChr: chrM
+##        autosomes: '[f"chr{x}" for x in range(1,5)]'
+## stats:
+##    sample:
+##        depth_chromosomes: "femaleChr, maleChr, mtChr, autosomes"
+## ==> 'chrY,chrX,chr1,chr2,chr3,chr4,chrM'
+ 
+def get_chrom(wildcards):
+    chr = eval_list("".join(get_param3("stats","sample","depth_chromosomes", '').split()).split(','))
+    genome = get_param2("GENOME",wildcards.genome, {})
+    chr_uniq =  list(set(chr) - set(list(genome)))
+    chr_def = list(set(chr).intersection(set(genome)))
+    return (",".join(eval_list(chr_uniq) + [eval_if_possible(genome[c]) for c in chr_def]))
+
+
 rule merge_stats_per_lb:
     input:
         fastq_stats         = lambda wildcards: [f"results/04_stats/02_separate_tables/{wildcards.genome}/{wildcards.SM}/{wildcards.LB}/{ID}/stats.csv" for ID in samples[wildcards.SM][wildcards.LB]],
@@ -182,13 +229,13 @@ rule merge_stats_per_lb:
     output:
         "results/04_stats/02_separate_tables/{genome}/{SM}/{LB}/stats.csv"
     params:
-        chrs_selected = "--chrs_selected=" + config["stats"]["library"]["depth_chromosomes"] if "depth_chromosomes" in config["stats"]["library"] else ""
+        chrs_selected = get_chrom
     log:
         "results/04_stats/02_separate_tables/{genome}/{SM}/{LB}/stats.log"
     conda:
-    	"../envs/r.yaml"
+        "../envs/r.yaml"
     envmodules:
-    	module_r
+        module_r
     message: "--- MERGE LIBRARY LEVEL STATS"
     shell:
         """
@@ -204,9 +251,9 @@ rule merge_stats_per_lb:
             --path_length_unique={input.length_unique} \
             --path_genomecov_unique={input.genomecov_unique} \
             --path_sex_unique={input.sex_unique} \
-            {params.chrs_selected}
+            --chrs_selected={params.chrs_selected}
         """
-
+        
 rule merge_stats_per_sm:
     input:
         lb_stats           = lambda wildcards: [f"results/04_stats/02_separate_tables/{wildcards.genome}/{wildcards.SM}/{LB}/stats.csv" for LB in samples[wildcards.SM]],
@@ -217,17 +264,17 @@ rule merge_stats_per_sm:
     output:
         "results/04_stats/02_separate_tables/{genome}/{SM}/stats.csv"
     params:
-        chrs_selected = "--chrs_selected=" + config["stats"]["sample"]["depth_chromosomes"] if "depth_chromosomes" in config["stats"]["sample"] else ""
+        chrs_selected = get_chrom
     log:
         "results/04_stats/02_separate_tables/{genome}/{SM}/stats.log"
     conda:
-    	"../envs/r.yaml"
+        "../envs/r.yaml"
     envmodules:
-    	module_r
-    message: "--- MERGE SAMPLE LEVEL STATS"
+        module_r
+    message: "--- MERGE SAMPLE LEVEL STATS of  of {wildcards.SM} / {wildcards.genome}"
     shell:
         """
-        list_lb_stats=$(echo {input.lb_stats} |sed 's/ /,/g')
+        list_lb_stats=$(echo {input.lb_stats} |sed 's/ /,/g');
         Rscript workflow/scripts/merge_stats_per_SM.R \
             --SM={wildcards.SM} \
             --genome={wildcards.genome} \
@@ -237,7 +284,7 @@ rule merge_stats_per_sm:
             --path_length_unique={input.length_unique} \
             --path_genomecov_unique={input.genomecov_unique} \
             --path_sex_unique={input.sex_unique} \
-            {params.chrs_selected}
+            --chrs_selected={params.chrs_selected}
         """
 
 
@@ -261,9 +308,62 @@ rule merge_stats_by_level:
         "results/04_stats/03_final_tables/{level}.csv"
     log:
         "results/04_stats/03_final_tables/{level}.log"
+    message: "--- MERGE STATS by {wildcards.level}"
     run:
         import pandas as pd
         df_list = [pd.read_csv(file) for file in input]
         df = pd.concat(df_list)
         df.to_csv(str(output), index = False)
 
+
+#-----------------------------------------------------------------------------#
+# plotting
+
+rule plot_summary_statistics:
+    """
+    Plot summary statistics
+    """
+    input:
+        fastq_stats = "results/04_stats/03_final_tables/FASTQ.csv",
+        library_stats = "results/04_stats/03_final_tables/LB.csv",
+        sample_stats = "results/04_stats/03_final_tables/SM.csv"
+    output: 
+        plot_1_nb_reads = report("results/04_stats/03_final_tables/04_final_plots/1_nb_reads.png", caption="../report/1_nb_reads.rst", category="Mapping statistics plots"),
+        plot_2_mapped = report("results/04_stats/03_final_tables/04_final_plots/2_mapped.png", caption="../report/2_mapped.rst", category="Mapping statistics plots"),        
+        plot_3_endogenous = report("results/04_stats/03_final_tables/04_final_plots/3_endogenous.png", caption="../report/3_endogenous.rst", category="Mapping statistics plots"),        
+        plot_4_duplication = report("results/04_stats/03_final_tables/04_final_plots/4_duplication.png", caption="../report/4_duplication.rst", category="Mapping statistics plots")      
+    log: 
+        "results/04_stats/03_final_tables/04_final_plots/plot.log"
+    conda:
+    	"../envs/r.yaml"
+    envmodules:
+    	module_r
+    message: "--- PLOT SUMMARY STATISTICS"
+    shell:
+        """
+        Rscript workflow/scripts/sex_assignation.r \
+            --genomecov={input.genomecov} \
+            --out={output.sex} \
+            --larger_chr={params.sex_params}
+        """
+    #script:
+    #	"../scripts/plot_stats.R"
+
+
+rule plot_depth_statistics:
+    input:
+        sample_depth = "{folder}/depth_stats_{id_genome}.csv"
+    output:
+        plot_5_AvgReadDepth = report("{folder}/5_AvgReadDepth.{id_genome}.svg", caption="../report/5_AvgReadDepth.rst", category="Mapping statistics plots"),
+        plot_6_AvgReadDepth_MT = report("{folder}/6_AvgReadDepth_MT.{id_genome}.svg", caption="../report/6_AvgReadDepth_MT.rst", category="Mapping statistics plots"),
+        plot_7_Sex = report("{folder}/7_Sex.{id_genome}.svg", caption="../report/7_Sex.rst", category="Mapping statistics plots")
+    threads: 1
+    log:
+        "{folder}/depth_stats_plot.{id_genome}.csv.log"
+    conda:
+    	"../envs/r.yaml"
+    envmodules:
+    	module_r
+    message: "--- PLOT DEPTH STATISTICS OF {input}"
+    script:    	
+    	"../scripts/plot_depth.R"
