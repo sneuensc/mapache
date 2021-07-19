@@ -1,6 +1,6 @@
 ***!!! UNDER CONSTRUCTION !!!***
 
-The pipeline is under strong development. Not all commits are working perfectly.
+The pipeline is under development. Not all commits are working perfectly.
 
 You are welcome to try it out. On the Wiki https://github.com/sneuensc/mapache/wiki, there is already a short manual describing how to get started. Happy to get any feedback/propositions.
 
