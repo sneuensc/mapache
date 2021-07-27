@@ -152,7 +152,7 @@ rule assign_sex:
     	"../envs/r.yaml"
     envmodules:
     	module_r
-    message: "--- SEX ASSIGNEMENT {input} '{params.sex_params}'"
+    message: "--- SEX ASSIGNEMENT {input}"
     shell:
         """
         Rscript workflow/scripts/sex_assignation.r \
@@ -162,6 +162,8 @@ rule assign_sex:
         """
 
 #-----------------------------------------------------------------------------#
+ruleorder: merge_stats_per_fastq > merge_stats_per_lb > merge_stats_per_sm
+
 ## merging individual stats
 # path_multiqc_orig = "results/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/multiqc_fastqc_data/multiqc_fastqc.txt"  # raw sequenced reads
 # path_multiqc_trim = "results/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_files_trim/multiqc_fastqc_data/multiqc_fastqc.txt" # raw trimmed reads
@@ -217,7 +219,6 @@ def get_chrom(wildcards):
     chr_def = list(set(chr).intersection(set(genome)))
     return (",".join(eval_list(chr_uniq) + [eval_if_possible(genome[c]) for c in chr_def]))
 
-
 rule merge_stats_per_lb:
     input:
         fastq_stats         = lambda wildcards: [f"results/04_stats/02_separate_tables/{wildcards.genome}/{wildcards.SM}/{wildcards.LB}/{ID}/stats.csv" for ID in samples[wildcards.SM][wildcards.LB]],
@@ -239,7 +240,7 @@ rule merge_stats_per_lb:
     message: "--- MERGE LIBRARY LEVEL STATS"
     shell:
         """
-        list_fastq_stats=$(echo {input.fastq_stats} |sed 's/ /,/g')
+        list_fastq_stats=$(echo {input.fastq_stats} |sed 's/ /,/g');
         Rscript workflow/scripts/merge_stats_per_LB.R \
             --LB={wildcards.LB} \
             --SM={wildcards.SM} \

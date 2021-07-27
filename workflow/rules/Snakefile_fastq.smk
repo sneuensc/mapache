@@ -391,43 +391,71 @@ rule samtools_sort:
 ##########################################################################################
 ## filtering
 
-rule samtools_filter:
-    """
-    Filter mappings following quality
-    """
-    input:
-        "{folder}/02_mapped/03_bam_sort/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"
-    output:
-        mapped="{folder}/03_filtered/01_bam_filter/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam",
-        low_qual="{folder}/03_filtered/01_bam_filter_low_qual/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"
-    params:
-        q=lambda wildcards: int(get_from_sample_file("MAPQ", wildcards.id_sample, wildcards.id_library, wildcards.id_fastq))
-    resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("filtering", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("filtering", attempt, 24)
-    log:
-        "{folder}/03_filtered/01_bam_filter/{id_sample}/{id_library}/{id_fastq}.{id_genome}.log"
-    threads: 
-    	get_threads("filtering", 4)
-    conda:
-    	"../envs/samtools.yaml"
-    envmodules:
-    	module_samtools
-    message: "--- SAMTOOLS FILTER {input}"
-    shell:
-    	"""
-        samtools view -b --threads {threads} -F 4 -q {params.q} \
-        -U {output.low_qual} {input} > {output.mapped} 2> {log}
-        """
+if save_low_qual:
+	rule samtools_filter:
+		"""
+		Filter mappings following quality and keeping the low quality mappings
+		"""
+		input:
+			"{folder}/02_mapped/03_bam_sort/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"
+		output:
+			mapped="{folder}/03_filtered/01_bam_filter/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam",
+			low_qual="{folder}/03_filtered/01_bam_filter_low_qual/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"
+		params:
+			q=lambda wildcards: int(get_from_sample_file("MAPQ", wildcards.id_sample, wildcards.id_library, wildcards.id_fastq))
+		resources:
+			memory=lambda wildcards, attempt: get_memory_alloc("filtering", attempt, 4),
+			runtime=lambda wildcards, attempt: get_runtime_alloc("filtering", attempt, 24)
+		log:
+			"{folder}/03_filtered/01_bam_filter/{id_sample}/{id_library}/{id_fastq}.{id_genome}.log"
+		threads: 
+			get_threads("filtering", 4)
+		conda:
+			"../envs/samtools.yaml"
+		envmodules:
+			module_samtools
+		message: "--- SAMTOOLS FILTER {input}"
+		shell:
+			"""
+			samtools view -b --threads {threads} -F 4 -q {params.q} \
+			-U {output.low_qual} {input} > {output.mapped} 2> {log}
+			"""
+else:
+	rule samtools_filter:
+		"""
+		Filter mappings following quality and discard low quality mappings
+		"""
+		input:
+			"{folder}/02_mapped/03_bam_sort/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"
+		output:
+			mapped="{folder}/03_filtered/01_bam_filter/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam",
+		params:
+			q=lambda wildcards: int(get_from_sample_file("MAPQ", wildcards.id_sample, wildcards.id_library, wildcards.id_fastq))
+		resources:
+			memory=lambda wildcards, attempt: get_memory_alloc("filtering", attempt, 4),
+			runtime=lambda wildcards, attempt: get_runtime_alloc("filtering", attempt, 24)
+		log:
+			"{folder}/03_filtered/01_bam_filter/{id_sample}/{id_library}/{id_fastq}.{id_genome}.log"
+		threads: 
+			get_threads("filtering", 4)
+		conda:
+			"../envs/samtools.yaml"
+		envmodules:
+			module_samtools
+		message: "--- SAMTOOLS FILTER {input}"
+		shell:
+			"""
+			samtools view -b --threads {threads} -F 4 -q {params.q} {input} > {output.mapped} 2> {log}
+			"""
 
 
 ##########################################################################################
 rule get_final_fastq:
 	"""
-	Get the final bam file form the fastq part
+	Get the final bam file from the fastq part
 	"""
 	input:
-		"{folder}/03_filtered/01_bam_filter/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"
+		get_final_bam_fastq
 	output:
 		"{folder}/04_final_fastq/01_bam/{id_sample}/{id_library}/{id_fastq}.{id_genome}.bam"
 	message: "--- GET FINAL BAM {input} (FASTQ LEVEL)"

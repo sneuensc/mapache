@@ -139,6 +139,12 @@ def get_bam_for_sorting(wildcards):
 	return (f"results/01_fastq/02_mapped/{folder}/{wildcards.id_sample}/{wildcards.id_library}/{wildcards.id_fastq}.{wildcards.id_genome}.bam")
 
 
+def get_final_bam_fastq(wildcards):
+    if run_filtering:
+        bam = f"{wildcards.folder}/03_filtered/01_bam_filter/{wildcards.id_sample}/{wildcards.id_library}/{wildcards.id_fastq}.{wildcards.id_genome}.bam"
+    else:
+        bam = f"{wildcards.folder}/02_mapped/03_bam_sort/{wildcards.id_sample}/{wildcards.id_library}/{wildcards.id_fastq}.{wildcards.id_genome}.bam"
+    return (bam)
 	
 ##########################################################################################
 ##########################################################################################

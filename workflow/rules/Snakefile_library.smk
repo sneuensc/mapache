@@ -80,17 +80,18 @@ rule remove_duplicates:
     message: "--- MARKDUPLICATES {input}"
     shell:
     	"""
+    	## get binary
     	jar={params.PICARD}
         if [ "${{jar: -4}}" == ".jar" ]; then
-        	java -XX:ParallelGCThreads={threads} -XX:+UseParallelGC -XX:-UsePerfData \
-       			 -Xms{resources.memory}m -Xmx{resources.memory}m -jar {params.PICARD} MarkDuplicates \
-        		INPUT={input} OUTPUT={output.bam} METRICS_FILE={output.stats} {params.rmdup_params} \
-        		ASSUME_SORT_ORDER=coordinate VALIDATION_STRINGENCY=LENIENT 2> {log};
-        else
-        	{params.PICARD} MarkDuplicates \
-        		INPUT={input} OUTPUT={output.bam} METRICS_FILE={output.stats} {params.rmdup_params} \
-        		ASSUME_SORT_ORDER=coordinate VALIDATION_STRINGENCY=LENIENT 2> {log};
-        fi
+        	bin="java -XX:ParallelGCThreads={threads} -XX:+UseParallelGC -XX:-UsePerfData \
+       			 -Xms{resources.memory}m -Xmx{resources.memory}m -jar {params.PICARD}"
+       	else
+       		bin={params.PICARD}
+       	fi
+       	
+       	## run MarkDuplicates
+        $bin MarkDuplicates INPUT={input} OUTPUT={output.bam} METRICS_FILE={output.stats} \
+        	{params.rmdup_params} ASSUME_SORT_ORDER=coordinate VALIDATION_STRINGENCY=LENIENT 2> {log};
  		"""
 
 

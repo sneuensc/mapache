@@ -103,9 +103,11 @@ sorting:
 
 ## samtools_filter
 filtering:
+    run: False
     threads: 4
     mem: 16
     time: 2
+    save_low_qual: True
 
 ##########################################################################################
 ## library level

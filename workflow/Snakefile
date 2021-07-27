@@ -20,6 +20,7 @@ mapper                = get_param2("mapping", "mapper", "bwa_aln")
 
 ## mapping options
 run_adapter_removal   = str2bool(get_param2("adapterremoval", "run", True))
+run_filtering         = str2bool(get_param2("filtering", "run", True))
 run_remove_duplicates = str2bool(get_param2("markduplicates", "run", True))
 run_mapDamage_rescale = str2bool(get_param2("mapdamage", "run_rescale", False)) 
 run_realign           = str2bool(get_param2("realign", "run", True)) 
@@ -68,12 +69,20 @@ if run_mapDamage_rescale and get_param2("stats", "run_damage", "False") != 'mapD
     print("ERROR: To use 'mapdamage:run_rescale' the parameter 'stats:run_damage' has to be set to 'mapDamage'!")
     os._exit(0)
 
+## filter mappings and keep low quality mappings or not?
+if run_filtering:
+	save_low_qual = str2bool(get_param2("filtering", "save_low_qual", "True"))
+else:
+	save_low_qual = False
 
 ## if one wants to extract the duplicates, MarkDuplicate has to mark the duplicates in order to extract them
-extract_duplicates = str2bool(get_param2("markduplicates", "keep_duplicates", "False"))
-if  extract_duplicates and 'REMOVE_DUPLICATES=true' in get_param2("markduplicates", "params", ""):
-    print("ERROR: To use 'markduplicates:extract_duplicates' the parameter 'markduplicates:params' has NOT to contain 'REMOVE_DUPLICATES=true'!")
-    os._exit(0)
+if run_remove_duplicates:
+	extract_duplicates = str2bool(get_param2("markduplicates", "keep_duplicates", "False"))
+	if  extract_duplicates and 'REMOVE_DUPLICATES=true' in get_param2("markduplicates", "params", ""):
+		print("ERROR: To use 'markduplicates:extract_duplicates' the parameter 'markduplicates:params' has NOT to contain 'REMOVE_DUPLICATES=true'!")
+		os._exit(0)
+else:
+	extract_duplicates = False
 
 ##########################################################################################
 ## read the sample file
@@ -158,7 +167,7 @@ rule all:
        # "logs/check_software_modules.done",
         ## final bam files
         expand("results/03_sample/03_final_sample/01_bam/{id_sample}.{id_genome}.bam", id_sample=list(samples), id_genome=GENOME),
-        expand("results/03_sample/03_final_sample/01_bam_low_qual/{id_sample}.{id_genome}.bam", id_sample=list(samples), id_genome=GENOME),
+        expand("results/03_sample/03_final_sample/01_bam_low_qual/{id_sample}.{id_genome}.bam", id_sample=list(samples), id_genome=GENOME) if save_low_qual else [],
         expand("results/03_sample/03_final_sample/01_bam_duplicate/{id_sample}.{id_genome}.bam", id_sample=list(samples), id_genome=GENOME) if extract_duplicates else [],
         ## summary statistics
         #expand("results/03_sample/04_stats/01_summary/sample_stats.{id_genome}.csv", id_genome=GENOME),
@@ -195,9 +204,8 @@ rule mapping:
     input:
        # "logs/check_software_modules.done",
         expand("results/03_sample/03_final_sample/01_bam/{id_sample}.{id_genome}.bam", id_sample=list(samples), id_genome=GENOME),
-        expand("results/03_sample/03_final_sample/01_bam_low_qual/{id_sample}.{id_genome}.bam", id_sample=list(samples), id_genome=GENOME),
-        expand("results/03_sample/03_final_sample/01_bam_duplicate/{id_sample}.{id_genome}.bam", id_sample=list(samples), id_genome=GENOME) if extract_duplicates else [],
-        expand("results/03_sample/04_stats/01_summary/sample_stats.{id_genome}.csv", id_genome=GENOME)
+        expand("results/03_sample/03_final_sample/01_bam_low_qual/{id_sample}.{id_genome}.bam", id_sample=list(samples), id_genome=GENOME) if save_low_qual else [],
+        expand("results/03_sample/03_final_sample/01_bam_duplicate/{id_sample}.{id_genome}.bam", id_sample=list(samples), id_genome=GENOME) if extract_duplicates else []
 
 rule stats:
     """
