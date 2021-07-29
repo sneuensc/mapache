@@ -8,7 +8,7 @@ import pathlib
 ##########################################################################################
 ## all functions for main snakemake file
 
-## functions to read the config file
+## getter for config file
 def get_param1(key, default):
     return config.get(key, default)
 
@@ -17,6 +17,68 @@ def get_param2(key1, key2, default):
 
 def get_param3(key1, key2, key3, default):
     return config.get(key1, {}).get(key2, {}).get(key3, default)    
+
+## setter for config file
+def set_param1(key, value):
+    config[key] = value
+
+def set_param2(key1, key2, value):
+    if key1 not in config:
+        config[key1] = {}    
+    config[key1][key2] = value
+
+def set_param3(key1, key2, key3, value):
+    if key1 not in config:
+        config[key1] = {}    
+    if key2 not in config[key1]:
+        config[key1][key2] = {}    
+    config[key1][key2][key3] = value
+
+
+##########################################################################################
+## functions to evaluate python code if necessary
+
+## eval single element if needed
+def eval_if_possible(x):
+    try:
+        return eval(x)
+    except:
+        return x
+
+## eval single element if needed and return it as a list
+def eval_to_list(x):
+    a = eval_if_possible(x)
+    if isinstance(a, list):
+        return a
+    else:
+        return [a]
+
+## eval single element if needed and return it as a comma separated string
+def eval_to_csv(x):
+    return ",".join(list(map(str, eval_to_list(x))))
+
+## transform a list to a comma separated string
+def list_to_csv(x):
+    if isinstance(x, list):
+        return (",".join(x))
+    else:
+        return x
+
+
+## replace any element of the list 
+def eval_list(x):
+    if isinstance(x, list):
+        return list(map(eval_if_possible, x))
+    else:
+        return [eval_if_possible(x)]
+
+
+## replace any element of the list 
+def eval_list_to_csv(x):
+    return (",".join(eval_list(x)))
+
+##########################################################################################
+
 
 ## convert string to boolean
 def str2bool(v):
@@ -67,13 +129,13 @@ def get_threads(module, default=1):
 # def get_damage(run_damage):
 #     files=[]
 #     if run_damage == 'bamdamage':
-#         for genome in GENOME:
-#             files+=[("results/03_sample/{SM}/{LB}/library_bamdamage/{LB}.{genome}.dam.svg").
-#                 format(SM=row['SM'], LB=row['LB'], genome=genome) for index, row in all_libraries.iterrows()]
+#         for curgenome in genome:
+#             files+=[("results/03_sample/{SM}/{LB}/library_bamdamage/{LB}.{gen}.dam.svg").
+#                 format(SM=row['SM'], LB=row['LB'], gen=curgenome) for index, row in all_libraries.iterrows()]
 #     elif run_damage == 'mapDamage':
-#         for genome in GENOME:
-#             files+=[("{SM}/{LB}/library_mapDamage/{LB}.{genome}_results_mapDamage/Fragmisincorporation_plot.pdf").
-#                 format(SM=row['SM'], LB=row['LB'], genome=genome) for index, row in all_libraries.iterrows()]
+#         for curgenome in genome:
+#             files+=[("{SM}/{LB}/library_mapDamage/{LB}.{gen}_results_mapDamage/Fragmisincorporation_plot.pdf").
+#                 format(SM=row['SM'], LB=row['LB'], gen=curgenome) for index, row in all_libraries.iterrows()]
 # 
 #     return (files)
     
@@ -88,55 +150,55 @@ def get_from_sample_file(col, SM, LB, ID):
 
 
 def get_fastq_of_ID(wildcards):
-	if "_R1" == wildcards.id_fastq[-3:]:
-		filename = get_from_sample_file("Data1", wildcards.id_sample, wildcards.id_library, wildcards.id_fastq[:-3])
-	elif "_R2" == wildcards.id_fastq[-3:]:
-		filename = get_from_sample_file("Data2", wildcards.id_sample, wildcards.id_library, wildcards.id_fastq[:-3])
-	elif paired_end != 0:   ## SE library in a paired-end sample file
-		filename = get_from_sample_file("Data1", wildcards.id_sample, wildcards.id_library, wildcards.id_fastq)
-	else:
-		filename = get_from_sample_file("Data", wildcards.id_sample, wildcards.id_library, wildcards.id_fastq)
-	return(filename)
-	
-	
+    if "_R1" == wildcards.id_fastq[-3:]:
+        filename = get_from_sample_file("Data1", wildcards.id_sample, wildcards.id_library, wildcards.id_fastq[:-3])
+    elif "_R2" == wildcards.id_fastq[-3:]:
+        filename = get_from_sample_file("Data2", wildcards.id_sample, wildcards.id_library, wildcards.id_fastq[:-3])
+    elif paired_end != 0:   ## SE library in a paired-end sample file
+        filename = get_from_sample_file("Data1", wildcards.id_sample, wildcards.id_library, wildcards.id_fastq)
+    else:
+        filename = get_from_sample_file("Data", wildcards.id_sample, wildcards.id_library, wildcards.id_fastq)
+    return(filename)
+    
+    
 def get_fastq_for_mapping(wildcards):
-	if run_adapter_removal:
-		if paired_end == 1 and str(get_from_sample_file("Data2", wildcards.id_sample, wildcards.id_library, wildcards.id_fastq)[0])!="nan":
-			folder = f"results/01_fastq/01_trimmed/01_files_trim_collapsed/{wildcards.id_sample}/{wildcards.id_library}"
-		else:
-			folder = f"results/01_fastq/01_trimmed/01_files_trim/{wildcards.id_sample}/{wildcards.id_library}"
-	else:
-		folder = f"results/01_fastq/00_reads/01_files_orig/{wildcards.id_sample}/{wildcards.id_library}"
+    if run_adapter_removal:
+        if paired_end == 1 and str(get_from_sample_file("Data2", wildcards.id_sample, wildcards.id_library, wildcards.id_fastq)[0])!="nan":
+            folder = f"results/01_fastq/01_trimmed/01_files_trim_collapsed/{wildcards.id_sample}/{wildcards.id_library}"
+        else:
+            folder = f"results/01_fastq/01_trimmed/01_files_trim/{wildcards.id_sample}/{wildcards.id_library}"
+    else:
+        folder = f"results/01_fastq/00_reads/01_files_orig/{wildcards.id_sample}/{wildcards.id_library}"
 
-	if paired_end == 2:
-		filename=[f"{folder}/{wildcards.id_fastq}_R1.fastq.gz", f"{folder}/{wildcards.id_fastq}_R2.fastq.gz"]
-	else:
-		filename=[f"{folder}/{wildcards.id_fastq}.fastq.gz"]
-	return (filename)
+    if paired_end == 2:
+        filename=[f"{folder}/{wildcards.id_fastq}_R1.fastq.gz", f"{folder}/{wildcards.id_fastq}_R2.fastq.gz"]
+    else:
+        filename=[f"{folder}/{wildcards.id_fastq}.fastq.gz"]
+    return (filename)
 
 def get_fastq_for_mapping_pe(wildcards):
-	if run_adapter_removal:
-		folder = f"results/01_fastq/01_trimmed/01_files_trim"
-	else:
-		folder = f"results/01_fastq/00_reads/01_files_orig"
+    if run_adapter_removal:
+        folder = f"results/01_fastq/01_trimmed/01_files_trim"
+    else:
+        folder = f"results/01_fastq/00_reads/01_files_orig"
 
-	return (f"{folder}/{wildcards.id_sample}/{wildcards.id_library}/{wildcards.id_fastq}_R{wildcards.id_read}.fastq.gz")
+    return (f"{folder}/{wildcards.id_sample}/{wildcards.id_library}/{wildcards.id_fastq}_R{wildcards.id_read}.fastq.gz")
 
 
 def get_bam_for_sorting(wildcards):
-	if mapper == "bwa_aln":
-		if paired_end == 2 and str(get_from_sample_file("Data2", wildcards.id_sample, wildcards.id_library, wildcards.id_fastq)[0]) != "nan":
-			folder = "02_bwa_sampe"
-		else:
-			folder = "02_bwa_samse"
-	elif mapper == "bwa_mem":
-		folder = "02_bwa_mem"
-	elif mapper == "bowtie2":
-		folder = "02_bowtie2"
-	else:
-		print(f"ERROR: The parameter mapper is not correctly specified: {mapper} is unknown!")
-		os._exit(0)
-	return (f"results/01_fastq/02_mapped/{folder}/{wildcards.id_sample}/{wildcards.id_library}/{wildcards.id_fastq}.{wildcards.id_genome}.bam")
+    if mapper == "bwa_aln":
+        if paired_end == 2 and str(get_from_sample_file("Data2", wildcards.id_sample, wildcards.id_library, wildcards.id_fastq)[0]) != "nan":
+            folder = "02_bwa_sampe"
+        else:
+            folder = "02_bwa_samse"
+    elif mapper == "bwa_mem":
+        folder = "02_bwa_mem"
+    elif mapper == "bowtie2":
+        folder = "02_bowtie2"
+    else:
+        print(f"ERROR: The parameter mapper is not correctly specified: {mapper} is unknown!")
+        os._exit(0)
+    return (f"results/01_fastq/02_mapped/{folder}/{wildcards.id_sample}/{wildcards.id_library}/{wildcards.id_fastq}.{wildcards.id_genome}.bam")
 
 
 def get_final_bam_fastq(wildcards):
@@ -145,7 +207,7 @@ def get_final_bam_fastq(wildcards):
     else:
         bam = f"{wildcards.folder}/02_mapped/03_bam_sort/{wildcards.id_sample}/{wildcards.id_library}/{wildcards.id_fastq}.{wildcards.id_genome}.bam"
     return (bam)
-	
+    
 ##########################################################################################
 ##########################################################################################
 ## all functions for libraries
@@ -153,23 +215,25 @@ def get_final_bam_fastq(wildcards):
 def get_final_bam_library(wildcards):
     if run_mapDamage_rescale:
         bam = f"results/02_library/02_rescaled/01_mapDamage/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}.bam"
-    elif extract_duplicates:
-        bam = f"results/02_library/01_duplicated/01_rmdup/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}_mapped.bam"
-    elif run_remove_duplicates:
-        bam = f"results/02_library/01_duplicated/01_rmdup/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}.bam"
+    elif run_mark_duplicates:
+        if save_duplicates == "extract":
+            bam = f"results/02_library/01_duplicated/01_rmdup/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}_mapped.bam"
+        else:    
+            bam = f"results/02_library/01_duplicated/01_rmdup/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}.bam"
     else:
         bam = f"results/02_library/00_merged_fastq/01_bam/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}.bam"
     return (bam)
 
 
 def get_mapDamage_bam(wildcards):
-	if extract_duplicates:
-		bam = f"results/02_library/01_duplicated/01_rmdup/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}_mapped.bam"
-	elif run_remove_duplicates:
-		bam = f"results/02_library/01_duplicated/01_rmdup/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}.bam"
-	else: 
-		bam = f"results/02_library/00_merged_fastq/01_bam/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}.bam"
-	return (bam)
+    if run_mark_duplicates:
+        if save_duplicates == "extract":
+            bam = f"results/02_library/01_duplicated/01_rmdup/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}_mapped.bam"
+        else:
+            bam = f"results/02_library/01_duplicated/01_rmdup/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}.bam"
+    else: 
+        bam = f"results/02_library/00_merged_fastq/01_bam/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}.bam"
+    return (bam)
 
 
 ##########################################################################################
@@ -198,12 +262,12 @@ def get_md_flag_bam(wildcards):
 
 ## the function makes a reverse symlink, by moving the file to the new location and then symlink it back to the original location
 def symlink_rev2(input, output):
-	shell("mv {input} {output}")
-	shell("ln -srf {output} {input}")
-	shell("touch {output}")
+    shell("mv {input} {output}")
+    shell("ln -srf {output} {input}")
+    shell("touch {output}")
     
 def symlink_rev(input, output):
-	shell("ln -srf {input} {output}")
+    shell("ln -srf {input} {output}")
 
 
 ##########################################################################################
@@ -217,16 +281,16 @@ def get_flagstat_for_multiqc(wildcards):
     parts = pathlib.Path(wildcards.folder).parts
     if parts[1] == "01_fastq":
         if wildcards.group == "final":
-            filename = [("results/{level}/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{genome}_flagstat.txt").format(level=parts[1], group=wildcards.group, ID=row['ID'], SM=row['SM'], LB=row['LB'], genome=wildcards.id_genome) for index, row in db.iterrows()]
+            filename = [("results/{level}/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{gen}_flagstat.txt").format(level=parts[1], group=wildcards.group, ID=row['ID'], SM=row['SM'], LB=row['LB'], gen=wildcards.id_genome) for index, row in db.iterrows()]
         elif wildcards.group == "mapped":
-            filename = [("results/{level}/02_mapped/03_bam_sort/{SM}/{LB}/{ID}.{genome}_flagstat.txt").format(level=parts[1], group=wildcards.group, ID=row['ID'], SM=row['SM'], LB=row['LB'], genome=wildcards.id_genome) for index, row in db.iterrows()]
+            filename = [("results/{level}/02_mapped/03_bam_sort/{SM}/{LB}/{ID}.{gen}_flagstat.txt").format(level=parts[1], group=wildcards.group, ID=row['ID'], SM=row['SM'], LB=row['LB'], gen=wildcards.id_genome) for index, row in db.iterrows()]
         else:
             print(f"ERROR: This should never happen: error in def get_flagstat_for_multiqc ({wildcards.folder}, {wildcards.group})!")
             os._exit(0)
     elif parts[1] == "02_library":
-        filename = [("results/{level}/03_final_library/01_bam/{SM}/{LB}.{genome}_flagstat.txt").format(level=parts[1], group=wildcards.group, SM=row['SM'], LB=row['LB'], genome=wildcards.id_genome) for index, row in all_libraries.iterrows()]
-    elif parts[1] == "03_sample":	
-        filename=expand("results/{level}/03_final_sample/01_bam/{id_sample}.{id_genome}_flagstat.txt", level=parts[1], id_sample=list(samples), group=wildcards.group, id_genome=wildcards.id_genome)
+        filename = [("results/{level}/03_final_library/01_bam/{SM}/{LB}.{gen}_flagstat.txt").format(level=parts[1], group=wildcards.group, SM=row['SM'], LB=row['LB'], gen=wildcards.id_genome) for index, row in all_libraries.iterrows()]
+    elif parts[1] == "03_sample":    
+        filename=expand("results/{level}/03_final_sample/01_bam/{id_sample}.{gen}_flagstat.txt", level=parts[1], id_sample=list(samples), group=wildcards.group, gen=wildcards.id_genome)
     else:
         print(f"ERROR: This should never happen: error in def get_flagstat_for_multiqc ({wildcards.folder}, {wildcards.group})!")
         os._exit(0)
@@ -237,9 +301,9 @@ def get_flagstat_for_multiqc(wildcards):
 def get_depth_files(wildcards):
     parts = pathlib.Path(wildcards.folder).parts
     if parts[1] == "02_library":
-        filename = [("results/02_library/03_final_library/01_bam/{SM}/{LB}.{genome}_depth.txt").format(SM=row['SM'], LB=row['LB'], genome=wildcards.id_genome) for index, row in db.iterrows()]
+        filename = [("results/02_library/03_final_library/01_bam/{SM}/{LB}.{gen}_depth.txt").format(SM=row['SM'], LB=row['LB'], gen=wildcards.id_genome) for index, row in db.iterrows()]
     else:
-        filename = [("results/03_sample/03_final_sample/01_bam/{SM}.{genome}_depth.txt").format(SM=SM, genome=wildcards.id_genome) for SM in list(samples)]
+        filename = [("results/03_sample/03_final_sample/01_bam/{SM}.{gen}_depth.txt").format(SM=SM, gen=wildcards.id_genome) for SM in list(samples)]
     return(filename)
 
 

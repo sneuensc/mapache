@@ -28,6 +28,7 @@ rule fastqc:
     shell:
         "fastqc --quiet --outdir $(dirname {output.html}) {input} 2> {log}"
 
+
 rule samtools_flagstat:
     """
     Compute samtools flagstat on bam file
@@ -48,6 +49,7 @@ rule samtools_flagstat:
     message: "--- SAMTOOLS FLAGSTAT {input}"        
     shell:
         "samtools flagstat --threads {threads} {input} > {output} 2> {log};"
+
 
 rule multiqc_fastqc:
     """
@@ -117,37 +119,22 @@ def is_quick(file_name, dict):
 
 #sex_params = config["genome"]["sex"]["sex_params"] if "sex_params" in config["genome"]["sex"].keys() else {}
 
-## check if the input is a python command
-def eval_if_possible(x):
-    try:
-        return(",".join(map(str, eval(x))))
-    except:
-        return(x)   
 
-
-## replace any element of the list 
-def eval_list(x):
-    return (list(map(eval_if_possible, x)))
-
-
-## replace any element of the list 
-def eval_list_to_csv(x):
-    return (",".join(eval_list(x)))
-
-
-def get_sex_params(genome):
-    sex_params = get_param2('GENOME',genome,{})
-    return (" ".join([f"--{key}='{eval_if_possible(sex_params[key])}'" for key in sex_params.keys()]))
+def get_sex_params(name):
+    sex_params = get_param2('genome',name,{})
+    x = " ".join([f"--{key}='{eval_to_csv(sex_params[key])}'" for key in sex_params.keys()])
+    return x
 
 rule assign_sex:
     input:
-        genomecov = "results/04_stats/01_sparse_stats/{file}.{genome}.genomecov"
+        genomecov = "results/04_stats/01_sparse_stats/{file}.{id_genome}.genomecov",
+        test = "results/00_reference/{id_genome}/{id_genome}.ok"
     output:
-        sex = "results/04_stats/01_sparse_stats/{file}.{genome}.sex"
+        sex = "results/04_stats/01_sparse_stats/{file}.{id_genome}.sex"
     params:
-        sex_params = lambda wildcards: get_sex_params(wildcards.genome)
+        sex_params = lambda wildcards: get_sex_params(wildcards.id_genome)
     log:
-        "results/04_stats/01_sparse_stats/{file}.{genome}.sex.log"
+        "results/04_stats/01_sparse_stats/{file}.{id_genome}.sex.log"
     conda:
     	"../envs/r.yaml"
     envmodules:
@@ -162,8 +149,6 @@ rule assign_sex:
         """
 
 #-----------------------------------------------------------------------------#
-ruleorder: merge_stats_per_fastq > merge_stats_per_lb > merge_stats_per_sm
-
 ## merging individual stats
 # path_multiqc_orig = "results/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/multiqc_fastqc_data/multiqc_fastqc.txt"  # raw sequenced reads
 # path_multiqc_trim = "results/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_files_trim/multiqc_fastqc_data/multiqc_fastqc.txt" # raw trimmed reads
@@ -174,12 +159,12 @@ rule merge_stats_per_fastq:
     input:
         multiqc_orig                = "results/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/multiqc_fastqc_data/multiqc_fastqc.txt",   # raw sequenced reads
         multiqc_trim                = "results/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_files_trim/multiqc_fastqc_data/multiqc_fastqc.txt", # raw trimmed reads
-        flagstat_mapped_highQ       = "results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{genome}_flagstat.txt",       # mapped and high-qual reads
-        length_fastq_mapped_highQ   = "results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{genome}.length",
+        flagstat_mapped_highQ       = "results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{id_genome}_flagstat.txt",       # mapped and high-qual reads
+        length_fastq_mapped_highQ   = "results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{id_genome}.length",
     output:
-        "results/04_stats/02_separate_tables/{genome}/{SM}/{LB}/{ID}/stats.csv"
+        "results/04_stats/02_separate_tables/{id_genome}/{SM}/{LB}/{ID}/fastq_stats.csv"
     log:
-        "results/04_stats/02_separate_tables/{genome}/{SM}/{LB}/{ID}/stats.log"
+        "results/04_stats/02_separate_tables/{id_genome}/{SM}/{LB}/{ID}/fastq_stats.log"
     conda:
     	"../envs/r.yaml"
     envmodules:
@@ -191,7 +176,7 @@ rule merge_stats_per_fastq:
             --ID={wildcards.ID} \
             --LB={wildcards.LB} \
             --SM={wildcards.SM} \
-            --genome={wildcards.genome} \
+            --genome={wildcards.id_genome} \
             --output_file={output} \
             --path_multiqc_orig={input.multiqc_orig} \
             --path_multiqc_trim={input.multiqc_trim} \
@@ -201,38 +186,39 @@ rule merge_stats_per_fastq:
 
 ## get all chromosome names given in the stats part and check if the name is given in the genome part. In this case overtake it
 ## Example config:
-## GENOME: 
+## genome: 
 ##    GRCh38: 
 ##        maleChr: chrY
 ##        femaleChr: chrX
 ##        mtChr: chrM
-##        autosomes: '[f"chr{x}" for x in range(1,5)]'
+##        autosomeChr: '[f"chr{x}" for x in range(1,5)]'
 ## stats:
 ##    sample:
-##        depth_chromosomes: "femaleChr, maleChr, mtChr, autosomes"
+##        depth_chromosomes: "femaleChr, maleChr, mtChr, autosomeChr"
 ## ==> 'chrY,chrX,chr1,chr2,chr3,chr4,chrM'
  
 def get_chrom(wildcards):
     chr = eval_list("".join(get_param3("stats","sample","depth_chromosomes", '').split()).split(','))
-    genome = get_param2("GENOME",wildcards.genome, {})
-    chr_uniq =  list(set(chr) - set(list(genome)))
-    chr_def = list(set(chr).intersection(set(genome)))
-    return (",".join(eval_list(chr_uniq) + [eval_if_possible(genome[c]) for c in chr_def]))
+    gen = get_param2("genome",wildcards.id_genome, {})
+    chr_uniq =  list(set(chr) - set(list(gen)))
+    chr_def = list(set(chr).intersection(set(gen)))
+    return (",".join(eval_list(chr_uniq) + [eval_if_possible(gen[c]) for c in chr_def]))
 
 rule merge_stats_per_lb:
     input:
-        fastq_stats         = lambda wildcards: [f"results/04_stats/02_separate_tables/{wildcards.genome}/{wildcards.SM}/{wildcards.LB}/{ID}/stats.csv" for ID in samples[wildcards.SM][wildcards.LB]],
-        flagstat_raw        = "results/04_stats/01_sparse_stats/02_library/00_merged_fastq/01_bam/{SM}/{LB}.{genome}_flagstat.txt",       
-        flagstat_unique     = "results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{genome}_flagstat.txt",      
-        length_unique       = "results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{genome}.length",      
-        genomecov_unique    = "results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{genome}.genomecov",     
-        sex_unique          = "results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{genome}.sex",     
+        fastq_stats         = lambda wildcards: [f"results/04_stats/02_separate_tables/{wildcards.id_genome}/{wildcards.SM}/{wildcards.LB}/{ID}/fastq_stats.csv" for ID in samples[wildcards.SM][wildcards.LB]],
+        #fastq_stats         = lambda wildcards: ["results/04_stats/02_separate_tables/{gen}/{sm}/{lb}/{ID}/fastq_stats.csv".format(gen=wildcards.id_genome, sm=wildcards.SM, lb=wildcards.LB, ID=ID) for ID in list(samples[wildcards.SM][wildcards.LB])],
+        flagstat_raw        = "results/04_stats/01_sparse_stats/02_library/00_merged_fastq/01_bam/{SM}/{LB}.{id_genome}_flagstat.txt",       
+        flagstat_unique     = "results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{id_genome}_flagstat.txt",      
+        length_unique       = "results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{id_genome}.length",      
+        genomecov_unique    = "results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{id_genome}.genomecov",     
+        sex_unique          = "results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{id_genome}.sex",     
     output:
-        "results/04_stats/02_separate_tables/{genome}/{SM}/{LB}/stats.csv"
+        "results/04_stats/02_separate_tables/{id_genome}/{SM}/{LB}/library_stats.csv"
     params:
         chrs_selected = get_chrom
     log:
-        "results/04_stats/02_separate_tables/{genome}/{SM}/{LB}/stats.log"
+        "results/04_stats/02_separate_tables/{id_genome}/{SM}/{LB}/library_stats.log"
     conda:
         "../envs/r.yaml"
     envmodules:
@@ -244,7 +230,7 @@ rule merge_stats_per_lb:
         Rscript workflow/scripts/merge_stats_per_LB.R \
             --LB={wildcards.LB} \
             --SM={wildcards.SM} \
-            --genome={wildcards.genome} \
+            --genome={wildcards.id_genome} \
             --output_file={output} \
             --path_list_stats_fastq=${{list_fastq_stats}} \
             --path_flagstat_raw={input.flagstat_raw} \
@@ -257,28 +243,29 @@ rule merge_stats_per_lb:
         
 rule merge_stats_per_sm:
     input:
-        lb_stats           = lambda wildcards: [f"results/04_stats/02_separate_tables/{wildcards.genome}/{wildcards.SM}/{LB}/stats.csv" for LB in samples[wildcards.SM]],
-        flagstat_unique    = "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{genome}_flagstat.txt",      
-        length_unique      = "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{genome}.length",
-        genomecov_unique   = "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{genome}.genomecov",
-        sex_unique         = "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{genome}.sex" 
+        lb_stats           = lambda wildcards: [f"results/04_stats/02_separate_tables/{wildcards.id_genome}/{wildcards.SM}/{LB}/library_stats.csv" for LB in samples[wildcards.SM]],
+        #lb_stats           = lambda wildcards: ["results/04_stats/02_separate_tables/{gen}/{sm}/{lb}/library_stats.csv".format(gen=wildcards.id_genome, sm=wildcards.SM, lb=LB) for LB in list(samples[wildcards.SM])],
+        flagstat_unique    = "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{id_genome}_flagstat.txt",      
+        length_unique      = "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{id_genome}.length",
+        genomecov_unique   = "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{id_genome}.genomecov",
+        sex_unique         = "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{id_genome}.sex" 
     output:
-        "results/04_stats/02_separate_tables/{genome}/{SM}/stats.csv"
+        "results/04_stats/02_separate_tables/{id_genome}/{SM}/sample_stats.csv"
     params:
         chrs_selected = get_chrom
     log:
-        "results/04_stats/02_separate_tables/{genome}/{SM}/stats.log"
+        "results/04_stats/02_separate_tables/{id_genome}/{SM}/sample_stats.log"
     conda:
         "../envs/r.yaml"
     envmodules:
         module_r
-    message: "--- MERGE SAMPLE LEVEL STATS of  of {wildcards.SM} / {wildcards.genome}"
+    message: "--- MERGE SAMPLE LEVEL STATS of  of {wildcards.SM} / {wildcards.id_genome}"
     shell:
         """
         list_lb_stats=$(echo {input.lb_stats} |sed 's/ /,/g');
         Rscript workflow/scripts/merge_stats_per_SM.R \
             --SM={wildcards.SM} \
-            --genome={wildcards.genome} \
+            --genome={wildcards.id_genome} \
             --output_file={output} \
             --path_list_stats_fastq=${{list_lb_stats}} \
             --path_flagstat_unique={input.flagstat_unique} \
@@ -294,11 +281,11 @@ rule merge_stats_per_sm:
 
 def path_stats_by_level(level):
     if level == "FASTQ":
-        paths = [f"results/04_stats/02_separate_tables/{genome}/{SM}/{LB}/{ID}/stats.csv" for genome in GENOME for SM in samples for LB in samples[SM] for ID in samples[SM][LB]]
+        paths = [f"results/04_stats/02_separate_tables/{gen}/{SM}/{LB}/{ID}/fastq_stats.csv" for gen in genome for SM in samples for LB in samples[SM] for ID in samples[SM][LB]]
     elif level == "LB":
-        paths = [f"results/04_stats/02_separate_tables/{genome}/{SM}/{LB}/stats.csv" for genome in GENOME for SM in samples for LB in samples[SM]]
+        paths = [f"results/04_stats/02_separate_tables/{gen}/{SM}/{LB}/library_stats.csv" for gen in genome for SM in samples for LB in samples[SM]]
     elif level == "SM":
-        paths = [f"results/04_stats/02_separate_tables/{genome}/{SM}/stats.csv" for genome in GENOME for SM in samples]
+        paths = [f"results/04_stats/02_separate_tables/{gen}/{SM}/sample_stats.csv" for gen in genome for SM in samples]
     return paths
 
 

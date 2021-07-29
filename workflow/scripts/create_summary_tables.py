@@ -17,7 +17,7 @@ sample_stats = snakemake.output.sample_stats
 
 ## params
 delim = snakemake.params.delim   
-SAMPLES = snakemake.params.SAMPLES
+sample_file = snakemake.params.sample_file
 
 ## log
 log = snakemake.log
@@ -38,7 +38,7 @@ def read_flagstat(file, extract, name):
 
 
 ## sample file    
-db_fastq = pd.read_csv(SAMPLES, sep=delim)[['SM', 'LB' ,'ID']]\
+db_fastq = pd.read_csv(sample_file, sep=delim)[['SM', 'LB' ,'ID']]\
 .sort_values(['SM', 'LB' ,'ID'], axis=0, ascending=True)\
 .reset_index(drop=True)
 

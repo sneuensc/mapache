@@ -7,8 +7,8 @@ rule merge_bam_fastq2library:
     Merge the bam files of the fastq step
     """
     input:
-        lambda wildcards: ["results/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{FQ}.{genome}.bam".
-        	format(FQ=FQ, LB=wildcards.id_library, SM=wildcards.id_sample, genome=wildcards.id_genome) 
+        lambda wildcards: ["results/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{FQ}.{gen}.bam".
+        	format(FQ=FQ, LB=wildcards.id_library, SM=wildcards.id_sample, gen=wildcards.id_genome) 
             for FQ in db.loc[(db['LB']==wildcards.id_library) & (db['SM']==wildcards.id_sample)]['ID']]
     output:
         "{folder}/00_merged_fastq/01_bam/{id_sample}/{id_library}.{id_genome}.bam"
@@ -33,8 +33,8 @@ rule merge_bam_fastq2library_low_qual:
     Merge the bam files of the fastq step
     """
     input:
-        lambda wildcards: ["results/01_fastq/04_final_fastq/01_bam_low_qual/{SM}/{LB}/{FQ}.{genome}.bam".
-        	format(FQ=FQ, LB=wildcards.id_library, SM=wildcards.id_sample, genome=wildcards.id_genome) 
+        lambda wildcards: ["results/01_fastq/04_final_fastq/01_bam_low_qual/{SM}/{LB}/{FQ}.{gen}.bam".
+        	format(FQ=FQ, LB=wildcards.id_library, SM=wildcards.id_sample, gen=wildcards.id_genome) 
             for FQ in db.loc[(db['LB']==wildcards.id_library) & (db['SM']==wildcards.id_sample)]['ID']]
     output:
         "{folder}/00_merged_fastq/01_bam_low_qual/{id_sample}/{id_library}.{id_genome}.bam"
@@ -67,8 +67,8 @@ rule remove_duplicates:
         memory=lambda wildcards, attempt: get_memory_alloc("markduplicates", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("markduplicates", attempt, 24)
     params:
-        rmdup_params = config.get("markduplicates", {}).get("params", "REMOVE_DUPLICATES=true"),
-        PICARD = config.get("SOFTWARE", {}).get("picard_jar", "picard.jar")
+        rmdup_params = get_param2("markduplicates", "params", "REMOVE_DUPLICATES=true"),
+        PICARD = get_param2("software", "picard_jar", "picard.jar")
     threads: 
     	get_threads("markduplicates", 4)
     log:

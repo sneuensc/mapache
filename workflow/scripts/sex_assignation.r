@@ -60,7 +60,7 @@ if("--help" %in% args) {
  
       Arguments:
       --genomecov=file.genomecov          - input file from the command 'bedtools genomecov -ibam file.bam > file.genomecov'
-      --autosomes=1,2,..,22               - character, comma-separated list (chr1,chr2,chr3). Default: '1,2,..,22'
+      --autosomeChr=1,2,..,22             - character, comma-separated list (chr1,chr2,chr3). Default: '1,2,..,22'
       --SM=sample                         - character, sample ID. Default: NA
       --LB=library                        - character, library ID. Default: NA
       --ID=id                             - character, FASTQ ID. Default: NA
@@ -103,7 +103,7 @@ mappability_correction  = get_args(argsL, "mappability_correction", sex_system[[
 sex_with_larger_ratio   = get_args(argsL, "sex_with_larger_ratio", sex_system[[system]]$sex_with_larger_ratio)
 sex_to_autosomes        = get_args(argsL, "sex_to_autosomes", sex_system[[system]]$sex_to_autosomes)
 name_second_sex         = get_args(argsL, "name_second_sex", sex_system[[system]]$name_second_sex)
-autosomes               = get_args(argsL, "autosomes", paste0(1:22, collapse=','))
+autosomes               = get_args(argsL, "autosomeChr", paste0(1:22, collapse=','))
 
 output_file             = get_args(argsL, "out", "sex.out")
 SM                      = get_args(argsL, "SM", NA)

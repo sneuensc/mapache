@@ -1,8 +1,8 @@
-SOFTWARE:
+software:
     picard_jar: 'picard'
     gatk3_jar: 'GenomeAnalysisTK'
 
-ENVMODULES:
+envmodules:
     samtools:       "gcc samtools/1.12"
     bowtie2:        "gcc bowtie2/2.4.2"
     bwa:            "gcc bwa/0.7.17"
@@ -19,23 +19,23 @@ ENVMODULES:
 ##########################################################################################
 
 #workdir: 
-SAMPLES: config/samples.txt
+sample_file: config/samples.txt
 
-GENOME: 
+genome: 
     hg19: 
         fasta: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/hs.build37.1/hs.build37.1.fa 
         maleChr: Y
         femaleChr: X
         mtChr: MT
-        autosomes: list(range(1,23))
-        larger_chr: X      
+        autosomeChr: list(range(1,23))
+        larger_chr: X
     GRCh38: 
         fasta: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/GCA_000001405.15_GRCh38.p13_onlyChrom/GCA_000001405.15_GRCh38.fa
         # any R evaluation is allowed. Please use " and not '
         maleChr: chrY
         femaleChr: chrX
         mtChr: chrM
-        autosomes: '[f"chr{x}" for x in range(1,23)]'
+        autosomeChr: '[f"chr{x}" for x in range(1,23)]'
         #autosomes: paste0("chr",1:22)  
         #     # either of XY, ZW, XO or ZO
         #     system: XY                           
@@ -103,11 +103,11 @@ sorting:
 
 ## samtools_filter
 filtering:
-    run: False
+    run: True
     threads: 4
     mem: 16
     time: 2
-    save_low_qual: True
+    save_low_qual: False
 
 ##########################################################################################
 ## library level
@@ -122,12 +122,12 @@ merging:
 ## extract_duplicates (optional)
 ## in this case parameter 'rmdup_params' has NOT to be set to 'REMOVE_DUPLICATES=true'
 markduplicates:
-    run: True  ## remove, mark, extract
+    run: True  
     params: 'REMOVE_DUPLICATES=true'
     threads: 4
     mem: 16
     time: 2
-    extract_duplicates: False
+    save_duplicates: remove  ## remove, mark, extract
 
 
 ## mapDamage (optional, by default not run: see below)

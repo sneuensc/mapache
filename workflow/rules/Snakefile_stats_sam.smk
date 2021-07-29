@@ -131,7 +131,7 @@ rule write_summary_stats_fastq:
             return (dd)
 
         ## sample file    
-        db_fastq = pd.read_csv(SAMPLES, sep=delim)[['SM', 'LB' ,'ID']]\
+        db_fastq = pd.read_csv(sample_file, sep=delim)[['SM', 'LB' ,'ID']]\
         .sort_values(['SM', 'LB' ,'ID'], axis=0, ascending=True)\
         .reset_index(drop=True)
         
