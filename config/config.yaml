@@ -29,6 +29,7 @@ genome:
         mtChr: MT
         autosomeChr: list(range(1,23))
         larger_chr: X
+
     GRCh38: 
         fasta: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/GCA_000001405.15_GRCh38.p13_onlyChrom/GCA_000001405.15_GRCh38.fa
         # any R evaluation is allowed. Please use " and not '
