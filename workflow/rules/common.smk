@@ -144,15 +144,16 @@ def get_threads(module, default=1):
 
 ## define how to quantify the deamination pattern
 # def get_damage(run_damage):
-#     files=[]
 #     if run_damage == 'bamdamage':
-#         for curgenome in genome:
-#             files+=[("results/03_sample/{SM}/{LB}/library_bamdamage/{LB}.{gen}.dam.svg").
-#                 format(SM=row['SM'], LB=row['LB'], gen=curgenome) for index, row in all_libraries.iterrows()]
+#         files = [f"results/03_sample/{SM}/{LB}/library_bamdamage/{LB}.{GENOME}.dam.svg"
+#            for GENOME in genome
+#            for SM in samples
+#            for LB in samples[SM]]
 #     elif run_damage == 'mapDamage':
-#         for curgenome in genome:
-#             files+=[("{SM}/{LB}/library_mapDamage/{LB}.{gen}_results_mapDamage/Fragmisincorporation_plot.pdf").
-#                 format(SM=row['SM'], LB=row['LB'], gen=curgenome) for index, row in all_libraries.iterrows()]
+#         files = [f"results/03_sample/{SM}/{LB}/library_mapDamage/{LB}.{GENOME}_results_mapDamage/Fragmisincorporation_plot.pdf"
+#            for GENOME in genome
+#            for SM in samples
+#            for LB in samples[SM]]
 #
 #     return (files)
 
@@ -162,28 +163,15 @@ def get_threads(module, default=1):
 ## all functions for fastq files
 
 
-def get_from_sample_file(col, SM, LB, ID):
-    filename = db[(db["ID"] == ID) & (db["LB"] == LB) & (db["SM"] == SM)][col].values
-    return filename
-
-
 def get_fastq_of_ID(wildcards):
     if "_R1" == wildcards.ID[-3:]:
-        filename = get_from_sample_file(
-            "Data1", wildcards.SM, wildcards.LB, wildcards.ID[:-3]
-        )
+        filename = samples[wildcards.SM][wildcards.LB][wildcards.ID[:-3]]["Data1"]
     elif "_R2" == wildcards.ID[-3:]:
-        filename = get_from_sample_file(
-            "Data2", wildcards.SM, wildcards.LB, wildcards.ID[:-3]
-        )
+        filename = samples[wildcards.SM][wildcards.LB][wildcards.ID[:-3]]["Data2"]
     elif paired_end != 0:  ## SE library in a paired-end sample file
-        filename = get_from_sample_file(
-            "Data1", wildcards.SM, wildcards.LB, wildcards.ID
-        )
+        filename = samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data1"]
     else:
-        filename = get_from_sample_file(
-            "Data", wildcards.SM, wildcards.LB, wildcards.ID
-        )
+        filename = samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data"]
     return filename
 
 
@@ -191,21 +179,15 @@ def get_fastq_for_mapping(wildcards):
     if run_adapter_removal:
         if (
             paired_end == 1
-            and str(
-                get_from_sample_file(
-                    "Data2",
-                    wildcards.SM,
-                    wildcards.LB,
-                    wildcards.ID,
-                )[0]
-            )
-            != "nan"
+            and str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) != "nan"
         ):
             folder = f"results/01_fastq/01_trimmed/01_files_trim_collapsed/{wildcards.SM}/{wildcards.LB}"
         else:
             folder = f"results/01_fastq/01_trimmed/01_files_trim/{wildcards.SM}/{wildcards.LB}"
     else:
-        folder = f"results/01_fastq/00_reads/01_files_orig/{wildcards.SM}/{wildcards.LB}"
+        folder = (
+            f"results/01_fastq/00_reads/01_files_orig/{wildcards.SM}/{wildcards.LB}"
+        )
 
     if paired_end == 2:
         filename = [
@@ -230,15 +212,7 @@ def get_bam_for_sorting(wildcards):
     if mapper == "bwa_aln":
         if (
             paired_end == 2
-            and str(
-                get_from_sample_file(
-                    "Data2",
-                    wildcards.SM,
-                    wildcards.LB,
-                    wildcards.ID,
-                )[0]
-            )
-            != "nan"
+            and str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) != "nan"
         ):
             folder = "02_bwa_sampe"
         else:
@@ -334,102 +308,81 @@ def symlink_rev(input, output):
 ##########################################################################################
 ## all functions for the stats
 
-## get the stat file names to run multiqc
-def get_flagstat_for_multiqc(wildcards):
-    parts = pathlib.Path(wildcards.folder).parts
-    if parts[1] == "01_fastq":
-        if wildcards.group == "final":
-            filename = [
-                (
-                    "results/{level}/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{gen}_flagstat.txt"
-                ).format(
-                    level=parts[1],
-                    group=wildcards.group,
-                    ID=row["ID"],
-                    SM=row["SM"],
-                    LB=row["LB"],
-                    gen=wildcards.GENOME,
-                )
-                for index, row in db.iterrows()
-            ]
-        elif wildcards.group == "mapped":
-            filename = [
-                (
-                    "results/{level}/02_mapped/03_bam_sort/{SM}/{LB}/{ID}.{gen}_flagstat.txt"
-                ).format(
-                    level=parts[1],
-                    group=wildcards.group,
-                    ID=row["ID"],
-                    SM=row["SM"],
-                    LB=row["LB"],
-                    gen=wildcards.GENOME,
-                )
-                for index, row in db.iterrows()
-            ]
-        else:
-            print(
-                f"ERROR: This should never happen: error in def get_flagstat_for_multiqc ({wildcards.folder}, {wildcards.group})!"
-            )
-            os._exit(0)
-    elif parts[1] == "02_library":
-        filename = [
-            (
-                "results/{level}/03_final_library/01_bam/{SM}/{LB}.{gen}_flagstat.txt"
-            ).format(
-                level=parts[1],
-                group=wildcards.group,
-                SM=row["SM"],
-                LB=row["LB"],
-                gen=wildcards.GENOME,
-            )
-            for index, row in all_libraries.iterrows()
-        ]
-    elif parts[1] == "03_sample":
-        filename = expand(
-            "results/{level}/03_final_sample/01_bam/{SM}.{gen}_flagstat.txt",
-            level=parts[1],
-            SM=list(samples),
-            group=wildcards.group,
-            gen=wildcards.GENOME,
-        )
-    else:
-        print(
-            f"ERROR: This should never happen: error in def get_flagstat_for_multiqc ({wildcards.folder}, {wildcards.group})!"
-        )
-        os._exit(0)
-    return filename
+
+def is_quick(file_name, dict):
+    if "quick" in dict.keys() and dict["quick"]:
+        file_name.replace(".bam", ".downsampled.bam")
+    return file_name
+
+
+# sex_params = config["genome"]["sex"]["sex_params"] if "sex_params" in config["genome"]["sex"].keys() else {}
+
+
+def get_sex_params(wildcards):
+    sex_params = get_param2("genome", wildcards.GENOME, {})
+    x = " ".join(
+        [f"--{key}='{eval_to_csv(sex_params[key])}'" for key in sex_params.keys()]
+    )
+    return x
 
 
 ## get the individual depth files to combien them
 def get_depth_files(wildcards):
     parts = pathlib.Path(wildcards.folder).parts
     if parts[1] == "02_library":
-        filename = [
-            (
-                "results/02_library/03_final_library/01_bam/{SM}/{LB}.{gen}_depth.txt"
-            ).format(SM=row["SM"], LB=row["LB"], gen=wildcards.GENOME)
-            for index, row in db.iterrows()
-        ]
+        filename = (
+            [
+                f"results/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_depth.txt"
+                for GENOME in genome
+                for SM in samples
+                for LB in samples[SM]
+            ],
+        )
     else:
-        filename = [
-            ("results/03_sample/03_final_sample/01_bam/{SM}.{gen}_depth.txt").format(
-                SM=SM, gen=wildcards.GENOME
-            )
-            for SM in list(samples)
-        ]
+        filename = (
+            [
+                f"results/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_depth.txt"
+                for GENOME in genome
+                for SM in samples
+            ],
+        )
     return filename
 
 
-def get_fastqc_for_multiqc(wildcards):
-    folder = "results/01_fastq"
-    if wildcards.group == "orig":
-        folder = f"{folder}/00_reads/01_files_orig"
-    else:
-        folder = f"{folder}/01_trimmed/01_files_trim"
-    fastqc = [
-        ("{folder}/{SM}/{LB}/{ID}_fastqc.zip").format(
-            folder=folder, ID=row["ID"], SM=row["SM"], LB=row["LB"]
+def get_chrom(wildcards):
+    chr = eval_list(
+        "".join(get_param3("stats", "sample", "depth_chromosomes", "").split()).split(
+            ","
         )
-        for index, row in db.iterrows()
-    ]
-    return fastqc
+    )
+    GENOME = get_param2("genome", wildcards.GENOME, {})
+    chr_uniq = list(set(chr) - set(list(GENOME)))
+    chr_def = list(set(chr).intersection(set(GENOME)))
+    return ",".join(
+        eval_list(chr_uniq) + [eval_if_possible(GENOME[c]) for c in chr_def]
+    )
+
+
+def path_stats_by_level(wildcards):
+    if wildcards.level == "FASTQ":
+        paths = [
+            f"results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv"
+            for GENOME in genome
+            for SM in samples
+            for LB in samples[SM]
+            for ID in samples[SM][LB]
+        ]
+    elif wildcards.level == "LB":
+        paths = [
+            f"results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/library_stats.csv"
+            for GENOME in genome
+            for SM in samples
+            for LB in samples[SM]
+        ]
+    elif wildcards.level == "SM":
+        paths = [
+            f"results/04_stats/02_separate_tables/{GENOME}/{SM}/sample_stats.csv"
+            for GENOME in genome
+            for SM in samples
+        ]
+    return paths

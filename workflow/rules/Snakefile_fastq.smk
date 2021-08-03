@@ -9,9 +9,6 @@ localrules:
     get_fasta,  ## executed locally on a cluster
 
 
-# ruleorder: genome_index_bwa > get_fasta
-
-
 ## all rules for fastq files
 rule get_fastq:
     """
@@ -24,6 +21,8 @@ rule get_fastq:
     threads: 1
     message:
         "--- GET FASTQ FILES  {input}"
+    log:
+        "{folder}/00_reads/01_files_orig/{SM}/{LB}/{ID}.fastq.gz.log",
     shell:
         """
         ln -srf {input} {output}
@@ -42,6 +41,8 @@ rule get_fasta:
     threads: 1
     message:
         "--- GET REFERENCE  {input}"
+    log:
+        "results/00_reference/{GENOME}/{GENOME}.fasta.log",
     shell:
         """
         ln -srf {input} {output}
@@ -196,7 +197,7 @@ rule mapping_bwa_aln_se:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
-        config.get("mapping", {}).get("bwa_aln_params", "-l 1024"),
+        get_param2("mapping", "bwa_aln_params", "-l 1024"),
     log:
         "{folder}/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}.log",
     threads: get_threads("mapping", 4)
@@ -233,7 +234,7 @@ rule mapping_bwa_aln_pe:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
-        config.get("mapping", {}).get("bwa_aln_params", "-l 1024"),
+        get_param2("mapping", "bwa_aln_params", "-l 1024"),
     log:
         "{folder}/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}_R{id_read}.log",
     threads: get_threads("mapping", 4)
@@ -271,17 +272,8 @@ rule mapping_bwa_samse:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
-        ID="{ID}",
-        LB=lambda wildcards: get_from_sample_file(
-            "LB", wildcards.SM, wildcards.LB, wildcards.ID
-        )[0],
-        SM=lambda wildcards: get_from_sample_file(
-            "SM", wildcards.SM, wildcards.LB, wildcards.ID
-        )[0],
-        PL=lambda wildcards: get_from_sample_file(
-            "PL", wildcards.SM, wildcards.LB, wildcards.ID
-        )[0],
-        bwa_samse_params=config.get("mapping", {}).get("bwa_samse_params", "-n 3"),
+        PL=lambda wildcards: samples[wildcards.SM][wildcards.LB][wildcards.ID]["PL"],
+        bwa_samse_params=get_param2("mapping", "bwa_samse_params", "-n 3"),
     log:
         "{folder}/02_mapped/02_bwa_samse/{SM}/{LB}/{ID}.{GENOME}.log",
     threads: 1
@@ -295,7 +287,7 @@ rule mapping_bwa_samse:
     shell:
         """
         (bwa samse {params.bwa_samse_params} \
-         -r \"@RG\\tID:{params.ID}\\tLB:{params.LB}\\tSM:{params.SM}\\tPL:{params.PL}\" \
+         -r \"@RG\\tID:{wildcards.ID}\\tLB:{wildcards.LB}\\tSM:{wildcards.SM}\\tPL:{params.PL}\" \
          {input.ref} {input.sai} {input.fastq} | samtools view -Sb > {output}) 2> {log}
         """
 
@@ -323,17 +315,8 @@ rule mapping_bwa_sampe:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
-        ID="{ID}",
-        LB=lambda wildcards: get_from_sample_file(
-            "LB", wildcards.SM, wildcards.LB, wildcards.ID
-        )[0],
-        SM=lambda wildcards: get_from_sample_file(
-            "SM", wildcards.SM, wildcards.LB, wildcards.ID
-        )[0],
-        PL=lambda wildcards: get_from_sample_file(
-            "PL", wildcards.SM, wildcards.LB, wildcards.ID
-        )[0],
-        bwa_samse_params=config.get("mapping", {}).get("bwa_samse_params", "-n 3"),
+        PL=lambda wildcards: samples[wildcards.SM][wildcards.LB][wildcards.ID]["PL"],
+        bwa_samse_params=get_param2("mapping", "bwa_samse_params", "-n 3"),
     log:
         "{folder}/02_mapped/02_bwa_sampe/{SM}/{LB}/{ID}.{GENOME}.log",
     threads: 1
@@ -347,7 +330,7 @@ rule mapping_bwa_sampe:
     shell:
         """
         (bwa sampe {params.bwa_samse_params} \"
-             -r \"@RG\\tID:{params.ID}\\tLB:{params.LB}\\tSM:{params.SM}\\tPL:{params.PL}\" \
+             -r \"@RG\\tID:{wildcards.ID}\\tLB:{wildcards.LB}\\tSM:{wildcards.SM}\\tPL:{params.PL}\" \
              {input.ref} {input.sai1} {input.sai2} {input.fastq} | \
              samtools view -Sb > {output}) 2> {log}
         """
@@ -374,17 +357,8 @@ rule mapping_bwa_mem:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
-        ID="{ID}",
-        LB=lambda wildcards: get_from_sample_file(
-            "LB", wildcards.SM, wildcards.LB, wildcards.ID
-        )[0],
-        SM=lambda wildcards: get_from_sample_file(
-            "SM", wildcards.SM, wildcards.LB, wildcards.ID
-        )[0],
-        PL=lambda wildcards: get_from_sample_file(
-            "PL", wildcards.SM, wildcards.LB, wildcards.ID
-        )[0],
-        bwa_mem_params=config.get("mapping", {}).get("bwa_mem_params", ""),
+        PL=lambda wildcards: samples[wildcards.SM][wildcards.LB][wildcards.ID]["PL"],
+        bwa_mem_params=get_param2("mapping", "bwa_mem_params", ""),
     log:
         "{folder}/02_mapped/02_bwa_mem/{SM}/{LB}/{ID}.{GENOME}.log",
     threads: get_threads("mapping", 4)
@@ -397,7 +371,7 @@ rule mapping_bwa_mem:
     shell:
         """
         bwa mem {params.bwa_mem_params} -t {threads} \
-            -R \"@RG\\tID:{params.ID}\\tLB:{params.LB}\\tSM:{params.SM}\\tPL:{params.PL}\" \
+            -R \"@RG\\tID:{wildcards.ID}\\tLB:{wildcards.LB}\\tSM:{wildcards.SM}\\tPL:{params.PL}\" \
             {input.ref} ${input.fastq} > {output} 2> {log};
         """
 
@@ -424,17 +398,7 @@ rule mapping_bowtie2:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
-        ID="{ID}",
-        LB=lambda wildcards: get_from_sample_file(
-            "LB", wildcards.SM, wildcards.LB, wildcards.ID
-        )[0],
-        SM=lambda wildcards: get_from_sample_file(
-            "SM", wildcards.SM, wildcards.LB, wildcards.ID
-        )[0],
-        PL=lambda wildcards: get_from_sample_file(
-            "PL", wildcards.SM, wildcards.LB, wildcards.ID
-        )[0],
-        bowtie2_params=config.get("mapping", {}).get("bowtie2_params", ""),
+        bowtie2_params=get_param2("mapping", "bowtie2_params", ""),
     log:
         "{folder}/02_mapped/02_bwa_bowtie2/{SM}/{LB}/{ID}.{GENOME}.log",
     threads: get_threads("mapping", 4)
@@ -494,14 +458,9 @@ if save_low_qual:
             mapped="{folder}/03_filtered/01_bam_filter/{SM}/{LB}/{ID}.{GENOME}.bam",
             low_qual="{folder}/03_filtered/01_bam_filter_low_qual/{SM}/{LB}/{ID}.{GENOME}.bam",
         params:
-            q=lambda wildcards: int(
-                get_from_sample_file(
-                    "MAPQ",
-                    wildcards.SM,
-                    wildcards.LB,
-                    wildcards.ID,
-                )
-            ),
+            q=lambda wildcards: samples[wildcards.SM][wildcards.LB][wildcards.ID][
+                "MAPQ"
+            ],
         resources:
             memory=lambda wildcards, attempt: get_memory_alloc("filtering", attempt, 4),
             runtime=lambda wildcards, attempt: get_runtime_alloc(
@@ -534,14 +493,9 @@ else:
         output:
             mapped="{folder}/03_filtered/01_bam_filter/{SM}/{LB}/{ID}.{GENOME}.bam",
         params:
-            q=lambda wildcards: int(
-                get_from_sample_file(
-                    "MAPQ",
-                    wildcards.SM,
-                    wildcards.LB,
-                    wildcards.ID,
-                )
-            ),
+            q=lambda wildcards: samples[wildcards.SM][wildcards.LB][wildcards.ID][
+                "MAPQ"
+            ],
         resources:
             memory=lambda wildcards, attempt: get_memory_alloc("filtering", attempt, 4),
             runtime=lambda wildcards, attempt: get_runtime_alloc(
@@ -573,6 +527,8 @@ rule get_final_fastq:
         "{folder}/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}.bam",
     message:
         "--- GET FINAL BAM {input} (FASTQ LEVEL)"
+    log:
+        "{folder}/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}.bam.log",
     run:
         symlink_rev(input, output)
 
@@ -587,5 +543,7 @@ rule get_final_fastq_low_qual:
         "{folder}/04_final_fastq/01_bam_low_qual/{SM}/{LB}/{ID}.{GENOME}.bam",
     message:
         "--- GET FINAL LOW_QUAL BAM {input} (FASTQ LEVEL)"
+    log:
+        "{folder}/04_final_fastq/01_bam_low_qual/{SM}/{LB}/{ID}.{GENOME}.bam.log",
     run:
         symlink_rev(input, output)

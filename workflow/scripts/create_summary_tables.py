@@ -32,7 +32,7 @@ def read_flagstat(file, extract, name):
 	d2['ID'] = d2['ID'].str.strip()   
 	if "_R1_data" == os.path.dirname(file)[-8:]:
 		d2['ID'] = d2['ID'].map(lambda x: str(x)[:-3])
-	d2['ID'] = d2['ID'].map(lambda x: x.rstrip(".{}_flagstat".format(snakemake.wildcards.id_genome)))
+	d2['ID'] = d2['ID'].map(lambda x: x.rstrip(".{}_flagstat".format(snakemake.wildcards.GENOME)))
 	dd = pd.concat([d2[['SM','LB','ID']], d1[name]], axis=1)
 	return (dd)
 

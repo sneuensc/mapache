@@ -32,7 +32,7 @@ for file in snakemake.input:
         a = []
     else:
         a = [Path(os.path.dirname(file)).parts[-1]]
-    a += [os.path.basename(file).replace('_depth.txt', '').replace(".{}".format(snakemake.wildcards.id_genome), '')]
+    a += [os.path.basename(file).replace('_depth.txt', '').replace(".{}".format(snakemake.wildcards.GENOME), '')]
     
     ## AvgReadDepth_tot
     curLine = list(filter(lambda x:'Total' in x, to_store))

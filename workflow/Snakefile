@@ -173,10 +173,6 @@ for index, row in db.iterrows():
         samples[row["SM"]][row["LB"]][row["ID"]][col] = row[col]
 
 
-## Building dictionnary for libraries
-all_libraries = db.groupby(["LB", "SM"])["ID"].agg(["count"]).reset_index()
-
-
 ##########################################################################################
 include: "rules/Snakefile_index.smk"
 include: "rules/Snakefile_stats.smk"
@@ -194,10 +190,57 @@ localrules:
     stats,  ## executed locally on a cluster
 
 
-input_stats = [
+final_bam = [
+    expand(
+        "results/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.bam",
+        SM=samples,
+        GENOME=genome,
+    ),
+    expand(
+        "results/03_sample/03_final_sample/01_bam_low_qual/{SM}.{GENOME}.bam",
+        SM=samples,
+        GENOME=genome,
+    )
+    if save_low_qual
+    else [],
+    expand(
+        "results/03_sample/03_final_sample/01_bam_duplicate/{SM}.{GENOME}.bam",
+        SM=samples,
+        GENOME=genome,
+    )
+    if save_duplicates == "extract"
+    else [],
+]
+
+final_stats = [
     "results/04_stats/03_final_tables/SM.csv",
     "results/04_stats/03_final_tables/LB.csv",
     "results/04_stats/03_final_tables/FASTQ.csv",
+]
+
+final_stat_figures = [
+    expand(
+        "results/03_sample/04_stats/01_summary/sample_stats.{GENOME}.csv",
+        GENOME=genome,
+    ),
+    # expand("results/04_stats/sample_depth.{GENOME}.csv", GENOME=genome) if run_depth else [],
+    # get_damage(run_damage),
+    expand(
+        "results/03_sample/04_stats/01_summary/1_nb_reads.{GENOME}.png",
+        GENOME=genome,
+    ),
+    expand(
+        "results/03_sample/04_stats/01_summary/2_mapped.{GENOME}.png",
+        GENOME=genome,
+    ),
+    expand(
+        "results/03_sample/04_stats/01_summary/3_endogenous.{GENOME}.png",
+        GENOME=genome,
+    ),
+    expand(
+        "results/03_sample/04_stats/01_summary/4_duplication.{GENOME}.png",
+        GENOME=genome,
+    ),
 ]
 
 
@@ -207,29 +250,9 @@ rule all:
     Computes all
     """
     input:
-        # "logs/check_software_modules.done",
         ## check if given chromosome names make sense
         expand("results/00_reference/{GENOME}/{GENOME}.ok", GENOME=genome),
-        ## final bam files
-        expand(
-            "results/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.bam",
-            SM=list(samples),
-            GENOME=genome,
-        ),
-        expand(
-            "results/03_sample/03_final_sample/01_bam_low_qual/{SM}.{GENOME}.bam",
-            SM=list(samples),
-            GENOME=genome,
-        )
-        if save_low_qual
-        else [],
-        expand(
-            "results/03_sample/03_final_sample/01_bam_duplicate/{SM}.{GENOME}.bam",
-            SM=list(samples),
-            GENOME=genome,
-        )
-        if save_duplicates == "extract"
-        else [],
+        final_bam,
         ## summary statistics
         #expand("results/03_sample/04_stats/01_summary/sample_stats.{GENOME}.csv", GENOME=genome),
         #expand("results/03_sample/04_stats/01_summary/1_nb_reads.{GENOME}.png", GENOME=genome),
@@ -237,17 +260,17 @@ rule all:
         #expand("results/03_sample/04_stats/01_summary/3_endogenous.{GENOME}.png", GENOME=genome),
         #expand("results/03_sample/04_stats/01_summary/4_duplication.{GENOME}.png", GENOME=genome),
         ## extended statistics at library level
-        #expand("results/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_depth.txt", SM=list(samples), GENOME=genome) if str2bool(get_param3("stats", "library", "depth", "False")) else [],
+        #expand("results/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_depth.txt", SM=samples, GENOME=genome) if str2bool(get_param3("stats", "library", "depth", "False")) else [],
         ## extended statistics at sample level
         #expand("results/03_sample/04_stats/01_summary/5_AvgReadDepth.{GENOME}.svg", GENOME=genome) if str2bool(get_param3("stats", "sample", "depth", "False")) else [],
         #expand("results/03_sample/04_stats/01_summary/6_AvgReadDepth_MT.{GENOME}.svg", GENOME=genome) if str2bool(get_param3("stats", "sample", "depth", "False")) else [],
         #expand("results/03_sample/04_stats/01_summary/7_Sex.{GENOME}.svg", GENOME=genome) if str2bool(get_param3("stats", "sample", "depth", "False")) else [],
-        input_stats,
+        final_stats,
         #expand("results/03_sample/04_stats/01_summary/depth_stats_{GENOME}.csv", GENOME=genome)
 
 
-# expand("results/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_depth.txt", SM=list(samples), GENOME=genome) if str2bool(get_param3("stats", "sample", "depth", "False")) else []
-# expand("results/03_sample/04_stats/02_depth/{SM}.{GENOME}_depth.txt", SM=list(samples), GENOME=genome)  #if bool(config.get("stats", {}).get("sample", {}).get("depth", "False"))
+# expand("results/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_depth.txt", SM=samples, GENOME=genome) if str2bool(get_param3("stats", "sample", "depth", "False")) else []
+# expand("results/03_sample/04_stats/02_depth/{SM}.{GENOME}_depth.txt", SM=samples, GENOME=genome)  #if bool(config.get("stats", {}).get("sample", {}).get("depth", "False"))
 
 
 ## rules dag (just pipeline)
@@ -268,22 +291,9 @@ rule mapping:
     Computes just what is needed to get the final mapping (without any stats)
     """
     input:
-        # "logs/check_software_modules.done",
-        expand(
-            "results/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.bam",
-            SM=list(samples),
-            GENOME=genome,
-        ),
-        expand("results/03_sample/03_final_sample/01_bam_low_qual/{SM}.{GENOME}.bam", SM=list(samples), GENOME=genome, )
-        if save_low_qual
-        else [],
-        expand(
-            "results/03_sample/03_final_sample/01_bam_duplicate/{SM}.{GENOME}.bam",
-            SM=list(samples),
-            GENOME=genome,
-        )
-        if save_duplicates == "extract"
-        else [],
+        ## check if given chromosome names make sense
+        expand("results/00_reference/{GENOME}/{GENOME}.ok", GENOME=genome),
+        final_bam,
 
 
 rule stats:
@@ -291,28 +301,9 @@ rule stats:
     Computes all statistics
     """
     input:
-        expand(
-            "results/03_sample/04_stats/01_summary/sample_stats.{GENOME}.csv",
-            GENOME=genome,
-        ),
-        #expand("results/04_stats/sample_depth.{GENOME}.csv", GENOME=genome) if run_depth else [],
-        #get_damage(run_damage),
-        expand(
-            "results/03_sample/04_stats/01_summary/1_nb_reads.{GENOME}.png",
-            GENOME=genome,
-        ),
-        expand(
-            "results/03_sample/04_stats/01_summary/2_mapped.{GENOME}.png",
-            GENOME=genome,
-        ),
-        expand(
-            "results/03_sample/04_stats/01_summary/3_endogenous.{GENOME}.png",
-            GENOME=genome,
-        ),
-        expand(
-            "results/03_sample/04_stats/01_summary/4_duplication.{GENOME}.png",
-            GENOME=genome,
-        ),
+        ## check if given chromosome names make sense
+        expand("results/00_reference/{GENOME}/{GENOME}.ok", GENOME=genome),
+        final_stat_figures,
 
 
 onsuccess:
@@ -335,8 +326,6 @@ onerror:
 
 
 ##########################################################################################
-
-
 # rule check_software_modules:
 #     """
 #     Checks if software modules are available

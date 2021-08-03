@@ -15,9 +15,7 @@ rule check_chromosomes:
         femaleChr=lambda wildcards: get_param3(
             "genome", wildcards.GENOME, "femaleChr", "X"
         ),
-        maleChr=lambda wildcards: get_param3(
-            "genome", wildcards.GENOME, "maleChr", "Y"
-        ),
+        maleChr=lambda wildcards: get_param3("genome", wildcards.GENOME, "maleChr", "Y"),
         mtChr=lambda wildcards: get_param3("genome", wildcards.GENOME, "mtChr", "MT"),
         autosomeChr=lambda wildcards: eval_to_list(
             get_param3("genome", wildcards.GENOME, "autosomeChr", "")

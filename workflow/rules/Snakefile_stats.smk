@@ -62,19 +62,17 @@ rule multiqc_fastqc:
     Merging fastqc output with multiqc
     """
     input:
-        lambda wildcards: [
-            f"results/04_stats/01_sparse_stats/{wildcards.folder}/{SM}/{LB}/{ID}_fastqc.zip"
+        lambda wildcards: [f"results/04_stats/01_sparse_stats/{wildcards.folder}/{SM}/{LB}/{ID}_fastqc.zip"
             for SM in samples
             for LB in samples[SM]
             for ID in samples[SM][LB]
         ],
     output:
-        html="results/04_stats/01_sparse_stats/{folder}/multiqc_fastqc.html",
-        txt="results/04_stats/01_sparse_stats/{folder}/multiqc_fastqc_data/multiqc_fastqc.txt",
-        html=report(
+        html=report("results/04_stats/01_sparse_stats/{folder}/multiqc_fastqc.html",
             "results/{dir_stats}/{folder}/multiqc_fastqc.html",
             category=" Quality control",
         ),
+        txt="results/04_stats/01_sparse_stats/{folder}/multiqc_fastqc_data/multiqc_fastqc.txt",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("multiqc_mem", attempt, 2),
         runtime=lambda wildcards, attempt: get_runtime_alloc("multiqc_time", attempt, 1),
@@ -130,23 +128,6 @@ rule read_length:
         """
 
 
-def is_quick(file_name, dict):
-    if "quick" in dict.keys() and dict["quick"]:
-        file_name.replace(".bam", ".downsampled.bam")
-    return file_name
-
-
-# sex_params = config["genome"]["sex"]["sex_params"] if "sex_params" in config["genome"]["sex"].keys() else {}
-
-
-def get_sex_params(name):
-    sex_params = get_param2("genome", name, {})
-    x = " ".join(
-        [f"--{key}='{eval_to_csv(sex_params[key])}'" for key in sex_params.keys()]
-    )
-    return x
-
-
 rule assign_sex:
     input:
         genomecov="results/04_stats/01_sparse_stats/{file}.{GENOME}.genomecov",
@@ -154,7 +135,7 @@ rule assign_sex:
     output:
         sex="results/04_stats/01_sparse_stats/{file}.{GENOME}.sex",
     params:
-        sex_params=lambda wildcards: get_sex_params(wildcards.GENOME),
+        sex_params = get_sex_params
     log:
         "results/04_stats/01_sparse_stats/{file}.{GENOME}.sex.log",
     conda:
@@ -225,24 +206,10 @@ rule merge_stats_per_fastq:
 ## ==> 'chrY,chrX,chr1,chr2,chr3,chr4,chrM'
 
 
-def get_chrom(wildcards):
-    chr = eval_list(
-        "".join(get_param3("stats", "sample", "depth_chromosomes", "").split()).split(
-            ","
-        )
-    )
-    gen = get_param2("genome", wildcards.GENOME, {})
-    chr_uniq = list(set(chr) - set(list(gen)))
-    chr_def = list(set(chr).intersection(set(gen)))
-    return ",".join(eval_list(chr_uniq) + [eval_if_possible(gen[c]) for c in chr_def])
-
-
 rule merge_stats_per_lb:
     input:
         fastq_stats=lambda wildcards: [
-            f"results/04_stats/02_separate_tables/{wildcards.GENOME}/{wildcards.SM}/{wildcards.LB}/{ID}/fastq_stats.csv"
-            for ID in samples[wildcards.SM][wildcards.LB]
-        ],
+            f"results/04_stats/02_separate_tables/{wildcards.GENOME}/{wildcards.SM}/{wildcards.LB}/{ID}/fastq_stats.csv" for ID in samples[wildcards.SM][wildcards.LB]],
         flagstat_raw="results/04_stats/01_sparse_stats/02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}_flagstat.txt",
         flagstat_unique="results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_flagstat.txt",
         length_unique="results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}.length",
@@ -280,8 +247,7 @@ rule merge_stats_per_lb:
 
 rule merge_stats_per_sm:
     input:
-        lb_stats=lambda wildcards: [
-            f"results/04_stats/02_separate_tables/{wildcards.GENOME}/{wildcards.SM}/{LB}/library_stats.csv"
+        lb_stats = lambda wildcards: [f"results/04_stats/02_separate_tables/{wildcards.GENOME}/{wildcards.SM}/{LB}/library_stats.csv"
             for LB in samples[wildcards.SM]
         ],
         flagstat_unique="results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_flagstat.txt",
@@ -320,34 +286,9 @@ rule merge_stats_per_sm:
 # merge all the stats in the same level
 
 
-def path_stats_by_level(level):
-    if level == "FASTQ":
-        paths = [
-            f"results/04_stats/02_separate_tables/{gen}/{SM}/{LB}/{ID}/fastq_stats.csv"
-            for gen in genome
-            for SM in samples
-            for LB in samples[SM]
-            for ID in samples[SM][LB]
-        ]
-    elif level == "LB":
-        paths = [
-            f"results/04_stats/02_separate_tables/{gen}/{SM}/{LB}/library_stats.csv"
-            for gen in genome
-            for SM in samples
-            for LB in samples[SM]
-        ]
-    elif level == "SM":
-        paths = [
-            f"results/04_stats/02_separate_tables/{gen}/{SM}/sample_stats.csv"
-            for gen in genome
-            for SM in samples
-        ]
-    return paths
-
-
 rule merge_stats_by_level:
     input:
-        paths=lambda wildcards: path_stats_by_level(wildcards.level),
+        paths = path_stats_by_level,
     output:
         "results/04_stats/03_final_tables/{level}.csv",
     log:

@@ -14,10 +14,8 @@ rule merge_bam_library2sample:
     """
     input:
         mapped=lambda wildcards: [
-            ("results/02_library/03_final_library/01_bam/{SM}/{LB}.{gen}.bam").format(
-                LB=LB, SM=wildcards.SM, gen=wildcards.GENOME
-            )
-            for LB in list(samples[wildcards.SM])
+            f"results/02_library/03_final_library/01_bam/{wildcards.SM}/{LB}.{wildcards.GENOME}.bam"
+            for LB in samples[wildcards.SM]
         ],
     output:
         "{folder}/00_merged_library/01_bam/{SM}.{GENOME}.bam",
@@ -43,10 +41,8 @@ rule merge_bam_library2sample_low_qual:
     """
     input:
         lambda wildcards: [
-            (
-                "results/02_library/03_final_library/01_bam_low_qual/{SM}/{LB}.{gen}.bam"
-            ).format(LB=LB, SM=wildcards.SM, gen=wildcards.GENOME)
-            for LB in list(samples[wildcards.SM])
+            f"results/02_library/03_final_library/01_bam_low_qual/{wildcards.SM}/{LB}.{wildcards.GENOME}.bam"
+            for LB in samples[wildcards.SM]
         ],
     output:
         "{folder}/00_merged_library/01_bam_low_qual/{SM}.{GENOME}.bam",
@@ -147,7 +143,6 @@ rule samtools_calmd:
     """
     input:
         ref="results/00_reference/{GENOME}/{GENOME}.fasta",
-        #bam=lambda wildcards: get_md_flag_bam(wildcards.SM, wildcards.GENOME)
         bam=get_md_flag_bam,
     output:
         "results/03_sample/02_md_flag/01_md_flag/{SM}.{GENOME}.bam",
@@ -178,6 +173,8 @@ rule get_final_bam:
     output:
         "{folder}/03_final_sample/01_bam/{SM}.{GENOME}.bam",
     threads: 1
+    log:
+        "{folder}/03_final_sample/01_bam/{SM}.{GENOME}.bam.log",
     message:
         "--- SIMLINKK FINAL BAM"
     run:
@@ -193,6 +190,8 @@ rule get_final_bam_low_qual:
     output:
         "{folder}/03_final_sample/01_bam_low_qual/{SM}.{GENOME}.bam",
     threads: 1
+    log:
+        "{folder}/03_final_sample/01_bam_low_qual/{SM}.{GENOME}.bam.log",
     message:
         "--- SIMLINKK FINAL LOW_QUAL BAM"
     run:
@@ -208,6 +207,8 @@ rule move_final_bam_duplicate:
     output:
         "{folder}/03_final_sample/01_bam_duplicate/{SM}.{GENOME}.bam",
     threads: 1
+    log:
+        "{folder}/03_final_sample/01_bam_duplicate/{SM}.{GENOME}.bam.log",
     message:
         "--- SIMLINKK FINAL DUPLICATE BAM"
     run:

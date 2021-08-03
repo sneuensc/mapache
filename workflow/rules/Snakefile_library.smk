@@ -9,15 +9,8 @@ rule merge_bam_fastq2library:
     """
     input:
         lambda wildcards: [
-            "results/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{FQ}.{gen}.bam".format(
-                FQ=FQ,
-                LB=wildcards.LB,
-                SM=wildcards.SM,
-                gen=wildcards.GENOME,
-            )
-            for FQ in db.loc[
-                (db["LB"] == wildcards.LB) & (db["SM"] == wildcards.SM)
-            ]["ID"]
+            f"results/01_fastq/04_final_fastq/01_bam/{wildcards.SM}/{wildcards.LB}/{ID}.{wildcards.GENOME}.bam"
+            for ID in samples[wildcards.SM][wildcards.LB]
         ],
     output:
         "{folder}/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}.bam",
@@ -43,15 +36,8 @@ rule merge_bam_fastq2library_low_qual:
     """
     input:
         lambda wildcards: [
-            "results/01_fastq/04_final_fastq/01_bam_low_qual/{SM}/{LB}/{FQ}.{gen}.bam".format(
-                FQ=FQ,
-                LB=wildcards.LB,
-                SM=wildcards.SM,
-                gen=wildcards.GENOME,
-            )
-            for FQ in db.loc[
-                (db["LB"] == wildcards.LB) & (db["SM"] == wildcards.SM)
-            ]["ID"]
+            f"results/01_fastq/04_final_fastq/01_bam_low_qual/{wildcards.SM}/{wildcards.LB}/{ID}.{wildcards.GENOME}.bam"
+            for ID in samples[wildcards.SM][wildcards.LB]
         ],
     output:
         "{folder}/00_merged_fastq/01_bam_low_qual/{SM}/{LB}.{GENOME}.bam",
@@ -219,6 +205,8 @@ rule get_final_library:
         "{folder}/03_final_library/01_bam/{SM}/{LB}.{GENOME}.bam",
     message:
         "--- GET FINAL BAM {input} (LIBRARY LEVEL)"
+    log:
+        "{folder}/03_final_library/01_bam/{SM}/{LB}.{GENOME}.bam.log",
     run:
         symlink_rev(input, output)
 
@@ -233,6 +221,8 @@ rule get_final_library_low_qual:
         "{folder}/03_final_library/01_bam_low_qual/{SM}/{LB}.{GENOME}.bam",
     message:
         "--- GET FINAL LOW_QUAL BAM {input} (LIBRARY LEVEL)"
+    log:
+        "{folder}/03_final_library/01_bam_low_qual/{SM}/{LB}.{GENOME}.bam.log",
     run:
         symlink_rev(input, output)
 
@@ -247,5 +237,7 @@ rule get_final_library_lduplicate:
         "{folder}/03_final_library/01_bam_duplicate/{SM}/{LB}.{GENOME}.bam",
     message:
         "--- GET FINAL DUPLICATE BAM {input} (LIBRARY LEVEL)"
+    log:
+        "{folder}/03_final_library/01_bam_duplicate/{SM}/{LB}.{GENOME}.bam.log",
     run:
         symlink_rev(input, output)
