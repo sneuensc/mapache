@@ -9,7 +9,7 @@ Date: 28/10/2019
 ##########################################################################################
 ## read the config file
 configfile: "config/config.yaml"
-
+#validate(config)
 
 include: "rules/common.smk"
 
@@ -61,10 +61,21 @@ if len(genome) == 0:
     os._exit(0)
 
 ## test if for each reference a fasta file is defined
-for i in genome:
-    if "fasta" not in list(config["genome"][i]):
+## check the chromosome names (and adjust config)
+save_sex = False
+save_MT = False
+for GENOME in genome:
+    if "fasta" not in list(config["genome"][GENOME]):
         print("ERROR: Each reference genome requires a fasta file!")
         os._exit(0)
+    
+    check_chromsome_names(GENOME)
+    
+    if (get_param3("genome", GENOME, "femaleChr", "") != "") and (get_param3("genome", GENOME, "femaleChr", "") != ""):
+        save_sex = True
+    
+    if (get_param3("genome", GENOME, "mtChr", "") != ""):
+        save_MT = True
 
 
 ## if the bam files have to be rescaled mapDamage has to be run
@@ -189,7 +200,7 @@ localrules:
     mapping,
     stats,  ## executed locally on a cluster
 
-
+## get all final bam files 
 final_bam = [
     expand(
         "results/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.bam",
@@ -212,11 +223,13 @@ final_bam = [
     else [],
 ]
 
+## get the minimal final summary stats
 final_stats = [
     "results/04_stats/03_final_tables/SM.csv",
     "results/04_stats/03_final_tables/LB.csv",
     "results/04_stats/03_final_tables/FASTQ.csv",
 ]
+
 
 final_stat_figures = [
     expand(
@@ -241,6 +254,22 @@ final_stat_figures = [
         "results/03_sample/04_stats/01_summary/4_duplication.{GENOME}.png",
         GENOME=genome,
     ),
+    expand(
+        "results/03_sample/04_stats/01_summary/5_AvgReadDepth.{GENOME}.png",
+        GENOME=genome,
+    ),
+    expand(
+        "results/03_sample/04_stats/01_summary/6_AvgReadDepth_MT.{GENOME}.png",
+        GENOME=genome,
+    )
+    if save_MT
+    else [],
+    expand(
+        "results/03_sample/04_stats/01_summary/7_Sex.{GENOME}.png",
+        GENOME=genome,
+    )
+    if save_sex
+    else [],
 ]
 
 
@@ -291,8 +320,6 @@ rule mapping:
     Computes just what is needed to get the final mapping (without any stats)
     """
     input:
-        ## check if given chromosome names make sense
-        expand("results/00_reference/{GENOME}/{GENOME}.ok", GENOME=genome),
         final_bam,
 
 
@@ -301,8 +328,6 @@ rule stats:
     Computes all statistics
     """
     input:
-        ## check if given chromosome names make sense
-        expand("results/00_reference/{GENOME}/{GENOME}.ok", GENOME=genome),
         final_stat_figures,
 
 

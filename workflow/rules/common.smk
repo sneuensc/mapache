@@ -87,6 +87,43 @@ def eval_list_to_csv(x):
 
 
 ##########################################################################################
+## function to test the chromosome names
+def check_chromsome_names(GENOME):
+    import numpy as np
+    
+    ## get all chromsome names from the reference GENOME
+    fasta = get_param3('genome', GENOME, 'fasta', '')
+    allChr = list(map(str, pd.read_csv(f"{fasta}.fai", header=None, sep="\t")[0].tolist()))
+    
+    femaleChr = get_param3("genome", GENOME, "femaleChr", "X")
+    if femaleChr not in allChr:
+        set_param3("genome", GENOME, "femaleChr", "")
+        print(f"WARNING: In parameter 'genome:{GENOME}:femaleChr' the chromosome name '{femaleChr}' is unknown, assuming no female chromosome!")
+    
+    maleChr = get_param3("genome", GENOME, "maleChr", "Y")
+    if maleChr not in allChr:
+        set_param3("genome", GENOME, "maleChr", "")
+        print(f"WARNING: In parameter 'genome:{GENOME}:maleChr' the chromosome name '{maleChr}' is unknown, assuming no male chromosome!")
+    
+    mtChr = get_param3("genome", GENOME, "mtChr", "MT")
+    if mtChr not in allChr:
+        set_param3("genome", GENOME, "mtChr", "")
+        print(f"WARNING: In parameter 'genome:{GENOME}:mtChr' the chromosome name '{mtChr}' is unknown, assuming no MT chromosome!")
+    
+    autosomeChr = list(map(str, eval_to_list(get_param3("genome", GENOME, "autosomeChr", ""))))
+    if autosomeChr == "":
+        ## if empty, autosomes are all not differently defined chromsomes
+        autosomeChr = np.intersect1d(allChr, [femaleChr, maleChr, mtChr])
+        set_param3("genome", GENOME, "autosomeChr", list_to_csv(autosomeChr))
+    else:
+        unknown = list(set(autosomeChr) - set(allChr))
+        if len(unknown) > 0:
+            autosomeChr = np.intersect1d(allChr, autosomeChr)
+            set_param3("genome", GENOME,"autosomeChr",list_to_csv(autosomeChr),)
+            if len(unknown) == 1:
+                print(f"WARNING: In parameter 'genome:{GENOME}:autosomeChr' the chromosome name {unknown} is unknown, ignoring it!")
+            else:
+                print(f"WARNING: In parameter 'genome:{GENOME}:autosomeChr' the chromosome names {unknown} are unknown, ignoring them!")
 
 
 ## convert string to boolean
