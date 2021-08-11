@@ -329,7 +329,7 @@ rule mapping_bwa_sampe:
         "--- BWA SAMPE {input.fastq}"
     shell:
         """
-        (bwa sampe {params.bwa_samse_params} \"
+        (bwa sampe {params.bwa_samse_params} \
              -r \"@RG\\tID:{wildcards.ID}\\tLB:{wildcards.LB}\\tSM:{wildcards.SM}\\tPL:{params.PL}\" \
              {input.ref} {input.sai1} {input.sai2} {input.fastq} | \
              samtools view -Sb > {output}) 2> {log}
