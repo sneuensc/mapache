@@ -51,8 +51,6 @@ rule get_fasta:
 
 ##########################################################################################
 ## trimming
-
-
 ruleorder: adapter_removal_pe > adapter_removal_se
 
 

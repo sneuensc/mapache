@@ -58,7 +58,7 @@ module_bedtools = get_param2("envmodules", "bedtools", "")
 genome = list(config["genome"])
 if len(genome) == 0:
     print("ERROR: Reference genome is not specified (parameter genome)!")
-    os._exit(0)
+    os._exit(1)
 
 ## test if for each reference a fasta file is defined
 ## check the chromosome names (and adjust config)
@@ -67,7 +67,7 @@ save_MT = False
 for GENOME in genome:
     if "fasta" not in list(config["genome"][GENOME]):
         print("ERROR: Each reference genome requires a fasta file!")
-        os._exit(0)
+        os._exit(1)
     
     check_chromsome_names(GENOME)
     

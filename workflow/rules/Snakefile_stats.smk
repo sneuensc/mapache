@@ -11,12 +11,12 @@ rule fastqc:
     Quality control of fastq file by fastqc (SE or R1)
     """
     input:
-        "results/{file}.fastq.gz",
+        get_fastq_for_mapping
     output:
-        html="results/04_stats/01_sparse_stats/{file}_fastqc.html",
-        zip="results/04_stats/01_sparse_stats/{file}_fastqc.zip",
+        html = "results/04_stats/01_sparse_stats/01_fastq/{group1}/{group2}/{SM}/{LB}/{ID}_fastqc.html",
+        zip =  "results/04_stats/01_sparse_stats/01_fastq/{group1}/{group2}/{SM}/{LB}/{ID}_fastqc.zip",
     log:
-        "results/04_stats/01_sparse_stats/{file}_fastqc.log",
+        "results/04_stats/01_sparse_stats/01_fastq/{group1}/{group2}/{SM}/{LB}/{ID}_fastqc.log",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("fastqc_mem", attempt, 2),
         runtime=lambda wildcards, attempt: get_runtime_alloc("fastqc_time", attempt, 1),
@@ -25,9 +25,20 @@ rule fastqc:
     envmodules:
         module_fastqc,
     message:
-        "--- FASTQC {input}"
+        "--- FASTQC {output.html}"
     shell:
-        "fastqc --quiet --outdir $(dirname {output.html}) {input} 2> {log}"
+        """
+        ## symlink file to remove '_R1' of paired reads
+        html={output.html}
+        symlink=${{html%%_fastqc.html}}.fastq.gz
+        ln -srf {input[0]} $symlink
+        
+        ## run fastqc
+        fastqc --quiet --outdir $(dirname $html) $symlink 2> {log};
+        
+        ## remove symlink again
+        rm $symlink
+        """
 
 
 rule samtools_flagstat:
@@ -57,37 +68,37 @@ rule samtools_flagstat:
         "samtools flagstat --threads {threads} {input} > {output} 2> {log};"
 
 
-rule multiqc_fastqc:
-    """
-    Merging fastqc output with multiqc
-    """
-    input:
-        lambda wildcards: [f"results/04_stats/01_sparse_stats/{wildcards.folder}/{SM}/{LB}/{ID}_fastqc.zip"
-            for SM in samples
-            for LB in samples[SM]
-            for ID in samples[SM][LB]
-        ],
-    output:
-        html=report("results/04_stats/01_sparse_stats/{folder}/multiqc_fastqc.html",
-            "results/{dir_stats}/{folder}/multiqc_fastqc.html",
-            category=" Quality control",
-        ),
-        txt="results/04_stats/01_sparse_stats/{folder}/multiqc_fastqc_data/multiqc_fastqc.txt",
-    resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("multiqc_mem", attempt, 2),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("multiqc_time", attempt, 1),
-    log:
-        "results/04_stats/01_sparse_stats/{folder}/multiqc_fastqc.log",
-    conda:
-        "../envs/multiqc.yaml"
-    envmodules:
-        module_multiqc,
-    message:
-        "--- MULTIQC fastqc: {input}"
-    shell:
-        """
-        multiqc -n $(basename {output.html}) -f -d -o $(dirname {output.html}) {input}  2> {log}
-        """
+# rule multiqc_fastqc:
+#     """
+#     Merging fastqc output with multiqc
+#     """
+#     input:
+#         lambda wildcards: [f"results/04_stats/01_sparse_stats/{wildcards.folder}/{SM}/{LB}/{ID}_fastqc.zip"
+#             for SM in samples
+#             for LB in samples[SM]
+#             for ID in samples[SM][LB]
+#         ],
+#     output:
+#         html=report("results/04_stats/01_sparse_stats/{folder}/multiqc_fastqc.html",
+#             "results/{dir_stats}/{folder}/multiqc_fastqc.html",
+#             category=" Quality control",
+#         ),
+#         txt="results/04_stats/01_sparse_stats/{folder}/multiqc_fastqc_data/multiqc_fastqc.txt",
+#     resources:
+#         memory=lambda wildcards, attempt: get_memory_alloc("multiqc_mem", attempt, 2),
+#         runtime=lambda wildcards, attempt: get_runtime_alloc("multiqc_time", attempt, 1),
+#     log:
+#         "results/04_stats/01_sparse_stats/{folder}/multiqc_fastqc.log",
+#     conda:
+#         "../envs/multiqc.yaml"
+#     envmodules:
+#         module_multiqc,
+#     message:
+#         "--- MULTIQC fastqc: {input}"
+#     shell:
+#         """
+#         multiqc -n $(basename {output.html}) -f -d -o $(dirname {output.html}) {input}  2> {log}
+#         """
 
 
 rule bedtools_genomecov:
@@ -163,8 +174,8 @@ rule assign_sex:
 
 rule merge_stats_per_fastq:
     input:
-        multiqc_orig="results/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/multiqc_fastqc_data/multiqc_fastqc.txt",  # raw sequenced reads
-        multiqc_trim="results/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_files_trim/multiqc_fastqc_data/multiqc_fastqc.txt",  # raw trimmed reads
+        fastqc_orig="results/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_fastqc.zip",  # raw sequenced reads
+        fastqc_trim="results/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_files_trim/{SM}/{LB}/{ID}_fastqc.zip",  # raw trimmed reads
         flagstat_mapped_highQ="results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}_flagstat.txt",  # mapped and high-qual reads
         length_fastq_mapped_highQ="results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}.length",
     output:
@@ -185,8 +196,8 @@ rule merge_stats_per_fastq:
             --SM={wildcards.SM} \
             --genome={wildcards.GENOME} \
             --output_file={output} \
-            --path_multiqc_orig={input.multiqc_orig} \
-            --path_multiqc_trim={input.multiqc_trim} \
+            --path_fastqc_orig={input.fastqc_orig} \
+            --path_fastqc_trim={input.fastqc_trim} \
             --path_flagstat_mapped_highQ={input.flagstat_mapped_highQ} \
             --path_length_mapped_highQ={input.length_fastq_mapped_highQ}
         """

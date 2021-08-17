@@ -91,14 +91,17 @@ def eval_list_to_csv(x):
 def check_chromsome_names(GENOME):
     ## get all chromsome names from the reference GENOME
     fasta = get_param3('genome', GENOME, 'fasta', '')
-    if f"{fasta}.fai".exists():
+    if pathlib.Path(f"{fasta}.fai").exists():
         allChr = list(map(str, pd.read_csv(f"{fasta}.fai", header=None, sep="\t")[0].tolist()))
-    elif f"results/00_reference/{GENOME}/{GENOME}.fasta.fai".exists():
+    elif pathlib.Path(f"results/00_reference/{GENOME}/{GENOME}.fasta.fai").exists():
         fasta = f"results/00_reference/{GENOME}/{GENOME}.fasta"
         allChr = list(map(str, pd.read_csv(f"{fasta}.fai", header=None, sep="\t")[0].tolist()))
-    else: ## if the .fai file is not yet present
+    elif pathlib.Path(fasta).exists():
         cmd = f"grep '^>' {fasta} | cut -c2- | awk '{{print $1}}'"
         allChr = subprocess.check_output(cmd, shell=True, text=True).split()
+    else:
+        print(f"ERROR: Reference genome 'genome:{GENOME}:fasta' does not exist!")
+        os._exit(1)
     
     ## check female chromosome
     femaleChr = get_param3("genome", GENOME, "femaleChr", "X")
@@ -219,7 +222,6 @@ def get_fastq_of_ID(wildcards):
     else:
         filename = samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data"]
     return filename
-
 
 def get_fastq_for_mapping(wildcards):
     if run_adapter_removal:
