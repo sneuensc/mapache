@@ -51,14 +51,14 @@ module_multiqc        = get_param2("ENVMODULES", "multiqc", "")
 ## some test to verify that the minimal requirements are met
 
 ## is at least a reference genome defined
-GENOME = config['GENOME'].keys()
+GENOME = list(config['GENOME'])
 if len(GENOME) == 0:
     print("ERROR: Reference genome is not specified (parameter GENOME)!")
     os._exit(0)
 
 ## test if for each reference a fasta file is defined
 for i in GENOME:
-    if 'fasta' not in config['GENOME'][i].keys():
+    if 'fasta' not in list(config['GENOME'][i]):
         print("ERROR: Parameter GENOME required, but not set!")
         os._exit(0)
 
@@ -69,7 +69,7 @@ if run_mapDamage_rescale and get_param2("stats", "run_damage", "False") != 'mapD
 
 
 ## if one wants to extract the duplicates, MarkDuplicate has to mark the duplicates in order to extract them
-extract_duplicates = str2bool(get_param2("markduplicates", "extract_duplicates", "False"))
+extract_duplicates = str2bool(get_param2("markduplicates", "keep_duplicates", "False"))
 if  extract_duplicates and 'REMOVE_DUPLICATES=true' in get_param2("markduplicates", "params", ""):
     print("ERROR: To use 'markduplicates:extract_duplicates' the parameter 'markduplicates:params' has NOT to contain 'REMOVE_DUPLICATES=true'!")
     os._exit(0)
@@ -87,7 +87,7 @@ if len(db.columns) == 6:
         print("ERROR: The column names in the sample file are wrong! Expected are for single-end reads: ID, Data, MAPQ, LB, PL, SM")
         os._exit(0)    
 elif len(db.columns) == 7:
-    adaptrem_params = config["adaptrem_params"] if "adaptrem_params" in config.keys() else ''
+    adaptrem_params = config["adaptrem_params"] if "adaptrem_params" in list(config) else ''
     if '--collapse' in adaptrem_params:
         paired_end=1    ## paired-end libraries, which are collapsed with adapterremoval
     else:
@@ -140,7 +140,7 @@ include : "rules/Snakefile_library.smk"
 include : "rules/Snakefile_sample.smk"
 ##########################################################################################
 ##########################################################################################
-localrules: all, dag, mapping, stats, check_software_modules ## executed locally on a cluster
+localrules: all, dag, mapping, stats ## executed locally on a cluster
 
 ## rules all
 rule all:
@@ -150,9 +150,9 @@ rule all:
     input:
        # "logs/check_software_modules.done",
         ## final bam files
-        expand("results/03_sample/03_final_sample/01_bam/{id_sample}.{id_genome}.bam", id_sample=samples.keys(), id_genome=GENOME),
-        expand("results/03_sample/03_final_sample/01_bam_low_qual/{id_sample}.{id_genome}.bam", id_sample=samples.keys(), id_genome=GENOME),
-        expand("results/03_sample/03_final_sample/01_bam_duplicate/{id_sample}.{id_genome}.bam", id_sample=samples.keys(), id_genome=GENOME) if extract_duplicates else [],
+        expand("results/03_sample/03_final_sample/01_bam/{id_sample}.{id_genome}.bam", id_sample=list(samples), id_genome=GENOME),
+        expand("results/03_sample/03_final_sample/01_bam_low_qual/{id_sample}.{id_genome}.bam", id_sample=list(samples), id_genome=GENOME),
+        expand("results/03_sample/03_final_sample/01_bam_duplicate/{id_sample}.{id_genome}.bam", id_sample=list(samples), id_genome=GENOME) if extract_duplicates else [],
         ## summary statistics
         expand("results/03_sample/04_stats/01_summary/sample_stats.{id_genome}.csv", id_genome=GENOME),
         expand("results/03_sample/04_stats/01_summary/1_nb_reads.{id_genome}.png", id_genome=GENOME),
@@ -160,15 +160,15 @@ rule all:
         expand("results/03_sample/04_stats/01_summary/3_endogenous.{id_genome}.png", id_genome=GENOME),
         expand("results/03_sample/04_stats/01_summary/4_duplication.{id_genome}.png", id_genome=GENOME),
         ## extended statistics at library level
-        #expand("results/02_library/03_final_library/01_bam/{id_sample}/{id_library}.{id_genome}_depth.txt", id_sample=samples.keys(), id_genome=GENOME) if str2bool(get_param3("stats", "library", "depth", "False")) else [],
+        #expand("results/02_library/03_final_library/01_bam/{id_sample}/{id_library}.{id_genome}_depth.txt", id_sample=list(samples), id_genome=GENOME) if str2bool(get_param3("stats", "library", "depth", "False")) else [],
         ## extended statistics at sample level
         expand("results/03_sample/04_stats/01_summary/5_AvgReadDepth.{id_genome}.svg", id_genome=GENOME) if str2bool(get_param3("stats", "sample", "depth", "False")) else [],
         expand("results/03_sample/04_stats/01_summary/6_AvgReadDepth_MT.{id_genome}.svg", id_genome=GENOME) if str2bool(get_param3("stats", "sample", "depth", "False")) else [],
         expand("results/03_sample/04_stats/01_summary/7_Sex.{id_genome}.svg", id_genome=GENOME) if str2bool(get_param3("stats", "sample", "depth", "False")) else []
 
         #expand("results/03_sample/04_stats/01_summary/depth_stats_{id_genome}.csv", id_genome=GENOME)
-       # expand("results/03_sample/03_final_sample/01_bam/{id_sample}.{id_genome}_depth.txt", id_sample=samples.keys(), id_genome=GENOME) if str2bool(get_param3("stats", "sample", "depth", "False")) else []
-       # expand("results/03_sample/04_stats/02_depth/{id_sample}.{id_genome}_depth.txt", id_sample=samples.keys(), id_genome=GENOME)  #if bool(config.get("stats", {}).get("sample", {}).get("depth", "False"))
+       # expand("results/03_sample/03_final_sample/01_bam/{id_sample}.{id_genome}_depth.txt", id_sample=list(samples), id_genome=GENOME) if str2bool(get_param3("stats", "sample", "depth", "False")) else []
+       # expand("results/03_sample/04_stats/02_depth/{id_sample}.{id_genome}_depth.txt", id_sample=list(samples), id_genome=GENOME)  #if bool(config.get("stats", {}).get("sample", {}).get("depth", "False"))
 
 
 ## rules dag (just pipeline)
@@ -177,7 +177,7 @@ rule dag:
     Computes just the mapping (used to get a nice DAG)
     """
     input:
-        expand("results/03_sample/03_final_sample/01_bam/{id_sample}.{id_genome}.bam", id_sample=samples.keys(), id_genome=GENOME),
+        expand("results/03_sample/03_final_sample/01_bam/{id_sample}.{id_genome}.bam", id_sample=list(samples), id_genome=GENOME),
 
 
 rule mapping:
@@ -186,9 +186,9 @@ rule mapping:
     """
     input:
        # "logs/check_software_modules.done",
-        expand("results/03_sample/03_final_sample/01_bam/{id_sample}.{id_genome}.bam", id_sample=samples.keys(), id_genome=GENOME),
-        expand("results/03_sample/03_final_sample/01_bam_low_qual/{id_sample}.{id_genome}.bam", id_sample=samples.keys(), id_genome=GENOME),
-        expand("results/03_sample/03_final_sample/01_bam_duplicate/{id_sample}.{id_genome}.bam", id_sample=samples.keys(), id_genome=GENOME) if extract_duplicates else [],
+        expand("results/03_sample/03_final_sample/01_bam/{id_sample}.{id_genome}.bam", id_sample=list(samples), id_genome=GENOME),
+        expand("results/03_sample/03_final_sample/01_bam_low_qual/{id_sample}.{id_genome}.bam", id_sample=list(samples), id_genome=GENOME),
+        expand("results/03_sample/03_final_sample/01_bam_duplicate/{id_sample}.{id_genome}.bam", id_sample=list(samples), id_genome=GENOME) if extract_duplicates else [],
         expand("results/03_sample/04_stats/01_summary/sample_stats.{id_genome}.csv", id_genome=GENOME)
 
 rule stats:
@@ -221,17 +221,17 @@ onerror:
 ##########################################################################################
 
 
-rule check_software_modules:
-    """
-    Checks if software modules are available
-    """
-    output: 
-        touch("logs/check_software_modules.done")
-    params: 
-        modules=RequiredModules()
-    message: "--- Loading required modules"
-    threads: 1
-    shell: "{params.modules}"
+# rule check_software_modules:
+#     """
+#     Checks if software modules are available
+#     """
+#     output: 
+#         touch("logs/check_software_modules.done")
+#     params: 
+#         modules=RequiredModules()
+#     message: "--- Loading required modules"
+#     threads: 1
+#     shell: "{params.modules}"
 
 
 

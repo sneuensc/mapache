@@ -19,8 +19,8 @@ parser.add_argument("--malelimit", action="store", type=float, dest="malelimit",
 parser.add_argument("--femalelimit", action="store", type=float, dest="femalelimit",help="Lower R_y limit for assignment as XX/female",default=0.016)                                                      
 parser.add_argument("--digits", action="store", type=int, dest="digits",help="Number of decimal digits in R_y output",default=4)
 parser.add_argument("--noheader", action="store_true", dest="noheader",help="Do not print header describing the columns in the output",default=False)
-parser.add_argument("--female", action="store", dest="femaleStr",help="Female chromosome name",default="X")
-parser.add_argument("--male", action="store", dest="maleStr",help="Male chromosome name",default="Y")
+parser.add_argument("--female", action="store", type=str, dest="femaleStr",help="Female chromosome name",default="X")
+parser.add_argument("--male", action="store", type=str, dest="maleStr",help="Male chromosome name",default="Y")
 
 args = parser.parse_args()
 
@@ -75,11 +75,11 @@ totalReadCount = 0
 chrY_counts = None ; chrX_counts = None;
 
 for key in d_counts.keys():
-    if maleStr in key:
+    if args.maleStr in key:
         chrY_counts = d_counts[key]
     else:
     	chrY_counts = 0
-    if femaleStr in key:
+    if args.femaleStr in key:
         chrX_counts = d_counts[key]
     else:
     	chrX_counts = 0
