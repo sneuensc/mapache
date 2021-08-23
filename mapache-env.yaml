@@ -12,6 +12,7 @@ dependencies:
   - multiqc = 1.10.1
   - picard = 2.25.5
   - samtools = 1.12
+  - bedtools = 2.30.0
   - R = 4.0
   - r-ggplot2
   - r-rcolorbrewer

@@ -1,8 +1,8 @@
-SOFTWARE:
+software:
     picard_jar: 'picard'
     gatk3_jar: 'GenomeAnalysisTK'
 
-ENVMODULES:
+envmodules:
     samtools:       "gcc samtools/1.12"
     bowtie2:        "gcc bowtie2/2.4.2"
     bwa:            "gcc bwa/0.7.17"
@@ -10,21 +10,45 @@ ENVMODULES:
     gatk3:          "gcc gatk/3.8-1"
     fastqc:         "gcc fastqc/0.11.9"
     r:              "gcc r/4.0.4"
-    adapterremoval: ""
+    adapterremoval: "gcc adapterremoval/2.3.2"
     mapdamage:      ""
     multiqc:        ""
+    bedtools:       "gcc bedtools2/2.29.2"
 
 ##########################################################################################
 ##########################################################################################
 
 #workdir: 
-SAMPLES: config/samples.txt
+sample_file: config/samples.txt
 
-GENOME: 
+genome: 
     hg19: 
         fasta: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/hs.build37.1/hs.build37.1.fa 
-        maleChr: "Y"
-        femaleChr: "X"
+        maleChr: Y
+        femaleChr: X
+        mtChr: MT
+        autosomeChr: list(range(1,23))
+        larger_chr: X
+
+    GRCh38: 
+        fasta: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/GCA_000001405.15_GRCh38.p13_onlyChrom/GCA_000001405.15_GRCh38.fa
+        # any R evaluation is allowed. Please use " and not '
+        maleChr: chrY
+        femaleChr: chrX
+        mtChr: chrM
+        autosomeChr: '[f"chr{x}" for x in range(1,23)]'
+        #autosomes: paste0("chr",1:22)  
+        #     # either of XY, ZW, XO or ZO
+        #     system: XY                           
+        #     # larger sex chromosome
+        larger_chr: chrX      
+        #     # mappability correction for the larger sex chromosome                  
+        #     mappability_correction: 1  
+        #     # sex with larger ratio (larger sexual chr vs autosomes)          
+        #     sex_with_larger_ratio: Female     
+        #     # ratio of sex chromosome to autosomes in the other sex     
+        #     sex_to_autosomes_second_sex: 0.5     
+        #     name_second_sex: Male   
 
 #email: samuel.neuenschwander@unil.ch
 
@@ -80,9 +104,11 @@ sorting:
 
 ## samtools_filter
 filtering:
+    run: True
     threads: 4
     mem: 16
     time: 2
+    save_low_qual: False
 
 ##########################################################################################
 ## library level
@@ -97,12 +123,12 @@ merging:
 ## extract_duplicates (optional)
 ## in this case parameter 'rmdup_params' has NOT to be set to 'REMOVE_DUPLICATES=true'
 markduplicates:
-    run: True  ## remove, mark, extract
+    run: True  
     params: 'REMOVE_DUPLICATES=true'
     threads: 4
     mem: 16
     time: 2
-    extract_duplicates: False
+    save_duplicates: remove  ## remove, mark, extract
 
 
 ## mapDamage (optional, by default not run: see below)
@@ -145,10 +171,15 @@ compute_md:
 stats:
     sample:
         depth: True
-        
+        # If you want the DoC to be reported for some chromosomes in the main table, list them below. 
+        depth_chromosomes: "femaleChr, maleChr, mtChr"
     library:
         depth: True
-
+        depth_chromosomes: "femaleChr, maleChr, mtChr"
+    sex:
+        run: True
+        # if run in quick mode, about 10,000 reads will be taken randomly to determine the sex
+        quick: False
 ## mds
     run_bammds: False
 
