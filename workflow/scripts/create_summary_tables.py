@@ -17,7 +17,7 @@ sample_stats = snakemake.output.sample_stats
 
 ## params
 delim = snakemake.params.delim   
-SAMPLES = snakemake.params.SAMPLES
+sample_file = snakemake.params.sample_file
 
 ## log
 log = snakemake.log
@@ -32,13 +32,13 @@ def read_flagstat(file, extract, name):
 	d2['ID'] = d2['ID'].str.strip()   
 	if "_R1_data" == os.path.dirname(file)[-8:]:
 		d2['ID'] = d2['ID'].map(lambda x: str(x)[:-3])
-	d2['ID'] = d2['ID'].map(lambda x: x.rstrip(".{}_flagstat".format(snakemake.wildcards.id_genome)))
+	d2['ID'] = d2['ID'].map(lambda x: x.rstrip(".{}_flagstat".format(snakemake.wildcards.GENOME)))
 	dd = pd.concat([d2[['SM','LB','ID']], d1[name]], axis=1)
 	return (dd)
 
 
 ## sample file    
-db_fastq = pd.read_csv(SAMPLES, sep=delim)[['SM', 'LB' ,'ID']]\
+db_fastq = pd.read_csv(sample_file, sep=delim)[['SM', 'LB' ,'ID']]\
 .sort_values(['SM', 'LB' ,'ID'], axis=0, ascending=True)\
 .reset_index(drop=True)
 

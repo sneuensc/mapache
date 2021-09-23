@@ -1,265 +1,367 @@
+# -----------------------------------------------------------------------------#
+import pandas as pd
 
-##########################################################################################
-## all rules for the stats
-##########################################################################################
-## individual stats
+
+# -----------------------------------------------------------------------------#
+## get sparse stats stats
+
 
 rule fastqc:
     """
     Quality control of fastq file by fastqc (SE or R1)
     """
     input:
-        "{folder}/{file}.fastq.gz"
+        get_fastq_for_mapping
     output:
-        html="{folder}/{file}_fastqc.html",
-        zip="{folder}/{file}_fastqc.zip"
+        html = "results/04_stats/01_sparse_stats/01_fastq/{group1}/{group2}/{SM}/{LB}/{ID}_fastqc.html",
+        zip =  "results/04_stats/01_sparse_stats/01_fastq/{group1}/{group2}/{SM}/{LB}/{ID}_fastqc.zip",
     log:
-        "{folder}/{file}_fastqc.log"
+        "results/04_stats/01_sparse_stats/01_fastq/{group1}/{group2}/{SM}/{LB}/{ID}_fastqc.log",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("fastqc_mem", attempt, 2),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("fastqc_time", attempt, 1)
+        runtime=lambda wildcards, attempt: get_runtime_alloc("fastqc_time", attempt, 1),
     conda:
-    	"../envs/fastqc.yaml"
+        "../envs/fastqc.yaml"
     envmodules:
-    	module_fastqc
-    message: "--- FASTQC {input}"
+        module_fastqc,
+    message:
+        "--- FASTQC {output.html}"
     shell:
-        "fastqc --quiet --outdir $(dirname {output.html}) {input} 2> {log}"
+        """
+        ## symlink file to remove '_R1' of paired reads
+        html={output.html}
+        symlink=${{html%%_fastqc.html}}.fastq.gz
+        ln -srf {input[0]} $symlink
+        
+        ## run fastqc
+        fastqc --quiet --outdir $(dirname $html) $symlink 2> {log};
+        
+        ## remove symlink again
+        rm $symlink
+        """
 
 
 rule samtools_flagstat:
     """
-    Compute samtools falgstat on bam file
+    Compute samtools flagstat on bam file
     """
     input:
-        bam="{folder}/{file}.bam"
+        bam="results/{file}.bam",
     output:
-        "{folder}/{file}_flagstat.txt"
+        "results/04_stats/01_sparse_stats/{file}_flagstat.txt",
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("samtools_flagstat_mem", attempt, 2),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("samtools_flagstat_time", attempt, 1)
-    params: ""
+        memory=lambda wildcards, attempt: get_memory_alloc(
+            "samtools_flagstat_mem", attempt, 2
+        ),
+        runtime=lambda wildcards, attempt: get_runtime_alloc(
+            "samtools_flagstat_time", attempt, 1
+        ),
     log:
-        "{folder}/{file}_flagstat.log"
+        "results/04_stats/01_sparse_stats/{file}_flagstat.log",
     conda:
         "../envs/samtools.yaml"
     envmodules:
-        module_samtools
-    message: "--- SAMTOOLS FLAGSTAT {input}"        
+        module_samtools,
+    message:
+        "--- SAMTOOLS FLAGSTAT {input}"
     shell:
         "samtools flagstat --threads {threads} {input} > {output} 2> {log};"
 
-##########################################################################################
+
+# rule multiqc_fastqc:
+#     """
+#     Merging fastqc output with multiqc
+#     """
+#     input:
+#         lambda wildcards: [f"results/04_stats/01_sparse_stats/{wildcards.folder}/{SM}/{LB}/{ID}_fastqc.zip"
+#             for SM in samples
+#             for LB in samples[SM]
+#             for ID in samples[SM][LB]
+#         ],
+#     output:
+#         html=report("results/04_stats/01_sparse_stats/{folder}/multiqc_fastqc.html",
+#             "results/{dir_stats}/{folder}/multiqc_fastqc.html",
+#             category=" Quality control",
+#         ),
+#         txt="results/04_stats/01_sparse_stats/{folder}/multiqc_fastqc_data/multiqc_fastqc.txt",
+#     resources:
+#         memory=lambda wildcards, attempt: get_memory_alloc("multiqc_mem", attempt, 2),
+#         runtime=lambda wildcards, attempt: get_runtime_alloc("multiqc_time", attempt, 1),
+#     log:
+#         "results/04_stats/01_sparse_stats/{folder}/multiqc_fastqc.log",
+#     conda:
+#         "../envs/multiqc.yaml"
+#     envmodules:
+#         module_multiqc,
+#     message:
+#         "--- MULTIQC fastqc: {input}"
+#     shell:
+#         """
+#         multiqc -n $(basename {output.html}) -f -d -o $(dirname {output.html}) {input}  2> {log}
+#         """
+
+
+rule bedtools_genomecov:
+    input:
+        bam="results/{dir}/{file}.bam",
+    output:
+        genomecov="results/04_stats/01_sparse_stats/{dir}/{file}.genomecov",
+    log:
+        "results/04_stats/01_sparse_stats/{dir}/{file}.genomecov.log",
+    conda:
+        "../envs/bedtools.yaml"
+    envmodules:
+        module_bedtools,
+    message:
+        "--- BEDTOOLS GENOMECOV of {input.bam}"
+    shell:
+        """
+        bedtools genomecov -ibam {input.bam} > {output.genomecov}
+        """
+
+
+rule read_length:
+    input:
+        bam="results/{file}.bam",
+    output:
+        length="results/04_stats/01_sparse_stats/{file}.length",
+    log:
+        "results/04_stats/01_sparse_stats/{file}.length.log",
+    conda:
+        "../envs/samtools.yaml"
+    envmodules:
+        module_samtools,
+    message:
+        "--- READ LENGTH of {input}"
+    shell:
+        """
+        samtools view {input.bam} | workflow/scripts/read_length.pl -o {output.length}
+        """
+
+
+rule assign_sex:
+    input:
+        genomecov="results/04_stats/01_sparse_stats/{file}.{GENOME}.genomecov",
+        test="results/00_reference/{GENOME}/{GENOME}.ok",
+    output:
+        sex="results/04_stats/01_sparse_stats/{file}.{GENOME}.sex",
+    params:
+        sex_params = get_sex_params
+    log:
+        "results/04_stats/01_sparse_stats/{file}.{GENOME}.sex.log",
+    conda:
+        "../envs/r.yaml"
+    envmodules:
+        module_r,
+    message:
+        "--- SEX ASSIGNEMENT {input}"
+    shell:
+        """
+        Rscript workflow/scripts/sex_assignation.r \
+            --genomecov={input.genomecov} \
+            --out={output.sex} \
+            {params.sex_params}
+        """
+
+
+# -----------------------------------------------------------------------------#
 ## merging individual stats
-rule multiqc_fastqc:
-    """
-    Merging fastqc output with multiqc
-    """
+# path_multiqc_orig = "results/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/multiqc_fastqc_data/multiqc_fastqc.txt"  # raw sequenced reads
+# path_multiqc_trim = "results/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_files_trim/multiqc_fastqc_data/multiqc_fastqc.txt" # raw trimmed reads
+# path_flagstat_mapped_highQ = "results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/ind1/lib1_lb/lib1_R1_002_fq.hg19_flagstat.txt"       # mapped and high-qual reads
+# path_length_mapped_highQ = "results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/ind1/lib1_lb/lib1_R1_002_fq.hg19.length"
+
+
+rule merge_stats_per_fastq:
     input:
-        fastq = get_fastqc_for_multiqc
+        fastqc_orig="results/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_fastqc.zip",  # raw sequenced reads
+        fastqc_trim="results/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_files_trim/{SM}/{LB}/{ID}_fastqc.zip",  # raw trimmed reads
+        flagstat_mapped_highQ="results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}_flagstat.txt",  # mapped and high-qual reads
+        length_fastq_mapped_highQ="results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}.length",
     output:
-        #html = report("{folder}/multiqc_fastqc_{group}.html", category=" Quality control"),
-        html = "{folder}/multiqc_fastqc_{group}.html",
-        txt = "{folder}/multiqc_fastqc_{group}_data/multiqc_fastqc.txt"
-    resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("multiqc_mem", attempt, 2),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("multiqc_time", attempt, 1)
+        "results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv",
     log:
-        "{folder}/multiqc_fastqc_{group}.log"
+        "results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.log",
     conda:
-        "../envs/multiqc.yaml"
-    message: "--- MULTIQC fastqc_{wildcards.group}: {input}"
+        "../envs/r.yaml"
+    envmodules:
+        module_r,
+    message:
+        "--- MERGE FASTQ LEVEL STATS"
     shell:
         """
-        multiqc -n $(basename {output.html}) -f -d -o $(dirname {output.html}) {input} \
-        -b \"Merged fastqc output of {wildcards.group} fastq files\" 2> {log}
+        Rscript workflow/scripts/merge_stats_per_fastq.R \
+            --ID={wildcards.ID} \
+            --LB={wildcards.LB} \
+            --SM={wildcards.SM} \
+            --genome={wildcards.GENOME} \
+            --output_file={output} \
+            --path_fastqc_orig={input.fastqc_orig} \
+            --path_fastqc_trim={input.fastqc_trim} \
+            --path_flagstat_mapped_highQ={input.flagstat_mapped_highQ} \
+            --path_length_mapped_highQ={input.length_fastq_mapped_highQ}
         """
-        
 
-rule multiqc_flagstat:
-    """
-    Merging fastqc output with multiqc
-    """
+
+## get all chromosome names given in the stats part and check if the name is given in the genome part. In this case overtake it
+## Example config:
+## genome:
+##    GRCh38:
+##        maleChr: chrY
+##        femaleChr: chrX
+##        mtChr: chrM
+##        autosomeChr: '[f"chr{x}" for x in range(1,5)]'
+## stats:
+##    sample:
+##        depth_chromosomes: "femaleChr, maleChr, mtChr, autosomeChr"
+## ==> 'chrY,chrX,chr1,chr2,chr3,chr4,chrM'
+
+
+rule merge_stats_per_lb:
     input:
-        get_flagstat_for_multiqc
+        fastq_stats=lambda wildcards: [
+            f"results/04_stats/02_separate_tables/{wildcards.GENOME}/{wildcards.SM}/{wildcards.LB}/{ID}/fastq_stats.csv" for ID in samples[wildcards.SM][wildcards.LB]],
+        flagstat_raw="results/04_stats/01_sparse_stats/02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}_flagstat.txt",
+        flagstat_unique="results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_flagstat.txt",
+        length_unique="results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}.length",
+        genomecov_unique="results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}.genomecov",
+        sex_unique="results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}.sex",
     output:
-        html = "{folder}/multiqc_flagstat_{group}.{id_genome}.html",
-        txt = "{folder}/multiqc_flagstat_{group}.{id_genome}_data/multiqc_samtools_flagstat.txt"
-    resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("multiqc_mem", attempt, 2),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("multiqc_time", attempt, 1)
+        "results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/library_stats.csv",
+    params:
+        chrs_selected=get_chrom,
     log:
-        "{folder}/multiqc_flagstat_{group}.{id_genome}.log"
+        "results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/library_stats.log",
     conda:
-        "../envs/multiqc.yaml"
-    message: "--- MULTIQC flagstat_{wildcards.group}: {input}"
+        "../envs/r.yaml"
+    envmodules:
+        module_r,
+    message:
+        "--- MERGE LIBRARY LEVEL STATS"
     shell:
         """
-        multiqc -n $(basename {output.html}) -f -d -o $(dirname {output.html}) {input} \
-        -b \"Merged flagstat output of {wildcards.group} libraries and genome {wildcards.id_genome}\" 2> {log}
+        list_fastq_stats=$(echo {input.fastq_stats} |sed 's/ /,/g');
+        Rscript workflow/scripts/merge_stats_per_LB.R \
+            --LB={wildcards.LB} \
+            --SM={wildcards.SM} \
+            --genome={wildcards.GENOME} \
+            --output_file={output} \
+            --path_list_stats_fastq=${{list_fastq_stats}} \
+            --path_flagstat_raw={input.flagstat_raw} \
+            --path_flagstat_unique={input.flagstat_unique} \
+            --path_length_unique={input.length_unique} \
+            --path_genomecov_unique={input.genomecov_unique} \
+            --path_sex_unique={input.sex_unique} \
+            --chrs_selected={params.chrs_selected}
         """
 
-## write summary stats for fastq
-rule write_summary_stats_fastq:
-    """
-    Combine fastq statistics across files and write them to file
-    """
+
+rule merge_stats_per_sm:
     input:
-        orig = "{folder}/01_multiqc/multiqc_fastqc_orig_data/multiqc_fastqc.txt",
-        trim = "{folder}/01_multiqc/multiqc_fastqc_trim_data/multiqc_fastqc.txt",
-        final = "{folder}/01_multiqc/multiqc_flagstat_final.{id_genome}_data/multiqc_samtools_flagstat.txt"
-    output: 
-        fastq_stats = report("{folder}/02_summary/fastq_stats.{id_genome}.csv", caption="../report/fastq_stats.rst", category="Mapping statistics table")
-    log: 
-        "{folder}/02_summary/fastq_stats.{id_genome}.log"
-    message: "--- WRITE FASTQ SUMMARY STATISTICS OF {wildcards.id_genome}"
-    run:
-        import pandas as pd
-        import numpy as np
-        
-        def read_flagstat(file, extract, name):
-            d1 = pd.read_csv(file, sep="\t").rename({extract: name}, axis=1)[['Sample', name]] 
-            d1[name] = d1[name].astype('int64')
-            d2 = pd.DataFrame(d1['Sample'].str.split('|').tolist(), columns = ['type','type','type','type','SM','LB','ID'])
-            d2['SM'] = d2['SM'].str.strip()
-            d2['LB'] = d2['LB'].str.strip()
-            d2['ID'] = d2['ID'].str.strip()   
-            if "_R1_data" == os.path.dirname(file)[-8:]:
-                d2['ID'] = d2['ID'].map(lambda x: str(x)[:-3])
-            d2['ID'] = d2['ID'].map(lambda x: x.rstrip(".{}_flagstat".format(wildcards.id_genome)))
-            dd = pd.concat([d2[['SM','LB','ID']], d1[name]], axis=1)
-            return (dd)
-
-        ## sample file    
-        db_fastq = pd.read_csv(SAMPLES, sep=delim)[['SM', 'LB' ,'ID']]\
-        .sort_values(['SM', 'LB' ,'ID'], axis=0, ascending=True)\
-        .reset_index(drop=True)
-        
-        ## fastq file
-        db_orig = read_flagstat(input.orig, 'Total Sequences', 'reads_raw')
-        db_trim = read_flagstat(input.trim, 'Total Sequences', 'reads_trim')
-        db_map = read_flagstat(input.final, 'mapped_passed', 'mapping')
-        
-        db_fastq = pd.merge(db_fastq, db_orig, how="left", on = ['SM','LB','ID'])
-        db_fastq = pd.merge(db_fastq, db_trim, how="left", on = ['SM','LB','ID'])
-        db_fastq = pd.merge(db_fastq, db_map, how="left", on = ['SM','LB','ID'])
-        db_fastq['trim_prop'] = np.where(db_fastq['reads_raw'].ne(0), db_fastq['reads_trim'].astype(float) / db_fastq['reads_raw'], np.NaN) 
-        db_fastq['endo_prop'] = np.where(db_fastq['reads_raw'].ne(0), db_fastq['mapping'].astype(float) / db_fastq['reads_raw'], np.NaN) 
-        
-        db_fastq[['ID', 'LB', 'SM', 'reads_raw', 'reads_trim', 'trim_prop', 'mapping', 'endo_prop']]\
-        .round({'reads_trim': 0, 'trim_prop': 4, 'mapping': 0, 'endo_prop': 4})\
-        .to_csv(output[0], index = None, header=True)
-
-
-## write summary stats for libraries
-rule write_summary_stats_library:
-    """
-    Combine library statistics across files and write them to file
-    """
-    input:
-        fastq = "results/01_fastq/05_stats/02_summary/fastq_stats.{id_genome}.csv",
-        final = "results/02_library/04_stats/01_multiqc/multiqc_flagstat_final.{id_genome}_data/multiqc_samtools_flagstat.txt"
-    output: 
-       fastq_stats = report("results/02_library/04_stats/02_summary/library_stats.{id_genome}.csv", caption="../report/library_stats.rst", category="Mapping statistics table")
-    log: 
-        "results/02_library/04_stats/02_summary/library_stats.{id_genome}.log"
-    message: "--- WRITE LIBRARY SUMMARY STATISTICS OF {wildcards.id_genome}"
-    run:
-        import pandas as pd
-        import numpy as np
-        
-        def read_flagstat(file, extract, name):
-            d1 = pd.read_csv(file, sep="\t").rename({extract: name}, axis=1)[['Sample', name]] 
-            d1[name] = d1[name].astype('int64')
-            d2 = pd.DataFrame(d1['Sample'].str.split('|').tolist(), columns = ['type','type','type','type','SM','LB'])
-            d2['SM'] = d2['SM'].str.strip()
-            d2['LB'] = d2['LB'].str.strip()
-            d2['LB'] = d2['LB'].map(lambda x: x.rstrip(".{}_flagstat".format(wildcards.id_genome)))
-            dd = pd.concat([d2[['SM','LB']], d1[name]], axis=1)
-            return (dd)
-
-        ## fastq stats
-        db_fastq = pd.read_csv(input.fastq)
-        db_library = db_fastq.groupby(['SM','LB'])[['reads_raw', 'reads_trim', 'mapping']].apply(lambda x: x.sum(skipna=False)).reset_index()
-        
-        ## library stats
-        db_lib = read_flagstat(input.final, 'mapped_passed', 'mapping_final')
-        
-        db_library = pd.merge(db_library, db_lib, how="left", on = ['SM','LB'])
-        db_library['duplicates'] = db_library['mapping'] - db_library['mapping_final']
-        db_library['trim_prop'] = np.where(db_library['reads_raw'].ne(0), db_library['reads_trim'].astype(float) / db_library['reads_raw'], np.NaN) 
-        db_library['endo_prop'] = np.where(db_library['reads_raw'].ne(0), db_library['mapping'].astype(float) / db_library['reads_raw'], np.NaN) 
-        db_library['endo_final_prop'] = np.where(db_library['reads_raw'].ne(0), db_library['mapping_final'].astype(float) / db_library['reads_raw'], np.NaN) 
-        db_library['duplicates_prop'] = np.where(db_library['mapping'].ne(0), db_library["duplicates"].astype(float) / db_library["mapping"], np.NaN) 
-
-        db_library[['LB', 'SM','reads_raw', 'reads_trim', 'trim_prop', 'mapping', 'endo_prop', 'duplicates', 'duplicates_prop', 'mapping_final', 'endo_final_prop']]\
-        .round({'reads_raw': 0, 'reads_trim': 0, 'trim_prop': 4, 'mapping': 0, 'endo_prop': 4, 'duplicates': 0, 'duplicates_prop': 4, 'mapping_final': 0, 'endo_final_prop': 4})\
-        .to_csv(output[0], index = None, header=True)
-
-
-## write summary stats for sample
-rule write_summary_stats_sample:
-    """
-    Combine sample statistics across files and write them to file
-    """
-    input:
-        library = "results/02_library/04_stats/02_summary/library_stats.{id_genome}.csv"
-    output: 
-        sample_stats = report("results/03_sample/04_stats/01_summary/sample_stats.{id_genome}.csv", caption="../report/sample_stats.rst", category="Mapping statistics table")
-    log: 
-        "results/03_sample/04_stats/01_summary/sample_stats.{id_genome}.log"
-    message: "--- WRITE SAMPLE SUMMARY STATISTICS OF {wildcards.id_genome}"
-    run:
-        import pandas as pd
-        import numpy as np
-        
-        ## sample stats
-        db_library = pd.read_csv(input.library)
-        db_sample = db_library.groupby('SM')[['reads_raw', 'reads_trim', 'mapping', 'mapping_final', 'duplicates']].apply(lambda x: x.sum(skipna=False)).reset_index()
-        db_sample['trim_prop'] = np.where(db_sample['reads_raw'].ne(0), db_sample['reads_trim'].astype(float) / db_sample['reads_raw'], np.NaN) 
-        db_sample['endo_prop'] = np.where(db_sample['reads_raw'].ne(0), db_sample['mapping'].astype(float) / db_sample['reads_raw'], np.NaN) 
-        db_sample['endo_final_prop'] = np.where(db_sample['reads_raw'].ne(0), db_sample['mapping_final'].astype(float) / db_sample['reads_raw'], np.NaN) 
-        db_sample['duplicates_prop'] = np.where(db_sample['mapping'].ne(0), db_sample["duplicates"].astype(float) / db_sample["mapping"], np.NaN) 
-
-        db_sample[['SM','reads_raw', 'reads_trim', 'trim_prop', 'mapping', 'endo_prop', 'duplicates', 'duplicates_prop', 'mapping_final', 'endo_final_prop']]\
-        .round({'reads_raw': 0, 'reads_trim': 0, 'trim_prop': 4, 'mapping': 0, 'endo_prop': 4, 'duplicates': 0, 'duplicates_prop': 4, 'mapping_final': 0, 'endo_final_prop': 4})\
-        .to_csv(output[0], index = None, header=True)
-
-
-
-
-##########################################################################################
-## read depth and sex determination
-rule depth_compute:
-    """
-    Compute the read depth per chromosome 
-    """
-    input:
-        "{folder}/{file}.{id_genome}.bam"
+        lb_stats = lambda wildcards: [f"results/04_stats/02_separate_tables/{wildcards.GENOME}/{wildcards.SM}/{LB}/library_stats.csv"
+            for LB in samples[wildcards.SM]
+        ],
+        flagstat_unique="results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_flagstat.txt",
+        length_unique="results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.length",
+        genomecov_unique="results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.genomecov",
+        sex_unique="results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.sex",
     output:
-        "{folder}/{file}.{id_genome}_depth.txt"
-    resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("mem", attempt, 2),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("time", attempt, 1)
+        "results/04_stats/02_separate_tables/{GENOME}/{SM}/sample_stats.csv",
+    params:
+        chrs_selected=get_chrom,
     log:
-        "{folder}/{file}.{id_genome}.log"
-    threads: 1
-    message: "--- COMPUTE DEPTH OF {input}"
+        "results/04_stats/02_separate_tables/{GENOME}/{SM}/sample_stats.log",
+    conda:
+        "../envs/r.yaml"
+    envmodules:
+        module_r,
+    message:
+        "--- MERGE SAMPLE LEVEL STATS of  of {wildcards.SM} / {wildcards.GENOME}"
     shell:
-        "workflow/scripts/depth.py {input} > {output} 2> {log}"
-        
-        
-rule concat_depth_statistics:
+        """
+        list_lb_stats=$(echo {input.lb_stats} |sed 's/ /,/g');
+        Rscript workflow/scripts/merge_stats_per_SM.R \
+            --SM={wildcards.SM} \
+            --genome={wildcards.GENOME} \
+            --output_file={output} \
+            --path_list_stats_fastq=${{list_lb_stats}} \
+            --path_flagstat_unique={input.flagstat_unique} \
+            --path_length_unique={input.length_unique} \
+            --path_genomecov_unique={input.genomecov_unique} \
+            --path_sex_unique={input.sex_unique} \
+            --chrs_selected={params.chrs_selected}
+        """
+
+
+# -----------------------------------------------------------------------------#
+# merge all the stats in the same level
+
+
+rule merge_stats_by_level:
     input:
-        get_depth_files
+        paths = path_stats_by_level,
     output:
-        report("{folder}/depth_stats_{id_genome}.csv", caption="../report/sample_depth.rst", category="Mapping statistics table")
-    threads: 1
+        "results/04_stats/03_final_tables/{level}.csv",
     log:
-        "{folder}/depth_stats_{id_genome}.log"
-    message: "--- COMBINE DETH STATISTICS TO {output} ---"
-    script:
-    	"../scripts/depth_concat.py"
+        "results/04_stats/03_final_tables/{level}.log",
+    message:
+        "--- MERGE STATS by {wildcards.level}"
+    run:
+        import pandas as pd
+
+        df_list = [pd.read_csv(file) for file in input]
+        df = pd.concat(df_list)
+        df.to_csv(str(output), index=False)
+
+
+# -----------------------------------------------------------------------------#
+# plotting
+
+
+rule plot_summary_statistics:
+    """
+    Plot summary statistics
+    """
+    input:
+        fastq_stats="results/04_stats/03_final_tables/FASTQ.csv",
+        library_stats="results/04_stats/03_final_tables/LB.csv",
+        sample_stats="results/04_stats/03_final_tables/SM.csv",
+    output:
+        plot_1_nb_reads=report(
+            "results/04_stats/03_final_tables/04_final_plots/1_nb_reads.png",
+            caption="../report/1_nb_reads.rst",
+            category="Mapping statistics plots",
+        ),
+        plot_2_mapped=report(
+            "results/04_stats/03_final_tables/04_final_plots/2_mapped.png",
+            caption="../report/2_mapped.rst",
+            category="Mapping statistics plots",
+        ),
+        plot_3_endogenous=report(
+            "results/04_stats/03_final_tables/04_final_plots/3_endogenous.png",
+            caption="../report/3_endogenous.rst",
+            category="Mapping statistics plots",
+        ),
+        plot_4_duplication=report(
+            "results/04_stats/03_final_tables/04_final_plots/4_duplication.png",
+            caption="../report/4_duplication.rst",
+            category="Mapping statistics plots",
+        ),
+    log:
+        "results/04_stats/03_final_tables/04_final_plots/plot.log",
+    conda:
+        "../envs/r.yaml"
+    envmodules:
+        module_r,
+    message:
+        "--- PLOT SUMMARY STATISTICS"
+    shell:
+        """
+        Rscript workflow/scripts/sex_assignation.r \
+            --genomecov={input.genomecov} \
+            --out={output.sex} \
+            --larger_chr={params.sex_params}
+        """
 
 
 ##########################################################################################
@@ -316,16 +418,28 @@ rule bamdamage:
 
 rule plot_depth_statistics:
     input:
-        sample_depth = "{folder}/depth_stats_{id_genome}.csv"
+        sample_depth="{folder}/depth_stats_{GENOME}.csv",
     output:
-        plot_5_AvgReadDepth = report("{folder}/5_AvgReadDepth.{id_genome}.svg", caption="../report/5_AvgReadDepth.rst", category="Mapping statistics plots"),
-        plot_6_AvgReadDepth_MT = report("{folder}/6_AvgReadDepth_MT.{id_genome}.svg", caption="../report/6_AvgReadDepth_MT.rst", category="Mapping statistics plots"),
-        plot_7_Sex = report("{folder}/7_Sex.{id_genome}.svg", caption="../report/7_Sex.rst", category="Mapping statistics plots")
+        plot_5_AvgReadDepth=report(
+            "{folder}/5_AvgReadDepth.{GENOME}.svg",
+            caption="../report/5_AvgReadDepth.rst",
+            category="Mapping statistics plots",
+        ),
+        plot_6_AvgReadDepth_MT=report(
+            "{folder}/6_AvgReadDepth_MT.{GENOME}.svg",
+            caption="../report/6_AvgReadDepth_MT.rst",
+            category="Mapping statistics plots",
+        ),
+        plot_7_Sex=report(
+            "{folder}/7_Sex.{GENOME}.svg",
+            caption="../report/7_Sex.rst",
+            category="Mapping statistics plots",
+        ),
     threads: 1
     log:
-        "{folder}/depth_stats_plot.{id_genome}.csv.log"
+        "{folder}/depth_stats_plot.{GENOME}.csv.log",
     conda:
-    	"../envs/r.yaml"
+        "../envs/r.yaml"
     envmodules:
     	module_r
     message: "--- PLOT DEPTH STATISTICS OF {input}"

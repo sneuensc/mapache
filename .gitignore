@@ -2,5 +2,5 @@
 report.html
 results
 snakemake.run.log
-wally2/__pycache__
+slurm/__pycache__
 dag.svg

@@ -9,7 +9,7 @@ orig_dir = os.path.abspath(os.path.dirname(filename))
 orig_prefix = os.path.basename(filename)
 
 ## get the new reference folder
-new_prefix = snakemake.wildcards.id_genome
+new_prefix = snakemake.wildcards.GENOME
 new_dir=os.path.abspath('results/00_reference/' + new_prefix)
 
 ## check if the indexes are present
