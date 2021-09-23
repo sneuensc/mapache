@@ -195,11 +195,11 @@ def get_threads(module, default=1):
 def get_damage(run_damage):
     files=[]
     if run_damage == 'bamdamage':
-        for genome in GENOME:
-            files+=[("results/02_library/04_stats/03_bamdamage/{SM}/{LB}/{LB}.{genome}.dam.pdf").format(SM=row['SM'], LB=row['LB'], genome=genome) for index, row in all_libraries.iterrows()]
+        for GENOME in genome:
+            files+=[("results/02_library/04_stats/03_bamdamage/{SM}/{LB}/{LB}.{GENOME}.dam.pdf").format(SM=row['SM'], LB=row['LB'], GENOME=GENOME) for index, row in all_libraries.iterrows()]
     elif run_damage == 'mapDamage':
-        for genome in GENOME:
-            files+=[("{SM}/{LB}/library_mapDamage/{LB}.{genome}_results_mapDamage/Fragmisincorporation_plot.pdf").format(SM=row['SM'], LB=row['LB'], genome=genome) for index, row in all_libraries.iterrows()]
+        for GENOME in genome:
+            files+=[("{SM}/{LB}/library_mapDamage/{LB}.{GENOME}_results_mapDamage/Fragmisincorporation_plot.pdf").format(SM=row['SM'], LB=row['LB'], GENOME=GENOME) for index, row in all_libraries.iterrows()]
     return (files)
     
 
@@ -300,16 +300,22 @@ def get_final_bam_library(wildcards):
 
 
 def get_mapDamage_bam(wildcards, index = False):
-    if extract_duplicates:
-        bam = f"results/02_library/01_duplicated/01_rmdup/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}_mapped.bam"
-    elif run_remove_duplicates:
-        bam = f"results/02_library/01_duplicated/01_rmdup/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}.bam"
-    else: 
+    if run_mark_duplicates:
+        if save_duplicates == "extract":
+            bam = f"results/02_library/01_duplicated/01_rmdup/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}_mapped.bam"
+        else:
+            bam = f"results/02_library/01_duplicated/01_rmdup/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}.bam"
+    else:
         bam = f"results/02_library/00_merged_fastq/01_bam/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}.bam"
     if index:
         bam = bam.replace(".bam", ".bai")
-
     return (bam)
+    # if extract_duplicates:
+    #     bam = f"results/02_library/01_duplicated/01_rmdup/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}_mapped.bam"
+    # elif run_remove_duplicates:
+    #     bam = f"results/02_library/01_duplicated/01_rmdup/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}.bam"
+    # else: 
+    #     bam = f"results/02_library/00_merged_fastq/01_bam/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}.bam"
 
 
 ##########################################################################################

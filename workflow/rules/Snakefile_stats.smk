@@ -301,9 +301,9 @@ rule merge_stats_by_level:
     input:
         paths = path_stats_by_level,
     output:
-        "results/04_stats/03_final_tables/{level}.csv",
+        "results/03_sample/04_stats/01_summary/{level}_stats.{genome}.csv",
     log:
-        "results/04_stats/03_final_tables/{level}.log",
+        "results/03_sample/04_stats/01_summary/{level}_stats.{genome}.log",
     message:
         "--- MERGE STATS by {wildcards.level}"
     run:
@@ -314,54 +314,6 @@ rule merge_stats_by_level:
         df.to_csv(str(output), index=False)
 
 
-# -----------------------------------------------------------------------------#
-# plotting
-
-
-rule plot_summary_statistics:
-    """
-    Plot summary statistics
-    """
-    input:
-        fastq_stats="results/04_stats/03_final_tables/FASTQ.csv",
-        library_stats="results/04_stats/03_final_tables/LB.csv",
-        sample_stats="results/04_stats/03_final_tables/SM.csv",
-    output:
-        plot_1_nb_reads=report(
-            "results/04_stats/03_final_tables/04_final_plots/1_nb_reads.png",
-            caption="../report/1_nb_reads.rst",
-            category="Mapping statistics plots",
-        ),
-        plot_2_mapped=report(
-            "results/04_stats/03_final_tables/04_final_plots/2_mapped.png",
-            caption="../report/2_mapped.rst",
-            category="Mapping statistics plots",
-        ),
-        plot_3_endogenous=report(
-            "results/04_stats/03_final_tables/04_final_plots/3_endogenous.png",
-            caption="../report/3_endogenous.rst",
-            category="Mapping statistics plots",
-        ),
-        plot_4_duplication=report(
-            "results/04_stats/03_final_tables/04_final_plots/4_duplication.png",
-            caption="../report/4_duplication.rst",
-            category="Mapping statistics plots",
-        ),
-    log:
-        "results/04_stats/03_final_tables/04_final_plots/plot.log",
-    conda:
-        "../envs/r.yaml"
-    envmodules:
-        module_r,
-    message:
-        "--- PLOT SUMMARY STATISTICS"
-    shell:
-        """
-        Rscript workflow/scripts/sex_assignation.r \
-            --genomecov={input.genomecov} \
-            --out={output.sex} \
-            --larger_chr={params.sex_params}
-        """
 
 
 ##########################################################################################
@@ -415,6 +367,54 @@ rule bamdamage:
 
 ##########################################################################################
 # plots
+# -----------------------------------------------------------------------------#
+# plotting
+
+
+# rule plot_summary_statistics:
+#     """
+#     Plot summary statistics
+#     """
+#     input:
+#         fastq_stats="results/04_stats/03_final_tables/FASTQ.csv",
+#         library_stats="results/04_stats/03_final_tables/LB.csv",
+#         sample_stats="results/04_stats/03_final_tables/SM.csv",
+#     output:
+#         plot_1_nb_reads=report(
+#             "results/04_stats/03_final_tables/04_final_plots/1_nb_reads.png",
+#             caption="../report/1_nb_reads.rst",
+#             category="Mapping statistics plots",
+#         ),
+#         plot_2_mapped=report(
+#             "results/04_stats/03_final_tables/04_final_plots/2_mapped.png",
+#             caption="../report/2_mapped.rst",
+#             category="Mapping statistics plots",
+#         ),
+#         plot_3_endogenous=report(
+#             "results/04_stats/03_final_tables/04_final_plots/3_endogenous.png",
+#             caption="../report/3_endogenous.rst",
+#             category="Mapping statistics plots",
+#         ),
+#         plot_4_duplication=report(
+#             "results/04_stats/03_final_tables/04_final_plots/4_duplication.png",
+#             caption="../report/4_duplication.rst",
+#             category="Mapping statistics plots",
+#         ),
+#     log:
+#         "results/04_stats/03_final_tables/04_final_plots/plot.log",
+#     conda:
+#         "../envs/r.yaml"
+#     envmodules:
+#         module_r,
+#     message:
+#         "--- PLOT SUMMARY STATISTICS"
+#     shell:
+#         """
+#         Rscript workflow/scripts/sex_assignation.r \
+#             --genomecov={input.genomecov} \
+#             --out={output.sex} \
+#             --larger_chr={params.sex_params}
+#         """
 
 rule plot_depth_statistics:
     input:
@@ -451,9 +451,9 @@ rule plot_summary_statistics:
     Plot summary statistics
     """
     input:
-        fastq_stats = "results/01_fastq/05_stats/02_summary/fastq_stats.{id_genome}.csv",
-        library_stats = "results/02_library/04_stats/02_summary/library_stats.{id_genome}.csv",
-        sample_stats = "results/03_sample/04_stats/01_summary/sample_stats.{id_genome}.csv"
+        # fastq_stats = "results/01_fastq/05_stats/02_summary/fastq_stats.{id_genome}.csv",
+        # library_stats = "results/02_library/04_stats/02_summary/library_stats.{id_genome}.csv",
+        # sample_stats = "results/03_sample/04_stats/01_summary/sample_stats.{id_genome}.csv"
     output: 
         plot_1_nb_reads = report("results/03_sample/04_stats/01_summary/1_nb_reads.{id_genome}.png", caption="../report/1_nb_reads.rst", category="Mapping statistics plots"),
         plot_2_mapped = report("results/03_sample/04_stats/01_summary/2_mapped.{id_genome}.png", caption="../report/2_mapped.rst", category="Mapping statistics plots"),        

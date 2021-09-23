@@ -100,6 +100,7 @@ mapped_raw = as.numeric(strsplit(readLines(path_flagstat_mapped_highQ)[1], " ")[
         
 #-----------------------------------------------------------------------------#
 ## original fastqc
+options(readr.show_col_types = FALSE)
 data <- qc_read(path_fastqc_orig, "Sequence Length Distribution", F)
 reads_raw <- sum(data$"sequence_length_distribution"$Count)
 length_reads_raw <- calc_avg_len(data$"sequence_length_distribution", reads_raw)
