@@ -35,7 +35,7 @@ rule get_fasta:
     Symlink and rename the reference (.fasta/.fa) to a new folder.
     """
     input:
-        lambda wildcards: get_param3("genome", wildcards.GENOME, "fasta", ""),
+        lambda wildcards: get_param3("genome", wildcards.GENOME, "fasta", "")
     output:
         "results/00_reference/{GENOME}/{GENOME}.fasta",
     threads: 1

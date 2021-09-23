@@ -23,7 +23,7 @@ sample_file: config/samples.txt
 
 genome: 
     hg19: 
-        fasta: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/hs.build37.1/hs.build37.1.fa 
+        fasta: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/hs.build37.1/hs.build37.1.fa
         maleChr: Y
         femaleChr: X
         mtChr: MT
