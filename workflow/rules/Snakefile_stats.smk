@@ -364,6 +364,58 @@ rule plot_summary_statistics:
         """
 
 
+##########################################################################################
+#
+# bamdamage
+
+rule bamdamage:
+    """
+    Run bamdamage to quantify the deamination pattern
+    """
+    input:
+        ref="results/00_reference/{id_genome}/{id_genome}.fasta",
+        bam=lambda wildcards: get_mapDamage_bam(wildcards),
+        bai=lambda wildcards: get_mapDamage_bam(wildcards, index = True)
+    output:
+        damage_pdf="results/02_library/04_stats/03_bamdamage/{id_sample}/{id_library}/{id_library}.{id_genome}.dam.pdf",
+        length_pdf="results/02_library/04_stats/03_bamdamage/{id_sample}/{id_library}/{id_library}.{id_genome}.length.pdf",
+        length_table=report("results/02_library/04_stats/03_bamdamage/{id_sample}/{id_library}/{id_library}.{id_genome}.length.csv", category="Read length table"),
+        dam_5prime_table=report("results/02_library/04_stats/03_bamdamage/{id_sample}/{id_library}/{id_library}.{id_genome}.dam_5prime.csv", category="Damage pattern table"),
+        dam_3prime_table=report("results/02_library/04_stats/03_bamdamage/{id_sample}/{id_library}/{id_library}.{id_genome}.dam_3prime.csv", category="Damage pattern table")      
+    log:
+        "logs/results/02_library/04_stats/03_bamdamage/{id_sample}/{id_library}/{id_library}.{id_genome}_stats.log"
+    threads: 1
+    resources:
+        memory=lambda wildcards, attempt: get_memory_alloc("mapdamage_mem", attempt, 4),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("bamdamage_time", attempt, 24),        
+    message: "--- BAMDAMAGE {input.bam}"
+    params:
+        prefix="results/02_library/04_stats/03_bamdamage/{id_sample}/{id_library}/{id_library}.{id_genome}",
+        bamdamage_params = config["bamdamage_params"] if "bamdamage_params" in config.keys() else '',
+        fraction = config["bamdamage_fraction"] if "bamdamage_fraction" in config.keys() else 0,
+    envmodules:
+        module_samtools,
+        module_r
+    shell:    
+    	"""
+
+    	nb=$(samtools idxstats {input.bam} | awk '{{sum += $3}} END {{print sum}}'); 
+    	nth_line=1; 
+    	if [ {params.fraction} -eq 0 ]; then
+    		nth_line=1; 
+    	elif [ {params.fraction} -lt 1 ]; then
+    		nth_line=$(( {params.fraction} * $nb )); 
+    	elif [ {params.fraction} -lt "$nb" ]; then
+    	   nth_line=$(( $nb / {params.fraction} )); 
+    	fi;
+        workflow/scripts/bamdamage {params.bamdamage_params} \
+            --nth_read $nth_line --output {output.damage_pdf} \
+            --output_length {output.length_pdf} {input.bam} 2> {log};
+        """
+
+##########################################################################################
+# plots
+
 rule plot_depth_statistics:
     input:
         sample_depth="{folder}/depth_stats_{GENOME}.csv",
@@ -389,8 +441,31 @@ rule plot_depth_statistics:
     conda:
         "../envs/r.yaml"
     envmodules:
-        module_r,
-    message:
-        "--- PLOT DEPTH STATISTICS OF {input}"
+    	module_r
+    message: "--- PLOT DEPTH STATISTICS OF {input}"
+    script:    	
+    	"../scripts/plot_depth.R"
+
+rule plot_summary_statistics:
+    """
+    Plot summary statistics
+    """
+    input:
+        fastq_stats = "results/01_fastq/05_stats/02_summary/fastq_stats.{id_genome}.csv",
+        library_stats = "results/02_library/04_stats/02_summary/library_stats.{id_genome}.csv",
+        sample_stats = "results/03_sample/04_stats/01_summary/sample_stats.{id_genome}.csv"
+    output: 
+        plot_1_nb_reads = report("results/03_sample/04_stats/01_summary/1_nb_reads.{id_genome}.png", caption="../report/1_nb_reads.rst", category="Mapping statistics plots"),
+        plot_2_mapped = report("results/03_sample/04_stats/01_summary/2_mapped.{id_genome}.png", caption="../report/2_mapped.rst", category="Mapping statistics plots"),        
+        plot_3_endogenous = report("results/03_sample/04_stats/01_summary/3_endogenous.{id_genome}.png", caption="../report/3_endogenous.rst", category="Mapping statistics plots"),        
+        plot_4_duplication = report("results/03_sample/04_stats/01_summary/4_duplication.{id_genome}.png", caption="../report/4_duplication.rst", category="Mapping statistics plots")      
+    log: 
+        "results/03_sample/04_stats/01_summary/plot_summary_statistics_{id_genome}.log"
+    conda:
+    	"../envs/r.yaml"
+    envmodules:
+    	module_r
+    message: "--- PLOT SUMMARY STATISTICS OF {wildcards.id_genome}"
     script:
-        "../scripts/plot_depth.R"
+    	"../scripts/plot_stats.R"
+        
