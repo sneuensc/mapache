@@ -62,7 +62,7 @@ samples_filename                   = get_args(argsL, "samples", "samples.txt")
 
 out_1_reads      = get_args(argsL, "out_1_reads", "plot_1_nb_reads.png")
 out_2_mapped        = get_args(argsL, "out_2_mapped", "plot_2_mapped.png")
-# out_3_endogenous    = get_args(argsL, "out_3_endogenous", "plot_3_endogenous.png")
+out_3_endogenous    = get_args(argsL, "out_3_endogenous", "plot_3_endogenous.png")
 # out_4_duplication   = get_args(argsL, "out_4_duplication", "plot_4_duplication.png")
 
 
@@ -125,41 +125,26 @@ my_plot <- make_barplot(
   )
 
 
-
 ggsave(out_2_mapped, my_plot, width = 11, height = 7)
 #--------------------------------------------------------------------------#
+# "Endogenous content"
+require(scales)
+my_plot <- make_barplot(
+  data = sample_stats, x = "SM", y = "endogenous_unique", color_by = "SM", 
+  fill_by = "SM", title = "Endogenous content (unique reads)",
+  legend.position = "none"
+  )
 
 
+my_plot <- my_plot +
+  scale_color_manual(values = colors_by_sample) + 
+  scale_fill_manual(values = colors_by_sample) +
+  scale_y_continuous(labels = percent)
+
+
+ggsave(out_3_endogenous, my_plot, width = 11, height = 7)
 
 ############################################################################
-
-# a<-sm[,c('genome','SM','duplicates', 'mapped_unique')]
-# #a<-sm[,c(1,2,8,10)]
-# colnames(a)[4] <- "endogenous"
-
-# ## if one value is missing set the other one also to NaN 
-# a$endogenous[is.na(a$duplicates)] <-NaN
-# a$duplicates[is.na(a$endogenous)] <-NaN
-
-# nb = sum(is.na(sm$duplicates))
-# title <- "Mapped reads"
-# if(nb)title <- paste0(title, " (", nb, " values missing)")
-
-# sm2 <- melt(a, id.vars=c('genome','SM'))
-# p2 <- ggplot(data=sm2, mapping=aes(x = SM, y=value, fill=variable)) + 
-#   geom_bar(stat="identity") +
-#   ylab("# reads") +
-#   xlab("") +
-#   theme_classic() +
-#   scale_fill_grey() +
-#   ggtitle(title) +
-#   theme(axis.text.x=element_text(angle = 90, vjust = 0.5))
-
-# if(length(unique(sm2$genome))>1){
-#   p2 <- p2 + facet_grid(cols = vars(genome))
-# }
-
-# ggsave(plot_2_mapped, p2, width = 11, height = 7)
 
 # ############################################################################
 
