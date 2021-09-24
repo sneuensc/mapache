@@ -493,7 +493,7 @@ rule plot_summary_statistics:
         plot_1_nb_reads = report("results/03_sample/04_stats/01_summary/1_nb_reads.{id_genome}.png", caption="../report/1_nb_reads.rst", category="Mapping statistics plots"),
         plot_2_mapped = report("results/03_sample/04_stats/01_summary/2_mapped.{id_genome}.png", caption="../report/2_mapped.rst", category="Mapping statistics plots"),        
         plot_3_endogenous = report("results/03_sample/04_stats/01_summary/3_endogenous.{id_genome}.png", caption="../report/3_endogenous.rst", category="Mapping statistics plots"),        
-        # plot_4_duplication = report("results/03_sample/04_stats/01_summary/4_duplication.{id_genome}.png", caption="../report/4_duplication.rst", category="Mapping statistics plots")      
+        plot_4_duplication = report("results/03_sample/04_stats/01_summary/4_duplication.{id_genome}.png", caption="../report/4_duplication.rst", category="Mapping statistics plots")      
     log: 
         "results/03_sample/04_stats/01_summary/plot_summary_statistics_{id_genome}.log"
     conda:
@@ -510,6 +510,7 @@ rule plot_summary_statistics:
             --SM={input.sample_stats}  \
             --out_1_reads={output.plot_1_nb_reads} \
             --out_2_mapped={output.plot_2_mapped} \
-            --out_3_endogenous={output.plot_3_endogenous}
+            --out_3_endogenous={output.plot_3_endogenous} \
+            --out_4_duplication={output.plot_4_duplication}
         """
         

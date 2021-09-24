@@ -63,7 +63,7 @@ samples_filename                   = get_args(argsL, "samples", "samples.txt")
 out_1_reads      = get_args(argsL, "out_1_reads", "plot_1_nb_reads.png")
 out_2_mapped        = get_args(argsL, "out_2_mapped", "plot_2_mapped.png")
 out_3_endogenous    = get_args(argsL, "out_3_endogenous", "plot_3_endogenous.png")
-# out_4_duplication   = get_args(argsL, "out_4_duplication", "plot_4_duplication.png")
+out_4_duplication   = get_args(argsL, "out_4_duplication", "plot_4_duplication.png")
 
 
 ############################################################################
@@ -144,28 +144,26 @@ my_plot <- my_plot +
 
 ggsave(out_3_endogenous, my_plot, width = 11, height = 7)
 
+#--------------------------------------------------------------------------#
+# "Duplication level"
+require(scales)
+my_plot <- make_barplot(
+  data = sample_stats, x = "SM", y = "duplicates_prop", color_by = "SM", 
+  fill_by = "SM", title = "Duplicates per sample (percentage)",
+  legend.position = "none"
+  )
+
+
+my_plot <- my_plot +
+  scale_color_manual(values = colors_by_sample) + 
+  scale_fill_manual(values = colors_by_sample) +
+  scale_y_continuous(labels = percent)
+
+
+ggsave(out_4_duplication, my_plot, width = 11, height = 7)
+
 ############################################################################
 
-# ############################################################################
-
-# nb = sum(is.na(sm$endogenous_unique))
-# title <- "Endogenous content"
-# if(nb)title <- paste0(title, " (", nb, " values missing)")
-
-# p3 <- ggplot(data=sm, mapping=aes(x = SM, y=100*endogenous_unique)) + 
-#   geom_bar(stat="identity") +
-#   ylab("% reads") +
-#   xlab("") +
-#   theme_classic() +
-#   scale_fill_grey() +
-#   ggtitle(title) +
-#   theme(axis.text.x=element_text(angle = 90, vjust = 0.5))
-
-# if(length(unique(sm$genome))>1){
-#   p3 <- p3 + facet_grid(cols = vars(genome))
-# }
-
-# ggsave(plot_3_endogenous, p3, width = 11, height = 7)
 
 # ############################################################################
 
