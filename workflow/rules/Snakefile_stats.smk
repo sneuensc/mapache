@@ -296,7 +296,7 @@ rule merge_stats_per_sm:
 # -----------------------------------------------------------------------------#
 # merge all the stats in the same level
 
-
+# Here level can be: SM, LB, FASTQ 
 rule merge_stats_by_level:
     input:
         paths = path_stats_by_level,
@@ -315,6 +315,41 @@ rule merge_stats_by_level:
 
 
 
+##########################################################################################
+# read depth by chromosome
+rule DoC_chr_SM:
+    input:
+        "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{genome}.genomecov"
+    output:
+        "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{genome}_DoC_chrs.csv"
+    params:
+        SM = "{SM}"
+    shell:
+        """
+        Rscript workflow/scripts/depth_by_chr.R \
+            --path_genomecov={input} \
+            --SM={params.SM} \
+            --output_file={output}
+
+        """
+
+rule merge_DoC_chr:
+    input:
+        lambda wildcards: expand(
+            "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{genome}_DoC_chrs.csv", 
+            genome = wildcards.genome,
+            SM = samples
+            )
+    output:
+        "03_sample/04_stats/01_summary/DoC_by_chrs.{genome}.csv"
+    run:
+        import pandas as pd
+
+        df_list = [pd.read_csv(file) for file in input]
+        # this should work even if the columns are not in the same order
+        # across tables
+        df = pd.concat(df_list)
+        df.to_csv(str(output), index=False)
 
 ##########################################################################################
 #
