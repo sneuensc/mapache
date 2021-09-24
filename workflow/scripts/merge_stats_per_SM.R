@@ -1,4 +1,9 @@
-
+# IMPORTANT!!!
+#
+# If you modify this script, you need to make sure that the following
+# scripts adopt the right column names
+# scripts/merge_stats_per_LB.R
+# scripts/merge_stats_per_fastq.R
 
 # reads_raw           SM,LB,ID    multiqc
 # reads_trim          SM,LB,ID    multiqc
@@ -115,6 +120,8 @@ endogenous_raw = mapped_raw / reads_raw
 endogenous_unique = mapped_unique / reads_raw
 
 length_reads_raw = sum(stats_lb$length_reads_raw * stats_lb$reads_raw) / reads_raw
+length_reads_trimmed = sum(stats_lb$length_reads_trimmed * stats_lb$reads_trim) / reads_trim
+
 length_mapped_raw = sum(stats_lb$length_mapped_raw * stats_lb$mapped_raw) / mapped_raw
 length_mapped_unique = calc_avg_len(length_unique_table)
 
@@ -132,6 +139,7 @@ my_stats = data.frame(
     duplicates_prop = duplicates_prop,
     mapped_unique = mapped_unique,
     length_reads_raw = length_reads_raw,
+    length_reads_trimmed = length_reads_trimmed,
     length_mapped_raw = length_mapped_raw,
     length_mapped_unique,
     endogenous_raw = endogenous_raw,
