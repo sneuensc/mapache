@@ -332,12 +332,13 @@ rule stats:
     input:
         expand("results/03_sample/04_stats/01_summary/SM_stats.{id_genome}.csv", id_genome=genome),
         expand("03_sample/04_stats/01_summary/DoC_by_chrs.{id_genome}.csv", id_genome=genome),
-        #expand("results/04_stats/sample_depth.{id_genome}.csv", id_genome=GENOME) if run_depth else [],
+        expand("results/04_stats/sample_depth.{id_genome}.csv", id_genome=GENOME) if run_depth else [],
         get_damage(run_damage),
         expand("results/03_sample/04_stats/01_summary/1_nb_reads.{id_genome}.png", id_genome=genome),
-        # expand("results/03_sample/04_stats/01_summary/2_mapped.{id_genome}.png", id_genome=genome),
-        # expand("results/03_sample/04_stats/01_summary/3_endogenous.{id_genome}.png", id_genome=genome),
-        # expand("results/03_sample/04_stats/01_summary/4_duplication.{id_genome}.png", id_genome=genome)
+        expand("results/03_sample/04_stats/01_summary/2_mapped.{id_genome}.png", id_genome=genome),
+        expand("results/03_sample/04_stats/01_summary/3_endogenous.{id_genome}.png", id_genome=genome),
+        expand("results/03_sample/04_stats/01_summary/4_duplication.{id_genome}.png", id_genome=genome),
+        expand("results/03_sample/04_stats/01_summary/5_AvgReadDepth.{id_genome}.png", id_genome=genome),
 
 onsuccess:
     print("Wow, 'snakemake_aDNA_mapping' finished successfully!")

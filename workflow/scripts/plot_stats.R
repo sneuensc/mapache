@@ -27,7 +27,7 @@ if("--help" %in% args) {
         --out_2_mapped=plot_2_mapped.png             - plot file name of the 'Mapped reads'. Default: plot_2_mapped.png
         --out_3_endogenous=plot_3_endogenous.png     - plot file name of the 'Endogenous content'. Default: plot_3_endogenous.png
         --out_4_duplication=plot_4_duplication.png   - plot file name of the 'Duplication level'. Default: plot_4_duplication.png
-          
+        --out_5_AvgReadDepth
         --help                                       - print this text
  
       Example:
@@ -61,10 +61,10 @@ sm                   = get_args(argsL, "SM", "SM.csv")
 samples_filename                   = get_args(argsL, "samples", "samples.txt")
 
 out_1_reads      = get_args(argsL, "out_1_reads", "plot_1_nb_reads.png")
-# out_2_mapped        = get_args(argsL, "out_2_mapped", "plot_2_mapped.png")
-# out_3_endogenous    = get_args(argsL, "out_3_endogenous", "plot_3_endogenous.png")
-# out_4_duplication   = get_args(argsL, "out_4_duplication", "plot_4_duplication.png")
-
+out_2_mapped        = get_args(argsL, "out_2_mapped", "plot_2_mapped.png")
+out_3_endogenous    = get_args(argsL, "out_3_endogenous", "plot_3_endogenous.png")
+out_4_duplication   = get_args(argsL, "out_4_duplication", "plot_4_duplication.png")
+out_5_AvgReadDepth   = get_args(argsL, "out_5_AvgReadDepth", "plot_5_AvgReadDepth.png")
 
 ############################################################################
 #--------------------------------------------------------------------------#
@@ -98,111 +98,88 @@ sample_stats <- read.csv(sm)
 
 #--------------------------------------------------------------------------#
 # "Total number of reads"
-plot_nb_reads <- make_barplot(
+my_plot <- make_barplot(
   data = sample_stats, x = "SM", y = "reads_raw", color_by = "SM", 
-  fill_by = "SM", title = "Total number of raw reads", legend.position = "top"
+  fill_by = "SM", title = "Total number of raw reads", legend.position = "none"
   )
 
-plot_nb_reads <- plot_nb_reads +
+my_plot <- my_plot +
   scale_color_manual(values = colors_by_sample) + 
   scale_fill_manual(values = colors_by_sample)
 
-ggsave(out_1_reads, plot_nb_reads, width = 11, height = 7)
+ggsave(out_1_reads, my_plot, width = 11, height = 7)
 
 #--------------------------------------------------------------------------#
+# "Mapped reads"
+# plot with unique and duplicated reads
+mapped_reads <- data.frame(
+  SM = c(sample_stats$SM, sample_stats$SM),
+  number_reads = c(sample_stats$mapped_unique, sample_stats$duplicates),
+  read_type = rep(c("Unique", "Duplicates"), each = n_samples)
+)
 
-# title <- "Total number of reads"
-# if(nb) title <- paste0(title, " (", nb, " values missing)")
+my_plot <- make_barplot(
+  data = mapped_reads, x = "SM", y = "number_reads", color_by = "read_type", 
+  fill_by = "read_type", title = "Mapped unique and duplicated reads",
+  legend.position = "top"
+  )
 
-# mycolours<-colorRampPalette(brewer.pal(8, "Set2"))(nrow(lb))
 
-# p1 <- ggplot(data=lb, mapping=aes(x = SM, y=reads_raw, fill=LB)) + 
-#   geom_bar(stat="identity") +
-#   ylab("# reads") +
-#   xlab("") +
-#   theme_classic() +
-#   scale_fill_manual(values = mycolours) +
-#   ggtitle(title) +
-#   theme(axis.text.x=element_text(angle = 90, vjust = 0.5))
+ggsave(out_2_mapped, my_plot, width = 11, height = 7)
+#--------------------------------------------------------------------------#
+# "Endogenous content"
+require(scales)
+my_plot <- make_barplot(
+  data = sample_stats, x = "SM", y = "endogenous_unique", color_by = "SM", 
+  fill_by = "SM", title = "Endogenous content (unique reads)",
+  legend.position = "none"
+  )
 
-# if(nrow(lb)>10){
-#   p1 <- p1 + theme(legend.position = "none")
-# }
-# if(length(unique(lb$genome))>1){
-#   p1 <- p1 + facet_grid(cols = vars(genome))
-# }
 
-# ggsave(plot_1_nb_reads, p1, width = 11, height = 7)
+my_plot <- my_plot +
+  scale_color_manual(values = colors_by_sample) + 
+  scale_fill_manual(values = colors_by_sample) +
+  scale_y_continuous(labels = percent)
 
+
+ggsave(out_3_endogenous, my_plot, width = 11, height = 7)
+
+#--------------------------------------------------------------------------#
+# "Duplication level"
+require(scales)
+my_plot <- make_barplot(
+  data = sample_stats, x = "SM", y = "duplicates_prop", color_by = "SM", 
+  fill_by = "SM", title = "Duplicates per sample (percentage)",
+  legend.position = "none"
+  )
+
+
+my_plot <- my_plot +
+  scale_color_manual(values = colors_by_sample) + 
+  scale_fill_manual(values = colors_by_sample) +
+  scale_y_continuous(labels = percent)
+
+
+ggsave(out_4_duplication, my_plot, width = 11, height = 7)
+
+#--------------------------------------------------------------------------#
+# "Average read depth"
+require(scales)
+my_plot <- make_barplot(
+  data = sample_stats, x = "SM", y = "read_depth", color_by = "SM", 
+  fill_by = "SM", title = "Average read depth",
+  legend.position = "none"
+  )
+
+
+my_plot <- my_plot +
+  scale_color_manual(values = colors_by_sample) + 
+  scale_fill_manual(values = colors_by_sample) 
+
+
+ggsave(out_5_AvgReadDepth, my_plot, width = 11, height = 7)
 ############################################################################
 
-# a<-sm[,c('genome','SM','duplicates', 'mapped_unique')]
-# #a<-sm[,c(1,2,8,10)]
-# colnames(a)[4] <- "endogenous"
-
-# ## if one value is missing set the other one also to NaN 
-# a$endogenous[is.na(a$duplicates)] <-NaN
-# a$duplicates[is.na(a$endogenous)] <-NaN
-
-# nb = sum(is.na(sm$duplicates))
-# title <- "Mapped reads"
-# if(nb)title <- paste0(title, " (", nb, " values missing)")
-
-# sm2 <- melt(a, id.vars=c('genome','SM'))
-# p2 <- ggplot(data=sm2, mapping=aes(x = SM, y=value, fill=variable)) + 
-#   geom_bar(stat="identity") +
-#   ylab("# reads") +
-#   xlab("") +
-#   theme_classic() +
-#   scale_fill_grey() +
-#   ggtitle(title) +
-#   theme(axis.text.x=element_text(angle = 90, vjust = 0.5))
-
-# if(length(unique(sm2$genome))>1){
-#   p2 <- p2 + facet_grid(cols = vars(genome))
-# }
-
-# ggsave(plot_2_mapped, p2, width = 11, height = 7)
 
 # ############################################################################
-
-# nb = sum(is.na(sm$endogenous_unique))
-# title <- "Endogenous content"
-# if(nb)title <- paste0(title, " (", nb, " values missing)")
-
-# p3 <- ggplot(data=sm, mapping=aes(x = SM, y=100*endogenous_unique)) + 
-#   geom_bar(stat="identity") +
-#   ylab("% reads") +
-#   xlab("") +
-#   theme_classic() +
-#   scale_fill_grey() +
-#   ggtitle(title) +
-#   theme(axis.text.x=element_text(angle = 90, vjust = 0.5))
-
-# if(length(unique(sm$genome))>1){
-#   p3 <- p3 + facet_grid(cols = vars(genome))
-# }
-
-# ggsave(plot_3_endogenous, p3, width = 11, height = 7)
-
-# ############################################################################
-
-# nb = sum(is.na(sm$duplicates_prop))
-# title <- "Duplication level"
-# if(nb)title <- paste0(title, " (", nb, " values missing)")
-
-# p4 <- ggplot(data=sm, mapping=aes(x = SM, y=100*duplicates_prop)) + 
-#   geom_bar(stat="identity") +
-#   ylab("% reads") +
-#   xlab("") +
-#   theme_classic() +
-#   scale_fill_grey() +
-#   ggtitle(title) +
-#   theme(axis.text.x=element_text(angle = 90, vjust = 0.5))
-
-# if(length(unique(sm$genome))>1){
-#   p4 <- p4 + facet_grid(cols = vars(genome))
-# }
-
-# ggsave(plot_4_duplication, p4, width = 11, height = 7)
 
