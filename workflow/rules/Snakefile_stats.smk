@@ -301,9 +301,9 @@ rule merge_stats_by_level:
     input:
         paths = path_stats_by_level,
     output:
-        "results/03_sample/04_stats/01_summary/{level}_stats.{genome}.csv",
+        "results/03_sample/04_stats/01_summary/{level}_stats.{GENOME}.csv",
     log:
-        "results/03_sample/04_stats/01_summary/{level}_stats.{genome}.log",
+        "results/03_sample/04_stats/01_summary/{level}_stats.{GENOME}.log",
     message:
         "--- MERGE STATS by {wildcards.level}"
     run:
@@ -486,14 +486,14 @@ rule plot_summary_statistics:
     Plot summary statistics
     """
     input:
+        sample_stats = "results/03_sample/04_stats/01_summary/SM_stats.{id_genome}.csv"
         # fastq_stats = "results/01_fastq/05_stats/02_summary/fastq_stats.{id_genome}.csv",
         # library_stats = "results/02_library/04_stats/02_summary/library_stats.{id_genome}.csv",
-        # sample_stats = "results/03_sample/04_stats/01_summary/sample_stats.{id_genome}.csv"
     output: 
         plot_1_nb_reads = report("results/03_sample/04_stats/01_summary/1_nb_reads.{id_genome}.png", caption="../report/1_nb_reads.rst", category="Mapping statistics plots"),
-        plot_2_mapped = report("results/03_sample/04_stats/01_summary/2_mapped.{id_genome}.png", caption="../report/2_mapped.rst", category="Mapping statistics plots"),        
-        plot_3_endogenous = report("results/03_sample/04_stats/01_summary/3_endogenous.{id_genome}.png", caption="../report/3_endogenous.rst", category="Mapping statistics plots"),        
-        plot_4_duplication = report("results/03_sample/04_stats/01_summary/4_duplication.{id_genome}.png", caption="../report/4_duplication.rst", category="Mapping statistics plots")      
+        # plot_2_mapped = report("results/03_sample/04_stats/01_summary/2_mapped.{id_genome}.png", caption="../report/2_mapped.rst", category="Mapping statistics plots"),        
+        # plot_3_endogenous = report("results/03_sample/04_stats/01_summary/3_endogenous.{id_genome}.png", caption="../report/3_endogenous.rst", category="Mapping statistics plots"),        
+        # plot_4_duplication = report("results/03_sample/04_stats/01_summary/4_duplication.{id_genome}.png", caption="../report/4_duplication.rst", category="Mapping statistics plots")      
     log: 
         "results/03_sample/04_stats/01_summary/plot_summary_statistics_{id_genome}.log"
     conda:
@@ -501,6 +501,13 @@ rule plot_summary_statistics:
     envmodules:
     	module_r
     message: "--- PLOT SUMMARY STATISTICS OF {wildcards.id_genome}"
-    script:
-    	"../scripts/plot_stats.R"
+    params:
+        samples = config["sample_file"]
+    shell:
+    	"""
+        Rscript workflow/scripts/plot_stats.R \
+            --samples={params.samples} \
+            --SM={input.sample_stats}  \
+            --out_1_reads={output.plot_1_nb_reads}
+        """
         
