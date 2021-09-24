@@ -491,7 +491,7 @@ rule plot_summary_statistics:
         # library_stats = "results/02_library/04_stats/02_summary/library_stats.{id_genome}.csv",
     output: 
         plot_1_nb_reads = report("results/03_sample/04_stats/01_summary/1_nb_reads.{id_genome}.png", caption="../report/1_nb_reads.rst", category="Mapping statistics plots"),
-        # plot_2_mapped = report("results/03_sample/04_stats/01_summary/2_mapped.{id_genome}.png", caption="../report/2_mapped.rst", category="Mapping statistics plots"),        
+        plot_2_mapped = report("results/03_sample/04_stats/01_summary/2_mapped.{id_genome}.png", caption="../report/2_mapped.rst", category="Mapping statistics plots"),        
         # plot_3_endogenous = report("results/03_sample/04_stats/01_summary/3_endogenous.{id_genome}.png", caption="../report/3_endogenous.rst", category="Mapping statistics plots"),        
         # plot_4_duplication = report("results/03_sample/04_stats/01_summary/4_duplication.{id_genome}.png", caption="../report/4_duplication.rst", category="Mapping statistics plots")      
     log: 
@@ -508,6 +508,7 @@ rule plot_summary_statistics:
         Rscript workflow/scripts/plot_stats.R \
             --samples={params.samples} \
             --SM={input.sample_stats}  \
-            --out_1_reads={output.plot_1_nb_reads}
+            --out_1_reads={output.plot_1_nb_reads} \
+            --out_2_mapped={output.plot_2_mapped}
         """
         

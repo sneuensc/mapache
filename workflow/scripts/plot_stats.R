@@ -61,7 +61,7 @@ sm                   = get_args(argsL, "SM", "SM.csv")
 samples_filename                   = get_args(argsL, "samples", "samples.txt")
 
 out_1_reads      = get_args(argsL, "out_1_reads", "plot_1_nb_reads.png")
-# out_2_mapped        = get_args(argsL, "out_2_mapped", "plot_2_mapped.png")
+out_2_mapped        = get_args(argsL, "out_2_mapped", "plot_2_mapped.png")
 # out_3_endogenous    = get_args(argsL, "out_3_endogenous", "plot_3_endogenous.png")
 # out_4_duplication   = get_args(argsL, "out_4_duplication", "plot_4_duplication.png")
 
@@ -98,41 +98,38 @@ sample_stats <- read.csv(sm)
 
 #--------------------------------------------------------------------------#
 # "Total number of reads"
-plot_nb_reads <- make_barplot(
+my_plot <- make_barplot(
   data = sample_stats, x = "SM", y = "reads_raw", color_by = "SM", 
-  fill_by = "SM", title = "Total number of raw reads", legend.position = "top"
+  fill_by = "SM", title = "Total number of raw reads", legend.position = "none"
   )
 
-plot_nb_reads <- plot_nb_reads +
+my_plot <- my_plot +
   scale_color_manual(values = colors_by_sample) + 
   scale_fill_manual(values = colors_by_sample)
 
-ggsave(out_1_reads, plot_nb_reads, width = 11, height = 7)
+ggsave(out_1_reads, my_plot, width = 11, height = 7)
 
 #--------------------------------------------------------------------------#
+# "Mapped reads"
+# plot with unique and duplicated reads
+mapped_reads <- data.frame(
+  SM = c(sample_stats$SM, sample_stats$SM),
+  number_reads = c(sample_stats$mapped_unique, sample_stats$duplicates),
+  read_type = rep(c("Unique", "Duplicates"), each = n_samples)
+)
 
-# title <- "Total number of reads"
-# if(nb) title <- paste0(title, " (", nb, " values missing)")
+my_plot <- make_barplot(
+  data = mapped_reads, x = "SM", y = "number_reads", color_by = "read_type", 
+  fill_by = "read_type", title = "Mapped unique and duplicated reads",
+  legend.position = "top"
+  )
 
-# mycolours<-colorRampPalette(brewer.pal(8, "Set2"))(nrow(lb))
 
-# p1 <- ggplot(data=lb, mapping=aes(x = SM, y=reads_raw, fill=LB)) + 
-#   geom_bar(stat="identity") +
-#   ylab("# reads") +
-#   xlab("") +
-#   theme_classic() +
-#   scale_fill_manual(values = mycolours) +
-#   ggtitle(title) +
-#   theme(axis.text.x=element_text(angle = 90, vjust = 0.5))
 
-# if(nrow(lb)>10){
-#   p1 <- p1 + theme(legend.position = "none")
-# }
-# if(length(unique(lb$genome))>1){
-#   p1 <- p1 + facet_grid(cols = vars(genome))
-# }
+ggsave(out_2_mapped, my_plot, width = 11, height = 7)
+#--------------------------------------------------------------------------#
 
-# ggsave(plot_1_nb_reads, p1, width = 11, height = 7)
+
 
 ############################################################################
 
