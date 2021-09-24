@@ -1,5 +1,12 @@
         #require(plyr)
-        
+# IMPORTANT!!!
+#
+# If you modify this script, you need to make sure that the following
+# scripts adopt the right column names
+# scripts/merge_stats_per_LB.R
+# scripts/merge_stats_per_SM.R
+# 
+
 ## The following assumes active Conda environment with `tzdata` installed
 ## This is needed to avoid the following error and thus an abort of snakemake
 ##    Error: Unknown TZ UTC
@@ -8,7 +15,7 @@
 ##    Execution halted
 Sys.setenv("TZDIR"=paste0(Sys.getenv("CONDA_PREFIX"), "/share/zoneinfo"))
 
-library(fastqcr)
+#library(fastqcr)
 
 # reads_raw           SM,LB,ID    multiqc
 # reads_trim          SM,LB,ID    multiqc
@@ -83,36 +90,32 @@ path_length_mapped_highQ = get_args(argsL, "path_length_mapped_highQ")
 
 #-----------------------------------------------------------------------------#
 
-
-
-calc_avg_len <- function(m, nb){ 
-	#print(m)
-	d <- do.call(rbind, strsplit(m$Length, '-'))
-	dd <- data.frame(apply(d, 1:2, function(x) as.numeric(as.character(x))))
-	sum(apply(dd, 1, mean) * m$Count) / reads_raw
-}
-
-calc_avg_len2 <- function(l){ sum(l$n_reads * l$length) / sum(l$n_reads) }
+calc_avg_len <- function(l){ sum(l$Count * l$Length) / sum(l$Count) }
 
 #-----------------------------------------------------------------------------#
-length_mapped_highQ = read.table(path_length_mapped_highQ, sep = "\t", header = T)
+length_mapped_highQ = read.table(path_length_mapped_highQ, sep = "\t", header = T, col.names = c("Count", "Length"))
 mapped_raw = as.numeric(strsplit(readLines(path_flagstat_mapped_highQ)[1], " ")[[1]][1])
         
 #-----------------------------------------------------------------------------#
 ## original fastqc
-options(readr.show_col_types = FALSE)
-data <- qc_read(path_fastqc_orig, "Sequence Length Distribution", F)
-reads_raw <- sum(data$"sequence_length_distribution"$Count)
-length_reads_raw <- calc_avg_len(data$"sequence_length_distribution", reads_raw)
+#options(readr.show_col_types = FALSE)
+source("workflow/scripts/parse_fastqc.r")
+length_dist_raw <- parse_fastqc(file_name = path_fastqc_orig, df_name = "Sequence Length Distribution") 
+length_dist_raw <- adjust_lengths(length_dist_raw)
+reads_raw <- sum(length_dist_raw$Count)
+length_reads_raw <- calc_avg_len(length_dist_raw)
 
 ## trimmed fastqc
-data <- qc_read(path_fastqc_trim, "Sequence Length Distribution", F)
-reads_trim <- sum(data$"sequence_length_distribution"$Count)
-length_trim <- calc_avg_len(data$"sequence_length_distribution", reads_raw)
+length_dist_trimmed <- parse_fastqc(file_name = path_fastqc_trim, df_name = "Sequence Length Distribution")
+reads_trim <- sum(length_dist_trimmed$Count)
+length_dist_trimmed <- adjust_lengths(length_dist_trimmed)
+length_reads_trimmed <- calc_avg_len(length_dist_trimmed)
 
 trim_prop = reads_trim / reads_raw
 endogenous_raw = mapped_raw / reads_raw
-length_mapped_raw = calc_avg_len2(length_mapped_highQ)
+# these are the mapped reads that passed the mapQ filter
+# duplicates are still in the BAM at this point
+length_mapped_raw = calc_avg_len(length_mapped_highQ)
 #-----------------------------------------------------------------------------#
 
 
@@ -123,6 +126,7 @@ my_stats = data.frame(
     trim_prop = trim_prop,
     mapped_raw = mapped_raw,
     length_reads_raw = length_reads_raw,
+    length_reads_trimmed = length_reads_trimmed,
     length_mapped_raw = length_mapped_raw,
     endogenous_raw = endogenous_raw
 )

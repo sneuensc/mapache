@@ -1,4 +1,9 @@
-
+# IMPORTANT!!!
+#
+# If you modify this script, you need to make sure that the following
+# scripts adopt the right column names
+# scripts/merge_stats_per_fastq.R
+# scripts/merge_stats_per_SM.R
 
 # reads_raw           SM,LB,ID    multiqc
 # reads_trim          SM,LB,ID    multiqc
@@ -105,9 +110,9 @@ calc_DoC <- function(genomecov, chr){
 }
 #-----------------------------------------------------------------------------#
 
-reads_raw = sum(stats_fastq$reads_raw)
+reads_raw = sum(stats_fastq$reads_raw) # check that this column is defined in scripts/merge_stats_per_fastq.R
 
-reads_trim = sum(stats_fastq$reads_trim)
+reads_trim = sum(stats_fastq$reads_trim) # check scripts/merge_stats_per_fastq.R
 trim_prop =       reads_trim / reads_raw 
 
 duplicates = mapped_raw - mapped_unique
@@ -116,8 +121,10 @@ duplicates_prop = duplicates / mapped_raw
 endogenous_raw = mapped_raw / reads_raw
 endogenous_unique = mapped_unique / reads_raw
 
-length_reads_raw = sum(stats_fastq$length_reads_raw * stats_fastq$reads_raw) / reads_raw
-length_mapped_raw = sum(stats_fastq$length_mapped_raw * stats_fastq$mapped_raw) / mapped_raw
+length_reads_raw = sum(stats_fastq$length_reads_raw * stats_fastq$reads_raw) / reads_raw # check scripts/merge_stats_per_fastq.R
+length_reads_trimmed = sum(stats_fastq$length_reads_trimmed * stats_fastq$reads_trim) / reads_trim # check scripts/merge_stats_per_fastq.R
+
+length_mapped_raw = sum(stats_fastq$length_mapped_raw * stats_fastq$mapped_raw) / mapped_raw # check scripts/merge_stats_per_fastq.R
 length_mapped_unique = calc_avg_len(length_unique_table)
 
 read_depth = calc_DoC(genomecov_unique, "genome")
@@ -134,8 +141,9 @@ my_stats = data.frame(
     duplicates_prop = duplicates_prop,
     mapped_unique = mapped_unique,
     length_reads_raw = length_reads_raw,
+    length_reads_trimmed = length_reads_trimmed,
     length_mapped_raw = length_mapped_raw,
-    length_mapped_unique,
+    length_mapped_unique = length_mapped_unique,
     endogenous_raw = endogenous_raw,
     endogenous_unique = endogenous_unique,
     Sex = Sex,
