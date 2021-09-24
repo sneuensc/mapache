@@ -27,7 +27,7 @@ if("--help" %in% args) {
         --out_2_mapped=plot_2_mapped.png             - plot file name of the 'Mapped reads'. Default: plot_2_mapped.png
         --out_3_endogenous=plot_3_endogenous.png     - plot file name of the 'Endogenous content'. Default: plot_3_endogenous.png
         --out_4_duplication=plot_4_duplication.png   - plot file name of the 'Duplication level'. Default: plot_4_duplication.png
-          
+        --out_5_AvgReadDepth
         --help                                       - print this text
  
       Example:
@@ -64,7 +64,7 @@ out_1_reads      = get_args(argsL, "out_1_reads", "plot_1_nb_reads.png")
 out_2_mapped        = get_args(argsL, "out_2_mapped", "plot_2_mapped.png")
 out_3_endogenous    = get_args(argsL, "out_3_endogenous", "plot_3_endogenous.png")
 out_4_duplication   = get_args(argsL, "out_4_duplication", "plot_4_duplication.png")
-
+out_5_AvgReadDepth   = get_args(argsL, "out_5_AvgReadDepth", "plot_5_AvgReadDepth.png")
 
 ############################################################################
 #--------------------------------------------------------------------------#
@@ -162,27 +162,24 @@ my_plot <- my_plot +
 
 ggsave(out_4_duplication, my_plot, width = 11, height = 7)
 
+#--------------------------------------------------------------------------#
+# "Average read depth"
+require(scales)
+my_plot <- make_barplot(
+  data = sample_stats, x = "SM", y = "read_depth", color_by = "SM", 
+  fill_by = "SM", title = "Average read depth",
+  legend.position = "none"
+  )
+
+
+my_plot <- my_plot +
+  scale_color_manual(values = colors_by_sample) + 
+  scale_fill_manual(values = colors_by_sample) 
+
+
+ggsave(out_5_AvgReadDepth, my_plot, width = 11, height = 7)
 ############################################################################
 
 
 # ############################################################################
-
-# nb = sum(is.na(sm$duplicates_prop))
-# title <- "Duplication level"
-# if(nb)title <- paste0(title, " (", nb, " values missing)")
-
-# p4 <- ggplot(data=sm, mapping=aes(x = SM, y=100*duplicates_prop)) + 
-#   geom_bar(stat="identity") +
-#   ylab("% reads") +
-#   xlab("") +
-#   theme_classic() +
-#   scale_fill_grey() +
-#   ggtitle(title) +
-#   theme(axis.text.x=element_text(angle = 90, vjust = 0.5))
-
-# if(length(unique(sm$genome))>1){
-#   p4 <- p4 + facet_grid(cols = vars(genome))
-# }
-
-# ggsave(plot_4_duplication, p4, width = 11, height = 7)
 

@@ -337,7 +337,8 @@ rule stats:
         expand("results/03_sample/04_stats/01_summary/1_nb_reads.{id_genome}.png", id_genome=genome),
         expand("results/03_sample/04_stats/01_summary/2_mapped.{id_genome}.png", id_genome=genome),
         expand("results/03_sample/04_stats/01_summary/3_endogenous.{id_genome}.png", id_genome=genome),
-        expand("results/03_sample/04_stats/01_summary/4_duplication.{id_genome}.png", id_genome=genome)
+        expand("results/03_sample/04_stats/01_summary/4_duplication.{id_genome}.png", id_genome=genome),
+        expand("results/03_sample/04_stats/01_summary/5_AvgReadDepth.{id_genome}.png", id_genome=genome),
 
 onsuccess:
     print("Wow, 'snakemake_aDNA_mapping' finished successfully!")
