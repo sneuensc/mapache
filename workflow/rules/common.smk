@@ -418,23 +418,23 @@ def get_chrom(wildcards):
 def path_stats_by_level(wildcards):
     if wildcards.level == "FASTQ":
         paths = [
-            f"results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv"
-            for GENOME in genome
+            f"results/04_stats/02_separate_tables/{wildcards.GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv"
+            #for GENOME in genome
             for SM in samples
             for LB in samples[SM]
             for ID in samples[SM][LB]
         ]
     elif wildcards.level == "LB":
         paths = [
-            f"results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/library_stats.csv"
-            for GENOME in genome
+            f"results/04_stats/02_separate_tables/{wildcards.GENOME}/{SM}/{LB}/library_stats.csv"
+            #for GENOME in genome
             for SM in samples
             for LB in samples[SM]
         ]
     elif wildcards.level == "SM":
         paths = [
-            f"results/04_stats/02_separate_tables/{GENOME}/{SM}/sample_stats.csv"
-            for GENOME in genome
+            f"results/04_stats/02_separate_tables/{wildcards.GENOME}/{SM}/sample_stats.csv"
+            #for GENOME in genome
             for SM in samples
         ]
     return paths
