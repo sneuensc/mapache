@@ -208,7 +208,11 @@ final_bam = [
         "results/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.bam",
         SM=samples,
         GENOME=genome,
-    ),
+    )
+]
+
+final_bam_all = [
+    final_bam,
     expand(
         "results/03_sample/03_final_sample/01_bam_low_qual/{SM}.{GENOME}.bam",
         SM=samples,
@@ -230,6 +234,13 @@ final_stats = [
     "results/04_stats/03_final_tables/SM.csv",
     "results/04_stats/03_final_tables/LB.csv",
     "results/04_stats/03_final_tables/FASTQ.csv",
+]
+final_stats = [
+    expand(
+        "results/04_stats/02_separate_tables/{GENOME}/{SM}/sample_stats.csv",
+        SM=samples,
+        GENOME=genome,
+    )
 ]
 
 
@@ -281,27 +292,8 @@ rule all:
     Computes all
     """
     input:
-        ## check if given chromosome names make sense
-        expand("results/00_reference/{GENOME}/{GENOME}.ok", GENOME=genome),
-        final_bam,
-        ## summary statistics
-        #expand("results/03_sample/04_stats/01_summary/sample_stats.{GENOME}.csv", GENOME=genome),
-        #expand("results/03_sample/04_stats/01_summary/1_nb_reads.{GENOME}.png", GENOME=genome),
-        #expand("results/03_sample/04_stats/01_summary/2_mapped.{GENOME}.png", GENOME=genome),
-        #expand("results/03_sample/04_stats/01_summary/3_endogenous.{GENOME}.png", GENOME=genome),
-        #expand("results/03_sample/04_stats/01_summary/4_duplication.{GENOME}.png", GENOME=genome),
-        ## extended statistics at library level
-        #expand("results/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_depth.txt", SM=samples, GENOME=genome) if str2bool(get_param3("stats", "library", "depth", "False")) else [],
-        ## extended statistics at sample level
-        #expand("results/03_sample/04_stats/01_summary/5_AvgReadDepth.{GENOME}.svg", GENOME=genome) if str2bool(get_param3("stats", "sample", "depth", "False")) else [],
-        #expand("results/03_sample/04_stats/01_summary/6_AvgReadDepth_MT.{GENOME}.svg", GENOME=genome) if str2bool(get_param3("stats", "sample", "depth", "False")) else [],
-        #expand("results/03_sample/04_stats/01_summary/7_Sex.{GENOME}.svg", GENOME=genome) if str2bool(get_param3("stats", "sample", "depth", "False")) else [],
-        final_stats,
-        #expand("results/03_sample/04_stats/01_summary/depth_stats_{GENOME}.csv", GENOME=genome)
-
-
-# expand("results/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_depth.txt", SM=samples, GENOME=genome) if str2bool(get_param3("stats", "sample", "depth", "False")) else []
-# expand("results/03_sample/04_stats/02_depth/{SM}.{GENOME}_depth.txt", SM=samples, GENOME=genome)  #if bool(config.get("stats", {}).get("sample", {}).get("depth", "False"))
+        final_bam_all,
+        final_stats
 
 
 ## rules dag (just pipeline)
@@ -310,11 +302,7 @@ rule dag:
     Computes just the mapping (used to get a nice DAG)
     """
     input:
-        expand(
-            "results/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.bam",
-            SM=list(samples),
-            GENOME=genome,
-        ),
+        final_bam
 
 
 rule mapping:
@@ -322,7 +310,7 @@ rule mapping:
     Computes just what is needed to get the final mapping (without any stats)
     """
     input:
-        final_bam,
+        final_bam_all
 
 
 rule stats:
@@ -330,15 +318,10 @@ rule stats:
     Computes all statistics
     """
     input:
-        expand("results/03_sample/04_stats/01_summary/SM_stats.{id_genome}.csv", id_genome=genome),
-        expand("03_sample/04_stats/01_summary/DoC_by_chrs.{id_genome}.csv", id_genome=genome),
-        expand("results/04_stats/sample_depth.{id_genome}.csv", id_genome=GENOME) if run_depth else [],
-        get_damage(run_damage),
-        expand("results/03_sample/04_stats/01_summary/1_nb_reads.{id_genome}.png", id_genome=genome),
-        expand("results/03_sample/04_stats/01_summary/2_mapped.{id_genome}.png", id_genome=genome),
-        expand("results/03_sample/04_stats/01_summary/3_endogenous.{id_genome}.png", id_genome=genome),
-        expand("results/03_sample/04_stats/01_summary/4_duplication.{id_genome}.png", id_genome=genome),
-        expand("results/03_sample/04_stats/01_summary/5_AvgReadDepth.{id_genome}.png", id_genome=genome),
+        final_stats,
+        final_stat_figures
+
+
 
 onsuccess:
     print("Wow, 'snakemake_aDNA_mapping' finished successfully!")
