@@ -8,10 +8,10 @@
 parse_fastqc <- function(file_name, df_name){
     
     zip_dir <- sub(".zip" ,"", file_name)
-    print(paste0("zip_dir: ", zip_dir))
+    #print(paste0("zip_dir: ", zip_dir))
     unzip(file_name, exdir = dirname(zip_dir))
-    print(paste0("dirname(zip_dir): ", dirname(zip_dir)))
-    print(paste0(zip_dir, "/fastqc_data.txt"))
+    #print(paste0("dirname(zip_dir): ", dirname(zip_dir)))
+    #print(paste0(zip_dir, "/fastqc_data.txt"))
     lines <- readLines(paste0(zip_dir, "/fastqc_data.txt"))
     # remove the very first line
     lines <- lines[-1]
