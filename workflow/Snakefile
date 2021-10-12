@@ -296,7 +296,7 @@ rule all:
         #expand("results/03_sample/04_stats/01_summary/5_AvgReadDepth.{GENOME}.svg", GENOME=genome) if str2bool(get_param3("stats", "sample", "depth", "False")) else [],
         #expand("results/03_sample/04_stats/01_summary/6_AvgReadDepth_MT.{GENOME}.svg", GENOME=genome) if str2bool(get_param3("stats", "sample", "depth", "False")) else [],
         #expand("results/03_sample/04_stats/01_summary/7_Sex.{GENOME}.svg", GENOME=genome) if str2bool(get_param3("stats", "sample", "depth", "False")) else [],
-        final_stats,
+        #final_stats,
         #expand("results/03_sample/04_stats/01_summary/depth_stats_{GENOME}.csv", GENOME=genome)
 
 
