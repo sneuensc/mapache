@@ -301,9 +301,9 @@ rule merge_stats_by_level:
     input:
         paths = path_stats_by_level,
     output:
-        "results/03_sample/04_stats/01_summary/{level}_stats.{GENOME}.csv",
+        "results/04_stats/03_summary/{level}_stats.{GENOME}.csv",
     log:
-        "results/03_sample/04_stats/01_summary/{level}_stats.{GENOME}.log",
+        "results/04_stats/03_summary/{level}_stats.{GENOME}.log",
     message:
         "--- MERGE STATS by {wildcards.level}"
     run:
@@ -341,7 +341,7 @@ rule merge_DoC_chr:
             SM = samples
             )
     output:
-        "03_sample/04_stats/01_summary/DoC_by_chrs.{genome}.csv"
+        "results/04_stats/03_summary/DoC_by_chrs.{genome}.csv"
     run:
         import pandas as pd
 
@@ -486,17 +486,27 @@ rule plot_summary_statistics:
     Plot summary statistics
     """
     input:
-        sample_stats = "results/03_sample/04_stats/01_summary/SM_stats.{id_genome}.csv"
+        sample_stats = "results/04_stats/03_summary/SM_stats.{id_genome}.csv"
         # fastq_stats = "results/01_fastq/05_stats/02_summary/fastq_stats.{id_genome}.csv",
         # library_stats = "results/02_library/04_stats/02_summary/library_stats.{id_genome}.csv",
     output: 
-        plot_1_nb_reads = report("results/03_sample/04_stats/01_summary/1_nb_reads.{id_genome}.png", caption="../report/1_nb_reads.rst", category="Mapping statistics plots"),
-        plot_2_mapped = report("results/03_sample/04_stats/01_summary/2_mapped.{id_genome}.png", caption="../report/2_mapped.rst", category="Mapping statistics plots"),        
-        plot_3_endogenous = report("results/03_sample/04_stats/01_summary/3_endogenous.{id_genome}.png", caption="../report/3_endogenous.rst", category="Mapping statistics plots"),        
-        plot_4_duplication = report("results/03_sample/04_stats/01_summary/4_duplication.{id_genome}.png", caption="../report/4_duplication.rst", category="Mapping statistics plots"),
-        plot_5_AvgReadDepth = report("results/03_sample/04_stats/01_summary/5_AvgReadDepth.{id_genome}.png", caption="../report/5_AvgReadDepth.rst", category="Mapping statistics plots")      
+        plot_1_nb_reads = report("results/04_stats/04_plots/1_nb_reads.{id_genome}.png", 
+                                # caption="../report/1_nb_reads.rst", 
+                                category="Mapping statistics plots"),
+        plot_2_mapped = report("results/04_stats/04_plots/2_mapped.{id_genome}.png", 
+                                # caption="../report/2_mapped.rst", 
+                                category="Mapping statistics plots"),        
+        plot_3_endogenous = report("results/04_stats/04_plots/3_endogenous.{id_genome}.png", 
+                                # caption="../report/3_endogenous.rst", 
+                                category="Mapping statistics plots"),        
+        plot_4_duplication = report("results/04_stats/04_plots/4_duplication.{id_genome}.png", 
+                                # caption="../report/4_duplication.rst", 
+                                category="Mapping statistics plots"),
+        plot_5_AvgReadDepth = report("results/04_stats/04_plots/5_AvgReadDepth.{id_genome}.png", 
+                                # caption="../report/5_AvgReadDepth.rst", 
+                                category="Mapping statistics plots")      
     log: 
-        "results/03_sample/04_stats/01_summary/plot_summary_statistics_{id_genome}.log"
+        "results/04_stats/04_plots/plot_summary_statistics_{id_genome}.log"
     conda:
     	"../envs/r.yaml"
     envmodules:
