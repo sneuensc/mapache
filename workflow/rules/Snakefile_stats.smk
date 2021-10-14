@@ -11,10 +11,10 @@ rule fastqc:
     Quality control of fastq file by fastqc (SE or R1)
     """
     input:
-        get_fastq_for_mapping
+        get_fastq_for_mapping,
     output:
-        html = "results/04_stats/01_sparse_stats/01_fastq/{group1}/{group2}/{SM}/{LB}/{ID}_fastqc.html",
-        zip =  "results/04_stats/01_sparse_stats/01_fastq/{group1}/{group2}/{SM}/{LB}/{ID}_fastqc.zip",
+        html="results/04_stats/01_sparse_stats/01_fastq/{group1}/{group2}/{SM}/{LB}/{ID}_fastqc.html",
+        zip="results/04_stats/01_sparse_stats/01_fastq/{group1}/{group2}/{SM}/{LB}/{ID}_fastqc.zip",
     log:
         "results/04_stats/01_sparse_stats/01_fastq/{group1}/{group2}/{SM}/{LB}/{ID}_fastqc.log",
     resources:
@@ -32,10 +32,10 @@ rule fastqc:
         html={output.html}
         symlink=${{html%%_fastqc.html}}.fastq.gz
         ln -srf {input[0]} $symlink
-        
+
         ## run fastqc
         fastqc --quiet --outdir $(dirname $html) $symlink 2> {log};
-        
+
         ## remove symlink again
         rm $symlink
         """
@@ -146,7 +146,7 @@ rule assign_sex:
     output:
         sex="results/04_stats/01_sparse_stats/{file}.{GENOME}.sex",
     params:
-        sex_params = get_sex_params
+        sex_params=get_sex_params,
     log:
         "results/04_stats/01_sparse_stats/{file}.{GENOME}.sex.log",
     conda:
@@ -220,7 +220,9 @@ rule merge_stats_per_fastq:
 rule merge_stats_per_lb:
     input:
         fastq_stats=lambda wildcards: [
-            f"results/04_stats/02_separate_tables/{wildcards.GENOME}/{wildcards.SM}/{wildcards.LB}/{ID}/fastq_stats.csv" for ID in samples[wildcards.SM][wildcards.LB]],
+            f"results/04_stats/02_separate_tables/{wildcards.GENOME}/{wildcards.SM}/{wildcards.LB}/{ID}/fastq_stats.csv"
+            for ID in samples[wildcards.SM][wildcards.LB]
+        ],
         flagstat_raw="results/04_stats/01_sparse_stats/02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}_flagstat.txt",
         flagstat_unique="results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_flagstat.txt",
         length_unique="results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}.length",
@@ -258,7 +260,8 @@ rule merge_stats_per_lb:
 
 rule merge_stats_per_sm:
     input:
-        lb_stats = lambda wildcards: [f"results/04_stats/02_separate_tables/{wildcards.GENOME}/{wildcards.SM}/{LB}/library_stats.csv"
+        lb_stats=lambda wildcards: [
+            f"results/04_stats/02_separate_tables/{wildcards.GENOME}/{wildcards.SM}/{LB}/library_stats.csv"
             for LB in samples[wildcards.SM]
         ],
         flagstat_unique="results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_flagstat.txt",
@@ -296,13 +299,17 @@ rule merge_stats_per_sm:
 # -----------------------------------------------------------------------------#
 # merge all the stats in the same level
 
-# Here level can be: SM, LB, FASTQ 
+
+# Here level can be: SM, LB, FASTQ
 rule merge_stats_by_level:
     input:
-        paths = path_stats_by_level,
+        paths=path_stats_by_level,
     output:
-        report("results/04_stats/03_summary/{level}_stats.{GENOME}.csv", 
-        caption="../report/sample_stats.rst", category="Mapping statistic tables")
+        report(
+            "results/04_stats/03_summary/{level}_stats.{GENOME}.csv",
+            caption="../report/sample_stats.rst",
+            category="Mapping statistic tables",
+        ),
     log:
         "results/04_stats/03_summary/{level}_stats.{GENOME}.log",
     message:
@@ -315,16 +322,21 @@ rule merge_stats_by_level:
         df.to_csv(str(output), index=False)
 
 
-
 ##########################################################################################
 # read depth by chromosome
 rule DoC_chr_SM:
     input:
-        "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{genome}.genomecov"
+        "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{genome}.genomecov",
     output:
-        "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{genome}_DoC_chrs.csv"
+        "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{genome}_DoC_chrs.csv",
     params:
-        SM = "{SM}"
+        SM="{SM}",
+    log:
+        "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{genome}_DoC_chrs.log",
+    conda:
+        "../envs/r.yaml"
+    envmodules:
+        module_r,
     shell:
         """
         Rscript workflow/scripts/depth_by_chr.R \
@@ -334,15 +346,18 @@ rule DoC_chr_SM:
 
         """
 
+
 rule merge_DoC_chr:
     input:
         lambda wildcards: expand(
-            "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{genome}_DoC_chrs.csv", 
-            genome = wildcards.genome,
-            SM = samples
-            )
+            "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{genome}_DoC_chrs.csv",
+            genome=wildcards.genome,
+            SM=samples,
+        ),
     output:
-        "results/04_stats/03_summary/DoC_by_chrs.{genome}.csv"
+        "results/04_stats/03_summary/DoC_by_chrs.{genome}.csv",
+    log:
+        "results/04_stats/03_summary/DoC_by_chrs.{genome}.log",
     run:
         import pandas as pd
 
@@ -352,9 +367,11 @@ rule merge_DoC_chr:
         df = pd.concat(df_list)
         df.to_csv(str(output), index=False)
 
+
 ##########################################################################################
 #
 # bamdamage
+
 
 rule bamdamage:
     """
@@ -363,43 +380,60 @@ rule bamdamage:
     input:
         ref="results/00_reference/{id_genome}/{id_genome}.fasta",
         bam=lambda wildcards: get_mapDamage_bam(wildcards),
-        bai=lambda wildcards: get_mapDamage_bam(wildcards, index = True)
+        bai=lambda wildcards: get_mapDamage_bam(wildcards, index=True),
     output:
         damage_pdf="results/02_library/04_stats/03_bamdamage/{id_sample}/{id_library}/{id_library}.{id_genome}.dam.pdf",
         length_pdf="results/02_library/04_stats/03_bamdamage/{id_sample}/{id_library}/{id_library}.{id_genome}.length.pdf",
-        length_table=report("results/02_library/04_stats/03_bamdamage/{id_sample}/{id_library}/{id_library}.{id_genome}.length.csv", category="Read length table"),
-        dam_5prime_table=report("results/02_library/04_stats/03_bamdamage/{id_sample}/{id_library}/{id_library}.{id_genome}.dam_5prime.csv", category="Damage pattern table"),
-        dam_3prime_table=report("results/02_library/04_stats/03_bamdamage/{id_sample}/{id_library}/{id_library}.{id_genome}.dam_3prime.csv", category="Damage pattern table")      
+        length_table=report(
+            "results/02_library/04_stats/03_bamdamage/{id_sample}/{id_library}/{id_library}.{id_genome}.length.csv",
+            category="Read length table",
+        ),
+        dam_5prime_table=report(
+            "results/02_library/04_stats/03_bamdamage/{id_sample}/{id_library}/{id_library}.{id_genome}.dam_5prime.csv",
+            category="Damage pattern table",
+        ),
+        dam_3prime_table=report(
+            "results/02_library/04_stats/03_bamdamage/{id_sample}/{id_library}/{id_library}.{id_genome}.dam_3prime.csv",
+            category="Damage pattern table",
+        ),
     log:
-        "logs/results/02_library/04_stats/03_bamdamage/{id_sample}/{id_library}/{id_library}.{id_genome}_stats.log"
+        "logs/results/02_library/04_stats/03_bamdamage/{id_sample}/{id_library}/{id_library}.{id_genome}_stats.log",
     threads: 1
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("mapdamage_mem", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("bamdamage_time", attempt, 24),        
-    message: "--- BAMDAMAGE {input.bam}"
+        runtime=lambda wildcards, attempt: get_runtime_alloc(
+            "bamdamage_time", attempt, 24
+        ),
+    message:
+        "--- BAMDAMAGE {input.bam}"
     params:
         prefix="results/02_library/04_stats/03_bamdamage/{id_sample}/{id_library}/{id_library}.{id_genome}",
-        bamdamage_params = config["bamdamage_params"] if "bamdamage_params" in config.keys() else '',
-        fraction = config["bamdamage_fraction"] if "bamdamage_fraction" in config.keys() else 0,
+        bamdamage_params=config["bamdamage_params"]
+        if "bamdamage_params" in config.keys()
+        else "",
+        fraction=config["bamdamage_fraction"]
+        if "bamdamage_fraction" in config.keys()
+        else 0,
     envmodules:
         module_samtools,
-        module_r
-    shell:    
-    	"""
+        module_r,
+    shell:
+        """
 
-    	nb=$(samtools idxstats {input.bam} | awk '{{sum += $3}} END {{print sum}}'); 
-    	nth_line=1; 
-    	if [ {params.fraction} -eq 0 ]; then
-    		nth_line=1; 
-    	elif [ {params.fraction} -lt 1 ]; then
-    		nth_line=$(( {params.fraction} * $nb )); 
-    	elif [ {params.fraction} -lt "$nb" ]; then
-    	   nth_line=$(( $nb / {params.fraction} )); 
-    	fi;
+        nb=$(samtools idxstats {input.bam} | awk '{{sum += $3}} END {{print sum}}'); 
+        nth_line=1; 
+        if [ {params.fraction} -eq 0 ]; then
+            nth_line=1; 
+        elif [ {params.fraction} -lt 1 ]; then
+            nth_line=$(( {params.fraction} * $nb )); 
+        elif [ {params.fraction} -lt "$nb" ]; then
+           nth_line=$(( $nb / {params.fraction} )); 
+        fi;
         workflow/scripts/bamdamage {params.bamdamage_params} \
             --nth_read $nth_line --output {output.damage_pdf} \
             --output_length {output.length_pdf} {input.bam} 2> {log};
         """
+
 
 ##########################################################################################
 # plots
@@ -452,6 +486,7 @@ rule bamdamage:
 #             --larger_chr={params.sex_params}
 #         """
 
+
 rule plot_depth_statistics:
     input:
         sample_depth="{folder}/depth_stats_{GENOME}.csv",
@@ -477,46 +512,57 @@ rule plot_depth_statistics:
     conda:
         "../envs/r.yaml"
     envmodules:
-    	module_r
-    message: "--- PLOT DEPTH STATISTICS OF {input}"
-    script:    	
-    	"../scripts/plot_depth.R"
+        module_r,
+    message:
+        "--- PLOT DEPTH STATISTICS OF {input}"
+    script:
+        "../scripts/plot_depth.R"
+
 
 rule plot_summary_statistics:
     """
     Plot summary statistics
     """
     input:
-        sample_stats = "results/04_stats/03_summary/SM_stats.{id_genome}.csv"
-        # fastq_stats = "results/01_fastq/05_stats/02_summary/fastq_stats.{id_genome}.csv",
-        # library_stats = "results/02_library/04_stats/02_summary/library_stats.{id_genome}.csv",
-    output: 
-        plot_1_nb_reads = report("results/04_stats/04_plots/1_nb_reads.{id_genome}.svg", 
-                                caption="../report/1_nb_reads.rst", 
-                                category="Mapping statistics plots"),
-        plot_2_mapped = report("results/04_stats/04_plots/2_mapped.{id_genome}.svg", 
-                                caption="../report/2_mapped.rst", 
-                                category="Mapping statistics plots"),        
-        plot_3_endogenous = report("results/04_stats/04_plots/3_endogenous.{id_genome}.svg", 
-                                caption="../report/3_endogenous.rst", 
-                                category="Mapping statistics plots"),        
-        plot_4_duplication = report("results/04_stats/04_plots/4_duplication.{id_genome}.svg", 
-                                caption="../report/4_duplication.rst", 
-                                category="Mapping statistics plots"),
-        plot_5_AvgReadDepth = report("results/04_stats/04_plots/5_AvgReadDepth.{id_genome}.svg", 
-                                caption="../report/5_AvgReadDepth.rst", 
-                                category="Mapping statistics plots")      
-    log: 
-        "results/04_stats/04_plots/plot_summary_statistics_{id_genome}.log"
+        sample_stats="results/04_stats/03_summary/SM_stats.{id_genome}.csv",
+    output:
+        plot_1_nb_reads=report(
+            "results/04_stats/04_plots/1_nb_reads.{id_genome}.svg",
+            caption="../report/1_nb_reads.rst",
+            category="Mapping statistics plots",
+        ),
+        plot_2_mapped=report(
+            "results/04_stats/04_plots/2_mapped.{id_genome}.svg",
+            caption="../report/2_mapped.rst",
+            category="Mapping statistics plots",
+        ),
+        plot_3_endogenous=report(
+            "results/04_stats/04_plots/3_endogenous.{id_genome}.svg",
+            caption="../report/3_endogenous.rst",
+            category="Mapping statistics plots",
+        ),
+        plot_4_duplication=report(
+            "results/04_stats/04_plots/4_duplication.{id_genome}.svg",
+            caption="../report/4_duplication.rst",
+            category="Mapping statistics plots",
+        ),
+        plot_5_AvgReadDepth=report(
+            "results/04_stats/04_plots/5_AvgReadDepth.{id_genome}.svg",
+            caption="../report/5_AvgReadDepth.rst",
+            category="Mapping statistics plots",
+        ),
+    log:
+        "results/04_stats/04_plots/plot_summary_statistics_{id_genome}.log",
     conda:
-    	"../envs/r.yaml"
+        "../envs/r.yaml"
     envmodules:
-    	module_r
-    message: "--- PLOT SUMMARY STATISTICS OF {wildcards.id_genome}"
+        module_r,
+    message:
+        "--- PLOT SUMMARY STATISTICS OF {wildcards.id_genome}"
     params:
-        samples = config["sample_file"]
+        samples=config["sample_file"],
     shell:
-    	"""
+        """
         Rscript workflow/scripts/plot_stats.R \
             --samples={params.samples} \
             --SM={input.sample_stats}  \
@@ -526,4 +572,3 @@ rule plot_summary_statistics:
             --out_4_duplication={output.plot_4_duplication} \
             --out_5_AvgReadDepth={output.plot_5_AvgReadDepth}
         """
-        

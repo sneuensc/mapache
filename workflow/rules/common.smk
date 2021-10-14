@@ -90,39 +90,51 @@ def eval_list_to_csv(x):
 ## function to test the chromosome names
 def check_chromsome_names(GENOME):
     ## get all chromsome names from the reference GENOME
-    fasta = get_param3('genome', GENOME, 'fasta', '')
+    fasta = get_param3("genome", GENOME, "fasta", "")
     if pathlib.Path(f"{fasta}.fai").exists():
-        allChr = list(map(str, pd.read_csv(f"{fasta}.fai", header=None, sep="\t")[0].tolist()))
+        allChr = list(
+            map(str, pd.read_csv(f"{fasta}.fai", header=None, sep="\t")[0].tolist())
+        )
     elif pathlib.Path(f"results/00_reference/{GENOME}/{GENOME}.fasta.fai").exists():
         fasta = f"results/00_reference/{GENOME}/{GENOME}.fasta"
-        allChr = list(map(str, pd.read_csv(f"{fasta}.fai", header=None, sep="\t")[0].tolist()))
+        allChr = list(
+            map(str, pd.read_csv(f"{fasta}.fai", header=None, sep="\t")[0].tolist())
+        )
     elif pathlib.Path(fasta).exists():
         cmd = f"grep '^>' {fasta} | cut -c2- | awk '{{print $1}}'"
         allChr = subprocess.check_output(cmd, shell=True, text=True).split()
     else:
         print(f"ERROR: Reference genome 'genome:{GENOME}:fasta' does not exist!")
         os._exit(1)
-    
+
     ## check female chromosome
     femaleChr = get_param3("genome", GENOME, "femaleChr", "X")
     if femaleChr not in allChr:
         set_param3("genome", GENOME, "femaleChr", "")
-        print(f"WARNING: In parameter 'genome:{GENOME}:femaleChr' the chromosome name '{femaleChr}' is unknown, assuming no female chromosome!")
-    
+        print(
+            f"WARNING: In parameter 'genome:{GENOME}:femaleChr' the chromosome name '{femaleChr}' is unknown, assuming no female chromosome!"
+        )
+
     ## check male chromosome
     maleChr = get_param3("genome", GENOME, "maleChr", "Y")
     if maleChr not in allChr:
         set_param3("genome", GENOME, "maleChr", "")
-        print(f"WARNING: In parameter 'genome:{GENOME}:maleChr' the chromosome name '{maleChr}' is unknown, assuming no male chromosome!")
-    
+        print(
+            f"WARNING: In parameter 'genome:{GENOME}:maleChr' the chromosome name '{maleChr}' is unknown, assuming no male chromosome!"
+        )
+
     ## check MT chromosome
     mtChr = get_param3("genome", GENOME, "mtChr", "MT")
     if mtChr not in allChr:
         set_param3("genome", GENOME, "mtChr", "")
-        print(f"WARNING: In parameter 'genome:{GENOME}:mtChr' the chromosome name '{mtChr}' is unknown, assuming no MT chromosome!")
-    
+        print(
+            f"WARNING: In parameter 'genome:{GENOME}:mtChr' the chromosome name '{mtChr}' is unknown, assuming no MT chromosome!"
+        )
+
     ## check autosomes
-    autosomeChr = list(map(str, eval_to_list(get_param3("genome", GENOME, "autosomeChr", ""))))
+    autosomeChr = list(
+        map(str, eval_to_list(get_param3("genome", GENOME, "autosomeChr", "")))
+    )
     if autosomeChr == "":
         ## if empty, autosomes are all not differently defined chromsomes
         autosomeChr = np.intersect1d(allChr, [femaleChr, maleChr, mtChr])
@@ -131,11 +143,20 @@ def check_chromsome_names(GENOME):
         unknown = list(set(autosomeChr) - set(allChr))
         if len(unknown) > 0:
             autosomeChr = np.intersect1d(allChr, autosomeChr)
-            set_param3("genome", GENOME,"autosomeChr",list_to_csv(autosomeChr),)
+            set_param3(
+                "genome",
+                GENOME,
+                "autosomeChr",
+                list_to_csv(autosomeChr),
+            )
             if len(unknown) == 1:
-                print(f"WARNING: In parameter 'genome:{GENOME}:autosomeChr' the chromosome name {unknown} is unknown, ignoring it!")
+                print(
+                    f"WARNING: In parameter 'genome:{GENOME}:autosomeChr' the chromosome name {unknown} is unknown, ignoring it!"
+                )
             else:
-                print(f"WARNING: In parameter 'genome:{GENOME}:autosomeChr' the chromosome names {unknown} are unknown, ignoring them!")
+                print(
+                    f"WARNING: In parameter 'genome:{GENOME}:autosomeChr' the chromosome names {unknown} are unknown, ignoring them!"
+                )
 
 
 ## convert string to boolean
@@ -193,15 +214,25 @@ def get_threads(module, default=1):
 
 ## define how to quantify the deamination pattern
 def get_damage(run_damage):
-    files=[]
-    if run_damage == 'bamdamage':
+    files = []
+    if run_damage == "bamdamage":
         for GENOME in genome:
-            files+=[("results/02_library/04_stats/03_bamdamage/{SM}/{LB}/{LB}.{GENOME}.dam.pdf").format(SM=row['SM'], LB=row['LB'], GENOME=GENOME) for index, row in all_libraries.iterrows()]
-    elif run_damage == 'mapDamage':
+            files += [
+                (
+                    "results/02_library/04_stats/03_bamdamage/{SM}/{LB}/{LB}.{GENOME}.dam.pdf"
+                ).format(SM=row["SM"], LB=row["LB"], GENOME=GENOME)
+                for index, row in all_libraries.iterrows()
+            ]
+    elif run_damage == "mapDamage":
         for GENOME in genome:
-            files+=[("{SM}/{LB}/library_mapDamage/{LB}.{GENOME}_results_mapDamage/Fragmisincorporation_plot.pdf").format(SM=row['SM'], LB=row['LB'], GENOME=GENOME) for index, row in all_libraries.iterrows()]
-    return (files)
-    
+            files += [
+                (
+                    "{SM}/{LB}/library_mapDamage/{LB}.{GENOME}_results_mapDamage/Fragmisincorporation_plot.pdf"
+                ).format(SM=row["SM"], LB=row["LB"], GENOME=GENOME)
+                for index, row in all_libraries.iterrows()
+            ]
+    return files
+
 
 ##########################################################################################
 ##########################################################################################
@@ -218,6 +249,7 @@ def get_fastq_of_ID(wildcards):
     else:
         filename = samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data"]
     return filename
+
 
 def get_fastq_for_mapping(wildcards):
     if run_adapter_removal:
@@ -299,7 +331,7 @@ def get_final_bam_library(wildcards):
     return bam
 
 
-def get_mapDamage_bam(wildcards, index = False):
+def get_mapDamage_bam(wildcards, index=False):
     if run_mark_duplicates:
         if save_duplicates == "extract":
             bam = f"results/02_library/01_duplicated/01_rmdup/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}_mapped.bam"
@@ -309,13 +341,15 @@ def get_mapDamage_bam(wildcards, index = False):
         bam = f"results/02_library/00_merged_fastq/01_bam/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}.bam"
     if index:
         bam = bam.replace(".bam", ".bai")
-    return (bam)
-    # if extract_duplicates:
-    #     bam = f"results/02_library/01_duplicated/01_rmdup/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}_mapped.bam"
-    # elif run_remove_duplicates:
-    #     bam = f"results/02_library/01_duplicated/01_rmdup/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}.bam"
-    # else: 
-    #     bam = f"results/02_library/00_merged_fastq/01_bam/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}.bam"
+    return bam
+
+
+# if extract_duplicates:
+#     bam = f"results/02_library/01_duplicated/01_rmdup/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}_mapped.bam"
+# elif run_remove_duplicates:
+#     bam = f"results/02_library/01_duplicated/01_rmdup/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}.bam"
+# else:
+#     bam = f"results/02_library/00_merged_fastq/01_bam/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}.bam"
 
 
 ##########################################################################################
@@ -419,7 +453,7 @@ def path_stats_by_level(wildcards):
     if wildcards.level == "FASTQ":
         paths = [
             f"results/04_stats/02_separate_tables/{wildcards.GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv"
-            #for GENOME in genome
+            # for GENOME in genome
             for SM in samples
             for LB in samples[SM]
             for ID in samples[SM][LB]
@@ -427,14 +461,14 @@ def path_stats_by_level(wildcards):
     elif wildcards.level == "LB":
         paths = [
             f"results/04_stats/02_separate_tables/{wildcards.GENOME}/{SM}/{LB}/library_stats.csv"
-            #for GENOME in genome
+            # for GENOME in genome
             for SM in samples
             for LB in samples[SM]
         ]
     elif wildcards.level == "SM":
         paths = [
             f"results/04_stats/02_separate_tables/{wildcards.GENOME}/{SM}/sample_stats.csv"
-            #for GENOME in genome
+            # for GENOME in genome
             for SM in samples
         ]
     return paths

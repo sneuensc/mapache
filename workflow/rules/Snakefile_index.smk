@@ -58,11 +58,20 @@ rule check_chromosomes:
             unknown = list(set(params.autosomeChr) - set(allChr))
             if len(unknown) > 0:
                 autosomeChr = np.intersect1d(allChr, params.autosomeChr)
-                set_param3("genome", wildcards.GENOME,"autosomeChr",list_to_csv(autosomeChr),)
+                set_param3(
+                    "genome",
+                    wildcards.GENOME,
+                    "autosomeChr",
+                    list_to_csv(autosomeChr),
+                )
                 if len(unknown) == 1:
-                    print(f"WARNING: In parameter 'genome:{wildcards.GENOME}:autosomeChr' the name {unknown} is unknown, ignoring it!")
+                    print(
+                        f"WARNING: In parameter 'genome:{wildcards.GENOME}:autosomeChr' the name {unknown} is unknown, ignoring it!"
+                    )
                 else:
-                    print(f"WARNING: In parameter 'genome:{wildcards.GENOME}:autosomeChr' the names {unknown} are unknown, ignoring them!")
+                    print(
+                        f"WARNING: In parameter 'genome:{wildcards.GENOME}:autosomeChr' the names {unknown} are unknown, ignoring them!"
+                    )
 
 
 ## indexing fasta

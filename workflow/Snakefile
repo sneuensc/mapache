@@ -9,7 +9,10 @@ Date: 28/10/2019
 ##########################################################################################
 ## read the config file
 configfile: "config/config.yaml"
-#validate(config)
+
+
+# validate(config)
+
 
 include: "rules/common.smk"
 
@@ -68,13 +71,15 @@ for GENOME in genome:
     if "fasta" not in list(config["genome"][GENOME]):
         print("ERROR: Each reference genome requires a fasta file!")
         os._exit(1)
-    
+
     check_chromsome_names(GENOME)
-    
-    if (get_param3("genome", GENOME, "femaleChr", "") != "") and (get_param3("genome", GENOME, "femaleChr", "") != ""):
+
+    if (get_param3("genome", GENOME, "femaleChr", "") != "") and (
+        get_param3("genome", GENOME, "femaleChr", "") != ""
+    ):
         save_sex = True
-    
-    if (get_param3("genome", GENOME, "mtChr", "") != ""):
+
+    if get_param3("genome", GENOME, "mtChr", "") != "":
         save_MT = True
 
 
@@ -184,7 +189,8 @@ for index, row in db.iterrows():
         samples[row["SM"]][row["LB"]][row["ID"]][col] = row[col]
 
 ## Building dictionnary for libraries
-all_libraries = db.groupby(['LB','SM'])['ID'].agg(['count']).reset_index()
+all_libraries = db.groupby(["LB", "SM"])["ID"].agg(["count"]).reset_index()
+
 
 ##########################################################################################
 include: "rules/Snakefile_index.smk"
@@ -193,7 +199,10 @@ include: "rules/Snakefile_fastq.smk"
 include: "rules/Snakefile_library.smk"
 include: "rules/Snakefile_sample.smk"
 
+
 report: "report/workflow.rst"
+
+
 ##########################################################################################
 ##########################################################################################
 localrules:
@@ -202,7 +211,8 @@ localrules:
     mapping,
     stats,  ## executed locally on a cluster
 
-## get all final bam files 
+
+## get all final bam files
 final_bam = [
     expand(
         "results/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.bam",
@@ -211,7 +221,7 @@ final_bam = [
     ),
 ]
 
-## get all final bam files 
+## get all final bam files
 final_bam_low_qual = [
     expand(
         "results/03_sample/03_final_sample/01_bam_low_qual/{SM}.{GENOME}.bam",
@@ -233,17 +243,17 @@ final_bam_low_qual = [
 final_stats = [
     expand(
         "results/04_stats/03_summary/{level}_stats.{GENOME}.csv",
-        level=['SM', 'LB', 'FASTQ'],
+        level=["SM", "LB", "FASTQ"],
         GENOME=genome,
     )
 ]
 
 
 final_stat_figures = [
-#     expand(
-#         "results/03_sample/04_stats/01_summary/SM_stats.{GENOME}.csv",
-#         GENOME=genome,
-#     ),
+    #     expand(
+    #         "results/03_sample/04_stats/01_summary/SM_stats.{GENOME}.csv",
+    #         GENOME=genome,
+    #     ),
     # expand("results/04_stats/sample_depth.{GENOME}.csv", GENOME=genome) if run_depth else [],
     # get_damage(run_damage),
     expand(
@@ -266,18 +276,18 @@ final_stat_figures = [
         "results/04_stats/04_plots/5_AvgReadDepth.{GENOME}.svg",
         GENOME=genome,
     ),
-#     expand(
-#         "results/04_stats/04_plots/6_AvgReadDepth_MT.{GENOME}.svg",
-#         GENOME=genome,
-#     )
-#     if save_MT
-#     else [],
-#     expand(
-#         "results/04_stats/04_plots/7_Sex.{GENOME}.svg",
-#         GENOME=genome,
-#     )
-#     if save_sex
-#     else [],
+    #     expand(
+    #         "results/04_stats/04_plots/6_AvgReadDepth_MT.{GENOME}.svg",
+    #         GENOME=genome,
+    #     )
+    #     if save_MT
+    #     else [],
+    #     expand(
+    #         "results/04_stats/04_plots/7_Sex.{GENOME}.svg",
+    #         GENOME=genome,
+    #     )
+    #     if save_sex
+    #     else [],
 ]
 
 
@@ -290,7 +300,7 @@ rule all:
         final_bam,
         final_bam_low_qual,
         final_stat_figures,
-        final_stats
+        final_stats,
 
 
 ## rules dag (just pipeline)
@@ -299,7 +309,7 @@ rule dag:
     Computes just the mapping (used to get a nice DAG)
     """
     input:
-        final_bam
+        final_bam,
 
 
 rule mapping:
@@ -308,7 +318,7 @@ rule mapping:
     """
     input:
         final_bam,
-        final_bam_low_qual
+        final_bam_low_qual,
 
 
 rule stats:
@@ -317,7 +327,6 @@ rule stats:
     """
     input:
         final_stat_figures,
-
 
 
 onsuccess:
