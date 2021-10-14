@@ -1,0 +1,1 @@
+This report has been generated with **mapache**, a lightweighted mapping pipeline for ancient DNA using the workflow manager *snakemake*. More information can be found at https://github.com/sneuensc/mapache. 
