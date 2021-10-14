@@ -60,11 +60,12 @@ get_args <- function(argsL, name, default){
 sm                   = get_args(argsL, "SM", "SM.csv")
 samples_filename                   = get_args(argsL, "samples", "samples.txt")
 
-out_1_reads      = get_args(argsL, "out_1_reads", "plot_1_nb_reads.png")
+out_1_reads         = get_args(argsL, "out_1_reads", "plot_1_nb_reads.png")
 out_2_mapped        = get_args(argsL, "out_2_mapped", "plot_2_mapped.png")
 out_3_endogenous    = get_args(argsL, "out_3_endogenous", "plot_3_endogenous.png")
 out_4_duplication   = get_args(argsL, "out_4_duplication", "plot_4_duplication.png")
-out_5_AvgReadDepth   = get_args(argsL, "out_5_AvgReadDepth", "plot_5_AvgReadDepth.png")
+out_5_AvgReadDepth  = get_args(argsL, "out_5_AvgReadDepth", "plot_5_AvgReadDepth.png")
+x_axis              = get_args(argsL, "x_axis", "sample")
 
 ############################################################################
 #--------------------------------------------------------------------------#
@@ -78,7 +79,7 @@ make_barplot <- function(
     data,
     aes_string(x = x, y = y, color = color_by, fill = fill_by) 
   ) +
-  geom_bar(stat = "identity") +
+  geom_bar(stat = "identity", position = position_dodge()) +
   labs(title = title) +
   theme(legend.position = legend.position) +
   theme(axis.text.x=element_text(angle = 90, vjust = 0.5))
@@ -91,16 +92,30 @@ make_barplot <- function(
 # make barplots for some of the statistics
 
 samples <- read.table(samples_filename, header = T)
-n_samples <- length(unique(samples$SM))
-colors_by_sample <- colorRampPalette(brewer.pal(8, "Set2"))(n_samples)
 
 sample_stats <- read.csv(sm)
+
+if(x_axis == "sample"){
+  color_by = "genome"
+  fill_by = "genome"
+  x = "SM"
+}else if(x_axis == "genome"){
+  color_by = "SM"
+  fill_by = "SM"
+  x = "genome"
+}
+
+n_colors <- length(unique(sample_stats[,x]))
+
+n_samples <- length(unique(samples$SM))
+
+colors_by_sample <- colorRampPalette(brewer.pal(8, "Set2"))(n_colors)
 
 #--------------------------------------------------------------------------#
 # "Total number of reads"
 my_plot <- make_barplot(
-  data = sample_stats, x = "SM", y = "reads_raw", color_by = "SM", 
-  fill_by = "SM", title = "Total number of raw reads", legend.position = "none"
+  data = sample_stats, x = x, y = "reads_raw", color_by = color_by, 
+  fill_by = fill_by, title = "Total number of raw reads", legend.position = "top"
   )
 
 my_plot <- my_plot +
@@ -112,17 +127,29 @@ ggsave(out_1_reads, my_plot, width = 11, height = 7)
 #--------------------------------------------------------------------------#
 # "Mapped reads"
 # plot with unique and duplicated reads
+n_genomes <- length(unique(sample_stats$genome))
+
 mapped_reads <- data.frame(
-  SM = c(sample_stats$SM, sample_stats$SM),
-  number_reads = c(sample_stats$mapped_unique, sample_stats$duplicates),
-  read_type = rep(c("Unique", "Duplicates"), each = n_samples)
+    SM = rep(sample_stats$SM, n_samples),
+    number_reads = c(sample_stats$mapped_unique, sample_stats$mapped_unique+sample_stats$duplicates),
+    read_type = rep(c("Unique", "Duplicates"), each = n_samples * n_genomes),
+    genome = rep(sample_stats$genome, n_samples)
 )
 
-my_plot <- make_barplot(
-  data = mapped_reads, x = "SM", y = "number_reads", color_by = "read_type", 
-  fill_by = "read_type", title = "Mapped unique and duplicated reads",
-  legend.position = "top"
-  )
+
+my_plot <- ggplot(
+    mapped_reads,
+    aes_string(x = x, y = "number_reads",  fill = fill_by, color = color_by,
+    alpha = "read_type",
+               group = fill_by) 
+) +
+    labs(title = "Mapped unique and duplicated reads") +
+    theme(legend.position = "top") +
+    theme(axis.text.x=element_text(angle = 90, vjust = 0.5)) +
+    scale_alpha_manual(values = c(0.5, 1)) +
+    geom_bar(stat = "identity", position = position_dodge()) +
+  scale_color_manual(values = colors_by_sample) + 
+  scale_fill_manual(values = colors_by_sample) 
 
 
 ggsave(out_2_mapped, my_plot, width = 11, height = 7)
@@ -130,9 +157,9 @@ ggsave(out_2_mapped, my_plot, width = 11, height = 7)
 # "Endogenous content"
 require(scales)
 my_plot <- make_barplot(
-  data = sample_stats, x = "SM", y = "endogenous_unique", color_by = "SM", 
-  fill_by = "SM", title = "Endogenous content (unique reads)",
-  legend.position = "none"
+  data = sample_stats, x = "SM", y = "endogenous_unique", color_by = color_by, 
+  fill_by = fill_by, title = "Endogenous content (unique reads)",
+  legend.position = "top"
   )
 
 
@@ -148,9 +175,9 @@ ggsave(out_3_endogenous, my_plot, width = 11, height = 7)
 # "Duplication level"
 require(scales)
 my_plot <- make_barplot(
-  data = sample_stats, x = "SM", y = "duplicates_prop", color_by = "SM", 
-  fill_by = "SM", title = "Duplicates per sample (percentage)",
-  legend.position = "none"
+  data = sample_stats, x = "SM", y = "duplicates_prop", color_by = color_by, 
+  fill_by = fill_by, title = "Duplicates per sample (percentage)",
+  legend.position = "top"
   )
 
 
@@ -166,9 +193,9 @@ ggsave(out_4_duplication, my_plot, width = 11, height = 7)
 # "Average read depth"
 require(scales)
 my_plot <- make_barplot(
-  data = sample_stats, x = "SM", y = "read_depth", color_by = "SM", 
-  fill_by = "SM", title = "Average read depth",
-  legend.position = "none"
+  data = sample_stats, x = "SM", y = "read_depth", color_by = color_by, 
+  fill_by = fill_by, title = "Average read depth",
+  legend.position = "top"
   )
 
 
