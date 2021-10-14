@@ -301,7 +301,8 @@ rule merge_stats_by_level:
     input:
         paths = path_stats_by_level,
     output:
-        "results/04_stats/03_summary/{level}_stats.{GENOME}.csv",
+        report("results/04_stats/03_summary/{level}_stats.{GENOME}.csv", 
+        caption="../report/sample_stats.rst", category="Mapping statistic tables")
     log:
         "results/04_stats/03_summary/{level}_stats.{GENOME}.log",
     message:
@@ -490,20 +491,20 @@ rule plot_summary_statistics:
         # fastq_stats = "results/01_fastq/05_stats/02_summary/fastq_stats.{id_genome}.csv",
         # library_stats = "results/02_library/04_stats/02_summary/library_stats.{id_genome}.csv",
     output: 
-        plot_1_nb_reads = report("results/04_stats/04_plots/1_nb_reads.{id_genome}.png", 
-                                # caption="../report/1_nb_reads.rst", 
+        plot_1_nb_reads = report("results/04_stats/04_plots/1_nb_reads.{id_genome}.svg", 
+                                caption="../report/1_nb_reads.rst", 
                                 category="Mapping statistics plots"),
-        plot_2_mapped = report("results/04_stats/04_plots/2_mapped.{id_genome}.png", 
-                                # caption="../report/2_mapped.rst", 
+        plot_2_mapped = report("results/04_stats/04_plots/2_mapped.{id_genome}.svg", 
+                                caption="../report/2_mapped.rst", 
                                 category="Mapping statistics plots"),        
-        plot_3_endogenous = report("results/04_stats/04_plots/3_endogenous.{id_genome}.png", 
-                                # caption="../report/3_endogenous.rst", 
+        plot_3_endogenous = report("results/04_stats/04_plots/3_endogenous.{id_genome}.svg", 
+                                caption="../report/3_endogenous.rst", 
                                 category="Mapping statistics plots"),        
-        plot_4_duplication = report("results/04_stats/04_plots/4_duplication.{id_genome}.png", 
-                                # caption="../report/4_duplication.rst", 
+        plot_4_duplication = report("results/04_stats/04_plots/4_duplication.{id_genome}.svg", 
+                                caption="../report/4_duplication.rst", 
                                 category="Mapping statistics plots"),
-        plot_5_AvgReadDepth = report("results/04_stats/04_plots/5_AvgReadDepth.{id_genome}.png", 
-                                # caption="../report/5_AvgReadDepth.rst", 
+        plot_5_AvgReadDepth = report("results/04_stats/04_plots/5_AvgReadDepth.{id_genome}.svg", 
+                                caption="../report/5_AvgReadDepth.rst", 
                                 category="Mapping statistics plots")      
     log: 
         "results/04_stats/04_plots/plot_summary_statistics_{id_genome}.log"

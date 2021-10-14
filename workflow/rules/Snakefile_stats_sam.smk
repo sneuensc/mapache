@@ -394,22 +394,22 @@ rule plot_summary_statistics:
         sample_stats="results/03_sample/04_stats/01_summary/sample_stats.{GENOME}.csv",
     output:
         plot_1_nb_reads=report(
-            "results/03_sample/04_stats/01_summary/1_nb_reads.{GENOME}.png",
+            "results/03_sample/04_stats/01_summary/1_nb_reads.{GENOME}.svg",
             caption="../report/1_nb_reads.rst",
             category="Mapping statistics plots",
         ),
         plot_2_mapped=report(
-            "results/03_sample/04_stats/01_summary/2_mapped.{GENOME}.png",
+            "results/03_sample/04_stats/01_summary/2_mapped.{GENOME}.svg",
             caption="../report/2_mapped.rst",
             category="Mapping statistics plots",
         ),
         plot_3_endogenous=report(
-            "results/03_sample/04_stats/01_summary/3_endogenous.{GENOME}.png",
+            "results/03_sample/04_stats/01_summary/3_endogenous.{GENOME}.svg",
             caption="../report/3_endogenous.rst",
             category="Mapping statistics plots",
         ),
         plot_4_duplication=report(
-            "results/03_sample/04_stats/01_summary/4_duplication.{GENOME}.png",
+            "results/03_sample/04_stats/01_summary/4_duplication.{GENOME}.svg",
             caption="../report/4_duplication.rst",
             category="Mapping statistics plots",
         ),
