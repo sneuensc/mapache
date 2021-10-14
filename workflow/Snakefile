@@ -245,6 +245,11 @@ final_stats = [
         "results/04_stats/03_summary/{level}_stats.{GENOME}.csv",
         level=["SM", "LB", "FASTQ"],
         GENOME=genome,
+    ),
+    expand(
+        "results/04_stats/03_summary/{level}_stats.csv",
+        level=["SM", "LB", "FASTQ"],
+        GENOME=genome,
     )
 ]
 
@@ -255,27 +260,12 @@ final_stat_figures = [
     #         GENOME=genome,
     #     ),
     # expand("results/04_stats/sample_depth.{GENOME}.csv", GENOME=genome) if run_depth else [],
-    # get_damage(run_damage),
+    get_damage(run_damage),
     expand(
-        "results/04_stats/04_plots/1_nb_reads.{GENOME}.svg",
-        GENOME=genome,
-    ),
-    expand(
-        "results/04_stats/04_plots/2_mapped.{GENOME}.svg",
-        GENOME=genome,
-    ),
-    expand(
-        "results/04_stats/04_plots/3_endogenous.{GENOME}.svg",
-        GENOME=genome,
-    ),
-    expand(
-        "results/04_stats/04_plots/4_duplication.{GENOME}.svg",
-        GENOME=genome,
-    ),
-    expand(
-        "results/04_stats/04_plots/5_AvgReadDepth.{GENOME}.svg",
-        GENOME=genome,
-    ),
+        "results/04_stats/04_plots/{plot_type}.svg",
+        #GENOME=genome,
+        plot_type = ["1_nb_reads", "2_mapped", "3_endogenous", "4_duplication", "5_AvgReadDepth"]
+    )
     #     expand(
     #         "results/04_stats/04_plots/6_AvgReadDepth_MT.{GENOME}.svg",
     #         GENOME=genome,

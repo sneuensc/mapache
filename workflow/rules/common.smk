@@ -219,7 +219,7 @@ def get_damage(run_damage):
         for GENOME in genome:
             files += [
                 (
-                    "results/02_library/04_stats/03_bamdamage/{SM}/{LB}/{LB}.{GENOME}.dam.pdf"
+                    "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.dam.pdf"
                 ).format(SM=row["SM"], LB=row["LB"], GENOME=GENOME)
                 for index, row in all_libraries.iterrows()
             ]
@@ -227,7 +227,7 @@ def get_damage(run_damage):
         for GENOME in genome:
             files += [
                 (
-                    "{SM}/{LB}/library_mapDamage/{LB}.{GENOME}_results_mapDamage/Fragmisincorporation_plot.pdf"
+                    "results/04_stats/01_sparse_stats/02_library/04_mapDamage/{LB}.{GENOME}_results_mapDamage/Fragmisincorporation_plot.pdf"
                 ).format(SM=row["SM"], LB=row["LB"], GENOME=GENOME)
                 for index, row in all_libraries.iterrows()
             ]

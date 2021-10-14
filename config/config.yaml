@@ -166,7 +166,7 @@ compute_md:
     time: 2
 
 
-##################
+##########################################################################################
 ## stats on the final bam file
 stats:
     sample:
@@ -187,3 +187,10 @@ stats:
     run_damage: 'bamdamage'        #("False", "mapDamage", "bamdamage")
     bamdamage_fraction: 5000
     bamdamage_params: ' --rlength 300 '
+# specific to Mapping statistics plot in the report
+    plots:
+        # x_axis: either "sample" or "genome"
+        # if n_samples > n_genomes, we recommend to set this option to "sample"
+        # if n_genomes > n_samples, we recommend to set this option to "genome"
+        # default: sample
+        x_axis: sample
