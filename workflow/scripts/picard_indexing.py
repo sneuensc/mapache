@@ -25,6 +25,6 @@ elif all([os.path.isfile(f) for f in files2]):  ## foo.fa.ext
 		path_to = os.path.join(new_dir, os.path.basename(item).replace(orig_prefix + file_extension, new_prefix))
 		os.symlink(item, path_to)
 else:                                           ## create the index
-	shell("java -XX:ParallelGCThreads={snakemake.threads} -XX:+UseParallelGC -XX:-UsePerfData "
-		  "-Xms{snakemake.resources.memory}m -Xmx{snakemake.resources.memory}m -jar $PICARD_PATH/picard.jar CreateSequenceDictionary "
-		  "REFERENCE={snakemake.input.fasta} OUTPUT={snakemake.output}")
+	os.system(f'java -XX:ParallelGCThreads={snakemake.threads} -XX:+UseParallelGC -XX:-UsePerfData '
+		  '-Xms{snakemake.resources.memory}m -Xmx{snakemake.resources.memory}m -jar $PICARD_PATH/picard.jar CreateSequenceDictionary '
+		  'REFERENCE={snakemake.input.fasta} OUTPUT={snakemake.output}')

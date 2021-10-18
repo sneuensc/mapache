@@ -14,6 +14,7 @@ envmodules:
     mapdamage:      ""
     multiqc:        ""
     bedtools:       "gcc bedtools2/2.29.2"
+    seqtk:          ""
 
 ##########################################################################################
 ##########################################################################################
@@ -84,6 +85,12 @@ indexing:
 
 ##########################################################################################
 ## FASTQ level
+
+## subsampling (optional)
+subsampling:
+    run: False
+    params: '-s1'
+    number: 1000
 
 # adapter_removal (optional)
 adapterremoval:
