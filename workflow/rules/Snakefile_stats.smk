@@ -319,11 +319,7 @@ rule merge_stats_by_level_and_genome:
     input:
         paths=path_stats_by_level,
     output:
-        report(
             "results/04_stats/03_summary/{level}_stats.{GENOME}.csv",
-            caption="../report/sample_stats.rst",
-            category="Mapping statistic tables",
-        ),
     log:
         "results/04_stats/03_summary/{level}_stats.{GENOME}.log",
     message:
@@ -425,14 +421,10 @@ rule bamdamage:
         bam=lambda wildcards: get_mapDamage_bam(wildcards),
         bai=lambda wildcards: get_mapDamage_bam(wildcards, index=True),
     output:
-        damage_pdf=report(
+        damage_pdf=
             "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}.{id_genome}.dam.pdf",
-            category="Damage patterns"
-            ),
-        length_pdf=report(
+        length_pdf=
             "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}.{id_genome}.length.pdf",
-            category="Read length"
-            ),
         length_table=report(
             "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}.{id_genome}.length.csv",
             category="Read length",
@@ -488,6 +480,46 @@ rule bamdamage:
         """
 
 
+
+
+
+
+
+
+
+rule plot_bamdamage:
+    """
+    Run bamdamage to quantify the deamination pattern
+    """
+    input:
+        length_table=
+            "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}.{id_genome}.length.csv",
+        dam_5prime_table=
+        "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}.{id_genome}.dam_5prime.csv",
+        dam_3prime_table=
+        "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}.{id_genome}.dam_3prime.csv",
+    output:
+        length=report(
+            "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}.{id_genome}.length.svg",
+            category="Read length"
+            ),
+        damage=report(
+            "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}.{id_genome}.dam.svg",
+            category="Damage patterns"
+            ),
+    shell:
+        """
+        Rscript workflow/scripts/plot_bamdamage.R \
+            --length={input.length_table} \
+            --five_prime={input.dam_5prime_table} \
+            --three_prime={input.dam_3prime_table} \
+            --sample={wildcards.id_sample} \
+            --library={wildcards.id_library} \
+            --genome={wildcards.id_genome} \
+            --length_svg={output.length} \
+            --damage_svg={output.damage}
+        """
+        
 ##########################################################################################
 # plots
 # -----------------------------------------------------------------------------#

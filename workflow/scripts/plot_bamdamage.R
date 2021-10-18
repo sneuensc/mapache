@@ -1,21 +1,87 @@
+############################################################################
+# to parse arguments
+args <- commandArgs(TRUE)
+ 
+## Default setting when no arguments passed
+if(length(args) < 1) {
+  args <- c("--help")
+}
+ 
+## Help section
+if("--help" %in% args) {
+  cat("
+      PLotting summary statistics
+ 
+      Arguments:
+        Input files:
+        --length                                     - csv to plot
+        --five_prime                                 - csv to plot
+        --three_prime                                - csv to plot
+        --sample=ind1                                - name of the sample
+        --sample=lib1                                - name of the library
+        --genome=genome                              - name of the genome
+        
+        Output files:  
+        --length_svg
+        --damage_svg
+        --help                                       - print this text
+ 
+      Example:
+      Rscript plot_stats.R [] \n\n")
+ 
+  q(save="no")
+}
+ 
+## Parse arguments (we expect the form --arg=value)
+parseArgs <- function(x) strsplit(sub("^--", "", x), "=")
+argsDF <- as.data.frame(do.call("rbind", parseArgs(args)))
+argsL <- as.list(as.character(argsDF$V2))
+names(argsL) <- argsDF$V1
+#print(argsL)
+
+get_args <- function(argsL, name, default){
+    if(name %in% names(argsL)){
+        value = argsL[[name]]
+    }else if("default" %in% objects()){
+        value = default
+    }else{
+        stop(paste0("Please specify ", name))
+    }
+    return(value)
+}
+############################################################################
+
 args = commandArgs(trailingOnly=TRUE)
 
-path=args[1]
-genome=args[2]
-sample=args[3]
-lib=args[4]
+#path=args[1]
+#genome=args[2]
+#sample=args[3]
+#lib=args[4]
 
-length<-read.csv(paste0(path,"/",lib,".",genome,".length.csv"))
+length_csv = get_args(argsL, "length")
+five_prime_csv = get_args(argsL, "five_prime")
+three_prime_csv = get_args(argsL, "three_prime")
+genome = get_args(argsL, "genome")
+sample = get_args(argsL, "sample")
+lib = get_args(argsL, "library")
+length_svg = get_args(argsL, "length_svg")
+damage_svg = get_args(argsL, "damage_svg")
+# length<-read.csv(paste0(path,"/",lib,".",genome,".length.csv"))
+length <- read.csv(length_csv)
 
-p5<-read.csv(paste0(path,"/",lib,".",genome,".dam_5prime.csv"), row.names=1)
-p3<-read.csv(paste0(path,"/",lib,".",genome,".dam_3prime.csv"), row.names=1)
+# p5<-read.csv(paste0(path,"/",lib,".",genome,".dam_5prime.csv"), row.names=1)
+# p3<-read.csv(paste0(path,"/",lib,".",genome,".dam_3prime.csv"), row.names=1)
 
+p5 <- read.csv(five_prime_csv)
+p3 <- read.csv(three_prime_csv)
 
+############################################################################
 library(ggplot2)
 library(RColorBrewer) 
 
 ############################################################################
-svg(paste0(path,"/",lib,".",genome,".length.svg"), width = 11, height = 7)
+#svg(paste0(path,"/",lib,".",genome,".length.svg"), width = 11, height = 7)
+svg(length_svg, width = 11, height = 7)
 
 length$frequency<-length$counts/sum(length$counts)
 ggplot(data=length, mapping=aes(x = length, y=frequency)) + 
@@ -28,7 +94,8 @@ ggplot(data=length, mapping=aes(x = length, y=frequency)) +
 dev.off()
 
 ############################################################################
-svg(paste0(path,"/",lib,".",genome,".dam.svg"), width = 11, height = 7)
+#svg(paste0(path,"/",lib,".",genome,".dam.svg"), width = 11, height = 7)
+svg(damage_svg, width = 11, height = 7)
 
 par(mfrow=c(1,2)) 
 par(oma=c(0,0,0,0)) 
