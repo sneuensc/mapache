@@ -266,7 +266,8 @@ rule merge_stats_per_lb:
         flagstat_raw="results/04_stats/01_sparse_stats/02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}_flagstat.txt",
         flagstat_unique="results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_flagstat.txt",
         length_unique="results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}.length",
-        genomecov_unique="results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}.genomecov",
+        #genomecov_unique="results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}.genomecov",
+        idxstats_unique="results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}.idxstats",
         sex_unique="results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}.sex",
     output:
         "results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/library_stats.csv",
@@ -300,7 +301,7 @@ rule merge_stats_per_lb:
             --path_flagstat_raw={input.flagstat_raw} \
             --path_flagstat_unique={input.flagstat_unique} \
             --path_length_unique={input.length_unique} \
-            --path_genomecov_unique={input.genomecov_unique} \
+            --path_idxstats_unique={input.idxstats_unique} \
             --path_sex_unique={input.sex_unique} \
             $chrsSelected
         """
@@ -314,7 +315,8 @@ rule merge_stats_per_sm:
         ],
         flagstat_unique="results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_flagstat.txt",
         length_unique="results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.length",
-        genomecov_unique="results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.genomecov",
+        #genomecov_unique="results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.genomecov",
+        idxstats_unique="results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.idxstats",
         sex_unique="results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.sex",
     output:
         "results/04_stats/02_separate_tables/{GENOME}/{SM}/sample_stats.csv",
@@ -346,7 +348,7 @@ rule merge_stats_per_sm:
             --path_list_stats_fastq=${{list_lb_stats}} \
             --path_flagstat_unique={input.flagstat_unique} \
             --path_length_unique={input.length_unique} \
-            --path_genomecov_unique={input.genomecov_unique} \
+            --path_idxstats_unique={input.idxstats_unique} \
             --path_sex_unique={input.sex_unique} \
             $chrsSelected
         """

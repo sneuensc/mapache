@@ -46,7 +46,8 @@ if("--help" %in% args) {
       --help                              - print this text
  
       Example:
-      Rscript sex_assignation.r --genomecov=file.genomecov [] \n\n")
+
+      ")
  
   q(save="no")
 }
