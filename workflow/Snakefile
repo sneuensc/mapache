@@ -52,6 +52,8 @@ module_adapterremoval = get_param2("envmodules", "adapterremoval", "")
 module_mapdamage = get_param2("envmodules", "mapdamage", "")
 module_multiqc = get_param2("envmodules", "multiqc", "")
 module_bedtools = get_param2("envmodules", "bedtools", "")
+module_seqtk = get_param2("envmodules", "seqtk", "")
+
 
 
 ##########################################################################################

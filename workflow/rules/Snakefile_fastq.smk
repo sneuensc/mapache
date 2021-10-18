@@ -12,21 +12,28 @@ localrules:
 ## all rules for fastq files
 rule get_fastq:
     """
-    Symlink and rename all fastq files to a common folder (makes the DAG readable)
+    Subsample or symlink and rename all fastq files to a common folder (makes the DAG readable)
     """
     input:
         get_fastq_of_ID,
     output:
         "{folder}/00_reads/01_files_orig/{SM}/{LB}/{ID}.fastq.gz",
     threads: 1
+    params:
+        run = get_param2("subsampling", "run", "F"),
+        number = get_param2("subsampling", "number", "1"),        
+        params = get_param2("subsampling", "params", "-s1"),
+    conda:
+        "../envs/seqtk.yaml"
+    envmodules:
+        module_seqtk
     message:
         "--- GET FASTQ FILES  {input}"
     log:
         "{folder}/00_reads/01_files_orig/{SM}/{LB}/{ID}.fastq.gz.log",
-    shell:
-        """
-        ln -srf {input} {output}
-        """
+    script:
+        "../scripts/get_fastq.py"
+
 
 
 ## all rules for fastq files
@@ -78,6 +85,8 @@ rule adapter_removal_se:
     threads: get_threads("adapterremoval", 4)
     conda:
         "../envs/adapterremoval.yaml"
+    envmodules:
+        module_adapterremoval
     message:
         "--- ADAPTERREMOVAL  {input}"
     shell:
@@ -116,6 +125,8 @@ rule adapter_removal_pe:
     threads: get_threads("adapterremoval", 4)
     conda:
         "../envs/adapterremoval.yaml"
+    envmodules:
+        module_adapterremoval
     message:
         "--- ADAPTERREMOVAL {input.R1} {input.R2}"
     shell:
@@ -156,6 +167,8 @@ rule adapter_removal_collapse:
     threads: get_threads("adapterremoval", 4)
     conda:
         "../envs/adapterremoval.yaml"
+    envmodules:
+        module_adapterremoval
     message:
         "--- ADAPTERREMOVAL {input.R1} {input.R2}"
     shell:
