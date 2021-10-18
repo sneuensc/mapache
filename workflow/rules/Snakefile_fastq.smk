@@ -32,7 +32,7 @@ rule get_fastq:
     log:
         "{folder}/00_reads/01_files_orig/{SM}/{LB}/{ID}.fastq.gz.log",
     script:
-        "../scripts/get_fastq.py"
+        "../scripts/subsample_fastq.py"
 
 
 
