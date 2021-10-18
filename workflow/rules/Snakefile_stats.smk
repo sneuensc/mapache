@@ -138,14 +138,48 @@ rule read_length:
         samtools view {input.bam} | workflow/scripts/read_length.pl -o {output.length}
         """
 
+rule samtools_index:
+    input:
+        "{file}.bam"
+    output:
+        "{file}.bam.bai"
+    conda:
+        "../envs/samtools.yaml"
+    envmodules:
+        module_samtools,
+    message:
+        "--- SAMTOOLS INDEX of {input}"
+    shell:
+        """
+        samtools index {input}
+        """
+
+rule samtools_idxstats:
+    input:
+        bam="results/{dir}/{file}.bam",
+        bai="results/{dir}/{file}.bam.bai",
+    output:
+        idxstats="results/04_stats/01_sparse_stats/{dir}/{file}.idxstats",
+    log:
+        "results/04_stats/01_sparse_stats/{dir}/{file}.idxstats.log",
+    conda:
+        "../envs/samtools.yaml"
+    envmodules:
+        module_samtools,
+    message:
+        "--- SAMTOOLS IDXSTATS of {input.bam}"
+    shell:
+        """
+        samtools idxstats {input.bam} > {output.idxstats}
+        """
 
 rule assign_sex:
     input:
-        genomecov="results/04_stats/01_sparse_stats/{file}.{GENOME}.genomecov",
-        test="results/00_reference/{GENOME}/{GENOME}.ok",
+        idxstats="results/04_stats/01_sparse_stats/{file}.{GENOME}.idxstats"
     output:
         sex="results/04_stats/01_sparse_stats/{file}.{GENOME}.sex",
     params:
+        run_sex = lambda wildcards: config["genome"][wildcards.GENOME]["sex_inference"]["run"],
         sex_params=get_sex_params,
     log:
         "results/04_stats/01_sparse_stats/{file}.{GENOME}.sex.log",
@@ -157,10 +191,16 @@ rule assign_sex:
         "--- SEX ASSIGNEMENT {input}"
     shell:
         """
-        Rscript workflow/scripts/sex_assignation.r \
-            --genomecov={input.genomecov} \
-            --out={output.sex} \
-            {params.sex_params}
+        if [ {params.run_sex} == False ] 
+        then 
+            echo "Sex" > {output.sex}
+            echo "Not requested in config" >> {output.sex}
+        else
+            Rscript workflow/scripts/assign_sex.R \
+                --idxstats={input.idxstats} \
+                --out={output.sex} \
+                {params.sex_params}
+        fi
         """
 
 
@@ -231,7 +271,7 @@ rule merge_stats_per_lb:
     output:
         "results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/library_stats.csv",
     params:
-        chrs_selected=get_chrom,
+        chrs_selected = lambda wildcards: config["genome"][wildcards.GENOME].get("depth_chromosomes", "not requested"),
     log:
         "results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/library_stats.log",
     conda:
@@ -243,6 +283,14 @@ rule merge_stats_per_lb:
     shell:
         """
         list_fastq_stats=$(echo {input.fastq_stats} |sed 's/ /,/g');
+
+        if [ {params.chrs_selected} == "not requested" ] 
+        then
+            chrsSelected=""
+        else
+            chrsSelected="--chrs_selected={params.chrs_selected}"
+        fi
+
         Rscript workflow/scripts/merge_stats_per_LB.R \
             --LB={wildcards.LB} \
             --SM={wildcards.SM} \
@@ -254,7 +302,7 @@ rule merge_stats_per_lb:
             --path_length_unique={input.length_unique} \
             --path_genomecov_unique={input.genomecov_unique} \
             --path_sex_unique={input.sex_unique} \
-            --chrs_selected={params.chrs_selected}
+            $chrsSelected
         """
 
 
@@ -271,7 +319,7 @@ rule merge_stats_per_sm:
     output:
         "results/04_stats/02_separate_tables/{GENOME}/{SM}/sample_stats.csv",
     params:
-        chrs_selected=get_chrom,
+        chrs_selected = lambda wildcards: config["genome"][wildcards.GENOME].get("depth_chromosomes", "not requested"),
     log:
         "results/04_stats/02_separate_tables/{GENOME}/{SM}/sample_stats.log",
     conda:
@@ -283,6 +331,14 @@ rule merge_stats_per_sm:
     shell:
         """
         list_lb_stats=$(echo {input.lb_stats} |sed 's/ /,/g');
+
+        if [ {params.chrs_selected} == "not requested" ] 
+        then
+            chrsSelected=""
+        else
+            chrsSelected="--chrs_selected={params.chrs_selected}"
+        fi
+
         Rscript workflow/scripts/merge_stats_per_SM.R \
             --SM={wildcards.SM} \
             --genome={wildcards.GENOME} \
@@ -292,7 +348,7 @@ rule merge_stats_per_sm:
             --path_length_unique={input.length_unique} \
             --path_genomecov_unique={input.genomecov_unique} \
             --path_sex_unique={input.sex_unique} \
-            --chrs_selected={params.chrs_selected}
+            $chrsSelected
         """
 
 
@@ -413,26 +469,21 @@ rule bamdamage:
     output:
         damage_pdf=report(
             "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}.{id_genome}.dam.pdf",
-            #"results/02_library/04_stats/03_bamdamage/{id_sample}/{id_library}/{id_library}.{id_genome}.dam.pdf"
             category="Damage patterns"
             ),
         length_pdf=report(
             "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}.{id_genome}.length.pdf",
-            #"results/02_library/04_stats/03_bamdamage/{id_sample}/{id_library}/{id_library}.{id_genome}.length.pdf",
             category="Read length"
             ),
         length_table=report(
             "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}.{id_genome}.length.csv",
-            #"results/02_library/04_stats/03_bamdamage/{id_sample}/{id_library}/{id_library}.{id_genome}.length.csv",
             category="Read length",
         ),
         dam_5prime_table=report(
         "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}.{id_genome}.dam_5prime.csv",
-            # "results/02_library/04_stats/03_bamdamage/{id_sample}/{id_library}/{id_library}.{id_genome}.dam_5prime.csv",
             category="Damage patterns",
         ),
         dam_3prime_table=report(
-            # "results/02_library/04_stats/03_bamdamage/{id_sample}/{id_library}/{id_library}.{id_genome}.dam_3prime.csv"
         "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}.{id_genome}.dam_3prime.csv",
             category="Damage patterns",
         ),

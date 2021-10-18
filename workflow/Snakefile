@@ -72,7 +72,7 @@ for GENOME in genome:
         print("ERROR: Each reference genome requires a fasta file!")
         os._exit(1)
 
-    check_chromsome_names(GENOME)
+    check_chromosome_names(GENOME)
 
     if (get_param3("genome", GENOME, "femaleChr", "") != "") and (
         get_param3("genome", GENOME, "femaleChr", "") != ""

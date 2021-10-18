@@ -5,6 +5,9 @@ import pathlib
 
 
 ##########################################################################################
+# global variables
+autosomes = "" # will be set in check_chromosome_names()
+sex_chr = "X"
 ##########################################################################################
 ## all functions for main snakemake file
 
@@ -88,7 +91,12 @@ def eval_list_to_csv(x):
 
 ##########################################################################################
 ## function to test the chromosome names
-def check_chromsome_names(GENOME):
+def check_chromosome_names(GENOME):
+    global autosomes, sex_chr, depth_chromosomes
+    print(f"""
+    Evaluating GENOME:
+        {GENOME}
+    """)
     ## get all chromsome names from the reference GENOME
     fasta = get_param3("genome", GENOME, "fasta", "")
     if pathlib.Path(f"{fasta}.fai").exists():
@@ -107,56 +115,64 @@ def check_chromsome_names(GENOME):
         print(f"ERROR: Reference genome 'genome:{GENOME}:fasta' does not exist!")
         os._exit(1)
 
-    ## check female chromosome
-    femaleChr = get_param3("genome", GENOME, "femaleChr", "X")
-    if femaleChr not in allChr:
-        set_param3("genome", GENOME, "femaleChr", "")
-        print(
-            f"WARNING: In parameter 'genome:{GENOME}:femaleChr' the chromosome name '{femaleChr}' is unknown, assuming no female chromosome!"
-        )
-
-    ## check male chromosome
-    maleChr = get_param3("genome", GENOME, "maleChr", "Y")
-    if maleChr not in allChr:
-        set_param3("genome", GENOME, "maleChr", "")
-        print(
-            f"WARNING: In parameter 'genome:{GENOME}:maleChr' the chromosome name '{maleChr}' is unknown, assuming no male chromosome!"
-        )
-
-    ## check MT chromosome
-    mtChr = get_param3("genome", GENOME, "mtChr", "MT")
-    if mtChr not in allChr:
-        set_param3("genome", GENOME, "mtChr", "")
-        print(
-            f"WARNING: In parameter 'genome:{GENOME}:mtChr' the chromosome name '{mtChr}' is unknown, assuming no MT chromosome!"
-        )
-
-    ## check autosomes
-    autosomeChr = list(
-        map(str, eval_to_list(get_param3("genome", GENOME, "autosomeChr", "")))
-    )
-    if autosomeChr == "":
-        ## if empty, autosomes are all not differently defined chromsomes
-        autosomeChr = np.intersect1d(allChr, [femaleChr, maleChr, mtChr])
-        set_param3("genome", GENOME, "autosomeChr", list_to_csv(autosomeChr))
-    else:
-        unknown = list(set(autosomeChr) - set(allChr))
-        if len(unknown) > 0:
-            autosomeChr = np.intersect1d(allChr, autosomeChr)
-            set_param3(
-                "genome",
-                GENOME,
-                "autosomeChr",
-                list_to_csv(autosomeChr),
+    # check if chromosomes for which DoC was requested exist
+    depth_chromosomes = config["genome"][GENOME].get("depth_chromosomes", "")
+    if len(depth_chromosomes):
+        chromosomes = depth_chromosomes.split(",")
+    
+    for chr in chromosomes:
+        if chr not in allChr:
+            print(f"""
+            WARNING: at least one chromosome specified in config[genome][{GENOME}][depth_chromosomes] does not exist in FASTA reference file. 
+            chr: {chr}
+            """
             )
-            if len(unknown) == 1:
+            os._exit(1)
+
+    print(f"""
+    chromosomes which will have their DoC reported in main table: {chromosomes}
+    """)
+
+    # check if the chromosomes specified in sex determination exist
+        # sex chromosome
+    if config["genome"][GENOME]["sex_inference"]["run"]:
+        print(f"    Checking if chromosomes specified in config file for sex inference exist in genome {GENOME}.")
+        sex_chr = config["genome"][GENOME]["sex_inference"].get("params", {}).get("sex_chr", "X")
+        if sex_chr not in allChr:
+            print(f"""
+            WARNING: sex chromosome specified in config[genome][{GENOME}][sex_inference][params][sex_chr] does not exist in FASTA reference file. 
+            sex_chr: {sex_chr}
+            Please set the right chromosome name for this reference genome.
+            If you do not plan to infer sex from the mappings to this genome, set the option "run" to False for this genome.
+            """
+            )
+            os._exit(1)
+
+        # autosomes specified for sex inference
+        chromosomes = list(
+            map(str, eval_to_list(config["genome"][GENOME]["sex_inference"].get("params", {}).get("autosomes", [i for i in range(1,23)]))
+            )
+        )
+
+        for chr in chromosomes:
+            if chr not in allChr:
                 print(
-                    f"WARNING: In parameter 'genome:{GENOME}:autosomeChr' the chromosome name {unknown} is unknown, ignoring it!"
+                    f"""
+                WARNING: at least one chromosome specified in config[genome][{GENOME}][sex_inference][params][autosomes] does not exist in FASTA reference file. 
+                chr: {chr}
+                Please set the right chromosome names for this reference genome.
+                If you do not plan to infer sex from the mappings to this genome, set the option "run" to False for this genome.
+                """
                 )
-            else:
-                print(
-                    f"WARNING: In parameter 'genome:{GENOME}:autosomeChr' the chromosome names {unknown} are unknown, ignoring them!"
-                )
+                os._exit(1)
+        autosomes = 'c("' + '","'.join(chromosomes) + '")'
+
+        print(f"""
+        sex_chr: {sex_chr}
+        autosomes: {autosomes}
+        """)    
+    print(f"WELL DONE. The chromosome names are well specified for genome {GENOME}.")
+
 
 
 ## convert string to boolean
@@ -405,11 +421,19 @@ def is_quick(file_name, dict):
 
 
 def get_sex_params(wildcards):
-    sex_params = get_param2("genome", wildcards.GENOME, {})
-    x = " ".join(
-        [f"--{key}='{eval_to_csv(sex_params[key])}'" for key in sex_params.keys()]
+    #sex_params = get_param2("genome", wildcards.GENOME, {})
+    sex_dict = config["genome"][wildcards.GENOME]["sex_inference"].get("params", {})
+    
+    # autosomes are passed as a python expression, which was parsed previously in check_chromosome_names()
+    # the R script to assign sex needs the R expression that was stored in autosomes
+    if "autosomes" in sex_dict:
+        del sex_dict["autosomes"]
+        sex_dict["autosomes"] = autosomes
+    
+    sex_params = " ".join(
+        [f"--{key}='{sex_dict[key]}'" for key in sex_dict.keys()]
     )
-    return x
+    return sex_params
 
 
 ## get the individual depth files to combien them
@@ -435,18 +459,18 @@ def get_depth_files(wildcards):
     return filename
 
 
-def get_chrom(wildcards):
-    chr = eval_list(
-        "".join(get_param3("stats", "sample", "depth_chromosomes", "").split()).split(
-            ","
-        )
-    )
-    GENOME = get_param2("genome", wildcards.GENOME, {})
-    chr_uniq = list(set(chr) - set(list(GENOME)))
-    chr_def = list(set(chr).intersection(set(GENOME)))
-    return ",".join(
-        eval_list(chr_uniq) + [eval_if_possible(GENOME[c]) for c in chr_def]
-    )
+# def get_chrom(wildcards):
+#     chr = eval_list(
+#         "".join(get_param3("stats", "sample", "depth_chromosomes", "").split()).split(
+#             ","
+#         )
+#     )
+#     GENOME = get_param2("genome", wildcards.GENOME, {})
+#     chr_uniq = list(set(chr) - set(list(GENOME)))
+#     chr_def = list(set(chr).intersection(set(GENOME)))
+#     return ",".join(
+#         eval_list(chr_uniq) + [eval_if_possible(GENOME[c]) for c in chr_def]
+#     )
 
 
 def path_stats_by_level(wildcards):
