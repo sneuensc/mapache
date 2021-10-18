@@ -69,7 +69,7 @@ out_3_endogenous    = get_args(argsL, "out_3_endogenous", "plot_3_endogenous.png
 out_4_duplication   = get_args(argsL, "out_4_duplication", "plot_4_duplication.png")
 out_5_AvgReadDepth  = get_args(argsL, "out_5_AvgReadDepth", "plot_5_AvgReadDepth.png")
 x_axis              = get_args(argsL, "x_axis", "sample")
-split_plot          = eval( parse( text = get_args(argsL, "plit_plot", "FALSE") ) )
+split_plot          = eval( parse( text = get_args(argsL, "split_plot", "FALSE") ) )
 
 ############################################################################
 #--------------------------------------------------------------------------#
@@ -94,12 +94,20 @@ make_barplot <- function(
 
 #--------------------------------------------------------------------------#
 # make barplots for some of the statistics
-samples_filename <- "../dev_mapache/Files/samples.txt"
-sm <- "../dev_mapache/Files/SM_stats.csv"
-
 samples <- read.table(samples_filename, header = T)
 
 sample_stats <- read.csv(sm)
+sample_stats$SM <- factor(
+  sample_stats$SM,
+  levels = unique(sample_stats$SM),
+  ordered = T
+  )
+sample_stats$genome <- factor(
+  sample_stats$genome,
+  levels = unique(sample_stats$genome),
+  ordered = T
+  )
+
 
 if(x_axis == "sample"){
   color_by = "genome"
@@ -122,15 +130,27 @@ colors_by_sample <- colorRampPalette(brewer.pal(8, "Set2"))(n_colors)
 # group stats in panels, if requested
 
 break_into_panels <- function(my_plot, df, n_x_bars){
-  n_col <- get_args(argsL, "n_col", round(sqrt(n_samples)) )
-  n_row <- get_args(argsL, "n_row",ceiling(n_samples / n_col) )
-  
-  n_panels <- n_col * n_row
+
+  n_col <- as.numeric( get_args(argsL, "n_col", 30 ) )
+  n_row <- as.numeric( get_args(argsL, "n_row", ceiling(n_x_bars / n_col) ) )
+
+  # we need as many panels as number of groups in the x-axis
+  if( n_col * n_row < n_x_bars ){
+    if(n_col > n_row){
+      n_row <- ceiling(n_x_bars / n_col)
+    }else{
+      n_col <- ceiling(n_x_bars / n_row)
+    }
+  }
+
+  n_panels <- min(c(n_col * n_row, n_x_bars))
   
   df$group_to_plot <- cut_number(as.numeric(df[,x]), n_panels)
+
   new_plot <- my_plot + 
     facet_wrap(facets = df$group_to_plot, nrow = n_row, ncol = n_col, scales = "free_x") +
     theme(strip.text = element_blank())
+
   return(new_plot)
 }
 
@@ -157,10 +177,10 @@ ggsave(out_1_reads, my_plot, width = 11, height = 7)
 n_genomes <- length(unique(sample_stats$genome))
 
 mapped_reads <- data.frame(
-    SM = rep(sample_stats$SM, n_samples),
+    SM = rep(sample_stats$SM, 2),
     number_reads = c(sample_stats$mapped_unique, sample_stats$mapped_unique+sample_stats$duplicates),
     read_type = rep(c("Unique", "Duplicates"), each = n_samples * n_genomes),
-    genome = rep(sample_stats$genome, n_samples)
+    genome = rep(sample_stats$genome, 2)
 )
 
 
@@ -179,7 +199,7 @@ my_plot <- ggplot(
   scale_fill_manual(values = colors_by_sample) 
 
 if(split_plot){
-  my_plot <- break_into_panels(my_plot = my_plot, df = sampled_reads, n_x_bars = n_x_bars)
+  my_plot <- break_into_panels(my_plot = my_plot, df = mapped_reads, n_x_bars = n_x_bars)
 }
 
 ggsave(out_2_mapped, my_plot, width = 11, height = 7)

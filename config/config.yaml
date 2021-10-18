@@ -45,7 +45,7 @@ genome:
         fasta: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/GCA_000001405.15_GRCh38.p13_onlyChrom/GCA_000001405.15_GRCh38.fa
         # If you want the DoC to be reported for some chromosomes in the main stats table, list them below.
         depth_chromosomes: "chrX,chrY,chrM"
-        # any R evaluation is allowed. Please use double quotes (") instead of single quotes (')
+        # any python evaluation is allowed. Please use double quotes (") instead of single quotes (')
         #mtChr: chrM
         #     # either of XY, ZW, XO or ZO
         sex_inference:
@@ -201,3 +201,9 @@ stats:
         # if n_genomes > n_samples, we recommend to set this option to "genome"
         # default: sample
         x_axis: sample
+        split_plot: F # possible values: FALSE, F, TRUE, T
+        # set maximum number of bars (columns) on the x-axis across n_row rowa. 
+        # We recommend
+        # a large n_col (around 20) and/or a small n_row (1 to 3)
+        # n_col: 15
+        # n_row: 1

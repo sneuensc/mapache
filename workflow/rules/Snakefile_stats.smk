@@ -1,6 +1,6 @@
 # -----------------------------------------------------------------------------#
 import pandas as pd
-
+localrules: samtools_idxstats, plot_summary_statistics, merge_DoC_chr, assign_sex, merge_stats_per_fastq, merge_stats_per_lb, merge_stats_per_sm, merge_stats_by_level_and_genome, merge_stats_all_genomes, DoC_chr_SM, merge_DoC_chr
 
 # -----------------------------------------------------------------------------#
 ## get sparse stats stats
@@ -68,37 +68,6 @@ rule samtools_flagstat:
         "samtools flagstat --threads {threads} {input} > {output} 2> {log};"
 
 
-# rule multiqc_fastqc:
-#     """
-#     Merging fastqc output with multiqc
-#     """
-#     input:
-#         lambda wildcards: [f"results/04_stats/01_sparse_stats/{wildcards.folder}/{SM}/{LB}/{ID}_fastqc.zip"
-#             for SM in samples
-#             for LB in samples[SM]
-#             for ID in samples[SM][LB]
-#         ],
-#     output:
-#         html=report("results/04_stats/01_sparse_stats/{folder}/multiqc_fastqc.html",
-#             "results/{dir_stats}/{folder}/multiqc_fastqc.html",
-#             category=" Quality control",
-#         ),
-#         txt="results/04_stats/01_sparse_stats/{folder}/multiqc_fastqc_data/multiqc_fastqc.txt",
-#     resources:
-#         memory=lambda wildcards, attempt: get_memory_alloc("multiqc_mem", attempt, 2),
-#         runtime=lambda wildcards, attempt: get_runtime_alloc("multiqc_time", attempt, 1),
-#     log:
-#         "results/04_stats/01_sparse_stats/{folder}/multiqc_fastqc.log",
-#     conda:
-#         "../envs/multiqc.yaml"
-#     envmodules:
-#         module_multiqc,
-#     message:
-#         "--- MULTIQC fastqc: {input}"
-#     shell:
-#         """
-#         multiqc -n $(basename {output.html}) -f -d -o $(dirname {output.html}) {input}  2> {log}
-#         """
 
 
 rule bedtools_genomecov:
@@ -242,19 +211,6 @@ rule merge_stats_per_fastq:
             --path_length_mapped_highQ={input.length_fastq_mapped_highQ}
         """
 
-
-## get all chromosome names given in the stats part and check if the name is given in the genome part. In this case overtake it
-## Example config:
-## genome:
-##    GRCh38:
-##        maleChr: chrY
-##        femaleChr: chrX
-##        mtChr: chrM
-##        autosomeChr: '[f"chr{x}" for x in range(1,5)]'
-## stats:
-##    sample:
-##        depth_chromosomes: "femaleChr, maleChr, mtChr, autosomeChr"
-## ==> 'chrY,chrX,chr1,chr2,chr3,chr4,chrM'
 
 
 rule merge_stats_per_lb:
@@ -613,7 +569,10 @@ rule plot_summary_statistics:
         "--- PLOT SUMMARY STATISTICS"
     params:
         samples=config["sample_file"],
-        x_axis=config["stats"]["plots"].get("x_axis", "sample")
+        x_axis=config["stats"].get("plots", {}).get("x_axis", "sample"),
+        split_plot=config["stats"].get("plots", {}).get("split_plot", "F"),
+        n_col=config["stats"].get("plots", {}).get("n_col", 1),
+        n_row=config["stats"].get("plots", {}).get("n_row", 1),
     shell:
         """
         Rscript workflow/scripts/plot_stats.R \
@@ -624,5 +583,8 @@ rule plot_summary_statistics:
             --out_3_endogenous={output.plot_3_endogenous} \
             --out_4_duplication={output.plot_4_duplication} \
             --out_5_AvgReadDepth={output.plot_5_AvgReadDepth} \
-            --x_axis={params.x_axis}
+            --x_axis={params.x_axis} \
+            --split_plot={params.split_plot} \
+            --n_col={params.n_col} \
+            --n_row={params.n_row}
         """
