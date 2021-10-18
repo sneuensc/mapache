@@ -88,7 +88,7 @@ indexing:
 
 ## subsampling (optional)
 subsampling:
-    run: True
+    run: False
     params: '-s1'
     number: 1000
 
