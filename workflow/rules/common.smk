@@ -235,9 +235,11 @@ def get_damage(run_damage):
         for GENOME in genome:
             files += [
                 (
-                    "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.dam.pdf"
-                ).format(SM=row["SM"], LB=row["LB"], GENOME=GENOME)
+                    "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.{type}.{ext}"
+                ).format(SM=row["SM"], LB=row["LB"], GENOME=GENOME, type = type, ext = ext)
                 for index, row in all_libraries.iterrows()
+                for type in ["dam", "length"]
+                for ext in ["pdf", "svg"]
             ]
     elif run_damage == "mapDamage":
         for GENOME in genome:
