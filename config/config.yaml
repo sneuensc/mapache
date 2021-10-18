@@ -24,33 +24,43 @@ sample_file: config/samples.txt
 genome: 
     hg19: 
         fasta: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/hs.build37.1/hs.build37.1.fa
-        maleChr: Y
-        femaleChr: X
-        mtChr: MT
-        autosomeChr: list(range(1,23))
-        larger_chr: X
+        # mtChr: MT
+        # If you want the DoC to be reported for some chromosomes in the main stats table, list them below. 
+        depth_chromosomes: "X,Y,MT"
 
+        # parameters specific to sex inference
+        sex_inference:
+            run: True
+            # uncomment options below if you need to change any value
+            # params:
+                # you can paste any python expression here, in single quotes ('):
+                    # '[f"chr{x}" for x in range(1,23)]' # chr1,chr2,chr3,etc.
+                    # [x for x in range(1,23)] # 1,2,3,etc.
+                # autosomes: [x for x in range(1,23)]
+                # sex_chr: X
+                # system: XY
+                # signif: 0.95
+                # thresholds:  list( "XX" = c(0.8, 1), "XY" = c(0, 0.6), "consistent with XX but not XY" = c(0.6, 1), "consistent with XY but not XX" = c(0, 0.8) )
     GRCh38: 
         fasta: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/GCA_000001405.15_GRCh38.p13_onlyChrom/GCA_000001405.15_GRCh38.fa
-        # any R evaluation is allowed. Please use " and not '
-        maleChr: chrY
-        femaleChr: chrX
-        mtChr: chrM
-        autosomeChr: '[f"chr{x}" for x in range(1,23)]'
-        #autosomes: paste0("chr",1:22)  
+        # If you want the DoC to be reported for some chromosomes in the main stats table, list them below.
+        depth_chromosomes: "chrX,chrY,chrM"
+        # any R evaluation is allowed. Please use double quotes (") instead of single quotes (')
+        #mtChr: chrM
         #     # either of XY, ZW, XO or ZO
-        #     system: XY                           
-        #     # larger sex chromosome
-        larger_chr: chrX      
-        #     # mappability correction for the larger sex chromosome                  
-        #     mappability_correction: 1  
-        #     # sex with larger ratio (larger sexual chr vs autosomes)          
-        #     sex_with_larger_ratio: Female     
-        #     # ratio of sex chromosome to autosomes in the other sex     
-        #     sex_to_autosomes_second_sex: 0.5     
-        #     name_second_sex: Male   
-
-#email: samuel.neuenschwander@unil.ch
+        sex_inference:
+            run: True
+            # uncomment options below if you need to change any value
+            params:
+                # you can paste any python expression here, in single quotes ('):
+                    # '[f"chr{x}" for x in range(1,23)]' # chr1,chr2,chr3,etc.
+                    # [x for x in range(1,23)] # 1,2,3,etc.
+                autosomes: '[f"chr{x}" for x in range(1,23)]'
+                sex_chr: chrX
+                # system: XY
+                # signif: 0.95
+                # thresholds:  list( "XX" = c(0.8, 1), "XY" = c(0, 0.6), "consistent with XX but not XY" = c(0.6, 1), "consistent with XY but not XX" = c(0, 0.8) )
+    
 
 delim: '\s+'
 #delim: ' '
@@ -169,17 +179,14 @@ compute_md:
 ##########################################################################################
 ## stats on the final bam file
 stats:
-    sample:
-        depth: True
+    # sample:
+    #     depth: True
         # If you want the DoC to be reported for some chromosomes in the main table, list them below. 
-        depth_chromosomes: "femaleChr, maleChr, mtChr"
-    library:
-        depth: True
-        depth_chromosomes: "femaleChr, maleChr, mtChr"
-    sex:
-        run: True
-        # if run in quick mode, about 10,000 reads will be taken randomly to determine the sex
-        quick: False
+        # depth_chromosomes: "femaleChr, maleChr, mtChr"
+    # library:
+    #     depth: True
+    #     depth_chromosomes: "femaleChr, maleChr, mtChr"
+
 ## mds
     run_bammds: False
 
