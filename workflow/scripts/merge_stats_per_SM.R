@@ -40,7 +40,9 @@ if("--help" %in% args) {
       --help                              - print this text
  
       Example:
-      Rscript sex_assignation.r --genomecov=file.genomecov [] \n\n")
+
+      "
+      )
  
   q(save="no")
 }
@@ -73,7 +75,8 @@ output_file = get_args(argsL, "output_file")
 path_list_stats_lb = get_args(argsL, "path_list_stats_fastq")
 path_flagstat_unique = get_args(argsL, "path_flagstat_unique")
 path_length_unique = get_args(argsL, "path_length_unique")
-path_genomecov_unique = get_args(argsL, "path_genomecov_unique")
+#path_genomecov_unique = get_args(argsL, "path_genomecov_unique")
+path_idxstats_unique = get_args(argsL, "path_idxstats_unique")
 path_sex_unique = get_args(argsL, "path_sex_unique")
 chrs_selected = get_args(argsL, "chrs_selected", NULL)
 
@@ -93,8 +96,13 @@ stats_lb = do.call(rbind, lapply(strsplit(path_list_stats_lb, ",")[[1]], read.cs
 # mapped_raw   = sum(stats_fastq$mapped_raw) # should give the same
 mapped_unique = as.numeric(strsplit(readLines(path_flagstat_unique)[1], " ")[[1]][1])
 length_unique_table = read.table(path_length_unique, header = T, sep = "\t")
-genomecov_unique = read.table(path_genomecov_unique, header = F, sep = "\t")
-colnames(genomecov_unique) =  c("chr", "depth", "counts", "length", "frac")
+#genomecov_unique = read.table(path_genomecov_unique, header = F, sep = "\t")
+#colnames(genomecov_unique) =  c("chr", "depth", "counts", "length", "frac")
+idxstats = read.table(
+    path_idxstats_unique, 
+    header=F,
+    col.names=c("chr", "length", "mapped", "unmapped")
+    )
 sex_unique = read.csv(path_sex_unique)
 #-----------------------------------------------------------------------------#
 calc_avg_len <- function(l){ sum(l$n_reads * l$length) / sum(l$n_reads) }
@@ -102,6 +110,13 @@ calc_DoC <- function(genomecov, chr){
     genomecov = genomecov[genomecov$chr == chr,]
     chr_length = unique(genomecov$length)
     DoC = sum(genomecov$depth * genomecov$counts) / chr_length
+    return(DoC)
+}
+
+calc_DoC_idxstats <- function(idxstats, read_length, chr){
+    chr_length <- sum(idxstats$length[idxstats$chr %in% chr])
+    reads_chr <- sum(idxstats$mapped[idxstats$chr %in% chr])
+    DoC <- (reads_chr * read_length) / chr_length
     return(DoC)
 }
 #-----------------------------------------------------------------------------#
@@ -125,7 +140,7 @@ length_reads_trimmed = sum(stats_lb$length_reads_trimmed * stats_lb$reads_trim) 
 length_mapped_raw = sum(stats_lb$length_mapped_raw * stats_lb$mapped_raw) / mapped_raw
 length_mapped_unique = calc_avg_len(length_unique_table)
 
-read_depth = calc_DoC(genomecov_unique, "genome")
+read_depth = calc_DoC_idxstats(idxstats = idxstats, read_length = length_mapped_unique, chr = idxstats$chr)
 
 Sex = sex_unique$Sex
 
@@ -147,17 +162,18 @@ my_stats = data.frame(
     Sex = Sex,
     read_depth = read_depth
 )
+
 if(!is.null(chrs_selected)){
     chrs_selected = unlist(strsplit(chrs_selected, ","))
     
 	## warn if some chromosomes are unknown
-	unknown = setdiff(chrs_selected, unique(genomecov_unique$chr))
+	unknown = setdiff(chrs_selected, unique(idxstats$chr))
 	if(length(unknown)>0){
 		print(paste0("Warning: The chromosome name '",unknown, "' is not valid in genome '", genome, "'. Ignoring it."))
 		chrs_selected <- chrs_selected[!chrs_selected %in% unknown]
 	}
 	
-    DoC_chrs_selected =  do.call(cbind, lapply(chrs_selected, function(chr) calc_DoC(genomecov_unique,chr)  ))
+    DoC_chrs_selected =  do.call(cbind, lapply(chrs_selected, function(chr) calc_DoC_idxstats(idxstats = idxstats, read_length = length_mapped_unique, chr = chr)  ))
     colnames(DoC_chrs_selected) = paste0("depth_", chrs_selected)
     my_stats = cbind(my_stats, DoC_chrs_selected)
 }
