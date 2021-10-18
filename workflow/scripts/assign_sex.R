@@ -216,5 +216,5 @@ for(column in c("SM", "LB", "ID")){
 
 colnames(sex_data) <- sub("sex_chr", sex_system[[system]]$sex_chr, colnames(sex_data))
 
-print(sex_data)
+#print(sex_data)
 write.csv(sex_data, output_file, row.names = F)
