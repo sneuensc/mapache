@@ -28,6 +28,9 @@ if("--help" %in% args) {
         --out_3_endogenous=plot_3_endogenous.png     - plot file name of the 'Endogenous content'. Default: plot_3_endogenous.png
         --out_4_duplication=plot_4_duplication.png   - plot file name of the 'Duplication level'. Default: plot_4_duplication.png
         --out_5_AvgReadDepth
+        --split_plot=FALSE                           - TRUE or FALSE. If you are mapping many samples or to many genomes, break the long plot into subpanels.
+        --n_col=1                                    - if split_plot=TRUE, the main plot will be broken into n_col number of columns
+        --n_row=1                                    - if split_plot=TRUE, the main plot will be broken into n_row number of rows
         --help                                       - print this text
  
       Example:
@@ -66,6 +69,7 @@ out_3_endogenous    = get_args(argsL, "out_3_endogenous", "plot_3_endogenous.png
 out_4_duplication   = get_args(argsL, "out_4_duplication", "plot_4_duplication.png")
 out_5_AvgReadDepth  = get_args(argsL, "out_5_AvgReadDepth", "plot_5_AvgReadDepth.png")
 x_axis              = get_args(argsL, "x_axis", "sample")
+split_plot          = eval( parse( text = get_args(argsL, "plit_plot", "FALSE") ) )
 
 ############################################################################
 #--------------------------------------------------------------------------#
@@ -90,6 +94,8 @@ make_barplot <- function(
 
 #--------------------------------------------------------------------------#
 # make barplots for some of the statistics
+samples_filename <- "../dev_mapache/Files/samples.txt"
+sm <- "../dev_mapache/Files/SM_stats.csv"
 
 samples <- read.table(samples_filename, header = T)
 
@@ -99,10 +105,12 @@ if(x_axis == "sample"){
   color_by = "genome"
   fill_by = "genome"
   x = "SM"
+  n_x_bars <- length(unique(samples$SM))
 }else if(x_axis == "genome"){
   color_by = "SM"
   fill_by = "SM"
   x = "genome"
+  n_x_bars <- length(unique(samples$genome))
 }
 
 n_colors <- length(unique(sample_stats[,x]))
@@ -110,6 +118,21 @@ n_colors <- length(unique(sample_stats[,x]))
 n_samples <- length(unique(samples$SM))
 
 colors_by_sample <- colorRampPalette(brewer.pal(8, "Set2"))(n_colors)
+#--------------------------------------------------------------------------#
+# group stats in panels, if requested
+
+break_into_panels <- function(my_plot, df, n_x_bars){
+  n_col <- get_args(argsL, "n_col", round(sqrt(n_samples)) )
+  n_row <- get_args(argsL, "n_row",ceiling(n_samples / n_col) )
+  
+  n_panels <- n_col * n_row
+  
+  df$group_to_plot <- cut_number(as.numeric(df[,x]), n_panels)
+  new_plot <- my_plot + 
+    facet_wrap(facets = df$group_to_plot, nrow = n_row, ncol = n_col, scales = "free_x") +
+    theme(strip.text = element_blank())
+  return(new_plot)
+}
 
 #--------------------------------------------------------------------------#
 # "Total number of reads"
@@ -121,6 +144,10 @@ my_plot <- make_barplot(
 my_plot <- my_plot +
   scale_color_manual(values = colors_by_sample) + 
   scale_fill_manual(values = colors_by_sample)
+
+if(split_plot){
+  my_plot <- break_into_panels(my_plot = my_plot, df = sample_stats, n_x_bars = n_x_bars)
+}
 
 ggsave(out_1_reads, my_plot, width = 11, height = 7)
 
@@ -151,6 +178,9 @@ my_plot <- ggplot(
   scale_color_manual(values = colors_by_sample) + 
   scale_fill_manual(values = colors_by_sample) 
 
+if(split_plot){
+  my_plot <- break_into_panels(my_plot = my_plot, df = sampled_reads, n_x_bars = n_x_bars)
+}
 
 ggsave(out_2_mapped, my_plot, width = 11, height = 7)
 #--------------------------------------------------------------------------#
@@ -168,6 +198,9 @@ my_plot <- my_plot +
   scale_fill_manual(values = colors_by_sample) +
   scale_y_continuous(labels = percent)
 
+if(split_plot){
+  my_plot <- break_into_panels(my_plot = my_plot, df = sample_stats, n_x_bars = n_x_bars)
+  }
 
 ggsave(out_3_endogenous, my_plot, width = 11, height = 7)
 
@@ -186,6 +219,9 @@ my_plot <- my_plot +
   scale_fill_manual(values = colors_by_sample) +
   scale_y_continuous(labels = percent)
 
+if(split_plot){
+  my_plot <- break_into_panels(my_plot = my_plot, df = sample_stats, n_x_bars = n_x_bars)
+}
 
 ggsave(out_4_duplication, my_plot, width = 11, height = 7)
 
@@ -203,6 +239,9 @@ my_plot <- my_plot +
   scale_color_manual(values = colors_by_sample) + 
   scale_fill_manual(values = colors_by_sample) 
 
+if(split_plot){
+  my_plot <- break_into_panels(my_plot = my_plot, df = sample_stats, n_x_bars = n_x_bars)
+}
 
 ggsave(out_5_AvgReadDepth, my_plot, width = 11, height = 7)
 ############################################################################
