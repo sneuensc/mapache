@@ -121,7 +121,7 @@ if(x_axis == "sample"){
   n_x_bars <- length(unique(samples$genome))
 }
 
-n_colors <- length(unique(sample_stats[,x]))
+n_colors <- length(unique(sample_stats[,color_by]))
 
 n_samples <- length(unique(samples$SM))
 

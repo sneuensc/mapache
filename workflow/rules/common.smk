@@ -135,7 +135,7 @@ def check_chromosome_names(GENOME):
 
     # check if the chromosomes specified in sex determination exist
         # sex chromosome
-    if config["genome"][GENOME]["sex_inference"]["run"]:
+    if config["genome"][GENOME].get("sex_inference", {}).get("run", False):
         print(f"    Checking if chromosomes specified in config file for sex inference exist in genome {GENOME}.")
         sex_chr = config["genome"][GENOME]["sex_inference"].get("params", {}).get("sex_chr", "X")
         if sex_chr not in allChr:
@@ -424,7 +424,7 @@ def is_quick(file_name, dict):
 
 def get_sex_params(wildcards):
     #sex_params = get_param2("genome", wildcards.GENOME, {})
-    sex_dict = config["genome"][wildcards.GENOME]["sex_inference"].get("params", {})
+    sex_dict = config["genome"][wildcards.GENOME].get("sex_inference", {}).get("params", {})
     
     # autosomes are passed as a python expression, which was parsed previously in check_chromosome_names()
     # the R script to assign sex needs the R expression that was stored in autosomes
