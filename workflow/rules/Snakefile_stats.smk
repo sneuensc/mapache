@@ -148,7 +148,7 @@ rule assign_sex:
     output:
         sex="results/04_stats/01_sparse_stats/{file}.{GENOME}.sex",
     params:
-        run_sex = lambda wildcards: config["genome"][wildcards.GENOME]["sex_inference"]["run"],
+        run_sex = lambda wildcards: config["genome"][wildcards.GENOME].get("sex_inference", {}).get("run", False),
         sex_params=get_sex_params,
     log:
         "results/04_stats/01_sparse_stats/{file}.{GENOME}.sex.log",

@@ -213,7 +213,7 @@ localrules:
     mapping,
     stats,  ## executed locally on a cluster
 
-
+#-----------------------------------------------------------------------------#
 ## get all final bam files
 final_bam = [
     expand(
@@ -222,7 +222,7 @@ final_bam = [
         GENOME=genome,
     ),
 ]
-
+#-----------------------------------------------------------------------------#
 ## get all final bam files
 final_bam_low_qual = [
     expand(
@@ -241,6 +241,64 @@ final_bam_low_qual = [
     else [],
 ]
 
+#-----------------------------------------------------------------------------#
+## stats that need to be computed for the mapping checkpoint
+fastqc =    [
+    f"results/04_stats/01_sparse_stats/01_fastq/{folder}/{SM}/{LB}/{ID}_fastqc.zip"
+    for SM in samples for LB in samples[SM] for ID in samples[SM][LB]
+    for folder in ["00_reads/01_files_orig", "01_trimmed/01_files_trim"]
+]
+
+flagstats = [
+    f"results/04_stats/01_sparse_stats/{file}_flagstat.txt"
+    for GENOME in genome for SM in samples for LB in samples[SM] for ID in samples[SM][LB]
+    for file in 
+        [f"01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}",
+        f"02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}",
+        f"02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}",
+        f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}"]
+]
+
+flagstats = list(set(flagstats))
+
+lengths = [
+    f"results/04_stats/01_sparse_stats/{file}.length"
+    for GENOME in genome for SM in samples for LB in samples[SM] for ID in samples[SM][LB]
+    for file in [
+        f"01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}",
+        f"02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}",
+        f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}"
+    ]
+]
+
+lengths = list(set(lengths))
+
+idxstats = [
+    f"results/04_stats/01_sparse_stats/{file}.idxstats"
+    for GENOME in genome for SM in samples for LB in samples[SM] 
+    for file in [
+        f"02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}",
+        f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}"
+    ]
+]
+
+idxstats = list(set(idxstats))
+
+sex_files = [
+    f"results/04_stats/01_sparse_stats/{file}.sex"
+    for GENOME in genome for SM in samples for LB in samples[SM] 
+    for file in [
+        f"02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}",
+        f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}"
+    ]
+    if config["genome"][GENOME].get("sex_inference", {}).get("run", False)
+]
+
+sex_files = list(set(sex_files))
+
+stats_mapping_checkpoint = [ fastqc, flagstats, lengths, idxstats, sex_files, get_damage(run_damage) ]
+
+#-----------------------------------------------------------------------------#
 ## get the minimal final summary stats
 final_stats = [
     expand(
@@ -254,35 +312,18 @@ final_stats = [
         GENOME=genome,
     )
 ]
-
+#-----------------------------------------------------------------------------#
 
 final_stat_figures = [
-    #     expand(
-    #         "results/03_sample/04_stats/01_summary/SM_stats.{GENOME}.csv",
-    #         GENOME=genome,
-    #     ),
-    # expand("results/04_stats/sample_depth.{GENOME}.csv", GENOME=genome) if run_depth else [],
     get_damage(run_damage),
     expand(
         "results/04_stats/04_plots/{plot_type}.svg",
         #GENOME=genome,
         plot_type = ["1_nb_reads", "2_mapped", "3_endogenous", "4_duplication", "5_AvgReadDepth"]
     )
-    #     expand(
-    #         "results/04_stats/04_plots/6_AvgReadDepth_MT.{GENOME}.svg",
-    #         GENOME=genome,
-    #     )
-    #     if save_MT
-    #     else [],
-    #     expand(
-    #         "results/04_stats/04_plots/7_Sex.{GENOME}.svg",
-    #         GENOME=genome,
-    #     )
-    #     if save_sex
-    #     else [],
 ]
 
-
+##########################################################################################
 ## rules all
 rule all:
     """
@@ -311,6 +352,7 @@ rule mapping:
     input:
         final_bam,
         final_bam_low_qual,
+        stats_mapping_checkpoint
 
 
 rule stats:
