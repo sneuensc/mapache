@@ -95,7 +95,7 @@ subsampling:
 # adapter_removal (optional)
 adapterremoval:
     run: True
-    params: ' --minlength 30'
+    params: '--minlength 30 --trimns --trimqualities'
     threads: 4 
     mem: 4 ## in GB
     time: 2
