@@ -23,7 +23,7 @@ rule fastqc:
     conda:
         "../envs/fastqc.yaml"
     envmodules:
-        module_fastqc,
+        module_fastqc
     message:
         "--- FASTQC {output.html}"
     shell:
@@ -341,7 +341,7 @@ rule merge_stats_all_genomes:
     output:
         report(
             "results/04_stats/03_summary/{level}_stats.csv",
-            category="Mapping statistic tables",
+            category="Mapping statistics", subcategory="Tables",
         ),
     log:
         "results/04_stats/03_summary/{level}_stats.log",
@@ -382,7 +382,6 @@ rule DoC_chr_SM:
             --path_genomecov={input} \
             --SM={params.SM} \
             --output_file={output}
-
         """
 
 
@@ -427,15 +426,15 @@ rule bamdamage:
             "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}.{id_genome}.length.pdf",
         length_table=report(
             "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}.{id_genome}.length.csv",
-            category="Read length",
+            category="Read length", subcategory="Tables"
         ),
         dam_5prime_table=report(
         "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}.{id_genome}.dam_5prime.csv",
-            category="Damage patterns",
+            category="Damage pattern", subcategory="Tables"
         ),
         dam_3prime_table=report(
         "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}.{id_genome}.dam_3prime.csv",
-            category="Damage patterns",
+            category="Damage pattern", subcategory="Tables"
         ),
     log:
         "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}.{id_genome}_bamdamage.log",
@@ -446,7 +445,7 @@ rule bamdamage:
             "bamdamage_time", attempt, 24
         ),
     message:
-        "--- BAMDAMAGE {input.bam}"
+        "--- RUN BAMDAMAGE {input.bam}"
     params:
         prefix="results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}/{id_library}.{id_genome}",
         bamdamage_params=config["bamdamage_params"]
@@ -455,13 +454,13 @@ rule bamdamage:
         fraction=config["bamdamage_fraction"]
         if "bamdamage_fraction" in config.keys()
         else 0,
+    conda:
+        "../envs/r.yaml"
     envmodules:
-        module_samtools,
         module_r,
     shell:
         """
-
-        nb=$(samtools idxstats {input.bam} | awk '{{sum += $3}} END {{print sum}}'); 
+        nb=$(awk '{{sum += $3}} END {{print sum}}' {input.bai}); 
         nth_line=1; 
 
         # this part is to take a fraction of the total reads
@@ -501,12 +500,18 @@ rule plot_bamdamage:
     output:
         length=report(
             "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}.{id_genome}.length.svg",
-            category="Read length"
+            category="Read length", subcategory="Plots"
             ),
         damage=report(
             "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}.{id_genome}.dam.svg",
-            category="Damage patterns"
+            category="Damage pattern", subcategory="Plots"
             ),
+    message:
+        "--- PLOT DAMAGE"
+    conda:
+        "../envs/r.yaml"
+    envmodules:
+        module_r
     shell:
         """
         Rscript workflow/scripts/plot_bamdamage.R \
@@ -534,21 +539,23 @@ rule plot_depth_statistics:
         plot_5_AvgReadDepth=report(
             "{folder}/5_AvgReadDepth.{GENOME}.svg",
             caption="../report/5_AvgReadDepth.rst",
-            category="Mapping statistics plots",
+            category="Mapping statistics", subcategory="Plots",
         ),
         plot_6_AvgReadDepth_MT=report(
             "{folder}/6_AvgReadDepth_MT.{GENOME}.svg",
             caption="../report/6_AvgReadDepth_MT.rst",
-            category="Mapping statistics plots",
+            category="Mapping statistics", subcategory="Plots",
         ),
         plot_7_Sex=report(
             "{folder}/7_Sex.{GENOME}.svg",
             caption="../report/7_Sex.rst",
-            category="Mapping statistics plots",
+            category="Mapping statistics", subcategory="Plots",
         ),
     threads: 1
     log:
         "{folder}/depth_stats_plot.{GENOME}.csv.log",
+    message:
+        "--- PLOT DEPTH"
     conda:
         "../envs/r.yaml"
     envmodules:
@@ -569,27 +576,27 @@ rule plot_summary_statistics:
         plot_1_nb_reads=report(
             "results/04_stats/04_plots/1_nb_reads.svg",
             caption="../report/1_nb_reads.rst",
-            category="Mapping statistics plots",
+            category="Mapping statistics", subcategory="Plots",
         ),
         plot_2_mapped=report(
             "results/04_stats/04_plots/2_mapped.svg",
             caption="../report/2_mapped.rst",
-            category="Mapping statistics plots",
+            category="Mapping statistics", subcategory="Plots",
         ),
         plot_3_endogenous=report(
             "results/04_stats/04_plots/3_endogenous.svg",
             caption="../report/3_endogenous.rst",
-            category="Mapping statistics plots",
+            category="Mapping statistics", subcategory="Plots",
         ),
         plot_4_duplication=report(
             "results/04_stats/04_plots/4_duplication.svg",
             caption="../report/4_duplication.rst",
-            category="Mapping statistics plots",
+            category="Mapping statistics", subcategory="Plots",
         ),
         plot_5_AvgReadDepth=report(
             "results/04_stats/04_plots/5_AvgReadDepth.svg",
             caption="../report/5_AvgReadDepth.rst",
-            category="Mapping statistics plots",
+            category="Mapping statistics", subcategory="Plots",
         ),
     log:
         "results/04_stats/04_plots/plot_summary_statistics.log",
