@@ -2,7 +2,7 @@
 
 The pipeline is under development. Not all commits are working perfectly.
 
-You are welcome to try it out. On the Wiki https://github.com/sneuensc/mapache/wiki, there is already a short manual describing how to get started. Happy to get any feedback/propositions.
+You are welcome to try it out. On the [Wiki](https://github.com/sneuensc/mapache/wiki), there is already a short manual describing how to get started. Happy to get any feedback/propositions.
 
 ***mapache*** is a lightweighted mapping pipeline for ancient DNA using the workflow manager *snakemake*
 
