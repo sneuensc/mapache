@@ -455,9 +455,10 @@ rule bamdamage:
         if "bamdamage_fraction" in config.keys()
         else 0,
     conda:
-        "../envs/r.yaml"
+        "../envs/bamdamage.yaml"
     envmodules:
         module_r,
+        module_samtools,
     shell:
         """
         nb=$(awk '{{sum += $3}} END {{print sum}}' {input.bai}); 
