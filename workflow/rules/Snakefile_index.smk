@@ -2,6 +2,7 @@
 ## Rules to index the reference check first if the indexes are next to the original reference
 ## file (input.orig). If present the file are just symlinked and no index is generated.
 
+
 ## indexing fasta
 rule genome_index_bwa:
     """

@@ -20,20 +20,19 @@ rule get_fastq:
         "{folder}/00_reads/01_files_orig/{SM}/{LB}/{ID}.fastq.gz",
     threads: 1
     params:
-        run = get_param2("subsampling", "run", "F"),
-        number = get_param2("subsampling", "number", "1"),        
-        params = get_param2("subsampling", "params", "-s1"),
+        run=get_param2("subsampling", "run", "F"),
+        number=get_param2("subsampling", "number", "1"),
+        params=get_param2("subsampling", "params", "-s1"),
     conda:
         "../envs/seqtk.yaml"
     envmodules:
-        module_seqtk
+        module_seqtk,
     message:
         "--- GET FASTQ FILES  {input}"
     log:
         "{folder}/00_reads/01_files_orig/{SM}/{LB}/{ID}.fastq.gz.log",
     script:
         "../scripts/subsample_fastq.py"
-
 
 
 ## all rules for fastq files
@@ -86,7 +85,7 @@ rule adapter_removal_se:
     conda:
         "../envs/adapterremoval.yaml"
     envmodules:
-        module_adapterremoval
+        module_adapterremoval,
     message:
         "--- ADAPTERREMOVAL  {input}"
     shell:
@@ -126,7 +125,7 @@ rule adapter_removal_pe:
     conda:
         "../envs/adapterremoval.yaml"
     envmodules:
-        module_adapterremoval
+        module_adapterremoval,
     message:
         "--- ADAPTERREMOVAL {input.R1} {input.R2}"
     shell:
@@ -168,7 +167,7 @@ rule adapter_removal_collapse:
     conda:
         "../envs/adapterremoval.yaml"
     envmodules:
-        module_adapterremoval
+        module_adapterremoval,
     message:
         "--- ADAPTERREMOVAL {input.R1} {input.R2}"
     shell:
@@ -291,8 +290,8 @@ rule mapping_bwa_samse:
     conda:
         "../envs/bwa.yaml"
     envmodules:
-        "gcc bwa/0.7.17",
-        "gcc samtools/1.4",
+        module_bwa,
+        module_samtools,
     message:
         "--- BWA SAMSE  {input.fastq}"
     shell:
@@ -445,7 +444,7 @@ rule samtools_sort:
     conda:
         "../envs/samtools.yaml"
     envmodules:
-        "gcc samtools/1.4",
+        module_samtools,
     message:
         "--- SAMTOOLS SORT {input}"
     shell:
