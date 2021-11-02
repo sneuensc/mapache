@@ -6,8 +6,8 @@ import pathlib
 
 ##########################################################################################
 # global variables
-autosomes = "" # will be set in check_chromosome_names()
-sex_chr = "X"
+#autosomes = {} # will be set in check_chromosome_names()
+
 ##########################################################################################
 ## all functions for main snakemake file
 
@@ -92,11 +92,12 @@ def eval_list_to_csv(x):
 ##########################################################################################
 ## function to test the chromosome names
 def check_chromosome_names(GENOME):
-    global autosomes, sex_chr, depth_chromosomes
-    print(f"""
-    Evaluating GENOME:
-        {GENOME}
-    """)
+    global autosomes
+    sex_chr = "X"
+    # print(f"""
+    # Evaluating GENOME:
+    #     {GENOME}
+    # """)
     ## get all chromsome names from the reference GENOME
     fasta = get_param3("genome", GENOME, "fasta", "")
     if pathlib.Path(f"{fasta}.fai").exists():
@@ -112,14 +113,15 @@ def check_chromosome_names(GENOME):
         cmd = f"grep '^>' {fasta} | cut -c2- | awk '{{print $1}}'"
         allChr = subprocess.check_output(cmd, shell=True, text=True).split()
     else:
-        print(f"ERROR: Reference genome 'genome:{GENOME}:fasta' does not exist!")
+        # print(f"ERROR: Reference genome 'genome:{GENOME}:fasta' does not exist!")
         os._exit(1)
 
     # check if chromosomes for which DoC was requested exist
     depth_chromosomes = config["genome"][GENOME].get("depth_chromosomes", "")
     if len(depth_chromosomes):
         chromosomes = depth_chromosomes.split(",")
-    
+    else: chromosomes = []
+
     for chr in chromosomes:
         if chr not in allChr:
             print(f"""
@@ -129,14 +131,14 @@ def check_chromosome_names(GENOME):
             )
             os._exit(1)
 
-    print(f"""
-    chromosomes which will have their DoC reported in main table: {chromosomes}
-    """)
+    # print(f"""
+    # chromosomes which will have their DoC reported in main table: {chromosomes}
+    # """)
 
     # check if the chromosomes specified in sex determination exist
         # sex chromosome
     if config["genome"][GENOME].get("sex_inference", {}).get("run", False):
-        print(f"    Checking if chromosomes specified in config file for sex inference exist in genome {GENOME}.")
+        # print(f"    Checking if chromosomes specified in config file for sex inference exist in genome {GENOME}.")
         sex_chr = config["genome"][GENOME]["sex_inference"].get("params", {}).get("sex_chr", "X")
         if sex_chr not in allChr:
             print(f"""
@@ -165,13 +167,14 @@ def check_chromosome_names(GENOME):
                 """
                 )
                 os._exit(1)
-        autosomes = 'c("' + '","'.join(chromosomes) + '")'
+        #autosomes[GENOME] = 'c("' + '","'.join(chromosomes) + '")'
+        config["genome"][GENOME]["sex_inference"]["params"]["autosomes"] = 'c("' + '","'.join(chromosomes) + '")'
 
-        print(f"""
-        sex_chr: {sex_chr}
-        autosomes: {autosomes}
-        """)    
-    print(f"WELL DONE. The chromosome names are well specified for genome {GENOME}.")
+        # print(f"""
+        # sex_chr: {sex_chr}
+        # autosomes: {autosomes}
+        # """)    
+    # print(f"WELL DONE. The chromosome names are well specified for genome {GENOME}.")
 
 
 
@@ -422,20 +425,20 @@ def is_quick(file_name, dict):
 # sex_params = config["genome"]["sex"]["sex_params"] if "sex_params" in config["genome"]["sex"].keys() else {}
 
 
-def get_sex_params(wildcards):
-    #sex_params = get_param2("genome", wildcards.GENOME, {})
-    sex_dict = config["genome"][wildcards.GENOME].get("sex_inference", {}).get("params", {})
+# def get_sex_params(wildcards):
+#     #sex_params = get_param2("genome", wildcards.GENOME, {})
+#     sex_dict = config["genome"][wildcards.GENOME].get("sex_inference", {}).get("params", {})
     
-    # autosomes are passed as a python expression, which was parsed previously in check_chromosome_names()
-    # the R script to assign sex needs the R expression that was stored in autosomes
-    if "autosomes" in sex_dict:
-        del sex_dict["autosomes"]
-        sex_dict["autosomes"] = autosomes
+#     # autosomes are passed as a python expression, which was parsed previously in check_chromosome_names()
+#     # the R script to assign sex needs the R expression that was stored in autosomes
+#     if "autosomes" in sex_dict:
+#         del sex_dict["autosomes"]
+#         sex_dict["autosomes"] = autosomes[wildcards.GENOME]
     
-    sex_params = " ".join(
-        [f"--{key}='{sex_dict[key]}'" for key in sex_dict.keys()]
-    )
-    return sex_params
+#     sex_params = " ".join(
+#         [f"--{key}='{sex_dict[key]}'" for key in sex_dict.keys()]
+#     )
+#     return sex_params
 
 
 ## get the individual depth files to combien them
