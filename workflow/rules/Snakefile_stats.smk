@@ -163,10 +163,11 @@ rule assign_sex:
     output:
         sex="results/04_stats/01_sparse_stats/{file}.{GENOME}.sex",
     params:
-        run_sex=lambda wildcards: config["genome"][wildcards.GENOME]
-        .get("sex_inference", {})
-        .get("run", False),
-        sex_params=get_sex_params,
+        run_sex = lambda wildcards: config["genome"][wildcards.GENOME].get("sex_inference", {}).get("run", False),
+        #sex_params=get_sex_params,
+        sex_params =  lambda wildcards: " ".join(
+        [f"--{key}='{value}'"   for key,value in config["genome"][wildcards.GENOME].get("sex_inference", {}).get("params", {}).items() ]
+                                                )
     log:
         "results/04_stats/01_sparse_stats/{file}.{GENOME}.sex.log",
     conda:
@@ -205,7 +206,7 @@ rule merge_stats_per_fastq:
         flagstat_mapped_highQ="results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}_flagstat.txt",  # mapped and high-qual reads
         length_fastq_mapped_highQ="results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}.length",
     output:
-        "results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv",
+        temp("results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv"),
     log:
         "results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.log",
     conda:
@@ -242,7 +243,7 @@ rule merge_stats_per_lb:
         idxstats_unique="results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}.idxstats",
         sex_unique="results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}.sex",
     output:
-        "results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/library_stats.csv",
+        temp("results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/library_stats.csv"),
     params:
         chrs_selected=lambda wildcards: config["genome"][wildcards.GENOME].get(
             "depth_chromosomes", "not requested"
@@ -289,11 +290,10 @@ rule merge_stats_per_sm:
         ],
         flagstat_unique="results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_flagstat.txt",
         length_unique="results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.length",
-        #genomecov_unique="results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.genomecov",
         idxstats_unique="results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.idxstats",
         sex_unique="results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.sex",
     output:
-        "results/04_stats/02_separate_tables/{GENOME}/{SM}/sample_stats.csv",
+        temp("results/04_stats/02_separate_tables/{GENOME}/{SM}/sample_stats.csv"),
     params:
         chrs_selected=lambda wildcards: config["genome"][wildcards.GENOME].get(
             "depth_chromosomes", "not requested"
@@ -339,7 +339,7 @@ rule merge_stats_by_level_and_genome:
     input:
         paths=path_stats_by_level,
     output:
-        "results/04_stats/03_summary/{level}_stats.{GENOME}.csv",
+            temp("results/04_stats/03_summary/{level}_stats.{GENOME}.csv"),
     log:
         "results/04_stats/03_summary/{level}_stats.{GENOME}.log",
     message:
