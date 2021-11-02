@@ -113,12 +113,12 @@ if(x_axis == "sample"){
   color_by = "genome"
   fill_by = "genome"
   x = "SM"
-  n_x_bars <- length(unique(samples$SM))
+  n_x_bars <- length(unique(sample_stats$SM))
 }else if(x_axis == "genome"){
   color_by = "SM"
   fill_by = "SM"
   x = "genome"
-  n_x_bars <- length(unique(samples$genome))
+  n_x_bars <- length(unique(sample_stats$genome))
 }
 
 n_colors <- length(unique(sample_stats[,color_by]))
@@ -130,28 +130,31 @@ colors_by_sample <- colorRampPalette(brewer.pal(8, "Set2"))(n_colors)
 # group stats in panels, if requested
 
 break_into_panels <- function(my_plot, df, n_x_bars){
+  if(n_x_bars == 1){
+    return(my_plot)
+  }else{
+    n_col <- as.numeric( get_args(argsL, "n_col", 30 ) )
+    n_row <- as.numeric( get_args(argsL, "n_row", ceiling(n_x_bars / n_col) ) )
 
-  n_col <- as.numeric( get_args(argsL, "n_col", 30 ) )
-  n_row <- as.numeric( get_args(argsL, "n_row", ceiling(n_x_bars / n_col) ) )
-
-  # we need as many panels as number of groups in the x-axis
-  if( n_col * n_row < n_x_bars ){
-    if(n_col > n_row){
-      n_row <- ceiling(n_x_bars / n_col)
-    }else{
-      n_col <- ceiling(n_x_bars / n_row)
+    # we need as many panels as number of groups in the x-axis
+    if( n_col * n_row < n_x_bars ){
+      if(n_col > n_row){
+        n_row <- min(ceiling(n_x_bars / n_col), 1) # at least one row
+      }else{
+        n_col <- min(ceiling(n_x_bars / n_row), 1) # at least one column
+      }
     }
+
+    n_panels <- min(c(n_col * n_row, n_x_bars))
+
+    df$group_to_plot <- cut_number(as.numeric(df[,x]), n_panels)
+
+    new_plot <- my_plot + 
+      facet_wrap(facets = df$group_to_plot, nrow = n_row, ncol = n_col, scales = "free_x") +
+      theme(strip.text = element_blank())
+
+    return(new_plot)
   }
-
-  n_panels <- min(c(n_col * n_row, n_x_bars))
-  
-  df$group_to_plot <- cut_number(as.numeric(df[,x]), n_panels)
-
-  new_plot <- my_plot + 
-    facet_wrap(facets = df$group_to_plot, nrow = n_row, ncol = n_col, scales = "free_x") +
-    theme(strip.text = element_blank())
-
-  return(new_plot)
 }
 
 #--------------------------------------------------------------------------#
