@@ -187,18 +187,12 @@ def check_chromosome_names(GENOME):
 
     # check if the chromosomes specified in sex determination exist
     # sex chromosome
-    if get_param4("genome", GENOME, "sex_inference", "run", False):
-
-        print(
-            f"    Checking if chromosomes specified in config file for sex inference exist in genome {GENOME}."
-        )
-        sex_chr = get_param5(
-            "genome", GENOME, "sex_inference", "params", "sex_chr", "X"
-        )
-
+    if config["genome"][GENOME].get("sex_inference", {}).get("run", False):
+        # print(f"    Checking if chromosomes specified in config file for sex inference exist in genome {GENOME}.")
+        sex_chr = str(config["genome"][GENOME]["sex_inference"].get("params", {}).get("sex_chr", "X"))
         if sex_chr not in allChr:
-            print(
-                f"""
+
+            print(f"""
             WARNING: sex chromosome specified in config[genome][{GENOME}][sex_inference][params][sex_chr] does not exist in FASTA reference file. 
             sex_chr: {sex_chr}
             Please set the right chromosome name for this reference genome.
