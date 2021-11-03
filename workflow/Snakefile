@@ -140,21 +140,22 @@ db = pd.read_csv(sample_file, sep=delim)
 
 ## check number of columns and column names
 if len(db.columns) == 6:
-    paired_end = 0  ## single-end library
+    #paired_end = 0  ## single-end library
+    paired_end = False
     if not set(["ID", "Data", "MAPQ", "LB", "PL", "SM"]).issubset(db.columns):
         print(
             "ERROR: The column names in the sample file are wrong! Expected are for single-end reads: ID, Data, MAPQ, LB, PL, SM"
         )
         os._exit(0)
 elif len(db.columns) == 7:
-    adaptrem_params = (
-        config["adaptrem_params"] if "adaptrem_params" in list(config) else ""
-    )
+    paired_end = True
+    adaptrem_params = config.get("adapterremoval", {}).get("params", "")
     if "--collapse" in adaptrem_params:
-        paired_end = 1  ## paired-end libraries, which are collapsed with adapterremoval
+        collapse = True
+        # paired_end = 1  ## paired-end libraries, which are collapsed with adapterremoval
     else:
-        paired_end = 2  ## paired-end libraries, which are mapped as paired-end
-
+        collapse = False
+        # paired_end = 2  ## paired-end libraries, which are mapped as paired-end
     if not set(["ID", "Data1", "Data2", "MAPQ", "LB", "PL", "SM"]).issubset(db.columns):
         print(
             "ERROR: The column names in the sample file are wrong! Expected are for paired-end reads: ID, Data1, Data2, MAPQ, LB, PL, SM"
@@ -168,7 +169,9 @@ else:
 
 
 ## check if all IDs per LB and SM are unique
+
 all_fastq = db.groupby(["ID", "LB", "SM"])["ID"].agg(["count"]).reset_index()
+
 if max(all_fastq["count"]) > 1:
     print("ERROR: The ID's have to be unique within a library and sample!")
     os._exit(0)
