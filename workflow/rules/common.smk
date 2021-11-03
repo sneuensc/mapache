@@ -230,7 +230,7 @@ def check_chromosome_names(GENOME):
                 )
                 os._exit(1)
         autosomes = 'c("' + '","'.join(chromosomes) + '")'
-        set_param5("genome", GENOME, "sex_inference", "params", "autosomes", autosomes)
+        config["genome"][GENOME]["sex_inference"]["params"]["autosomes"] = autosomes
 
         print(
             f"""
@@ -492,7 +492,11 @@ def is_quick(file_name, dict):
 
 # def get_sex_params(wildcards):
 #     #sex_params = get_param2("genome", wildcards.GENOME, {})
+<<<<<<< HEAD
 #     sex_dict = get_param4("genome", wildcards.GENOME, "sex_inference", "params", {})
+=======
+#     sex_dict = config["genome"][wildcards.GENOME].get("sex_inference", {}).get("params", {})
+>>>>>>> Reformated with snakefmt.
 
 #     # autosomes are passed as a python expression, which was parsed previously in check_chromosome_names()
 #     # the R script to assign sex needs the R expression that was stored in autosomes
