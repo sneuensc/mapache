@@ -6,6 +6,7 @@ import pathlib
 
 ##########################################################################################
 # global variables
+
 #autosomes = {} # will be set in check_chromosome_names()
 
 ##########################################################################################
@@ -92,12 +93,14 @@ def eval_list_to_csv(x):
 ##########################################################################################
 ## function to test the chromosome names
 def check_chromosome_names(GENOME):
+
     global autosomes
     sex_chr = "X"
     # print(f"""
     # Evaluating GENOME:
     #     {GENOME}
     # """)
+
     ## get all chromsome names from the reference GENOME
     fasta = get_param3("genome", GENOME, "fasta", "")
     if pathlib.Path(f"{fasta}.fai").exists():
@@ -120,29 +123,42 @@ def check_chromosome_names(GENOME):
     depth_chromosomes = config["genome"][GENOME].get("depth_chromosomes", "")
     if len(depth_chromosomes):
         chromosomes = depth_chromosomes.split(",")
+
     else: chromosomes = []
+
 
     for chr in chromosomes:
         if chr not in allChr:
-            print(f"""
+            print(
+                f"""
             WARNING: at least one chromosome specified in config[genome][{GENOME}][depth_chromosomes] does not exist in FASTA reference file. 
             chr: {chr}
             """
             )
             os._exit(1)
 
+
     # print(f"""
     # chromosomes which will have their DoC reported in main table: {chromosomes}
     # """)
 
-    # check if the chromosomes specified in sex determination exist
-        # sex chromosome
-    if config["genome"][GENOME].get("sex_inference", {}).get("run", False):
-        # print(f"    Checking if chromosomes specified in config file for sex inference exist in genome {GENOME}.")
-        sex_chr = str(config["genome"][GENOME]["sex_inference"].get("params", {}).get("sex_chr", "X"))
-        if sex_chr not in allChr:
 
-            print(f"""
+    # check if the chromosomes specified in sex determination exist
+    # sex chromosome
+    if config["genome"][GENOME].get("sex_inference", {}).get("run", False):
+
+        print(
+            f"    Checking if chromosomes specified in config file for sex inference exist in genome {GENOME}."
+        )
+        sex_chr = (
+            config["genome"][GENOME]["sex_inference"]
+            .get("params", {})
+            .get("sex_chr", "X")
+        )
+
+        if sex_chr not in allChr:
+            print(
+                f"""
             WARNING: sex chromosome specified in config[genome][{GENOME}][sex_inference][params][sex_chr] does not exist in FASTA reference file. 
             sex_chr: {sex_chr}
             Please set the right chromosome name for this reference genome.
@@ -153,7 +169,13 @@ def check_chromosome_names(GENOME):
 
         # autosomes specified for sex inference
         chromosomes = list(
-            map(str, eval_to_list(config["genome"][GENOME]["sex_inference"].get("params", {}).get("autosomes", [i for i in range(1,23)]))
+            map(
+                str,
+                eval_to_list(
+                    config["genome"][GENOME]["sex_inference"]
+                    .get("params", {})
+                    .get("autosomes", [i for i in range(1, 23)])
+                ),
             )
         )
 
@@ -168,14 +190,17 @@ def check_chromosome_names(GENOME):
                 """
                 )
                 os._exit(1)
-        #autosomes[GENOME] = 'c("' + '","'.join(chromosomes) + '")'
-        config["genome"][GENOME]["sex_inference"]["params"]["autosomes"] = 'c("' + '","'.join(chromosomes) + '")'
+        autosomes = 'c("' + '","'.join(chromosomes) + '")'
+        config["genome"][GENOME]["sex_inference"]["params"]["autosomes"] = autosomes
 
-        # print(f"""
-        # sex_chr: {sex_chr}
-        # autosomes: {autosomes}
-        # """)    
-    # print(f"WELL DONE. The chromosome names are well specified for genome {GENOME}.")
+
+        print(
+            f"""
+        sex_chr: {sex_chr}
+        autosomes: {autosomes}
+        """
+        )
+    print(f"WELL DONE. The chromosome names are well specified for genome {GENOME}.")
 
 
 
@@ -240,7 +265,7 @@ def get_damage(run_damage):
             files += [
                 (
                     "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.{type}.{ext}"
-                ).format(SM=row["SM"], LB=row["LB"], GENOME=GENOME, type = type, ext = ext)
+                ).format(SM=row["SM"], LB=row["LB"], GENOME=GENOME, type=type, ext=ext)
                 for index, row in all_libraries.iterrows()
                 for type in ["dam", "length"]
                 for ext in ["pdf", "svg"]

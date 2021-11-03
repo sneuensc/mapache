@@ -14,16 +14,16 @@ if("--help" %in% args) {
  
       Arguments:
         Input files:
-        --length                                     - csv to plot
-        --five_prime                                 - csv to plot
-        --three_prime                                - csv to plot
-        --sample=ind1                                - name of the sample
-        --sample=lib1                                - name of the library
-        --genome=genome                              - name of the genome
+        --length                                     - read length csv filename
+        --five_prime                                 - substitution at 5' csv filename
+        --three_prime                                - substitution at 3' csv filename
+        --sample                                     - name of the sample
+        --library                                    - name of the library
+        --genome                                     - name of the genome
         
         Output files:  
-        --length_svg
-        --damage_svg
+        --length_svg                                 - read length plot filename
+        --damage_svg                                 - damage plot filename
         --help                                       - print this text
  
       Example:
@@ -49,88 +49,77 @@ get_args <- function(argsL, name, default){
     }
     return(value)
 }
+
 ############################################################################
+## read arguments
 
 args = commandArgs(trailingOnly=TRUE)
-
-#path=args[1]
-#genome=args[2]
-#sample=args[3]
-#lib=args[4]
 
 length_csv = get_args(argsL, "length")
 five_prime_csv = get_args(argsL, "five_prime")
 three_prime_csv = get_args(argsL, "three_prime")
-genome = get_args(argsL, "genome")
-sample = get_args(argsL, "sample")
-lib = get_args(argsL, "library")
 length_svg = get_args(argsL, "length_svg")
 damage_svg = get_args(argsL, "damage_svg")
-# length<-read.csv(paste0(path,"/",lib,".",genome,".length.csv"))
-length <- read.csv(length_csv)
 
-# p5<-read.csv(paste0(path,"/",lib,".",genome,".dam_5prime.csv"), row.names=1)
-# p3<-read.csv(paste0(path,"/",lib,".",genome,".dam_3prime.csv"), row.names=1)
-
-p5 <- read.csv(five_prime_csv)
-p3 <- read.csv(three_prime_csv)
+sample = get_args(argsL, "sample", "")
+library = get_args(argsL, "library", "")
+genome = get_args(argsL, "genome", "")
 
 ############################################################################
 library(ggplot2)
 library(RColorBrewer) 
+library(reshape2)
+library(gridExtra)
 
 ############################################################################
-#svg(paste0(path,"/",lib,".",genome,".length.svg"), width = 11, height = 7)
-svg(length_svg, width = 11, height = 7)
+## plot length histogram
+
+length <- read.csv(length_csv)
 
 length$frequency<-length$counts/sum(length$counts)
-ggplot(data=length, mapping=aes(x = length, y=frequency)) + 
+my_plot <- ggplot(data=length, mapping=aes(x = length, y=frequency)) + 
   geom_bar(stat="identity") +
   ylab("frequency") +
   xlab("read length") +
   theme_classic() +
-  ggtitle(paste0("Read length distribution of '", lib, "' (sample: ", sample, ")"))
+  ggtitle(paste0("Read length distribution of '", library, "' (sample: ", sample, ")"))
 
-dev.off()
+ggsave(length_svg, my_plot, width = 11, height = 7)
 
 ############################################################################
-#svg(paste0(path,"/",lib,".",genome,".dam.svg"), width = 11, height = 7)
-svg(damage_svg, width = 11, height = 7)
+## plot damage pattern
 
-par(mfrow=c(1,2)) 
-par(oma=c(0,0,0,0)) 
-par(mar=c(5,4,4,0))
-yticks<-pretty(c(0,max(p3[-1],p5[-1])))
-xticks<-pretty(1:nrow(p5))
-plot(1:nrow(p5), p5[,1], ylim=c(0,max(p3,p5)), col.main="orange",
-     xlab="position from 5' end", ylab="", axes=F,type="n")
-axis(1, at = xticks, labels = xticks, tick = TRUE)
-axis(2, at = yticks, labels = yticks, tick = TRUE)
-mtext("frequency",side=2,col="black",line=2.5)
-title("C>T", line = -1, col.main="orange")
-for(s in 1:ncol(p5)){
-  lines(1:nrow(p5), p5[,s], col="gray", lwd=2)
-}
-lines(1:nrow(p5), p5[,2], col="blue", lwd=4)
-lines(1:nrow(p5), p5[,11], col="orange", lwd=4)
+##  read files
+p5 <- read.csv(five_prime_csv)
+p3 <- read.csv(three_prime_csv)
+range.y <- c(0,max(p3[-1],p5[-1]))
 
-par(mar=c(5,0,4,4))
-plot(rev(1:nrow(p3)), p3[,1], ylim=c(0,max(p3,p5)), col.main="blue",
-     xlab="position from 3' end", ylab="", axes=F,  type="n")
-axis(1, at = xticks, labels = rev(xticks), tick = TRUE)
-axis(4, at = yticks, labels = yticks, tick = TRUE)
-mtext("frequency",side=4,col="black",line=2.5)
-title("G>A", line = -1, col.main="blue")
-for(s in 1:ncol(p3)){
-  lines(rev(1:nrow(p3)),p3[,s], col="gray", lwd=2)
-}
-lines(rev(1:nrow(p3)), p3[,11], col="orange", lwd=4)
-lines(rev(1:nrow(p3)), p3[,2], col="blue", lwd=4)
+## 5' plot
+d <- melt(p5, 1)
+p1 <- ggplot(d, aes(x=X, y=value, group=variable)) +
+  geom_line(size=1, color="gray") +
+  geom_line(data=subset(d, variable == 'G..A'), size=1.5, color="blue") +
+  geom_line(data=subset(d, variable == 'C..T'), size=1.5, color="orange") +
+  ylim(range.y) +
+  xlab("position from 5' end") +
+  ylab("frequency") +
+  geom_text(x=mean(p5$X), y=0.95*max(range.y), label="C>T", color="orange", fontface="bold") +
+  theme_classic() 
 
-mtext("Damage pattern", outer = TRUE, cex = 1.5, line = -1.2)
-mtext(sample, outer = TRUE, cex = 1, line = -2.5)
-mtext(lib, outer = TRUE, cex = 1, line = -3.8)
+## 3' plot
+d <- melt(p3, 1)
+p2 <- ggplot(d, aes(x=X, y=value, group=variable)) +
+  geom_line(size=1, color="gray") +
+  geom_line(data=subset(d, variable == 'C..T'), size=1.5, color="orange") +
+  geom_line(data=subset(d, variable == 'G..A'), size=1.5, color="blue") +
+  xlab("position from 3' end") +
+  ylab("frequency") +
+  geom_text(x=-mean(p3$X), y=0.95*max(range.y), label="G>A", color="blue", fontface="bold") +
+  theme_classic() +
+  scale_y_continuous(lim=range.y, position = "right") +
+  scale_x_reverse()
 
-
-dev.off()
+## combine plots
+my_plot <- grid.arrange(grobs=list(p1, p2), ncol=2, top = paste("Damage pattern", sample, library, sep="\n"))   
+ggsave(damage_svg, my_plot, width = 11, height = 7)
 

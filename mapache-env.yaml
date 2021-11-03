@@ -18,3 +18,4 @@ dependencies:
   - r-rcolorbrewer
   - r-reshape
   - r-svglite
+  - r-reshape
