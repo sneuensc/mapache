@@ -329,11 +329,7 @@ final_stats = [
     #     level=["SM", "LB", "FASTQ"],
     #     GENOME=genome,
     # ),
-    expand(
-        "results/04_stats/03_summary/{level}_stats.csv",
-        level=["SM", "LB", "FASTQ"]
-    )
-
+    expand("results/04_stats/03_summary/{level}_stats.csv", level=["SM", "LB", "FASTQ"])
 ]
 # -----------------------------------------------------------------------------#
 
@@ -341,9 +337,14 @@ final_stat_figures = [
     get_damage(run_damage),
     expand(
         "results/04_stats/04_plots/{plot_type}.svg",
-        plot_type = ["1_nb_reads", "2_mapped", "3_endogenous", "4_duplication", "5_AvgReadDepth"]
-    )
-
+        plot_type=[
+            "1_nb_reads",
+            "2_mapped",
+            "3_endogenous",
+            "4_duplication",
+            "5_AvgReadDepth",
+        ],
+    ),
 ]
 
 
@@ -385,7 +386,7 @@ rule stats:
     """
     input:
         final_stat_figures,
-        final_stats
+        final_stats,
 
 
 onsuccess:

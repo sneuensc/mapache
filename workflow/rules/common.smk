@@ -7,7 +7,7 @@ import pathlib
 ##########################################################################################
 # global variables
 
-#autosomes = {} # will be set in check_chromosome_names()
+# autosomes = {} # will be set in check_chromosome_names()
 
 ##########################################################################################
 ## all functions for main snakemake file
@@ -124,8 +124,8 @@ def check_chromosome_names(GENOME):
     if len(depth_chromosomes):
         chromosomes = depth_chromosomes.split(",")
 
-    else: chromosomes = []
-
+    else:
+        chromosomes = []
 
     for chr in chromosomes:
         if chr not in allChr:
@@ -137,11 +137,9 @@ def check_chromosome_names(GENOME):
             )
             os._exit(1)
 
-
     # print(f"""
     # chromosomes which will have their DoC reported in main table: {chromosomes}
     # """)
-
 
     # check if the chromosomes specified in sex determination exist
     # sex chromosome
@@ -185,7 +183,6 @@ def check_chromosome_names(GENOME):
         autosomes = 'c("' + '","'.join(chromosomes) + '")'
         config["genome"][GENOME]["sex_inference"]["params"]["autosomes"] = autosomes
 
-
         print(
             f"""
         sex_chr: {sex_chr}
@@ -193,7 +190,6 @@ def check_chromosome_names(GENOME):
         """
         )
     print(f"WELL DONE. The chromosome names are well specified for genome {GENOME}.")
-
 
 
 ## convert string to boolean
@@ -450,13 +446,13 @@ def is_quick(file_name, dict):
 # def get_sex_params(wildcards):
 #     #sex_params = get_param2("genome", wildcards.GENOME, {})
 #     sex_dict = config["genome"][wildcards.GENOME].get("sex_inference", {}).get("params", {})
-    
+
 #     # autosomes are passed as a python expression, which was parsed previously in check_chromosome_names()
 #     # the R script to assign sex needs the R expression that was stored in autosomes
 #     if "autosomes" in sex_dict:
 #         del sex_dict["autosomes"]
 #         sex_dict["autosomes"] = autosomes[wildcards.GENOME]
-    
+
 #     sex_params = " ".join(
 #         [f"--{key}='{sex_dict[key]}'" for key in sex_dict.keys()]
 #     )
