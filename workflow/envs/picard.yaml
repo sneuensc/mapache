@@ -2,5 +2,5 @@ channels:
   - bioconda
   - conda-forge
 dependencies:
-  - picard = 2.18.2
+  - picard = 2.25.5
   
