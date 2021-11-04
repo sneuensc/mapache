@@ -10,6 +10,7 @@ SUMMARY:
 
 Ancient DNA is degraded and contaminated. Most standard bioinformatics tools to align sequenced reads have been designed for modern data and cannot be used “out of the box” to accommodate the features typical of ancient DNA. In this work, we propose a robust pipeline to align ancient DNA data and to have a first rough idea of the authenticity of the data. The implemented modules consist of the steps needed to go from a simple ‘fastq' file to a final ‘bam' file. The steps include quality control, mapping, filtering, duplicate removal, damage pattern inference, realignment, statistics to assess authenticity and inference of the sex of the organism. A final graphical report summarizes the statistics of the different modules allowing a quick overview of the data. The pipeline is implemented in the workflow manager snakemake providing the flexibility to run the pipeline on a workstation, a high memory server or a cluster. The installation of the pipeline and the underlying programs is made easy using conda. The pipeline may be used out of the box, or may be adapted with little knowledge of python and snakemake.
 
+The usage of this workflow is described in the [Snakemake Workflow Catalog](https://snakemake.github.io/snakemake-workflow-catalog/?usage=sneuensc/mapache).
 
 Following main steps are included in ***mapache***:
 ```
