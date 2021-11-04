@@ -165,12 +165,18 @@ rule assign_sex:
     output:
         sex="results/04_stats/01_sparse_stats/{file}.{GENOME}.sex",
     params:
-        run_sex=str2bool(lambda wildcards: get_param4("genome", wildcards.GENOME, "sex_inference", "run", False)),
+        run_sex=str2bool(
+            lambda wildcards: get_param4(
+                "genome", wildcards.GENOME, "sex_inference", "run", False
+            )
+        ),
         #sex_params=get_sex_params,
         sex_params=lambda wildcards: " ".join(
             [
                 f"--{key}='{value}'"
-                for key, value in get_param4("genome", wildcards.GENOME, "sex_inference", "params", {}).items()
+                for key, value in get_param4(
+                    "genome", wildcards.GENOME, "sex_inference", "params", {}
+                ).items()
             ]
         ),
     log:
