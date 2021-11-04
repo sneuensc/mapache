@@ -3,5 +3,5 @@ channels:
   - conda-forge
 dependencies:
   - R = 4.0  
-  - samtools = 1.4
+  - samtools = 1.14
   
