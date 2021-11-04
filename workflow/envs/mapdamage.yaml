@@ -2,5 +2,5 @@ channels:
   - bioconda
   - conda-forge
 dependencies:
-  - mapdamage2 = 2.0.8
+  - mapdamage2 = 2.2.1
   
