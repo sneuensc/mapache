@@ -59,7 +59,7 @@ module_seqtk = get_param2("envmodules", "seqtk", "")
 ## some test to verify that the minimal requirements are met
 
 ## is at least a reference genome defined
-genome = list(config["genome"])
+genome = list(get_param1("genome", {})
 if len(genome) == 0:
     print("ERROR: Reference genome is not specified (parameter genome)!")
     os._exit(1)
@@ -69,7 +69,7 @@ if len(genome) == 0:
 save_sex = False
 save_MT = False
 for GENOME in genome:
-    if "fasta" not in list(config["genome"][GENOME]):
+    if "fasta" not in list(get_param2("genome", GENOME, {}):
         print("ERROR: Each reference genome requires a fasta file!")
         os._exit(1)
 
@@ -146,9 +146,7 @@ if len(db.columns) == 6:
         )
         os._exit(0)
 elif len(db.columns) == 7:
-    adaptrem_params = (
-        config["adaptrem_params"] if "adaptrem_params" in list(config) else ""
-    )
+    adaptrem_params = get_param2("adapterremoval", "params", "")
     if "--collapse" in adaptrem_params:
         paired_end = 1  ## paired-end libraries, which are collapsed with adapterremoval
     else:
@@ -304,7 +302,7 @@ sex_files = [
         f"02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}",
         f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}",
     ]
-    if config["genome"][GENOME].get("sex_inference", {}).get("run", False)
+    if str2bool(get_param4("genome", GENOME, "sex_inference", "run", False))
 ]
 
 sex_files = list(set(sex_files))

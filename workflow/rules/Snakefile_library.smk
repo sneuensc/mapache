@@ -153,7 +153,7 @@ rule mapDamage_stats:
         memory=lambda wildcards, attempt: get_memory_alloc("mapdamage", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapdamage", attempt, 24),
     params:
-        mapDamage_params=config.get("mapdamage", {}).get("params", ""),
+        params=get_param2("mapdamage", "params", ""),
     conda:
         "../envs/mapdamage.yaml"
     message:
@@ -161,7 +161,7 @@ rule mapDamage_stats:
     shell:
         """
         mapDamage -i {input.bam} -r {input.ref} -d $(dirname {output.deamination}) \
-        {params.mapDamage_params} --merge-reference-sequences 2> {log};
+        {params.params} --merge-reference-sequences 2> {log};
         """
 
 
@@ -182,7 +182,7 @@ rule mapDamage_rescale:
         "{folder}/02_rescaled/01_mapDamage/{SM}/{LB}.{GENOME}_rescale.log",
     threads: 1
     params:
-        mapDamage_params=config.get("mapdamage", {}).get("params", ""),
+        params=get_param2("mapdamage", "params", ""),
     conda:
         "../envs/mapdamage.yaml"
     message:
@@ -190,7 +190,7 @@ rule mapDamage_rescale:
     shell:
         """
         mapDamage -i {input.bam} -r {input.ref} -d $(dirname {input.deamination}) \
-        {params.mapDamage_params} --merge-reference-sequences --rescale-only --rescale-out {output} 2>> {log};
+        {params.params} --merge-reference-sequences --rescale-only --rescale-out {output} 2>> {log};
         """
 
 
