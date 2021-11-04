@@ -24,24 +24,42 @@ def get_param2(key1, key2, default):
 def get_param3(key1, key2, key3, default):
     return config.get(key1, {}).get(key2, {}).get(key3, default)
 
+
 def get_param4(key1, key2, key3, key4, default):
     return config.get(key1, {}).get(key2, {}).get(key3, {}).get(key4, default)
 
+
 def get_param5(key1, key2, key3, key4, key5, default):
-    return config.get(key1, {}).get(key2, {}).get(key3, {}).get(key4, {}).get(key5, default)
+    return (
+        config.get(key1, {})
+        .get(key2, {})
+        .get(key3, {})
+        .get(key4, {})
+        .get(key5, default)
+    )
+
 
 def get_param6(key1, key2, key3, key4, key5, key6, default):
-    return config.get(key1, {}).get(key2, {}).get(key3, {}).get(key4, {}).get(key5, {}).get(key6, default)
+    return (
+        config.get(key1, {})
+        .get(key2, {})
+        .get(key3, {})
+        .get(key4, {})
+        .get(key5, {})
+        .get(key6, default)
+    )
 
 
 ## setter for config file
 def set_param1(key, value):
     config[key] = value
 
+
 def set_param2(key1, key2, value):
     if key1 not in config:
         config[key1] = {}
     config[key1][key2] = value
+
 
 def set_param3(key1, key2, key3, value):
     if key1 not in config:
@@ -49,6 +67,7 @@ def set_param3(key1, key2, key3, value):
     if key2 not in config[key1]:
         config[key1][key2] = {}
     config[key1][key2][key3] = value
+
 
 def set_param4(key1, key2, key3, key4, value):
     if key1 not in config:
@@ -58,6 +77,7 @@ def set_param4(key1, key2, key3, key4, value):
     if key3 not in config[key1][key2]:
         config[key1][key2][key3] = {}
     config[key1][key2][key3][key4] = value
+
 
 def set_param5(key1, key2, key3, key4, key5, value):
     if key1 not in config:
@@ -69,6 +89,7 @@ def set_param5(key1, key2, key3, key4, key5, value):
     if key4 not in config[key1][key2][key3]:
         config[key1][key2][key3][key4] = {}
     config[key1][key2][key3][key4][key5] = value
+
 
 def set_param6(key1, key2, key3, key4, key5, key6, value):
     if key1 not in config:
@@ -188,7 +209,9 @@ def check_chromosome_names(GENOME):
         print(
             f"    Checking if chromosomes specified in config file for sex inference exist in genome {GENOME}."
         )
-        sex_chr = (get_param5("genome", GENOME, "sex_inference", "params", "sex_chr", "X"))
+        sex_chr = get_param5(
+            "genome", GENOME, "sex_inference", "params", "sex_chr", "X"
+        )
 
         if sex_chr not in allChr:
             print(
@@ -205,7 +228,15 @@ def check_chromosome_names(GENOME):
         chromosomes = list(
             map(
                 str,
-                eval_to_list(get_param5("genome", GENOME, "sex_inference", "params", "autosomes", [i for i in range(1, 23)])
+                eval_to_list(
+                    get_param5(
+                        "genome",
+                        GENOME,
+                        "sex_inference",
+                        "params",
+                        "autosomes",
+                        [i for i in range(1, 23)],
+                    )
                 ),
             )
         )
@@ -272,7 +303,6 @@ def get_runtime_alloc(module, attempt, default=12):
     time_start = int(get_param2(module, "time", default))
     time_incre = int(
         get_param2(module, "time_increment", runtime_increment_ratio * time_start)
-        )
     )
     return int(60 * ((attempt - 1) * time_incre + time_start))
 
