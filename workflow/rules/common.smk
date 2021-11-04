@@ -37,12 +37,10 @@ def recursive_get(dict, keys_values):
 def set_param1(key, value):
     config[key] = value
 
-
 def set_param2(key1, key2, value):
     if key1 not in config:
         config[key1] = {}
     config[key1][key2] = value
-
 
 def set_param3(key1, key2, key3, value):
     if key1 not in config:
@@ -50,6 +48,39 @@ def set_param3(key1, key2, key3, value):
     if key2 not in config[key1]:
         config[key1][key2] = {}
     config[key1][key2][key3] = value
+
+def set_param4(key1, key2, key3, key4, value):
+    if key1 not in config:
+        config[key1] = {}
+    if key2 not in config[key1]:
+        config[key1][key2] = {}
+    if key3 not in config[key1][key2]:
+        config[key1][key2][key3] = {}
+    config[key1][key2][key3][key4] = value
+
+def set_param5(key1, key2, key3, key4, key5, value):
+    if key1 not in config:
+        config[key1] = {}
+    if key2 not in config[key1]:
+        config[key1][key2] = {}
+    if key3 not in config[key1][key2]:
+        config[key1][key2][key3] = {}
+    if key4 not in config[key1][key2][key3]:
+        config[key1][key2][key3][key4] = {}
+    config[key1][key2][key3][key4][key5] = value
+
+def set_param6(key1, key2, key3, key4, key5, key6, value):
+    if key1 not in config:
+        config[key1] = {}
+    if key2 not in config[key1]:
+        config[key1][key2] = {}
+    if key3 not in config[key1][key2]:
+        config[key1][key2][key3] = {}
+    if key4 not in config[key1][key2][key3]:
+        config[key1][key2][key3][key4] = {}
+    if key5 not in config[key1][key2][key3][key4]:
+        config[key1][key2][key3][key4][key5] = {}
+    config[key1][key2][key3][key4][key5][key6] = value
 
 
 def set_param4(key1, key2, key3, key4, value):
@@ -187,9 +218,13 @@ def check_chromosome_names(GENOME):
 
     # check if the chromosomes specified in sex determination exist
     # sex chromosome
-    if config["genome"][GENOME].get("sex_inference", {}).get("run", False):
-        # print(f"    Checking if chromosomes specified in config file for sex inference exist in genome {GENOME}.")
-        sex_chr = str(config["genome"][GENOME]["sex_inference"].get("params", {}).get("sex_chr", "X"))
+    if get_param4("genome", GENOME, "sex_inference", "run", False):
+
+        print(
+            f"    Checking if chromosomes specified in config file for sex inference exist in genome {GENOME}."
+        )
+        sex_chr = (get_param5("genome", GENOME, "sex_inference", "params", "sex_chr", "X"))
+
         if sex_chr not in allChr:
 
             print(f"""
@@ -230,7 +265,7 @@ def check_chromosome_names(GENOME):
                 )
                 os._exit(1)
         autosomes = 'c("' + '","'.join(chromosomes) + '")'
-        config["genome"][GENOME]["sex_inference"]["params"]["autosomes"] = autosomes
+        set_param5("genome", GENOME, "sex_inference", "params", "autosomes", autosomes)
 
         print(
             f"""
@@ -493,10 +528,14 @@ def is_quick(file_name, dict):
 # def get_sex_params(wildcards):
 #     #sex_params = get_param2("genome", wildcards.GENOME, {})
 <<<<<<< HEAD
+<<<<<<< HEAD
 #     sex_dict = get_param4("genome", wildcards.GENOME, "sex_inference", "params", {})
 =======
 #     sex_dict = config["genome"][wildcards.GENOME].get("sex_inference", {}).get("params", {})
 >>>>>>> Reformated with snakefmt.
+=======
+#     sex_dict = get_param4("genome", wildcards.GENOME, "sex_inference", "params", {})
+>>>>>>> Replaced calls to config with the function get_param().
 
 #     # autosomes are passed as a python expression, which was parsed previously in check_chromosome_names()
 #     # the R script to assign sex needs the R expression that was stored in autosomes
