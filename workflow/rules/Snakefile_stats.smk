@@ -165,18 +165,12 @@ rule assign_sex:
     output:
         sex="results/04_stats/01_sparse_stats/{file}.{GENOME}.sex",
     params:
-        run_sex=str2bool(
-            lambda wildcards: get_param4(
-                "genome", wildcards.GENOME, "sex_inference", "run", False
-            )
-        ),
+        run_sex=str2bool(lambda wildcards: get_param4("genome", wildcards.GENOME, "sex_inference", "run", False)),
         #sex_params=get_sex_params,
         sex_params=lambda wildcards: " ".join(
             [
                 f"--{key}='{value}'"
-                for key, value in get_param4(
-                    "genome", wildcards.GENOME, "sex_inference", "params", {}
-                ).items()
+                for key, value in get_param4("genome", wildcards.GENOME, "sex_inference", "params", {}).items()
             ]
         ),
     log:
@@ -258,9 +252,7 @@ rule merge_stats_per_lb:
     output:
         temp("results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/library_stats.csv"),
     params:
-        chrs_selected=lambda wildcards: get_param3(
-            "genome", wildcards.GENOME, "depth_chromosomes", "not requested"
-        ),
+        chrs_selected=lambda wildcards: get_param3("genome", wildcards.GENOME, "depth_chromosomes", "not requested"),
     log:
         "results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/library_stats.log",
     conda:
@@ -308,9 +300,7 @@ rule merge_stats_per_sm:
     output:
         temp("results/04_stats/02_separate_tables/{GENOME}/{SM}/sample_stats.csv"),
     params:
-        chrs_selected=lambda wildcards: get_param3(
-            "genome", wildcards.GENOME, "depth_chromosomes", "not requested"
-        ),
+        chrs_selected=lambda wildcards: get_param3("genome", wildcards.GENOME, "depth_chromosomes", "not requested"),
     log:
         "results/04_stats/02_separate_tables/{GENOME}/{SM}/sample_stats.log",
     conda:
