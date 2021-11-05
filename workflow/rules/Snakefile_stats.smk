@@ -125,6 +125,8 @@ rule samtools_index:
         "{file}.bam",
     output:
         "{file}.bam.bai",
+    log:
+        "{file}.bam.bai.log",
     conda:
         "../envs/samtools.yaml"
     envmodules:
@@ -163,11 +165,20 @@ rule assign_sex:
     output:
         sex="results/04_stats/01_sparse_stats/{file}.{GENOME}.sex",
     params:
-        run_sex = lambda wildcards: config["genome"][wildcards.GENOME].get("sex_inference", {}).get("run", False),
+        run_sex=str2bool(
+            lambda wildcards: get_param4(
+                "genome", wildcards.GENOME, "sex_inference", "run", False
+            )
+        ),
         #sex_params=get_sex_params,
-        sex_params =  lambda wildcards: " ".join(
-        [f"--{key}='{value}'"   for key,value in config["genome"][wildcards.GENOME].get("sex_inference", {}).get("params", {}).items() ]
-                                                )
+        sex_params=lambda wildcards: " ".join(
+            [
+                f"--{key}='{value}'"
+                for key, value in get_param4(
+                    "genome", wildcards.GENOME, "sex_inference", "params", {}
+                ).items()
+            ]
+        ),
     log:
         "results/04_stats/01_sparse_stats/{file}.{GENOME}.sex.log",
     conda:
@@ -206,7 +217,9 @@ rule merge_stats_per_fastq:
         flagstat_mapped_highQ="results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}_flagstat.txt",  # mapped and high-qual reads
         length_fastq_mapped_highQ="results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}.length",
     output:
-        temp("results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv"),
+        temp(
+            "results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv"
+        ),
     log:
         "results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.log",
     conda:
@@ -245,8 +258,8 @@ rule merge_stats_per_lb:
     output:
         temp("results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/library_stats.csv"),
     params:
-        chrs_selected=lambda wildcards: config["genome"][wildcards.GENOME].get(
-            "depth_chromosomes", "not requested"
+        chrs_selected=lambda wildcards: get_param3(
+            "genome", wildcards.GENOME, "depth_chromosomes", "not requested"
         ),
     log:
         "results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/library_stats.log",
@@ -295,8 +308,8 @@ rule merge_stats_per_sm:
     output:
         temp("results/04_stats/02_separate_tables/{GENOME}/{SM}/sample_stats.csv"),
     params:
-        chrs_selected=lambda wildcards: config["genome"][wildcards.GENOME].get(
-            "depth_chromosomes", "not requested"
+        chrs_selected=lambda wildcards: get_param3(
+            "genome", wildcards.GENOME, "depth_chromosomes", "not requested"
         ),
     log:
         "results/04_stats/02_separate_tables/{GENOME}/{SM}/sample_stats.log",
@@ -339,7 +352,7 @@ rule merge_stats_by_level_and_genome:
     input:
         paths=path_stats_by_level,
     output:
-            temp("results/04_stats/03_summary/{level}_stats.{GENOME}.csv"),
+        temp("results/04_stats/03_summary/{level}_stats.{GENOME}.csv"),
     log:
         "results/04_stats/03_summary/{level}_stats.{GENOME}.log",
     message:
@@ -476,12 +489,10 @@ rule bamdamage:
         "--- RUN BAMDAMAGE {input.bam}"
     params:
         prefix="results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}/{id_library}.{id_genome}",
-        bamdamage_params=config["bamdamage_params"]
-        if "bamdamage_params" in config.keys()
-        else "",
-        fraction=config["bamdamage_fraction"]
-        if "bamdamage_fraction" in config.keys()
-        else 0,
+        bamdamage_params=get_param1("bamdamage_params", ""),
+        fraction=get_param1("bamdamage_fraction", 0),
+    log:
+        "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}.{id_genome}_bamdamage.log",
     conda:
         "../envs/bamdamage.yaml"
     envmodules:
@@ -529,6 +540,8 @@ rule plot_bamdamage:
         ),
     message:
         "--- PLOT DAMAGE"
+    log:
+        "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}.{id_genome}_plot.log",
     conda:
         "../envs/r.yaml"
     envmodules:
@@ -636,11 +649,11 @@ rule plot_summary_statistics:
     message:
         "--- PLOT SUMMARY STATISTICS"
     params:
-        samples=config["sample_file"],
-        x_axis=config["stats"].get("plots", {}).get("x_axis", "sample"),
-        split_plot=config["stats"].get("plots", {}).get("split_plot", "F"),
-        n_col=config["stats"].get("plots", {}).get("n_col", 1),
-        n_row=config["stats"].get("plots", {}).get("n_row", 1),
+        samples=get_param1("sample_file", ""),
+        x_axis=get_param3("stats", "plots", "x_axis", "sample"),
+        split_plot=get_param3("stats", "plots", "split_plot", "F"),
+        n_col=get_param3("stats", "plots", "n_col", 1),
+        n_row=get_param3("stats", "plots", "n_row", 1),
     shell:
         """
         Rscript workflow/scripts/plot_stats.R \

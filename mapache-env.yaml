@@ -9,13 +9,12 @@ dependencies:
   - fastqc = 0.11.9
   - gatk = 3.8
   - mapdamage2 = 2.2.1
-  - multiqc = 1.10.1
   - picard = 2.25.5
-  - samtools = 1.12
+  - samtools = 1.14
   - bedtools = 2.30.0
   - R = 4.0
   - r-ggplot2
   - r-rcolorbrewer
-  - r-reshape
+  - r-reshape2
   - r-svglite
-  - r-reshape
+  - r-gridextra

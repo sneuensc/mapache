@@ -59,7 +59,7 @@ module_seqtk = get_param2("envmodules", "seqtk", "")
 ## some test to verify that the minimal requirements are met
 
 ## is at least a reference genome defined
-genome = list(config["genome"])
+genome = list(get_param1("genome", {}))
 if len(genome) == 0:
     print("ERROR: Reference genome is not specified (parameter genome)!")
     os._exit(1)
@@ -69,7 +69,7 @@ if len(genome) == 0:
 save_sex = False
 save_MT = False
 for GENOME in genome:
-    if "fasta" not in list(config["genome"][GENOME]):
+    if "fasta" not in list(get_param2("genome", GENOME, {})):
         print("ERROR: Each reference genome requires a fasta file!")
         os._exit(1)
 
@@ -147,6 +147,7 @@ if len(db.columns) == 6:
         )
         os._exit(0)
 elif len(db.columns) == 7:
+
     paired_end = True
     adaptrem_params = config.get("adapterremoval", {}).get("params", "")
     if "--collapse" in adaptrem_params:
@@ -307,7 +308,7 @@ sex_files = [
         f"02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}",
         f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}",
     ]
-    if config["genome"][GENOME].get("sex_inference", {}).get("run", False)
+    if str2bool(get_param4("genome", GENOME, "sex_inference", "run", False))
 ]
 
 sex_files = list(set(sex_files))
@@ -329,11 +330,7 @@ final_stats = [
     #     level=["SM", "LB", "FASTQ"],
     #     GENOME=genome,
     # ),
-    expand(
-        "results/04_stats/03_summary/{level}_stats.csv",
-        level=["SM", "LB", "FASTQ"]
-    )
-
+    expand("results/04_stats/03_summary/{level}_stats.csv", level=["SM", "LB", "FASTQ"])
 ]
 # -----------------------------------------------------------------------------#
 
@@ -341,9 +338,14 @@ final_stat_figures = [
     get_damage(run_damage),
     expand(
         "results/04_stats/04_plots/{plot_type}.svg",
-        plot_type = ["1_nb_reads", "2_mapped", "3_endogenous", "4_duplication", "5_AvgReadDepth"]
-    )
-
+        plot_type=[
+            "1_nb_reads",
+            "2_mapped",
+            "3_endogenous",
+            "4_duplication",
+            "5_AvgReadDepth",
+        ],
+    ),
 ]
 
 
@@ -385,7 +387,7 @@ rule stats:
     """
     input:
         final_stat_figures,
-        final_stats
+        final_stats,
 
 
 onsuccess:
