@@ -104,6 +104,7 @@ adapterremoval:
 mapping:
     bwa_aln_params: '-l 1024'   
     bwa_samse_params: '-n 3'
+    bwa_sampe_params: ''
     bwa_mem_params: ''
     bowtie2_params: ''
     threads: 4
