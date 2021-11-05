@@ -3,6 +3,7 @@ channels:
   - conda-forge
 dependencies:
   - snakemake = 6.4.1
+  - jinja2
   - adapterremoval = 2.3.2
   - bwa = 0.7.17
   - bowtie2 = 2.4.4
