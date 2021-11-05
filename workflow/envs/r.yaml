@@ -7,4 +7,4 @@ dependencies:
   - r-rcolorbrewer
   - r-reshape2
   - r-svglite
-  
+  - r-gridextra
