@@ -20,28 +20,28 @@ envmodules:
 ##########################################################################################
 
 #workdir: 
-sample_file: config/samples.txt
+sample_file: config/PasoDelIndio.txt
 
 genome: 
     hg19: 
         fasta: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/hs.build37.1/hs.build37.1.fa
         # mtChr: MT
         # If you want the DoC to be reported for some chromosomes in the main stats table, list them below. 
-        depth_chromosomes: "X,Y,MT"
+        depth_chromosomes: "X,Y,MT,4"
 
         # parameters specific to sex inference
         sex_inference:
             run: True
             # uncomment options below if you need to change any value
-            # params:
+            params:
                 # you can paste any python expression here, in single quotes ('):
                     # '[f"chr{x}" for x in range(1,23)]' # chr1,chr2,chr3,etc.
                     # [x for x in range(1,23)] # 1,2,3,etc.
-                # autosomes: [x for x in range(1,23)]
-                # sex_chr: X
-                # system: XY
-                # signif: 0.95
-                # thresholds:  list( "XX" = c(0.8, 1), "XY" = c(0, 0.6), "consistent with XX but not XY" = c(0.6, 1), "consistent with XY but not XX" = c(0, 0.8) )
+                autosomes: '[x for x in range(1,23)]'
+                sex_chr: 3
+                system: XY
+                signif: 0.9
+                thresholds:  list( "XX" = c(0.8, 1), "XY" = c(0, 0.6), "consistent with XX but not XY" = c(0.6, 1), "consistent with XY but not XX" = c(0, 0.8) )
     GRCh38: 
         fasta: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/GCA_000001405.15_GRCh38.p13_onlyChrom/GCA_000001405.15_GRCh38.fa
         # If you want the DoC to be reported for some chromosomes in the main stats table, list them below.
@@ -57,7 +57,7 @@ genome:
                     # '[f"chr{x}" for x in range(1,23)]' # chr1,chr2,chr3,etc.
                     # [x for x in range(1,23)] # 1,2,3,etc.
                 autosomes: '[f"chr{x}" for x in range(1,23)]'
-                sex_chr: chrX
+                sex_chr: chrY
                 # system: XY
                 # signif: 0.95
                 # thresholds:  list( "XX" = c(0.8, 1), "XY" = c(0, 0.6), "consistent with XX but not XY" = c(0.6, 1), "consistent with XY but not XX" = c(0, 0.8) )
@@ -104,6 +104,7 @@ adapterremoval:
 mapping:
     bwa_aln_params: '-l 1024'   
     bwa_samse_params: '-n 3'
+    bwa_sampe_params: ''
     bwa_mem_params: ''
     bowtie2_params: ''
     threads: 4
@@ -186,13 +187,6 @@ compute_md:
 ##########################################################################################
 ## stats on the final bam file
 stats:
-    # sample:
-    #     depth: True
-        # If you want the DoC to be reported for some chromosomes in the main table, list them below. 
-        # depth_chromosomes: "femaleChr, maleChr, mtChr"
-    # library:
-    #     depth: True
-    #     depth_chromosomes: "femaleChr, maleChr, mtChr"
 
 ## mds
     run_bammds: False
@@ -207,10 +201,10 @@ stats:
         # if n_samples > n_genomes, we recommend to set this option to "sample"
         # if n_genomes > n_samples, we recommend to set this option to "genome"
         # default: sample
-        x_axis: sample
-        split_plot: F # possible values: FALSE, F, TRUE, T
+        x_axis: genome
+        split_plot: T # possible values: FALSE, F, TRUE, T
         # set maximum number of bars (columns) on the x-axis across n_row rowa. 
         # We recommend
         # a large n_col (around 20) and/or a small n_row (1 to 3)
-        # n_col: 15
-        # n_row: 1
+        n_col: 11
+        n_row: 3

@@ -24,31 +24,15 @@ def get_param2(key1, key2, default):
 def get_param3(key1, key2, key3, default):
     return config.get(key1, {}).get(key2, {}).get(key3, default)
 
-
-def get_param4(key1, key2, key3, key4, default):
-    return config.get(key1, {}).get(key2, {}).get(key3, {}).get(key4, default)
-
-
-def get_param5(key1, key2, key3, key4, key5, default):
-    return (
-        config.get(key1, {})
-        .get(key2, {})
-        .get(key3, {})
-        .get(key4, {})
-        .get(key5, default)
-    )
-
-
-def get_param6(key1, key2, key3, key4, key5, key6, default):
-    return (
-        config.get(key1, {})
-        .get(key2, {})
-        .get(key3, {})
-        .get(key4, {})
-        .get(key5, {})
-        .get(key6, default)
-    )
-
+def recursive_get(dict, keys_values):
+    key = keys_values[0][0]
+    def_value = keys_values[0][1]
+    if len(keys_values) == 1:
+        value = dict.get(key, def_value)
+    else:
+        value = recursive_get(dict.get(key, def_value), keys_values[1:])
+    return value
+    
 
 ## setter for config file
 def set_param1(key, value):
@@ -349,7 +333,8 @@ def get_fastq_of_ID(wildcards):
         filename = samples[wildcards.SM][wildcards.LB][wildcards.ID[:-3]]["Data1"]
     elif "_R2" == wildcards.ID[-3:]:
         filename = samples[wildcards.SM][wildcards.LB][wildcards.ID[:-3]]["Data2"]
-    elif paired_end != 0:  ## SE library in a paired-end sample file
+    elif paired_end:
+    #elif paired_end != 0:  ## SE library in a paired-end sample file
         filename = samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data1"]
     else:
         filename = samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data"]
@@ -359,7 +344,8 @@ def get_fastq_of_ID(wildcards):
 def get_fastq_for_mapping(wildcards):
     if run_adapter_removal:
         if (
-            paired_end == 1
+            # paired_end == 1
+            collapse
             and str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) != "nan"
         ):
             folder = f"results/01_fastq/01_trimmed/01_files_trim_collapsed/{wildcards.SM}/{wildcards.LB}"
@@ -370,7 +356,8 @@ def get_fastq_for_mapping(wildcards):
             f"results/01_fastq/00_reads/01_files_orig/{wildcards.SM}/{wildcards.LB}"
         )
 
-    if paired_end == 2:
+    if not collapse:
+    #if paired_end == 2:
         filename = [
             f"{folder}/{wildcards.ID}_R1.fastq.gz",
             f"{folder}/{wildcards.ID}_R2.fastq.gz",
@@ -392,7 +379,8 @@ def get_fastq_for_mapping_pe(wildcards):
 def get_bam_for_sorting(wildcards):
     if mapper == "bwa_aln":
         if (
-            paired_end == 2
+            # paired_end == 2
+            not collapse
             and str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) != "nan"
         ):
             folder = "02_bwa_sampe"
