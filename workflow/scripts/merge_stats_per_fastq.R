@@ -1,4 +1,4 @@
-        #require(plyr)
+#require(plyr)
 # IMPORTANT!!!
 #
 # If you modify this script, you need to make sure that the following
@@ -100,7 +100,7 @@ mapped_raw = as.numeric(strsplit(readLines(path_flagstat_mapped_highQ)[1], " ")[
 #-----------------------------------------------------------------------------#
 ## original fastqc
 #options(readr.show_col_types = FALSE)
-source("workflow/scripts/parse_fastqc.r")
+source("workflow/scripts/parse_fastqc.R")
 length_dist_raw <- parse_fastqc(file_name = path_fastqc_orig, df_name = "Sequence Length Distribution") 
 length_dist_raw <- adjust_lengths(length_dist_raw)
 reads_raw <- sum(length_dist_raw$Count)
