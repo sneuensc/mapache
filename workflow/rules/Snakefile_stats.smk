@@ -125,6 +125,8 @@ rule samtools_index:
         "{file}.bam",
     output:
         "{file}.bam.bai",
+    log:
+    	"{file}.bam.bai.log"
     conda:
         "../envs/samtools.yaml"
     envmodules:
@@ -479,6 +481,7 @@ rule bamdamage:
         prefix="results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}/{id_library}.{id_genome}",
         bamdamage_params=get_param1("bamdamage_params", ""),
         fraction=get_param1("bamdamage_fraction", 0),
+    log:
     conda:
         "../envs/bamdamage.yaml"
     envmodules:
@@ -526,6 +529,8 @@ rule plot_bamdamage:
         ),
     message:
         "--- PLOT DAMAGE"
+    log:
+        "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}.{id_genome}_plot.log",
     conda:
         "../envs/r.yaml"
     envmodules:
