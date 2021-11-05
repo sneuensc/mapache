@@ -24,7 +24,15 @@ def get_param2(key1, key2, default):
 def get_param3(key1, key2, key3, default):
     return config.get(key1, {}).get(key2, {}).get(key3, default)
 
-
+def recursive_get(dict, keys_values):
+    key = keys_values[0][0]
+    def_value = keys_values[0][1]
+    if len(keys_values) == 1:
+        value = dict.get(key, def_value)
+    else:
+        value = recursive_get(dict.get(key, def_value), keys_values[1:])
+    return value
+    
 ## setter for config file
 def set_param1(key, value):
     config[key] = value
