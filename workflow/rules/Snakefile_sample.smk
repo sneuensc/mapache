@@ -110,7 +110,7 @@ rule realign:
         runtime=lambda wildcards, attempt: get_runtime_alloc("realign", attempt, 24),
     threads: get_threads("realign", 4)
     params:
-        GATK=get_param2("software", "gatk3_jar", "GenomeAnalysisTK.jar"),
+        GATK=recursive_get(config, [ ["software", {}], ["gatk3_jar", "GenomeAnalysisTK.jar"] ]),
     log:
         "{folder}/01_realigned/01_realign/{SM}.{GENOME}.log",
     conda:

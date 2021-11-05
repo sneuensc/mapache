@@ -10,14 +10,14 @@ rule genome_index_bwa:
     """
     input:
         fasta="{folder}/{GENOME}.fasta",
-        orig=lambda wildcards: get_param3("genome", wildcards.GENOME, "fasta", ""),
+        orig=lambda wildcards: recursive_get(config, [ ["genome", {}], [wildcards.GENOME, {}], ["fasta", ""]]),
     output:
         multiext("{folder}/{GENOME}.fasta", ".sa", ".amb", ".ann", ".bwt", ".pac"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
     params:
-        get_param2("indexing", "bwa_params", ""),
+        recursive_get(config, [ ["indexing", {}], ["bwa_params", ""]]),
     log:
         "{folder}/bwa_index_{GENOME}.log",
     threads: 1
@@ -37,7 +37,7 @@ rule genome_index_bowtie2:
     """
     input:
         fasta="{folder}/{GENOME}.fasta",
-        orig=lambda wildcards: get_param3("genome", wildcards.GENOME, "fasta", ""),
+        orig=lambda wildcards: recursive_get(config, [ ["genome", {}], [wildcards.GENOME, {}], ["fasta", ""]]),
     output:
         multiext(
             "{folder}/{GENOME}.fasta",
@@ -52,7 +52,7 @@ rule genome_index_bowtie2:
         memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
     params:
-        get_param2("indexing", "bowtie2_params", ""),
+        recursive_get(config, [ ["indexing", {}], ["bowtie2_params", ""]]),
     log:
         "{folder}/bowtie2_build_{GENOME}.log",
     threads: 1
@@ -72,14 +72,14 @@ rule samtools_index_fasta:
     """
     input:
         fasta="{folder}/{GENOME}.fasta",
-        orig=lambda wildcards: get_param3("genome", wildcards.GENOME, "fasta", ""),
+        orig=lambda wildcards: recursive_get(config, [ ["genome", {}], [wildcards.GENOME,{}], ["fasta", ""] ]),
     output:
         "{folder}/{GENOME}.fasta.fai",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
     params:
-        get_param2("indexing", "samtools_params", ""),
+        recursive_get(config, [ ["indexing", {}], ["samtools_params", ""]]),
     log:
         "{folder}/samtools_fasta_{GENOME}.log",
     threads: 1
@@ -99,7 +99,7 @@ rule genome_index_picard:
     """
     input:
         fasta="{folder}/{GENOME}.fasta",
-        orig=lambda wildcards: get_param3("genome", wildcards.GENOME, "fasta", ""),
+        orig=lambda wildcards: recursive_get(config, [ ["genome", {}], [wildcards.GENOME, {}], ["fasta", ""] ]),
     output:
         "{folder}/{GENOME}.dict",
     resources:
