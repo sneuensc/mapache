@@ -12,18 +12,6 @@ import pathlib
 ##########################################################################################
 ## all functions for main snakemake file
 
-## getter for config file
-def get_param1(key, default):
-    return config.get(key, default)
-
-
-def get_param2(key1, key2, default):
-    return config.get(key1, {}).get(key2, default)
-
-
-def get_param3(key1, key2, key3, default):
-    return config.get(key1, {}).get(key2, {}).get(key3, default)
-
 def recursive_get(dict, keys_values):
     key = keys_values[0][0]
     def_value = keys_values[0][1]
@@ -146,7 +134,7 @@ def check_chromosome_names(GENOME):
     # """)
 
     ## get all chromsome names from the reference GENOME
-    fasta = get_param3("genome", GENOME, "fasta", "")
+    fasta = recursive_get(config, [ ["genome", {}], [GENOME, {}], ["fasta", ""] ])
     if pathlib.Path(f"{fasta}.fai").exists():
         allChr = list(
             map(str, pd.read_csv(f"{fasta}.fai", header=None, sep="\t")[0].tolist())
@@ -164,7 +152,7 @@ def check_chromosome_names(GENOME):
         os._exit(1)
 
     # check if chromosomes for which DoC was requested exist
-    depth_chromosomes = get_param3("genome", GENOME, "depth_chromosomes", "")
+    depth_chromosomes = recursive_get(config, [ ["genome", {}], [GENOME, {}], ["depth_chromosomes", ""] ])
     if len(depth_chromosomes):
         chromosomes = depth_chromosomes.split(",")
 
@@ -187,13 +175,18 @@ def check_chromosome_names(GENOME):
 
     # check if the chromosomes specified in sex determination exist
     # sex chromosome
-    if get_param4("genome", GENOME, "sex_inference", "run", False):
+    if recursive_get(config, [ ["genome", {}], [GENOME, {}], ["sex_inference", {}], ["run", False] ]):
 
         print(
             f"    Checking if chromosomes specified in config file for sex inference exist in genome {GENOME}."
         )
-        sex_chr = get_param5(
-            "genome", GENOME, "sex_inference", "params", "sex_chr", "X"
+        sex_chr = recursive_get(config, [ 
+            ["genome", {}],
+            [GENOME, {}],
+            ["sex_inference", {}],
+            ["params", {}],
+            ["sex_chr", "X"]
+        ]
         )
 
         if sex_chr not in allChr:
@@ -212,13 +205,13 @@ def check_chromosome_names(GENOME):
             map(
                 str,
                 eval_to_list(
-                    get_param5(
-                        "genome",
-                        GENOME,
-                        "sex_inference",
-                        "params",
-                        "autosomes",
-                        [i for i in range(1, 23)],
+                    recursive_get(config, [ 
+                        ["genome", {}],
+                        [GENOME, {}],
+                        ["sex_inference", {}],
+                        ["params", {}],
+                        ["autosomes", [i for i in range(1, 23)] ]
+                    ]
                     )
                 ),
             )
@@ -261,9 +254,9 @@ def str2bool(v):
 ## input is in GB; output is in MB;
 ## global variable memory_increment_ratio defines by how much (ratio) the memory is increased if not defined specifically
 def get_memory_alloc(module, attempt, default=2):
-    mem_start = int(get_param2(module, "mem", default))
+    mem_start = int(recursive_get(config, [ [module, {}], ["mem", default] ]))
     mem_incre = int(
-        get_param2(module, "mem_increment", memory_increment_ratio * mem_start)
+        recursive_get(config, [ [module,{}], ["mem_increment", memory_increment_ratio * mem_start] ])
     )
     return int(1024 * ((attempt - 1) * mem_incre + mem_start))
 
@@ -283,9 +276,9 @@ def convert_time(seconds):
 ## input is in hours; output is in minutes;
 ## global variable runtime_increment_ratio defines by how much (ratio) the time is increased if not defined specifically
 def get_runtime_alloc(module, attempt, default=12):
-    time_start = int(get_param2(module, "time", default))
+    time_start = int(recursive_get(config, [ [module, {}], ["time", default] ]))
     time_incre = int(
-        get_param2(module, "time_increment", runtime_increment_ratio * time_start)
+        recursive_get(config, [ [module, {}], ["time_increment", runtime_increment_ratio * time_start] ])
     )
     return int(60 * ((attempt - 1) * time_incre + time_start))
 

@@ -20,9 +20,9 @@ rule get_fastq:
         "{folder}/00_reads/01_files_orig/{SM}/{LB}/{ID}.fastq.gz",
     threads: 1
     params:
-        run=get_param2("subsampling", "run", "F"),
-        number=get_param2("subsampling", "number", "1"),
-        params=get_param2("subsampling", "params", "-s1"),
+        run=recursive_get(config, [ ["subsampling", {}], ["run", "F"] ]),
+        number=recursive_get(config, [ ["subsampling", {}], ["number", "1"] ]),
+        params=recursive_get(config, [ ["subsampling", {}], ["params", "-s1"] ]),
     conda:
         "../envs/seqtk.yaml"
     envmodules:
@@ -41,7 +41,7 @@ rule get_fasta:
     Symlink and rename the reference (.fasta/.fa) to a new folder.
     """
     input:
-        lambda wildcards: get_param3("genome", wildcards.GENOME, "fasta", ""),
+        lambda wildcards: recursive_get(config, [ ["genome",{}], [wildcards.GENOME, {}], ["fasta", ""] ]),
     output:
         "results/00_reference/{GENOME}/{GENOME}.fasta",
     threads: 1
@@ -76,8 +76,9 @@ rule adapter_removal_se:
             "adapterremoval", attempt, 24
         ),
     params:
-        get_param2(
-            "adapterremoval", "params", "--minlength 30 --trimns --trimqualities"
+        recursive_get(config, [ 
+            ["adapterremoval", {}], ["params",  "--minlength 30 --trimns --trimqualities"]
+        ]
         ),
     log:
         "{folder}/01_trimmed/01_files_trim/{SM}/{LB}/{ID}.log",
@@ -116,8 +117,10 @@ rule adapter_removal_pe:
             "adapterremoval", attempt, 24
         ),
     params:
-        get_param2(
-            "adapterremoval", "params", "--minlength 30 --trimns --trimqualities"
+        recursive_get(config, [ 
+            ["adapterremoval", {}],
+            ["params", "--minlength 30 --trimns --trimqualities"]
+        ]
         ),
     log:
         "{folder}/01_trimmed/01_files_trim/{SM}/{LB}/{ID}.log",
@@ -158,8 +161,9 @@ rule adapter_removal_collapse:
             "adapterremoval", attempt, 24
         ),
     params:
-        get_param2(
-            "adapterremoval", "params", "--minlength 30 --trimns --trimqualities"
+        recursive_get(config, [ 
+            ["adapterremoval", {}], ["params", "--minlength 30 --trimns --trimqualities"]
+            ]
         ),
     log:
         "{folder}/01_trimmed/01_files_trim_collapsed/{SM}/{LB}/{ID}.log",
@@ -207,7 +211,7 @@ rule mapping_bwa_aln_se:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
-        get_param2("mapping", "bwa_aln_params", "-l 1024"),
+        recursive_get(config, [ ["mapping", {}], ["bwa_aln_params", "-l 1024"] ]),
     log:
         "{folder}/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}.log",
     threads: get_threads("mapping", 4)
@@ -244,7 +248,7 @@ rule mapping_bwa_aln_pe:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
-        get_param2("mapping", "bwa_aln_params", "-l 1024"),
+        recursive_get(config, [ ["mapping", {}], ["bwa_aln_params", "-l 1024"] ]),
     log:
         "{folder}/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}_R{id_read}.log",
     threads: get_threads("mapping", 4)
@@ -283,7 +287,7 @@ rule mapping_bwa_samse:
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
         PL=lambda wildcards: samples[wildcards.SM][wildcards.LB][wildcards.ID]["PL"],
-        bwa_samse_params=get_param2("mapping", "bwa_samse_params", "-n 3"),
+        bwa_samse_params=recursive_get(config, [ ["mapping", {}], ["bwa_samse_params", "-n 3"] ]),
     log:
         "{folder}/02_mapped/02_bwa_samse/{SM}/{LB}/{ID}.{GENOME}.log",
     threads: 1
@@ -326,7 +330,7 @@ rule mapping_bwa_sampe:
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
         PL=lambda wildcards: samples[wildcards.SM][wildcards.LB][wildcards.ID]["PL"],
-        bwa_samse_params=get_param2("mapping", "bwa_samse_params", "-n 3"),
+        bwa_samse_params=recursive_get(config, [ ["mapping", {}], ["bwa_samse_params", "-n 3"] ]),
     log:
         "{folder}/02_mapped/02_bwa_sampe/{SM}/{LB}/{ID}.{GENOME}.log",
     threads: 1
@@ -368,7 +372,7 @@ rule mapping_bwa_mem:
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
         PL=lambda wildcards: samples[wildcards.SM][wildcards.LB][wildcards.ID]["PL"],
-        bwa_mem_params=get_param2("mapping", "bwa_mem_params", ""),
+        bwa_mem_params=recursive_get(config, [ ["mapping", {}], ["bwa_mem_params", ""] ]),
     log:
         "{folder}/02_mapped/02_bwa_mem/{SM}/{LB}/{ID}.{GENOME}.log",
     threads: get_threads("mapping", 4)
@@ -408,7 +412,7 @@ rule mapping_bowtie2:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
-        bowtie2_params=get_param2("mapping", "bowtie2_params", ""),
+        bowtie2_params=recursive_get(config, [ ["mapping", {}], ["bowtie2_params", ""] ]),
     log:
         "{folder}/02_mapped/02_bwa_bowtie2/{SM}/{LB}/{ID}.{GENOME}.log",
     threads: get_threads("mapping", 4)
