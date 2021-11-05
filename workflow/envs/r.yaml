@@ -5,6 +5,6 @@ dependencies:
   - R = 4.0
   - r-ggplot2
   - r-rcolorbrewer
-  - r-reshape
+  - r-reshape2
   - r-svglite
   
