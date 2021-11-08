@@ -13,13 +13,13 @@ It is possible to run the pipeline with a config/config.yaml file containing onl
 
 
 # Sample file
-Specifies the location of the sample file. By default, it is `config/samples.txt`
+Specify the location of the samples in the sample file, `config/samples.txt`, by default.
 
 ```
 sample_file: config/samples.txt
 ```
 
-The sample file lists is a table listing the relationship between `fastq files`, `libraries` and `samples`. The order of the columns is free, but the column names have to be exact. **ID, LB and SM names should not contain points ('.')**:
+The sample file is a table listing the relationship between `fastq files`, `libraries` and `samples`. The order of the columns is free, but the column names have to be exact. **ID, LB and SM names should not contain points ('.')**:
 
 sample file for single-end libraries:
 ```
