@@ -189,6 +189,8 @@ def check_chromosome_names(GENOME):
 
     # check if chromosomes for which DoC was requested exist
     depth_chromosomes = recursive_get(config, [ ["genome", {}], [GENOME, {}], ["depth_chromosomes", ""] ])
+    #depth_chromosomes = recursive_get(["genome", GENOME, "depth_chromosomes"], "")
+
     if len(depth_chromosomes):
         chromosomes = depth_chromosomes.split(",")
 
@@ -370,38 +372,36 @@ def get_fastq_of_ID(wildcards):
 
 
 def get_fastq_for_mapping(wildcards):
-    if run_adapter_removal:
-        if (
-            # paired_end == 1
-            collapse
-            and str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) != "nan"
-        ):
+    if run_adapter_removal: 
+        if collapse:
             folder = f"results/01_fastq/01_trimmed/01_files_trim_collapsed/{wildcards.SM}/{wildcards.LB}"
+            filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
         else:
+            # single-end mode and paired-end without collapsing
             folder = f"results/01_fastq/01_trimmed/01_files_trim/{wildcards.SM}/{wildcards.LB}"
+            if str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) == "nan":
+                # single-end files
+                filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
+            else:
+                # paired-end files, not collapsing
+                filename = [
+                        f"{folder}/{wildcards.ID}_R1.fastq.gz",
+                        f"{folder}/{wildcards.ID}_R2.fastq.gz",
+                    ]
     else:
         folder = (
             f"results/01_fastq/00_reads/01_files_orig/{wildcards.SM}/{wildcards.LB}"
         )
+        if str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) == "nan":
+            #checking a single-end file
+            filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
+        else:
+                filename = [
+                f"{folder}/{wildcards.ID}_R1.fastq.gz",
+                f"{folder}/{wildcards.ID}_R2.fastq.gz",
+            ]    
 
-    if not collapse:
-    #if paired_end == 2:
-        filename = [
-            f"{folder}/{wildcards.ID}_R1.fastq.gz",
-            f"{folder}/{wildcards.ID}_R2.fastq.gz",
-        ]
-    else:
-        filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
     return filename
-
-
-def get_fastq_for_mapping_pe(wildcards):
-    if run_adapter_removal:
-        folder = f"results/01_fastq/01_trimmed/01_files_trim"
-    else:
-        folder = f"results/01_fastq/00_reads/01_files_orig"
-
-    return f"{folder}/{wildcards.SM}/{wildcards.LB}/{wildcards.ID}_R{wildcards.id_read}.fastq.gz"
 
 
 def get_bam_for_sorting(wildcards):

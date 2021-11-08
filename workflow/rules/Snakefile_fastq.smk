@@ -57,19 +57,31 @@ rule get_fasta:
 
 ##########################################################################################
 ## trimming
-ruleorder: adapter_removal_pe > adapter_removal_se
+if collapse:
+    ruleorder: adapter_removal_collapse > adapter_removal_pe > adapter_removal_se
+else:
+    ruleorder:  adapter_removal_pe > adapter_removal_collapse  > adapter_removal_se
+
+#ruleorder:  adapter_removal_collapse > adapter_removal_pe > adapter_removal_se
 
 
-rule adapter_removal_se:
+
+rule adapter_removal_collapse:
     """
-    Remove adapter and low quality bases at the edges
+    Remove adapter and low quality bases at the edges and collapse paired-end reads
     """
     input:
-        "{folder}/00_reads/01_files_orig/{SM}/{LB}/{ID}.fastq.gz",
+        R1="results/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_R1.fastq.gz",
+        R2="results/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_R2.fastq.gz",
     output:
-        fastq="{folder}/01_trimmed/01_files_trim/{SM}/{LB}/{ID}.fastq.gz",
-        discard="{folder}/01_trimmed/01_files_trim/{SM}/{LB}/{ID}.discarded.gz",
-        setting="{folder}/01_trimmed/01_files_trim/{SM}/{LB}/{ID}.settings",
+        R="results/{folder}/01_files_trim_collapsed/{SM}/{LB}/{ID}.fastq.gz",
+        trunc="results/{folder}/01_files_trim_collapsed/{SM}/{LB}/{ID}_truncated.fastq.gz",
+        R1="results/{folder}/01_files_trim_collapsed/{SM}/{LB}/{ID}_R1.fastq.gz",
+        R2="results/{folder}/01_files_trim_collapsed/{SM}/{LB}/{ID}_R2.fastq.gz",
+        strunc="results/{folder}/01_files_trim_collapsed/{SM}/{LB}/{ID}.singleton.truncated.gz",
+        disc="results/{folder}/01_files_trim_collapsed/{SM}/{LB}/{ID}.discarded.gz",
+        settings="results/{folder}/01_files_trim_collapsed/{SM}/{LB}/{ID}.settings",
+        settings_stats="results/04_stats/01_sparse_stats/{folder}/01_files_trim/{SM}/{LB}/{ID}.settings",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("adapterremoval", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc(
@@ -77,24 +89,28 @@ rule adapter_removal_se:
         ),
     params:
         recursive_get(config, [ 
-            ["adapterremoval", {}], ["params",  "--minlength 30 --trimns --trimqualities"]
-        ]
+            ["adapterremoval", {}], ["params", "--minlength 30 --trimns --trimqualities"]
+            ]
         ),
     log:
-        "{folder}/01_trimmed/01_files_trim/{SM}/{LB}/{ID}.log",
+        "results/{folder}/01_files_trim_collapsed/{SM}/{LB}/{ID}.log",
     threads: get_threads("adapterremoval", 4)
     conda:
         "../envs/adapterremoval.yaml"
     envmodules:
         module_adapterremoval,
     message:
-        "--- ADAPTERREMOVAL  {input}"
+        "--- ADAPTERREMOVAL PAIRED-END COLLAPSED {input.R1} {input.R2}"
     shell:
         """
-        out={output.fastq};
-        AdapterRemoval --threads {threads} {params} --file1 {input} \
-                --basename ${{out%%.fastq.gz}} --gzip \
-                --output1 {output.fastq} 2> {log};
+        out={output.R};
+        AdapterRemoval --threads {threads} {params} --file1 {input.R1} \
+                --file2 {input.R2} --basename ${{out%%.fastq.gz}} --gzip \
+                --output1 {output.R1} --output2 {output.R2} \
+                --outputcollapsed {output.R} \
+                --outputcollapsedtruncated {output.trunc} 2> {log};
+        
+        ln -s {output.settings} {output.settings_stats}
         """
 
 
@@ -103,14 +119,15 @@ rule adapter_removal_pe:
     Remove adapter and low quality bases at the edges
     """
     input:
-        R1="{folder}/00_reads/01_files_orig/{SM}/{LB}/{ID}_R1.fastq.gz",
-        R2="{folder}/00_reads/01_files_orig/{SM}/{LB}/{ID}_R2.fastq.gz",
+        R1="results/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_R1.fastq.gz",
+        R2="results/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_R2.fastq.gz",
     output:
-        R1="{folder}/01_trimmed/01_files_trim/{SM}/{LB}/{ID}_R1.fastq.gz",
-        R2="{folder}/01_trimmed/01_files_trim/{SM}/{LB}/{ID}_R2.fastq.gz",
-        singleton="{folder}/01_trimmed/01_files_trim/{SM}/{LB}/{ID}.singleton.truncated.gz",
-        discarded="{folder}/01_trimmed/01_files_trim/{SM}/{LB}/{ID}.discarded.gz",
-        settings="{folder}/01_trimmed/01_files_trim/{SM}/{LB}/{ID}.settings",
+        R1="results/{folder}/{SM}/{LB}/{ID}_R1.fastq.gz",
+        R2="results/{folder}/{SM}/{LB}/{ID}_R2.fastq.gz",
+        singleton="results/{folder}/{SM}/{LB}/{ID}.singleton.truncated.gz",
+        discarded="results/{folder}/{SM}/{LB}/{ID}.discarded.gz",
+        settings="results/{folder}/{SM}/{LB}/{ID}.settings",
+        settings_stats="results/04_stats/01_sparse_stats/{folder}/{SM}/{LB}/{ID}.settings",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("adapterremoval", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc(
@@ -123,38 +140,37 @@ rule adapter_removal_pe:
         ]
         ),
     log:
-        "{folder}/01_trimmed/01_files_trim/{SM}/{LB}/{ID}.log",
+        "results/{folder}/{SM}/{LB}/{ID}.log",
     threads: get_threads("adapterremoval", 4)
     conda:
         "../envs/adapterremoval.yaml"
     envmodules:
         module_adapterremoval,
     message:
-        "--- ADAPTERREMOVAL {input.R1} {input.R2}"
+        "--- ADAPTERREMOVAL PAIRED-END {input.R1} {input.R2}"
     shell:
         """
         out={output.R1};
         AdapterRemoval --threads {threads} {params} --file1 {input.R1} \
                 --file2 {input.R2} --basename ${{out%%_R1.fastq.gz}} --gzip \
                 --output1 {output.R1} --output2 {output.R2} 2> {log};
+
+        ln -s {output.settings} {output.settings_stats}
         """
 
 
-rule adapter_removal_collapse:
+
+rule adapter_removal_se:
     """
-    Remove adapter and low quality bases at the edges and collapse paired-end reads
+    Remove adapter and low quality bases at the edges
     """
     input:
-        R1="{folder}/00_reads/01_files_orig/{SM}/{LB}/{ID}_R1.fastq.gz",
-        R2="{folder}/00_reads/01_files_orig/{SM}/{LB}/{ID}_R2.fastq.gz",
+        "results/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}.fastq.gz",
     output:
-        R="{folder}/01_trimmed/01_files_trim_collapsed/{SM}/{LB}/{ID}.fastq.gz",
-        trunc="{folder}/01_trimmed/01_files_trim_collapsed/{SM}/{LB}/{ID}_truncated.fastq.gz",
-        R1="{folder}/01_trimmed/01_files_trim_collapsed/{SM}/{LB}/{ID}_R1.fastq.gz",
-        R2="{folder}/01_trimmed/01_files_trim_collapsed/{SM}/{LB}/{ID}_R2.fastq.gz",
-        strunc="{folder}/01_trimmed/01_files_trim_collapsed/{SM}/{LB}/{ID}.singleton.truncated.gz",
-        disc="{folder}/01_trimmed/01_files_trim_collapsed/{SM}/{LB}/{ID}.discarded.gz",
-        settingd="{folder}/01_trimmed/01_files_trim_collapsed/{SM}/{LB}/{ID}.settings",
+        fastq="results/{folder}/{SM}/{LB}/{ID}.fastq.gz",
+        discard="results/{folder}/{SM}/{LB}/{ID}.discarded.gz",
+        settings="results/{folder}/{SM}/{LB}/{ID}.settings",
+        settings_stats="results/04_stats/01_sparse_stats/{folder}/{SM}/{LB}/{ID}.settings",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("adapterremoval", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc(
@@ -162,27 +178,31 @@ rule adapter_removal_collapse:
         ),
     params:
         recursive_get(config, [ 
-            ["adapterremoval", {}], ["params", "--minlength 30 --trimns --trimqualities"]
-            ]
+            ["adapterremoval", {}], ["params",  "--minlength 30 --trimns --trimqualities"]
+        ]
         ),
     log:
-        "{folder}/01_trimmed/01_files_trim_collapsed/{SM}/{LB}/{ID}.log",
+        "results/{folder}/{SM}/{LB}/{ID}.log",
     threads: get_threads("adapterremoval", 4)
     conda:
         "../envs/adapterremoval.yaml"
     envmodules:
         module_adapterremoval,
     message:
-        "--- ADAPTERREMOVAL {input.R1} {input.R2}"
+        "--- ADAPTERREMOVAL SINGLE-END {input}"
     shell:
         """
-        out={output.R};
-        AdapterRemoval --threads {threads} {params} --file1 {input.R1} \
-                --file2 {input.R2} --basename ${{out%%.fastq.gz}} --gzip \
-                --output1 {output.R1} --output2 {output.R2} \
-                --outputcollapsed {output.R} \
-                --outputcollapsedtruncated {output.trunc} 2> {log};
+        out={output.fastq};
+        AdapterRemoval --threads {threads} {params} --file1 {input} \
+                --basename ${{out%%.fastq.gz}} --gzip \
+                --output1 {output.fastq} 2> {log};
+
+        ln -s {output.settings} {output.settings_stats}
         """
+
+
+
+
 
 
 ##########################################################################################
