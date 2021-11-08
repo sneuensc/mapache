@@ -166,24 +166,19 @@ rule assign_sex:
         sex="results/04_stats/01_sparse_stats/{file}.{GENOME}.sex",
     params:
         run_sex=str2bool(
-            lambda wildcards: recursive_get(config, [ 
-                ["genome", {}],
-                [wildcards.GENOME, {}],
-                ["sex_inference", {}],
-                ["run", False]
-            ]
+            lambda wildcards: recursive_get(
+                ["genome", wildcards.GENOME, "sex_inference", "run"], 
+                False
             )
         ),
         #sex_params=get_sex_params,
         sex_params=lambda wildcards: " ".join(
             [
                 f"--{key}='{value}'"
-                for key, value in recursive_get(config, [ 
-                    ["genome", {}], 
-                    [wildcards.GENOME, {}],
-                    ["sex_inference", {}],
-                    ["params", {}]
-                ]
+                for key, value in recursive_get(
+                    ["genome", wildcards.GENOME, "sex_inference", "params"], 
+                    {}
+                
                 ).items()
             ]
         ),
@@ -273,11 +268,9 @@ rule merge_stats_per_lb:
     output:
         temp("results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/library_stats.csv"),
     params:
-        chrs_selected=lambda wildcards: recursive_get(config, [ 
-            ["genome", {}],
-            [wildcards.GENOME, {}], 
-            ["depth_chromosomes",  "not requested"]
-        ]
+        chrs_selected=lambda wildcards: recursive_get(
+            ["genome", wildcards.GENOME, "depth_chromosomes"],  
+            "not requested"
         ),
     log:
         "results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/library_stats.log",
@@ -326,11 +319,9 @@ rule merge_stats_per_sm:
     output:
         temp("results/04_stats/02_separate_tables/{GENOME}/{SM}/sample_stats.csv"),
     params:
-        chrs_selected=lambda wildcards: recursive_get(config, [ 
-            ["genome", {}], 
-            [wildcards.GENOME, {}], 
-            ["depth_chromosomes", "not requested"]
-        ]
+        chrs_selected=lambda wildcards: recursive_get(
+            ["genome", wildcards.GENOME, "depth_chromosomes"], 
+            "not requested"
         ),
     log:
         "results/04_stats/02_separate_tables/{GENOME}/{SM}/sample_stats.log",
@@ -514,8 +505,8 @@ rule bamdamage:
         "--- RUN BAMDAMAGE {input.bam}"
     params:
         prefix="results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}/{id_library}.{id_genome}",
-        bamdamage_params=recursive_get(config, [ ["bamdamage_params", ""] ]),
-        fraction=recursive_get(config, [ ["bamdamage_fraction", 0] ]),
+        bamdamage_params=recursive_get(["bamdamage_params"], "" ),
+        fraction=recursive_get(["bamdamage_fraction"], 0 ),
     log:
         "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}.{id_genome}_bamdamage.log",
     conda:
@@ -674,11 +665,11 @@ rule plot_summary_statistics:
     message:
         "--- PLOT SUMMARY STATISTICS"
     params:
-        samples=recursive_get(config, [ ["sample_file", ""] ]),
-        x_axis=recursive_get(config, [ ["stats",{}], ["plots",{}], ["x_axis", "sample"] ]),
-        split_plot=recursive_get(config, [ ["stats", {}], ["plots", {}], ["split_plot", "F"] ]),
-        n_col=recursive_get(config, [ ["stats", {}], ["plots", {}], ["n_col", 1] ]),
-        n_row=recursive_get(config, [ ["stats", {}], ["plots", {}], ["n_row", 1] ]),
+        samples=recursive_get(["sample_file"], "" ),
+        x_axis=recursive_get(["stats", "plots", "x_axis"], "sample" ),
+        split_plot=recursive_get(["stats",  "plots",  "split_plot"], "F" ),
+        n_col=recursive_get(["stats",  "plots",  "n_col"], 1 ),
+        n_row=recursive_get(["stats",  "plots",  "n_row"], 1 ),
     shell:
         """
         Rscript workflow/scripts/plot_stats.R \
