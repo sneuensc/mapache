@@ -110,7 +110,7 @@ rule adapter_removal_collapse:
                 --outputcollapsed {output.R} \
                 --outputcollapsedtruncated {output.trunc} 2> {log};
         
-        ln -s {output.settings} {output.settings_stats}
+        ln -srf {output.settings} {output.settings_stats}
         """
 
 
@@ -155,7 +155,7 @@ rule adapter_removal_pe:
                 --file2 {input.R2} --basename ${{out%%_R1.fastq.gz}} --gzip \
                 --output1 {output.R1} --output2 {output.R2} 2> {log};
 
-        ln -s {output.settings} {output.settings_stats}
+        ln -srf {output.settings} {output.settings_stats}
         """
 
 
@@ -197,7 +197,7 @@ rule adapter_removal_se:
                 --basename ${{out%%.fastq.gz}} --gzip \
                 --output1 {output.fastq} 2> {log};
 
-        ln -s {output.settings} {output.settings_stats}
+        ln -srf {output.settings} {output.settings_stats}
         """
 
 
@@ -224,7 +224,7 @@ rule mapping_bwa_aln_se:
             ".pac",
         ),
         ref="results/00_reference/{GENOME}/{GENOME}.fasta",
-        fastq=get_fastq_for_mapping,
+        fastq=lambda wildcards: get_fastq_for_mapping(wildcards, run_adapter_removal=run_adapter_removal),
     output:
         "{folder}/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}.sai",
     resources:
@@ -261,7 +261,7 @@ rule mapping_bwa_aln_pe:
             ".pac",
         ),
         ref="results/00_reference/{GENOME}/{GENOME}.fasta",
-        fastq=get_fastq_for_mapping_pe,
+        fastq=lambda wildcards: get_fastq_for_mapping(wildcards, run_adapter_removal=run_adapter_removal),
     output:
         "{folder}/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}_R{id_read}.sai",
     resources:
@@ -298,7 +298,7 @@ rule mapping_bwa_samse:
             ".pac",
         ),
         ref="results/00_reference/{GENOME}/{GENOME}.fasta",
-        fastq=get_fastq_for_mapping,
+        fastq=lambda wildcards: get_fastq_for_mapping(wildcards, run_adapter_removal=run_adapter_removal),
         sai="{folder}/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}.sai",
     output:
         "{folder}/02_mapped/02_bwa_samse/{SM}/{LB}/{ID}.{GENOME}.bam",
@@ -340,7 +340,7 @@ rule mapping_bwa_sampe:
             ".pac",
         ),
         ref="results/00_reference/{GENOME}/{GENOME}.fasta",
-        fastq=get_fastq_for_mapping,  ## should get both pairs
+        fastq=lambda wildcards: get_fastq_for_mapping(wildcards, run_adapter_removal=run_adapter_removal),  ## should get both pairs
         sai1="{folder}/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}_R1.sai",
         sai2="{folder}/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}_R2.sai",
     output:
@@ -384,7 +384,7 @@ rule mapping_bwa_mem:
             ".pac",
         ),
         ref="results/00_reference/{GENOME}/{GENOME}.fasta",
-        fastq=get_fastq_for_mapping,
+        fastq=lambda wildcards: get_fastq_for_mapping(wildcards, run_adapter_removal=run_adapter_removal),
     output:
         "{folder}/02_mapped/02_bwa_mem/{SM}/{LB}/{ID}.{GENOME}.bam",
     resources:
@@ -425,7 +425,7 @@ rule mapping_bowtie2:
             ".rev.2.bt2",
         ),
         ref="results/00_reference/{GENOME}/{GENOME}.fasta",
-        fastq=get_fastq_for_mapping,
+        fastq=lambda wildcards: get_fastq_for_mapping(wildcards, run_adapter_removal=run_adapter_removal),
     output:
         "{folder}/02_mapped/02_bwa_bowtie2/{SM}/{LB}/{ID}.{GENOME}.bam",
     resources:
