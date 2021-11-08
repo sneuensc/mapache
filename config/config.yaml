@@ -38,7 +38,7 @@ genome:
                     # '[f"chr{x}" for x in range(1,23)]' # chr1,chr2,chr3,etc.
                     # [x for x in range(1,23)] # 1,2,3,etc.
                 autosomes: '[x for x in range(1,23)]'
-                sex_chr: 3
+                sex_chr: X
                 system: XY
                 signif: 0.9
                 thresholds:  list( "XX" = c(0.8, 1), "XY" = c(0, 0.6), "consistent with XX but not XY" = c(0.6, 1), "consistent with XY but not XX" = c(0, 0.8) )

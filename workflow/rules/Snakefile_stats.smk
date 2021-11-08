@@ -20,17 +20,17 @@ localrules:
 ## get sparse stats stats
 
 
-rule fastqc:
+rule fastqc_for_mapping:
     """
     Quality control of fastq file by fastqc (SE or R1)
     """
     input:
-        get_fastq_for_mapping,
+        lambda wildcards: inputs_fastqc(wildcards, run_adapter_removal=run_adapter_removal),
     output:
-        html="results/04_stats/01_sparse_stats/01_fastq/{group1}/{group2}/{SM}/{LB}/{ID}_fastqc.html",
-        zip="results/04_stats/01_sparse_stats/01_fastq/{group1}/{group2}/{SM}/{LB}/{ID}_fastqc.zip",
+        html="results/04_stats/01_sparse_stats/01_fastq/{folder}/{SM}/{LB}/{ID}_fastqc.html",
+        zip="results/04_stats/01_sparse_stats/01_fastq/{folder}/{SM}/{LB}/{ID}_fastqc.zip",
     log:
-        "results/04_stats/01_sparse_stats/01_fastq/{group1}/{group2}/{SM}/{LB}/{ID}_fastqc.log",
+        "results/04_stats/01_sparse_stats/01_fastq/{folder}/{SM}/{LB}/{ID}_fastqc.log",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("fastqc_mem", attempt, 2),
         runtime=lambda wildcards, attempt: get_runtime_alloc("fastqc_time", attempt, 1),
@@ -166,16 +166,19 @@ rule assign_sex:
         sex="results/04_stats/01_sparse_stats/{file}.{GENOME}.sex",
     params:
         run_sex=str2bool(
-            lambda wildcards: get_param4(
-                "genome", wildcards.GENOME, "sex_inference", "run", False
+            lambda wildcards: recursive_get(
+                ["genome", wildcards.GENOME, "sex_inference", "run"], 
+                False
             )
         ),
         #sex_params=get_sex_params,
         sex_params=lambda wildcards: " ".join(
             [
                 f"--{key}='{value}'"
-                for key, value in get_param4(
-                    "genome", wildcards.GENOME, "sex_inference", "params", {}
+                for key, value in recursive_get(
+                    ["genome", wildcards.GENOME, "sex_inference", "params"], 
+                    {}
+                
                 ).items()
             ]
         ),
@@ -212,16 +215,23 @@ rule assign_sex:
 
 rule merge_stats_per_fastq:
     input:
+    # adapterremoval settings:
+    # "{folder}/01_trimmed/01_files_trim/{SM}/{LB}/{ID}.settings"
+    # "{folder}/01_trimmed/01_files_trim/{SM}/{LB}/{ID}.settings",
+    # "{folder}/01_trimmed/01_files_trim_collapsed/{SM}/{LB}/{ID}.settings"
+        settings_stats="results/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_files_trim/{SM}/{LB}/{ID}.settings",
         fastqc_orig="results/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_fastqc.zip",  # raw sequenced reads
-        fastqc_trim="results/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_files_trim/{SM}/{LB}/{ID}_fastqc.zip",  # raw trimmed reads
+        fastqc_trim="results/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_files_trim/{SM}/{LB}/{ID}_fastqc.zip" if run_adapter_removal else "Not trimmed",  # raw trimmed reads
         flagstat_mapped_highQ="results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}_flagstat.txt",  # mapped and high-qual reads
         length_fastq_mapped_highQ="results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}.length",
     output:
         temp(
-            "results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv"
+            #"results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv"
+            "{folder}/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv"
         ),
     log:
-        "results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.log",
+        #"results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.log",
+        "{folder}/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.log",
     conda:
         "../envs/r.yaml"
     envmodules:
@@ -258,8 +268,9 @@ rule merge_stats_per_lb:
     output:
         temp("results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/library_stats.csv"),
     params:
-        chrs_selected=lambda wildcards: get_param3(
-            "genome", wildcards.GENOME, "depth_chromosomes", "not requested"
+        chrs_selected=lambda wildcards: recursive_get(
+            ["genome", wildcards.GENOME, "depth_chromosomes"],  
+            "not requested"
         ),
     log:
         "results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/library_stats.log",
@@ -308,8 +319,9 @@ rule merge_stats_per_sm:
     output:
         temp("results/04_stats/02_separate_tables/{GENOME}/{SM}/sample_stats.csv"),
     params:
-        chrs_selected=lambda wildcards: get_param3(
-            "genome", wildcards.GENOME, "depth_chromosomes", "not requested"
+        chrs_selected=lambda wildcards: recursive_get(
+            ["genome", wildcards.GENOME, "depth_chromosomes"], 
+            "not requested"
         ),
     log:
         "results/04_stats/02_separate_tables/{GENOME}/{SM}/sample_stats.log",
@@ -352,9 +364,13 @@ rule merge_stats_by_level_and_genome:
     input:
         paths=path_stats_by_level,
     output:
-        temp("results/04_stats/03_summary/{level}_stats.{GENOME}.csv"),
+        temp(
+            #"results/04_stats/03_summary/{level}_stats.{GENOME}.csv"
+            "{folder}/{level}_stats.{GENOME}.csv"
+            ),
     log:
-        "results/04_stats/03_summary/{level}_stats.{GENOME}.log",
+        #"results/04_stats/03_summary/{level}_stats.{GENOME}.log",
+        "{folder}/{level}_stats.{GENOME}.log",
     message:
         "--- MERGE STATS by {wildcards.level}"
     run:
@@ -489,8 +505,8 @@ rule bamdamage:
         "--- RUN BAMDAMAGE {input.bam}"
     params:
         prefix="results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}/{id_library}.{id_genome}",
-        bamdamage_params=get_param1("bamdamage_params", ""),
-        fraction=get_param1("bamdamage_fraction", 0),
+        bamdamage_params=recursive_get(["bamdamage_params"], "" ),
+        fraction=recursive_get(["bamdamage_fraction"], 0 ),
     log:
         "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}.{id_genome}_bamdamage.log",
     conda:
@@ -649,11 +665,11 @@ rule plot_summary_statistics:
     message:
         "--- PLOT SUMMARY STATISTICS"
     params:
-        samples=get_param1("sample_file", ""),
-        x_axis=get_param3("stats", "plots", "x_axis", "sample"),
-        split_plot=get_param3("stats", "plots", "split_plot", "F"),
-        n_col=get_param3("stats", "plots", "n_col", 1),
-        n_row=get_param3("stats", "plots", "n_row", 1),
+        samples=recursive_get(["sample_file"], "" ),
+        x_axis=recursive_get(["stats", "plots", "x_axis"], "sample" ),
+        split_plot=recursive_get(["stats",  "plots",  "split_plot"], "F" ),
+        n_col=recursive_get(["stats",  "plots",  "n_col"], 1 ),
+        n_row=recursive_get(["stats",  "plots",  "n_row"], 1 ),
     shell:
         """
         Rscript workflow/scripts/plot_stats.R \

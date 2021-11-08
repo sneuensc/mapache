@@ -72,8 +72,8 @@ rule remove_duplicates:
             "markduplicates", attempt, 24
         ),
     params:
-        rmdup_params=get_param2("markduplicates", "params", "REMOVE_DUPLICATES=true"),
-        PICARD=get_param2("software", "picard_jar", "picard.jar"),
+        rmdup_params= recursive_get(["markduplicates", "params"], "REMOVE_DUPLICATES=true"),
+        PICARD= recursive_get(["software", "picard_jar"], "picard.jar"),
     threads: get_threads("markduplicates", 4)
     log:
         "{folder}/01_duplicated/01_rmdup/{SM}/{LB}.{GENOME}.log",
@@ -153,7 +153,7 @@ rule mapDamage_stats:
         memory=lambda wildcards, attempt: get_memory_alloc("mapdamage", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapdamage", attempt, 24),
     params:
-        params=get_param2("mapdamage", "params", ""),
+        params= recursive_get(["mapdamage", "params"], ""),
     conda:
         "../envs/mapdamage.yaml"
     message:
@@ -182,7 +182,7 @@ rule mapDamage_rescale:
         "{folder}/02_rescaled/01_mapDamage/{SM}/{LB}.{GENOME}_rescale.log",
     threads: 1
     params:
-        params=get_param2("mapdamage", "params", ""),
+        params= recursive_get(["mapdamage", "params"], ""),
     conda:
         "../envs/mapdamage.yaml"
     message:
