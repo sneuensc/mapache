@@ -5,10 +5,9 @@ import pathlib
 
 
 ##########################################################################################
-# global variables
-
-# autosomes = {} # will be set in check_chromosome_names()
-
+# 
+#global MESSAGE_MAPACHE 
+MESSAGE_MAPACHE = open("messages_from_mapache.log", "w")
 ##########################################################################################
 ## all functions for main snakemake file
 
@@ -124,14 +123,15 @@ def eval_list_to_csv(x):
 
 ##########################################################################################
 ## function to test the chromosome names
-def check_chromosome_names(GENOME):
+def check_chromosome_names(GENOME, MESSAGE_MAPACHE=MESSAGE_MAPACHE):
 
-    global autosomes
+
     sex_chr = "X"
-    # print(f"""
-    # Evaluating GENOME:
-    #     {GENOME}
-    # """)
+    MESSAGE_MAPACHE.write(f"""
+    Evaluating GENOME:
+        {GENOME}
+
+    """)
 
     ## get all chromsome names from the reference GENOME
     fasta = recursive_get(config, [ ["genome", {}], [GENOME, {}], ["fasta", ""] ])
@@ -163,12 +163,14 @@ def check_chromosome_names(GENOME):
 
     for chr in chromosomes:
         if chr not in allChr:
-            print(
+            MESSAGE_MAPACHE.write(
                 f"""
             WARNING: at least one chromosome specified in config[genome][{GENOME}][depth_chromosomes] does not exist in FASTA reference file. 
             chr: {chr}
+
             """
             )
+
             os._exit(1)
 
     # print(f"""
@@ -179,7 +181,7 @@ def check_chromosome_names(GENOME):
     # sex chromosome
     if recursive_get(config, [ ["genome", {}], [GENOME, {}], ["sex_inference", {}], ["run", False] ]):
 
-        print(
+        MESSAGE_MAPACHE.write(
             f"    Checking if chromosomes specified in config file for sex inference exist in genome {GENOME}."
         )
         sex_chr = recursive_get(config, [ 
@@ -193,13 +195,15 @@ def check_chromosome_names(GENOME):
 
         if sex_chr not in allChr:
 
-            print(f"""
+            MESSAGE_MAPACHE.write(f"""
             WARNING: sex chromosome specified in config[genome][{GENOME}][sex_inference][params][sex_chr] does not exist in FASTA reference file. 
             sex_chr: {sex_chr}
             Please set the right chromosome name for this reference genome.
             If you do not plan to infer sex from the mappings to this genome, set the option "run" to False for this genome.
+
             """
             )
+
             os._exit(1)
 
         # autosomes specified for sex inference
@@ -221,25 +225,28 @@ def check_chromosome_names(GENOME):
 
         for chr in chromosomes:
             if chr not in allChr:
-                print(
+                MESSAGE_MAPACHE.write(
                     f"""
                 WARNING: at least one chromosome specified in config[genome][{GENOME}][sex_inference][params][autosomes] does not exist in FASTA reference file. 
                 chr: {chr}
                 Please set the right chromosome names for this reference genome.
                 If you do not plan to infer sex from the mappings to this genome, set the option "run" to False for this genome.
+
                 """
                 )
+
                 os._exit(1)
         autosomes = 'c("' + '","'.join(chromosomes) + '")'
         set_param5("genome", GENOME, "sex_inference", "params", "autosomes", autosomes)
 
-        print(
+        MESSAGE_MAPACHE.write(
             f"""
         sex_chr: {sex_chr}
         autosomes: {autosomes}
         """
         )
-    print(f"WELL DONE. The chromosome names are well specified for genome {GENOME}.")
+    MESSAGE_MAPACHE.write(f"WELL DONE. The chromosome names are well specified for genome {GENOME}.\n\n\n")
+
 
 
 ## convert string to boolean
@@ -335,7 +342,7 @@ def get_fastq_of_ID(wildcards):
     return filename
 
 
-def get_fastq_for_mapping(wildcards):
+def get_fastq_for_mapping(wildcards, run_adapter_removal=True):
     if run_adapter_removal: 
         if collapse:
             folder = f"results/01_fastq/01_trimmed/01_files_trim_collapsed/{wildcards.SM}/{wildcards.LB}"
@@ -366,6 +373,41 @@ def get_fastq_for_mapping(wildcards):
             ]    
 
     return filename
+
+def inputs_fastqc(wildcards, run_adapter_removal=True):
+    if "trim" in wildcards.folder:
+        if run_adapter_removal: 
+            if collapse:
+                folder = f"results/01_fastq/01_trimmed/01_files_trim_collapsed/{wildcards.SM}/{wildcards.LB}"
+                filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
+            else:
+                # single-end mode and paired-end without collapsing
+                folder = f"results/01_fastq/01_trimmed/01_files_trim/{wildcards.SM}/{wildcards.LB}"
+                if str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) == "nan":
+                    # single-end files
+                    filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
+                else:
+                    # paired-end files, not collapsing
+                    filename = [
+                            f"{folder}/{wildcards.ID}_R1.fastq.gz",
+                            f"{folder}/{wildcards.ID}_R2.fastq.gz",
+                        ]
+    else:
+        folder = (
+            f"results/01_fastq/00_reads/01_files_orig/{wildcards.SM}/{wildcards.LB}"
+        )
+        if str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) == "nan":
+            #checking a single-end file
+            filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
+        else:
+                filename = [
+                f"{folder}/{wildcards.ID}_R1.fastq.gz",
+                f"{folder}/{wildcards.ID}_R2.fastq.gz",
+            ]    
+
+    return filename
+
+
 
 
 def get_bam_for_sorting(wildcards):
