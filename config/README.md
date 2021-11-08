@@ -18,24 +18,3 @@ Specify the location of the samples in the sample file, `config/samples.txt`, by
 ```
 sample_file: config/samples.txt
 ```
-
-The sample file is a table listing the relationship between `fastq files`, `libraries` and `samples`. The order of the columns is free, but the column names have to be exact. **ID, LB and SM names should not contain points ('.')**:
-
-sample file for single-end libraries:
-```
-    ID           Data                        MAPQ  LB    PL        SM
-    a_L2_R1_001  reads/a_L2_R1_001.fastq.gz  30    a_L2  ILLUMINA  ind1
-    a_L2_R1_002  reads/a_L2_R1_002.fastq.gz  30    a_L2  ILLUMINA  ind1
-    b_L2_R1_001  reads/b_L2_R1_001.fastq.gz  30    b_L2  ILLUMINA  ind1
-    b_L2_R1_002  reads/b_L2_R1_002.fastq.gz  30    b_L2  ILLUMINA  ind1
-```
-
-sample file for paired-end libraries (or mix of PE and SE libraries):
-```
-    ID           Data1                       Data2                       MAPQ  LB    PL        SM
-    a_L2_R1_001  reads/a_L2_R1_001.fastq.gz  reads/a_L2_R2_001.fastq.gz  30    a_L2  ILLUMINA  ind1
-    a_L2_R1_002  reads/a_L2_R1_002.fastq.gz  reads/a_L2_R2_001.fastq.gz  30    a_L2  ILLUMINA  ind1
-    b_L2_R1_001  reads/b_L2_R1_001.fastq.gz  reads/a_L2_R2_001.fastq.gz  30    b_L2  ILLUMINA  ind1
-    b_L2_R1_002  reads/b_L2_R1_002.fastq.gz  NULL                        30    b_L2  ILLUMINA  ind1
-
-```
