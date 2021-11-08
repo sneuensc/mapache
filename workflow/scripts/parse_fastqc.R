@@ -40,9 +40,13 @@ parse_fastqc <- function(file_name, df_name){
     } 
         
     my_data_frames <- Map(Read, split(lines, groups))
-    df <- my_data_frames[[paste0(">>", df_name)]]
-    colnames(df) <- sub("^X.", "", colnames(df))
-    return(df)
+    if(df_name == ""){
+        return(names(my_data_frames))
+    }else{
+        df <- my_data_frames[[paste0(">>", df_name)]]
+        colnames(df) <- sub("^X.", "", colnames(df))
+        return(df)
+    }
 }
 
 

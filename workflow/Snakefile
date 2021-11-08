@@ -67,6 +67,7 @@ if len(genome) == 0:
 ## test if for each reference a fasta file is defined
 ## check the chromosome names (and adjust config)
 
+    
 for GENOME in genome:
     if "fasta" not in list(recursive_get(config, [ ["genome", {}], [GENOME, {}] ])):
         print("ERROR: Each reference genome requires a fasta file!")
