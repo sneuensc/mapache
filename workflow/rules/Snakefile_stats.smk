@@ -220,16 +220,23 @@ rule assign_sex:
 
 rule merge_stats_per_fastq:
     input:
+    # adapterremoval settings:
+    # "{folder}/01_trimmed/01_files_trim/{SM}/{LB}/{ID}.settings"
+    # "{folder}/01_trimmed/01_files_trim/{SM}/{LB}/{ID}.settings",
+    # "{folder}/01_trimmed/01_files_trim_collapsed/{SM}/{LB}/{ID}.settings"
+        settings_stats="results/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_files_trim/{SM}/{LB}/{ID}.settings",
         fastqc_orig="results/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_fastqc.zip",  # raw sequenced reads
         fastqc_trim="results/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_files_trim/{SM}/{LB}/{ID}_fastqc.zip",  # raw trimmed reads
         flagstat_mapped_highQ="results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}_flagstat.txt",  # mapped and high-qual reads
         length_fastq_mapped_highQ="results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}.length",
     output:
         temp(
-            "results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv"
+            #"results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv"
+            "{folder}/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv"
         ),
     log:
-        "results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.log",
+        #"results/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.log",
+        "{folder}/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.log",
     conda:
         "../envs/r.yaml"
     envmodules:
@@ -366,9 +373,13 @@ rule merge_stats_by_level_and_genome:
     input:
         paths=path_stats_by_level,
     output:
-        temp("results/04_stats/03_summary/{level}_stats.{GENOME}.csv"),
+        temp(
+            #"results/04_stats/03_summary/{level}_stats.{GENOME}.csv"
+            "{folder}/{level}_stats.{GENOME}.csv"
+            ),
     log:
-        "results/04_stats/03_summary/{level}_stats.{GENOME}.log",
+        #"results/04_stats/03_summary/{level}_stats.{GENOME}.log",
+        "{folder}/{level}_stats.{GENOME}.log",
     message:
         "--- MERGE STATS by {wildcards.level}"
     run:
