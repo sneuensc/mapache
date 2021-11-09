@@ -18,48 +18,48 @@ include: "rules/common.smk"
 
 
 ## default values
-sample_file = recursive_get(config, [ ["sample_file", "samples.txt"] ])
-email = recursive_get(config, [ ["email", ""] ])
-delim = recursive_get(config, [ ["delim", "\s+"] ])
-mapper = recursive_get(config, [ ["mapping", {}], ["mapper", "bwa_aln"] ])
+sample_file = recursive_get(["sample_file"], "samples.txt")
+email = recursive_get(["email"], "" )
+delim = recursive_get(["delim"], "\s+")
+mapper = recursive_get(["mapping", "mapper"], "bwa_aln")
 
 ## mapping options
-run_adapter_removal = str2bool(recursive_get(config, [ ["adapterremoval", {}], ["run", True] ]))
-run_filtering = str2bool(recursive_get(config, [ ["filtering", {}], ["run", True] ]))
-run_mark_duplicates = str2bool(recursive_get(config, [ ["markduplicates", {}], ["run", True] ]))
-run_mapDamage_rescale = str2bool(recursive_get(config, [ ["mapdamage", {}], ["run_rescale", False] ]))
-run_realign = str2bool(recursive_get(config, [ ["realign", {}], ["run", True] ]))
-run_compute_md = str2bool(recursive_get(config, [ ["compute_md", {}], ["run", True] ]))
+run_adapter_removal = str2bool(recursive_get(["adapterremoval", "run"], True))
+run_filtering = str2bool(recursive_get(["filtering", "run"], True))
+run_mark_duplicates = str2bool(recursive_get(["markduplicates", "run"], True))
+run_mapDamage_rescale = str2bool(recursive_get(["mapdamage", "run_rescale"], False))
+run_realign = str2bool(recursive_get(["realign", "run"], True))
+run_compute_md = str2bool(recursive_get(["compute_md", "run"], True))
 
 ## stats
-run_damage = recursive_get(config, [ ["stats", {}], ["run_damage", "False"] ])
-run_depth = str2bool(recursive_get(config, [ ["stats", {}], ["run_depth", "False"] ]))
-run_bammds = str2bool(recursive_get(config, [ ["stats", {}], ["run_bammds", "False"] ]))
+run_damage = recursive_get(["stats", "run_damage"], "False")
+run_depth = str2bool(recursive_get(["stats", "run_depth"], "False"))
+run_bammds = str2bool(recursive_get(["stats", "run_bammds"], "False"))
 
 ## retry failed jobs
-memory_increment_ratio = float(recursive_get(config, [ ["memory_increment_ratio", 1] ]))
-runtime_increment_ratio = float(recursive_get(config, [ ["runtime_increment_ratio", 0] ]))
+memory_increment_ratio = float(recursive_get(["memory_increment_ratio"], 1))
+runtime_increment_ratio = float(recursive_get(["runtime_increment_ratio"], 0))
 
 ## software versions
-module_samtools = recursive_get(config, [ ["envmodules", {}], ["samtools", ""] ])
-module_bowtie2 = recursive_get(config, [ ["envmodules", {}], ["bowtie2", ""] ])
-module_bwa = recursive_get(config, [ ["envmodules", {}], ["bwa", ""]])
-module_picard = recursive_get(config, [ ["envmodules", {}],  ["picard", ""] ])
-module_gatk3 = recursive_get(config, [ ["envmodules", {}], ["gatk3", ""]])
-module_fastqc = recursive_get(config, [ ["envmodules", {}], ["fastqc", ""] ])
-module_r = recursive_get(config, [ ["envmodules", {}], ["r", ""] ])
-module_adapterremoval = recursive_get(config, [ ["envmodules", {}], ["adapterremoval", ""] ])
-module_mapdamage = recursive_get(config, [ ["envmodules", {}], ["mapdamage", ""] ])
-module_multiqc = recursive_get(config, [ ["envmodules", {}], ["multiqc", ""] ])
-module_bedtools = recursive_get(config, [ ["envmodules", {}], ["bedtools", ""] ])
-module_seqtk = recursive_get(config, [ ["envmodules", {}], ["seqtk", ""] ])
+module_samtools = recursive_get(["envmodules", "samtools"], "")
+module_bowtie2 = recursive_get(["envmodules", "bowtie2"], "")
+module_bwa = recursive_get(["envmodules", "bwa"], "")
+module_picard = recursive_get(["envmodules", "picard"], "")
+module_gatk3 = recursive_get(["envmodules", "gatk3"], "")
+module_fastqc = recursive_get(["envmodules","fastqc"], "")
+module_r = recursive_get(["envmodules","r"], "")
+module_adapterremoval = recursive_get(["envmodules","adapterremoval"], "")
+module_mapdamage = recursive_get(["envmodules","mapdamage"], "")
+module_multiqc = recursive_get(["envmodules","multiqc"], "")
+module_bedtools = recursive_get(["envmodules","bedtools"], "")
+module_seqtk = recursive_get(["envmodules","seqtk"], "")
 
 
 ##########################################################################################
 ## some test to verify that the minimal requirements are met
 
 ## is at least a reference genome defined
-genome = list(recursive_get(config, [ ["genome", {}] ]))
+genome = list(recursive_get(["genome"], ""))
 if len(genome) == 0:
     print("ERROR: Reference genome is not specified (parameter genome)!")
     os._exit(1)
@@ -69,7 +69,7 @@ if len(genome) == 0:
 
     
 for GENOME in genome:
-    if "fasta" not in list(recursive_get(config, [ ["genome", {}], [GENOME, {}] ])):
+    if "fasta" not in list(recursive_get(["genome",GENOME], "")):
         print("ERROR: Each reference genome requires a fasta file!")
         os._exit(1)
 
@@ -78,7 +78,7 @@ for GENOME in genome:
 
 
 ## if the bam files have to be rescaled mapDamage has to be run
-if run_mapDamage_rescale and recursive_get(config, [ ["stats", {}], ["run_damage", "False"] ]) != "mapDamage":
+if run_mapDamage_rescale and recursive_get(["stats","run_damage"], "False") != "mapDamage":
     print(
         "ERROR: To use 'mapdamage:run_rescale' the parameter 'stats:run_damage' has to be set to 'mapDamage'!"
     )
@@ -86,22 +86,20 @@ if run_mapDamage_rescale and recursive_get(config, [ ["stats", {}], ["run_damage
 
 ## filter mappings and keep low quality mappings or not?
 if run_filtering:
-    save_low_qual = str2bool(recursive_get(config, [ ["filtering", {}], ["save_low_qual", "True"] ]))
+    save_low_qual = str2bool(recursive_get(["filtering","save_low_qual"], "True"))
 else:
     save_low_qual = False
 
 ## if one wants to extract the duplicates, MarkDuplicate has to mark the duplicates in order to extract them
 if run_mark_duplicates:
-    save_duplicates = recursive_get(config, 
-    [ 
-        ["markduplicates", {}], ["save_duplicates", "remove"]
-    ]
+    save_duplicates = recursive_get( 
+        ["markduplicates","save_duplicates"], "remove"
     )  ## remove, mark, extract
 else:  ## true,   false,false (false is default)
     save_duplicates = "remove"
 
 ## check that MarkDuplicates has the correct parameters
-param_dupl = recursive_get(config, [ ["markduplicates", {}], ["params", ""] ])
+param_dupl = recursive_get(["markduplicates","params"], "")
 if "REMOVE_DUPLICATES=true" in param_dupl:
     if save_duplicates != "remove":
         print(
@@ -302,7 +300,7 @@ sex_files = [
         f"02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}",
         f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}",
     ]
-    if str2bool(recursive_get(config, [ ["genome", {}], [GENOME, {}], ["sex_inference", {}], ["run", False] ]))
+    if str2bool(recursive_get(["genome",GENOME,"sex_inference","run"], False))
 ]
 
 sex_files = list(set(sex_files))
