@@ -508,14 +508,7 @@ rule bamdamage:
         bamdamage_params=recursive_get(["bamdamage_params"], "" ),
         fraction=recursive_get(["bamdamage_fraction"], 0 ),
     log:
-<<<<<<< HEAD
-<<<<<<< HEAD
         "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}.{id_genome}_bamdamage.log",
-=======
->>>>>>> Added a log to all rules.
-=======
-        "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{id_sample}/{id_library}.{id_genome}_bamdamage.log",
->>>>>>> Corrected log statement.
     conda:
         "../envs/bamdamage.yaml"
     envmodules:

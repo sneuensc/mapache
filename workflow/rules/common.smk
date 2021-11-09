@@ -554,31 +554,6 @@ def is_quick(file_name, dict):
     return file_name
 
 
-# sex_params = get_param3("genome", "sex", "sex_params", {})
-
-
-# def get_sex_params(wildcards):
-#     #sex_params = get_param2("genome", wildcards.GENOME, {})
-<<<<<<< HEAD
-<<<<<<< HEAD
-#     sex_dict = get_param4("genome", wildcards.GENOME, "sex_inference", "params", {})
-=======
-#     sex_dict = config["genome"][wildcards.GENOME].get("sex_inference", {}).get("params", {})
->>>>>>> Reformated with snakefmt.
-=======
-#     sex_dict = get_param4("genome", wildcards.GENOME, "sex_inference", "params", {})
->>>>>>> Replaced calls to config with the function get_param().
-
-#     # autosomes are passed as a python expression, which was parsed previously in check_chromosome_names()
-#     # the R script to assign sex needs the R expression that was stored in autosomes
-#     if "autosomes" in sex_dict:
-#         del sex_dict["autosomes"]
-#         sex_dict["autosomes"] = autosomes[wildcards.GENOME]
-
-#     sex_params = " ".join(
-#         [f"--{key}='{sex_dict[key]}'" for key in sex_dict.keys()]
-#     )
-#     return sex_params
 
 
 ## get the individual depth files to combien them
