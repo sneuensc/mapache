@@ -74,42 +74,6 @@ def set_param6(key1, key2, key3, key4, key5, key6, value):
     config[key1][key2][key3][key4][key5][key6] = value
 
 
-def set_param4(key1, key2, key3, key4, value):
-    if key1 not in config:
-        config[key1] = {}
-    if key2 not in config[key1]:
-        config[key1][key2] = {}
-    if key3 not in config[key1][key2]:
-        config[key1][key2][key3] = {}
-    config[key1][key2][key3][key4] = value
-
-
-def set_param5(key1, key2, key3, key4, key5, value):
-    if key1 not in config:
-        config[key1] = {}
-    if key2 not in config[key1]:
-        config[key1][key2] = {}
-    if key3 not in config[key1][key2]:
-        config[key1][key2][key3] = {}
-    if key4 not in config[key1][key2][key3]:
-        config[key1][key2][key3][key4] = {}
-    config[key1][key2][key3][key4][key5] = value
-
-
-def set_param6(key1, key2, key3, key4, key5, key6, value):
-    if key1 not in config:
-        config[key1] = {}
-    if key2 not in config[key1]:
-        config[key1][key2] = {}
-    if key3 not in config[key1][key2]:
-        config[key1][key2][key3] = {}
-    if key4 not in config[key1][key2][key3]:
-        config[key1][key2][key3][key4] = {}
-    if key5 not in config[key1][key2][key3][key4]:
-        config[key1][key2][key3][key4][key5] = {}
-    config[key1][key2][key3][key4][key5][key6] = value
-
-
 ##########################################################################################
 ## functions to evaluate python code if necessary
 
