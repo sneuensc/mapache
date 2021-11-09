@@ -20,8 +20,8 @@ rule get_fastq:
         "{folder}/00_reads/01_files_orig/{SM}/{LB}/{ID}.fastq.gz",
     threads: 1
     params:
-        run=recursive_get(["subsampling","run"], "F"),
-        number=recursive_get(["subsampling","number"], "1"),
+        run=recursive_get(["subsampling","run"], False),
+        number=recursive_get(["subsampling","number"], 100),
         params=recursive_get(["subsampling","params"], "-s1"),
     conda:
         "../envs/seqtk.yaml"
@@ -89,8 +89,8 @@ rule adapter_removal_collapse:
         ),
     params:
         recursive_get(
-            ["adapterremoval","params"],
-            "--minlength 30 --trimns --trimqualities"
+            ["adapterremoval","params_paired_end"],
+            "--minlength 30 --trimns --trimqualities --collapse"
             
         ),
     log:
@@ -136,7 +136,7 @@ rule adapter_removal_pe:
         ),
     params:
         recursive_get(
-            ["adapterremoval", "params"],
+            ["adapterremoval", "params_paired_end"],
             "--minlength 30 --trimns --trimqualities"
         ),
     log:
@@ -178,7 +178,7 @@ rule adapter_removal_se:
         ),
     params:
         recursive_get(
-            ["adapterremoval","params"],
+            ["adapterremoval","params_single_end"],
             "--minlength 30 --trimns --trimqualities"
         ),
     log:

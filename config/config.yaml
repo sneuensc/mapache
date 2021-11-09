@@ -20,7 +20,7 @@ envmodules:
 ##########################################################################################
 
 #workdir: 
-sample_file: config/PasoDelIndio.txt
+sample_file: config/samples.txt
 
 genome: 
     hg19: 
@@ -29,7 +29,7 @@ genome:
         # If you want the DoC to be reported for some chromosomes in the main stats table, list them below. 
         depth_chromosomes: "X,Y,MT,4"
 
-        # parameters specific to sex inference
+        parameters specific to sex inference
         sex_inference:
             run: True
             # uncomment options below if you need to change any value
@@ -73,7 +73,7 @@ delim: '\s+'
 memory_increment_ratio: 1
 runtime_increment_ratio: 0
 
-## indexing
+# ## indexing
 indexing:
     mem: 16
     threads: 1
@@ -95,12 +95,13 @@ subsampling:
 # adapter_removal (optional)
 adapterremoval:
     run: True
-    params: '--minlength 30 --trimns --trimqualities'
+    params_paired_end: '--minlength 30 --trimns --trimqualities --collapse'
+    params_single_end: '--minlength 30 --trimns --trimqualities'
     threads: 4 
     mem: 4 ## in GB
     time: 2
 
-## mapping (bwa_aln, bwa_mem, bowtie2)
+# ## mapping (bwa_aln, bwa_mem, bowtie2)
 mapping:
     bwa_aln_params: '-l 1024'   
     bwa_samse_params: '-n 3'
@@ -131,15 +132,15 @@ filtering:
 ##########################################################################################
 ## library level
 
-## merge_bam_fastq2library
-## merge_bam_library2sample
+# merge_bam_fastq2library
+# merge_bam_library2sample
 merging:
     threads: 4
     mem: 16
     time: 2
 
-## extract_duplicates (optional)
-## in this case parameter 'rmdup_params' has NOT to be set to 'REMOVE_DUPLICATES=true'
+# ## extract_duplicates (optional)
+# ## in this case parameter 'rmdup_params' has NOT to be set to 'REMOVE_DUPLICATES=true'
 markduplicates:
     run: True  
     params: 'REMOVE_DUPLICATES=true'
@@ -169,9 +170,9 @@ bamdamage:
 ##########################################################################################
 ## sample level
 
-## realign and samtools_index (optional)
+# ## realign and samtools_index (optional)
 realign:
-    run: True
+    run: False
     threads: 4
     mem: 16
     time: 4

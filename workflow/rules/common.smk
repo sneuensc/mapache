@@ -21,24 +21,19 @@ def recursive_get(keys, def_value, my_dict = config):
 
 def update_value(keys, value, my_dict = config):
     key = keys[0]
-    #print(key)
     if len(keys) == 1:
         new_dict={}
         new_dict[key] = value
-        #print(new_dict)
         return new_dict
     else:
         if key in my_dict:
             new_dict = update_value(keys[1:], value, my_dict[key])
             my_dict[key].update(new_dict)
-            #print(key)
             return(my_dict)
         else:
             my_dict[key] = {}
             new_dict = update_value(keys[1:], value, my_dict[key])
-            #print(new_dict)
             my_dict[key].update(new_dict)
-            #print(my_dict)
             return(my_dict)
 
 
@@ -431,14 +426,6 @@ def get_mapDamage_bam(wildcards, index=False):
     return bam
 
 
-# if extract_duplicates:
-#     bam = f"results/02_library/01_duplicated/01_rmdup/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}_mapped.bam"
-# elif run_remove_duplicates:
-#     bam = f"results/02_library/01_duplicated/01_rmdup/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}.bam"
-# else:
-#     bam = f"results/02_library/00_merged_fastq/01_bam/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}.bam"
-
-
 ##########################################################################################
 ##########################################################################################
 
@@ -464,12 +451,6 @@ def get_md_flag_bam(wildcards):
     return bam
 
 
-## the function makes a reverse symlink, by moving the file to the new location and then symlink it back to the original location
-def symlink_rev2(input, output):
-    shell("mv {input} {output}")
-    shell("ln -srf {output} {input}")
-    shell("touch {output}")
-
 
 def symlink_rev(input, output):
     shell("ln -srf {input} {output}")
@@ -481,50 +462,6 @@ def symlink_rev(input, output):
 ##########################################################################################
 ## all functions for the stats
 
-
-def is_quick(file_name, dict):
-    if "quick" in dict.keys() and dict["quick"]:
-        file_name.replace(".bam", ".downsampled.bam")
-    return file_name
-
-
-
-
-## get the individual depth files to combien them
-def get_depth_files(wildcards):
-    parts = pathlib.Path(wildcards.folder).parts
-    if parts[1] == "02_library":
-        filename = (
-            [
-                f"results/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_depth.txt"
-                for GENOME in genome
-                for SM in samples
-                for LB in samples[SM]
-            ],
-        )
-    else:
-        filename = (
-            [
-                f"results/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_depth.txt"
-                for GENOME in genome
-                for SM in samples
-            ],
-        )
-    return filename
-
-
-# def get_chrom(wildcards):
-#     chr = eval_list(
-#         "".join(get_param3("stats", "sample", "depth_chromosomes", "").split()).split(
-#             ","
-#         )
-#     )
-#     GENOME = get_param2("genome", wildcards.GENOME, {})
-#     chr_uniq = list(set(chr) - set(list(GENOME)))
-#     chr_def = list(set(chr).intersection(set(GENOME)))
-#     return ",".join(
-#         eval_list(chr_uniq) + [eval_if_possible(GENOME[c]) for c in chr_def]
-#     )
 
 
 def path_stats_by_level(wildcards):

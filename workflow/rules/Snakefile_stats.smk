@@ -20,17 +20,20 @@ localrules:
 ## get sparse stats stats
 
 
-rule fastqc_for_mapping:
+rule fastqc:
     """
     Quality control of fastq file by fastqc (SE or R1)
     """
     input:
         lambda wildcards: inputs_fastqc(wildcards, run_adapter_removal=run_adapter_removal),
     output:
-        html="results/04_stats/01_sparse_stats/01_fastq/{folder}/{SM}/{LB}/{ID}_fastqc.html",
-        zip="results/04_stats/01_sparse_stats/01_fastq/{folder}/{SM}/{LB}/{ID}_fastqc.zip",
+        #html="results/04_stats/01_sparse_stats/01_fastq/{folder}/{SM}/{LB}/{ID}_fastqc.html",
+        #zip="results/04_stats/01_sparse_stats/01_fastq/{folder}/{SM}/{LB}/{ID}_fastqc.zip",
+        html="{folder}/{SM}/{LB}/{ID}_fastqc.html",
+        zip="{folder}/{SM}/{LB}/{ID}_fastqc.zip",
     log:
-        "results/04_stats/01_sparse_stats/01_fastq/{folder}/{SM}/{LB}/{ID}_fastqc.log",
+        #"results/04_stats/01_sparse_stats/01_fastq/{folder}/{SM}/{LB}/{ID}_fastqc.log",
+        "{folder}/{SM}/{LB}/{ID}_fastqc.log",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("fastqc_mem", attempt, 2),
         runtime=lambda wildcards, attempt: get_runtime_alloc("fastqc_time", attempt, 1),
@@ -161,9 +164,11 @@ rule samtools_idxstats:
 
 rule assign_sex:
     input:
-        idxstats="results/04_stats/01_sparse_stats/{file}.{GENOME}.idxstats",
+        #idxstats="results/04_stats/01_sparse_stats/{file}.{GENOME}.idxstats",
+        idxstats="{folder}/{file}.{GENOME}.idxstats",
     output:
-        sex="results/04_stats/01_sparse_stats/{file}.{GENOME}.sex",
+        #sex="results/04_stats/01_sparse_stats/{file}.{GENOME}.sex",
+        sex="{folder}/{file}.{GENOME}.sex",
     params:
         run_sex=str2bool(
             lambda wildcards: recursive_get(
@@ -171,7 +176,7 @@ rule assign_sex:
                 False
             )
         ),
-        #sex_params=get_sex_params,
+
         sex_params=lambda wildcards: " ".join(
             [
                 f"--{key}='{value}'"
@@ -183,7 +188,7 @@ rule assign_sex:
             ]
         ),
     log:
-        "results/04_stats/01_sparse_stats/{file}.{GENOME}.sex.log",
+        "{folder}/{file}.{GENOME}.sex.log",
     conda:
         "../envs/r.yaml"
     envmodules:
@@ -215,11 +220,6 @@ rule assign_sex:
 
 rule merge_stats_per_fastq:
     input:
-    # adapterremoval settings:
-    # "{folder}/01_trimmed/01_files_trim/{SM}/{LB}/{ID}.settings"
-    # "{folder}/01_trimmed/01_files_trim/{SM}/{LB}/{ID}.settings",
-    # "{folder}/01_trimmed/01_files_trim_collapsed/{SM}/{LB}/{ID}.settings"
-        settings_stats="results/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_files_trim/{SM}/{LB}/{ID}.settings",
         fastqc_orig="results/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_fastqc.zip",  # raw sequenced reads
         fastqc_trim="results/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_files_trim/{SM}/{LB}/{ID}_fastqc.zip" if run_adapter_removal else "Not trimmed",  # raw trimmed reads
         flagstat_mapped_highQ="results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}_flagstat.txt",  # mapped and high-qual reads
