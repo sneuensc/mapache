@@ -18,60 +18,28 @@ def recursive_get(keys, def_value, my_dict = config):
     else:
         value = recursive_get(keys[1:], def_value, my_dict = my_dict.get(key, {}))
     return value
-    
-## setter for config file
-def set_param1(key, value):
-    config[key] = value
 
-
-def set_param2(key1, key2, value):
-    if key1 not in config:
-        config[key1] = {}
-    config[key1][key2] = value
-
-
-def set_param3(key1, key2, key3, value):
-    if key1 not in config:
-        config[key1] = {}
-    if key2 not in config[key1]:
-        config[key1][key2] = {}
-    config[key1][key2][key3] = value
-
-
-def set_param4(key1, key2, key3, key4, value):
-    if key1 not in config:
-        config[key1] = {}
-    if key2 not in config[key1]:
-        config[key1][key2] = {}
-    if key3 not in config[key1][key2]:
-        config[key1][key2][key3] = {}
-    config[key1][key2][key3][key4] = value
-
-
-def set_param5(key1, key2, key3, key4, key5, value):
-    if key1 not in config:
-        config[key1] = {}
-    if key2 not in config[key1]:
-        config[key1][key2] = {}
-    if key3 not in config[key1][key2]:
-        config[key1][key2][key3] = {}
-    if key4 not in config[key1][key2][key3]:
-        config[key1][key2][key3][key4] = {}
-    config[key1][key2][key3][key4][key5] = value
-
-
-def set_param6(key1, key2, key3, key4, key5, key6, value):
-    if key1 not in config:
-        config[key1] = {}
-    if key2 not in config[key1]:
-        config[key1][key2] = {}
-    if key3 not in config[key1][key2]:
-        config[key1][key2][key3] = {}
-    if key4 not in config[key1][key2][key3]:
-        config[key1][key2][key3][key4] = {}
-    if key5 not in config[key1][key2][key3][key4]:
-        config[key1][key2][key3][key4][key5] = {}
-    config[key1][key2][key3][key4][key5][key6] = value
+def update_value(keys, value, my_dict = config):
+    key = keys[0]
+    #print(key)
+    if len(keys) == 1:
+        new_dict={}
+        new_dict[key] = value
+        #print(new_dict)
+        return new_dict
+    else:
+        if key in my_dict:
+            new_dict = update_value(keys[1:], value, my_dict[key])
+            my_dict[key].update(new_dict)
+            #print(key)
+            return(my_dict)
+        else:
+            my_dict[key] = {}
+            new_dict = update_value(keys[1:], value, my_dict[key])
+            #print(new_dict)
+            my_dict[key].update(new_dict)
+            #print(my_dict)
+            return(my_dict)
 
 
 ##########################################################################################
@@ -227,7 +195,9 @@ def check_chromosome_names(GENOME, MESSAGE_MAPACHE=MESSAGE_MAPACHE):
 
                 os._exit(1)
         autosomes = 'c("' + '","'.join(chromosomes) + '")'
-        set_param5("genome", GENOME, "sex_inference", "params", "autosomes", autosomes)
+
+        config = update_value(["genome", GENOME, "sex_inference", "params", "autosomes"], autosomes)
+
 
         MESSAGE_MAPACHE.write(
             f"""
