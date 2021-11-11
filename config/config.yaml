@@ -29,7 +29,7 @@ genome:
         # If you want the DoC to be reported for some chromosomes in the main stats table, list them below. 
         depth_chromosomes: "X,Y,MT,4"
 
-        parameters specific to sex inference
+        # parameters specific to sex inference
         sex_inference:
             run: True
             # uncomment options below if you need to change any value
