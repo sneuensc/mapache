@@ -140,6 +140,7 @@ db = pd.read_csv(sample_file, sep=delim)
 if len(db.columns) == 6:
     #paired_end = 0  ## single-end library
     paired_end = False
+    collapse = False
     if not set(["ID", "Data", "MAPQ", "LB", "PL", "SM"]).issubset(db.columns):
         print(
             "ERROR: The column names in the sample file are wrong! Expected are for single-end reads: ID, Data, MAPQ, LB, PL, SM"

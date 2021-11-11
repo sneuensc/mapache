@@ -305,7 +305,8 @@ def get_fastq_for_mapping(wildcards, run_adapter_removal=True):
         else:
             # single-end mode and paired-end without collapsing
             folder = f"results/01_fastq/01_trimmed/01_files_trim/{wildcards.SM}/{wildcards.LB}"
-            if str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) == "nan":
+            #if str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) == "nan":
+            if str(recursive_get([wildcards.SM,wildcards.LB,wildcards.ID,"Data2"], "nan", my_dict=samples)) == "nan":
                 # single-end files
                 filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
             else:
@@ -338,7 +339,8 @@ def inputs_fastqc(wildcards, run_adapter_removal=True):
             else:
                 # single-end mode and paired-end without collapsing
                 folder = f"results/01_fastq/01_trimmed/01_files_trim/{wildcards.SM}/{wildcards.LB}"
-                if str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) == "nan":
+                #if str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) == "nan":
+                if str(recursive_get([wildcards.SM,wildcards.LB,wildcards.ID,"Data2"], "nan", my_dict=samples)) == "nan":
                     # single-end files
                     filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
                 else:
@@ -351,7 +353,8 @@ def inputs_fastqc(wildcards, run_adapter_removal=True):
         folder = (
             f"results/01_fastq/00_reads/01_files_orig/{wildcards.SM}/{wildcards.LB}"
         )
-        if str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) == "nan":
+        #if str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) == "nan":
+        if str(recursive_get([wildcards.SM,wildcards.LB,wildcards.ID,"Data2"], "nan", my_dict = samples)) == "nan":
             #checking a single-end file
             filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
         else:
@@ -370,7 +373,8 @@ def get_bam_for_sorting(wildcards):
         if (
             # paired_end == 2
             not collapse
-            and str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) != "nan"
+            #and str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) != "nan"
+            and str(recursive_get([wildcards.SM, wildcards.LB, wildcards.ID, "Data2"], "nan", my_dict = samples)) != "nan"
         ):
             folder = "02_bwa_sampe"
         else:

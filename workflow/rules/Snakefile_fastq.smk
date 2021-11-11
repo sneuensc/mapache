@@ -57,11 +57,13 @@ rule get_fasta:
 
 ##########################################################################################
 ## trimming
-if collapse:
-    ruleorder: adapter_removal_collapse > adapter_removal_pe > adapter_removal_se
+if paired_end:
+    if collapse:
+        ruleorder: adapter_removal_collapse > adapter_removal_pe > adapter_removal_se
+    else:
+        ruleorder:  adapter_removal_pe > adapter_removal_collapse  > adapter_removal_se
 else:
-    ruleorder:  adapter_removal_pe > adapter_removal_collapse  > adapter_removal_se
-
+    ruleorder: adapter_removal_se > adapter_removal_collapse > adapter_removal_pe
 #ruleorder:  adapter_removal_collapse > adapter_removal_pe > adapter_removal_se
 
 
