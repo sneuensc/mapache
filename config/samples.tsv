@@ -1,0 +1,2 @@
+ID	Data	MAPQ	LB	PL	SM
+lib1_R1_001_fq	test_data/lib1_R1_001.fastq.gz	30	lib1_lb	ILLUMINA	ind1
