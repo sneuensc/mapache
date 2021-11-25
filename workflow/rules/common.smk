@@ -262,8 +262,8 @@ def get_damage(run_damage):
         for GENOME in genome:
             files += [
                 (
-                    "results/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.{type}.{ext}"
-                ).format(SM=row["SM"], LB=row["LB"], GENOME=GENOME, type=type, ext=ext)
+                    "{RESULT_DIR}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.{type}.{ext}"
+                ).format(SM=row["SM"], LB=row["LB"], GENOME=GENOME, type=type, ext=ext, RESULT_DIR=RESULT_DIR)
                 for index, row in all_libraries.iterrows()
                 for type in ["dam", "length"]
                 for ext in ["pdf", "svg"]
@@ -272,14 +272,27 @@ def get_damage(run_damage):
         for GENOME in genome:
             files += [
                 (
-                    "results/04_stats/01_sparse_stats/02_library/04_mapDamage/{LB}.{GENOME}_results_mapDamage/Fragmisincorporation_plot.pdf"
-                ).format(SM=row["SM"], LB=row["LB"], GENOME=GENOME)
+                    "{RESULT_DIR}/04_stats/01_sparse_stats/02_library/04_mapDamage/{LB}.{GENOME}_results_mapDamage/Fragmisincorporation_plot.pdf"
+                ).format(SM=row["SM"], LB=row["LB"], GENOME=GENOME, RESULT_DIR=RESULT_DIR)
                 for index, row in all_libraries.iterrows()
             ]
+    else:
+        print(f"ERROR: def get_damage({run_damage}): should never happen!")
     return files
 
 
 ##########################################################################################
+
+def get_picard_indexing_cmd():
+    jar= recursive_get(["software", "picard_jar"], "picard.jar")
+    if jar[-4:] == ".jar":
+        bin="java -XX:ParallelGCThreads={threads} -XX:+UseParallelGC -XX:-UsePerfData \
+            -Xms{resources.memory}m -Xmx{resources.memory}m -jar {params.PICARD}"
+    else:
+        bin="{params.PICARD}"
+    return(jar)
+
+
 ##########################################################################################
 ## all functions for fastq files
 
@@ -300,11 +313,11 @@ def get_fastq_of_ID(wildcards):
 def get_fastq_for_mapping(wildcards, run_adapter_removal=True):
     if run_adapter_removal: 
         if collapse:
-            folder = f"results/01_fastq/01_trimmed/01_files_trim_collapsed/{wildcards.SM}/{wildcards.LB}"
+            folder = f"{wildcards.folder}/01_fastq/01_trimmed/01_adapter_removal_collapsed/{wildcards.SM}/{wildcards.LB}"
             filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
         else:
             # single-end mode and paired-end without collapsing
-            folder = f"results/01_fastq/01_trimmed/01_files_trim/{wildcards.SM}/{wildcards.LB}"
+            folder = f"{wildcards.folder}/01_fastq/01_trimmed/01_adapter_removal/{wildcards.SM}/{wildcards.LB}"
             #if str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) == "nan":
             if str(recursive_get([wildcards.SM,wildcards.LB,wildcards.ID,"Data2"], "nan", my_dict=samples)) == "nan":
                 # single-end files
@@ -330,15 +343,15 @@ def get_fastq_for_mapping(wildcards, run_adapter_removal=True):
 
     return filename
 
-def inputs_fastqc(wildcards, run_adapter_removal=True):
-    if "trim" in wildcards.folder:
+def inputs_fastqc(wildcards):
+    if "trim" in wildcards.type:
         if run_adapter_removal: 
             if collapse:
-                folder = f"results/01_fastq/01_trimmed/01_files_trim_collapsed/{wildcards.SM}/{wildcards.LB}"
+                folder = f"{wildcards.folder}/01_fastq/01_trimmed/01_adapter_removal_collapsed/{wildcards.SM}/{wildcards.LB}"
                 filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
             else:
                 # single-end mode and paired-end without collapsing
-                folder = f"results/01_fastq/01_trimmed/01_files_trim/{wildcards.SM}/{wildcards.LB}"
+                folder = f"{wildcards.folder}/01_fastq/01_trimmed/01_adapter_removal/{wildcards.SM}/{wildcards.LB}"
                 #if str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) == "nan":
                 if str(recursive_get([wildcards.SM,wildcards.LB,wildcards.ID,"Data2"], "nan", my_dict=samples)) == "nan":
                     # single-end files
@@ -351,7 +364,7 @@ def inputs_fastqc(wildcards, run_adapter_removal=True):
                         ]
     else:
         folder = (
-            f"results/01_fastq/00_reads/01_files_orig/{wildcards.SM}/{wildcards.LB}"
+            f"{wildcards.folder}/01_fastq/00_reads/01_files_orig/{wildcards.SM}/{wildcards.LB}"
         )
         #if str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) == "nan":
         if str(recursive_get([wildcards.SM,wildcards.LB,wildcards.ID,"Data2"], "nan", my_dict = samples)) == "nan":
@@ -388,14 +401,20 @@ def get_bam_for_sorting(wildcards):
             f"ERROR: The parameter mapper is not correctly specified: {mapper} is unknown!"
         )
         os._exit(0)
-    return f"results/01_fastq/02_mapped/{folder}/{wildcards.SM}/{wildcards.LB}/{wildcards.ID}.{wildcards.GENOME}.bam"
+    return f"{wildcards.folder}/01_fastq/02_mapped/{folder}/{wildcards.SM}/{wildcards.LB}/{wildcards.ID}.{wildcards.GENOME}.bam"
 
 
 def get_final_bam_fastq(wildcards):
-    if run_filtering:
-        bam = f"{wildcards.folder}/03_filtered/01_bam_filter/{wildcards.SM}/{wildcards.LB}/{wildcards.ID}.{wildcards.GENOME}.bam"
+    if wildcards.type == "01_bam":
+        if run_filtering:
+            bam = f"{wildcards.folder}/01_fastq/03_filtered/01_bam_filter/{wildcards.SM}/{wildcards.LB}/{wildcards.ID}.{wildcards.GENOME}.bam"
+        else:
+            bam = f"{wildcards.folder}/01_fastq/02_mapped/03_bam_sort/{wildcards.SM}/{wildcards.LB}/{wildcards.ID}.{wildcards.GENOME}.bam"
+    elif wildcards.type == "01_bam_low_qual":
+        bam = f"{wildcards.folder}/01_fastq/03_filtered/01_bam_filter_low_qual/{wildcards.SM}/{wildcards.LB}/{wildcards.ID}.{wildcards.GENOME}.bam"
     else:
-        bam = f"{wildcards.folder}/02_mapped/03_bam_sort/{wildcards.SM}/{wildcards.LB}/{wildcards.ID}.{wildcards.GENOME}.bam"
+        print(f"ERROR: def get_final_bam_library({wildcards.type}): should never happen!")
+        os._exit(0)
     return bam
 
 
@@ -405,28 +424,34 @@ def get_final_bam_fastq(wildcards):
 
 
 def get_final_bam_library(wildcards):
-    if run_mapDamage_rescale:
-        bam = f"results/02_library/02_rescaled/01_mapDamage/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
-    elif run_mark_duplicates:
-        if save_duplicates == "extract":
-            bam = f"results/02_library/01_duplicated/01_rmdup/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}_mapped.bam"
+    if wildcards.type == "01_bam":
+        if run_mapDamage_rescale:
+            bam = f"{wildcards.folder}/02_library/02_rescaled/01_mapDamage/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
+        elif run_mark_duplicates:
+            if save_duplicates == "extract":
+                bam = f"{wildcards.folder}/02_library/01_duplicated/01_rmdup/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}_mapped.bam"
+            else:
+                bam = f"{wildcards.folder}/02_library/01_duplicated/01_rmdup/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
         else:
-            bam = f"results/02_library/01_duplicated/01_rmdup/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
+            bam = f"{wildcards.folder}/02_library/00_merged_fastq/01_bam/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
+    elif wildcards.type == "01_bam_low_qual":
+        bam = f"{wildcards.folder}/02_library/00_merged_fastq/01_bam_low_qual/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
+    elif wildcards.type == "01_bam_duplicate":
+        bam = f"{wildcards.folder}/02_library/01_duplicated/01_rmdup/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}_duplicates.bam"
     else:
-        bam = f"results/02_library/00_merged_fastq/01_bam/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
+        print(f"ERROR: def get_final_bam_library({wildcards.type}): should never happen!")
+        os._exit(0)
     return bam
 
 
-def get_mapDamage_bam(wildcards, index=False):
+def get_mapDamage_bam(wildcards):
     if run_mark_duplicates:
         if save_duplicates == "extract":
-            bam = f"results/02_library/01_duplicated/01_rmdup/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}_mapped.bam"
+            bam = f"{wildcards.folder}/02_library/01_duplicated/01_rmdup/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}_mapped.bam"
         else:
-            bam = f"results/02_library/01_duplicated/01_rmdup/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}.bam"
+            bam = f"{wildcards.folder}/02_library/01_duplicated/01_rmdup/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
     else:
-        bam = f"results/02_library/00_merged_fastq/01_bam/{wildcards.id_sample}/{wildcards.id_library}.{wildcards.id_genome}.bam"
-    if index:
-        bam = bam.replace(".bam", ".bai")
+        bam = f"{wildcards.folder}/02_library/00_merged_fastq/01_bam/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
     return bam
 
 
@@ -439,19 +464,19 @@ def get_mapDamage_bam(wildcards, index=False):
 
 def get_final_bam(wildcards):
     if run_compute_md:
-        bam = f"results/03_sample/02_md_flag/01_md_flag/{wildcards.SM}.{wildcards.GENOME}.bam"
+        bam = f"{wildcards.folder}/03_sample/02_md_flag/01_md_flag/{wildcards.SM}.{wildcards.GENOME}.bam"
     elif run_realign:
-        bam = f"results/03_sample/01_realigned/01_realign/{wildcards.SM}.{wildcards.GENOME}.bam"
+        bam = f"{wildcards.folder}/03_sample/01_realigned/01_realign/{wildcards.SM}.{wildcards.GENOME}.bam"
     else:
-        bam = f"results/03_sample/00_merged_library/01_bam/{wildcards.SM}.{wildcards.GENOME}.bam"
+        bam = f"{wildcards.folder}/03_sample/00_merged_library/01_bam/{wildcards.SM}.{wildcards.GENOME}.bam"
     return bam
 
 
 def get_md_flag_bam(wildcards):
     if run_realign:
-        bam = f"results/03_sample/01_realigned/01_realign/{wildcards.SM}.{wildcards.GENOME}.bam"
+        bam = f"{wildcards.folder}/03_sample/01_realigned/01_realign/{wildcards.SM}.{wildcards.GENOME}.bam"
     else:
-        bam = f"results/03_sample/00_merged_library/01_bam/{wildcards.SM}.{wildcards.GENOME}.bam"
+        bam = f"{wildcards.folder}/03_sample/00_merged_library/01_bam/{wildcards.SM}.{wildcards.GENOME}.bam"
     return bam
 
 
@@ -471,7 +496,7 @@ def symlink_rev(input, output):
 def path_stats_by_level(wildcards):
     if wildcards.level == "FASTQ":
         paths = [
-            f"results/04_stats/02_separate_tables/{wildcards.GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv"
+            f"{wildcards.folder}/04_stats/02_separate_tables/{wildcards.GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv"
             # for GENOME in genome
             for SM in samples
             for LB in samples[SM]
@@ -479,15 +504,18 @@ def path_stats_by_level(wildcards):
         ]
     elif wildcards.level == "LB":
         paths = [
-            f"results/04_stats/02_separate_tables/{wildcards.GENOME}/{SM}/{LB}/library_stats.csv"
+            f"{wildcards.folder}/04_stats/02_separate_tables/{wildcards.GENOME}/{SM}/{LB}/library_stats.csv"
             # for GENOME in genome
             for SM in samples
             for LB in samples[SM]
         ]
     elif wildcards.level == "SM":
         paths = [
-            f"results/04_stats/02_separate_tables/{wildcards.GENOME}/{SM}/sample_stats.csv"
+            f"{wildcards.folder}/04_stats/02_separate_tables/{wildcards.GENOME}/{SM}/sample_stats.csv"
             # for GENOME in genome
             for SM in samples
         ]
+    else:
+        print(f"ERROR: def path_stats_by_level({wildcards.level}): should never happen!")
+        os._exit(0)
     return paths

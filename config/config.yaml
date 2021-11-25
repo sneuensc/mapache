@@ -24,7 +24,8 @@ sample_file: config/samples.tsv
 
 genome: 
     hg19: 
-        fasta: ref/hs.build37.1.fa
+        fasta: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/hs.build37.1/hs.build37.1.fa
+        #fasta: ref/hs.build37.1.fa
         # mtChr: MT
         # If you want the DoC to be reported for some chromosomes in the main stats table, list them below. 
         depth_chromosomes: "X,Y,MT,4"
