@@ -124,7 +124,7 @@ merging:
     time: 2
 
 # ## extract_duplicates (optional)
-# ## in this case parameter 'rmdup_params' has NOT to be set to 'REMOVE_DUPLICATES=true'
+# ## in this case parameter 'rmdup_params' has NOT to be set to '--REMOVE_DUPLICATES true'
 markduplicates:
     run: True  
     params: '--REMOVE_DUPLICATES true'

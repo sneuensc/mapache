@@ -98,25 +98,25 @@ else:  ## true,   false,false (false is default)
 
 ## check that MarkDuplicates has the correct parameters
 param_dupl = recursive_get(["markduplicates","params"], "")
-if "--REMOVE_DUPLICATES true" in param_dupl:
+if "-REMOVE_DUPLICATES true" in param_dupl:
     if save_duplicates != "remove":
         print(
-            "WARNING: To save/mark duplicates in MarkDuplicates the parameter 'markduplicates:params' has to cotain the parameter 'REMOVE_DUPLICATES=false' or not to be set! Adjusted!"
+            "WARNING: To save/mark duplicates in MarkDuplicates the parameter 'markduplicates:params' has to contain the parameter '--REMOVE_DUPLICATES false' or not to be set! Adjusted!"
         )
         param_dupl.replace("--REMOVE_DUPLICATES true", "--REMOVE_DUPLICATES false")
 
         
-elif "REMOVE_DUPLICATES=false" in param_dupl:
+elif "-REMOVE_DUPLICATES false" in param_dupl:
     if save_duplicates == "remove":
         print(
-            "WARNING: To remove duplicates in MarkDuplicates the parameter 'markduplicates:params' has to cotain the parameter 'REMOVE_DUPLICATES=true'! Adjusted!"
+            "WARNING: To remove duplicates in MarkDuplicates the parameter 'markduplicates:params' has to contain the parameter '--REMOVE_DUPLICATES true'! Adjusted!"
         )
         param_dupl.replace("--REMOVE_DUPLICATES false", "--REMOVE_DUPLICATES true")
 
 else:
     if save_duplicates == "remove":
         print(
-            "WARNING: To remove duplicates in MarkDuplicates the parameter 'markduplicates:params' has to cotain the parameter 'REMOVE_DUPLICATES=true'! Adjusted!"
+            "WARNING: To remove duplicates in MarkDuplicates the parameter 'markduplicates:params' has to contain the parameter '--REMOVE_DUPLICATES true'! Adjusted!"
         )
         param_dupl = f"{param_dupl} --REMOVE_DUPLICATES true"
 
