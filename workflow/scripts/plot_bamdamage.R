@@ -120,6 +120,7 @@ p2 <- ggplot(d, aes(x=X, y=value, group=variable)) +
   scale_x_reverse()
 
 ## combine plots
+## grid.arrange always plots a Rplots.pdf...
 my_plot <- grid.arrange(grobs=list(p1, p2), ncol=2, top = paste("Damage pattern", sample, library, sep="\n"))   
 ggsave(damage_svg, my_plot, width = 11, height = 7)
 

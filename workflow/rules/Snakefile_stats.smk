@@ -225,10 +225,8 @@ rule merge_stats_per_fastq:
         flagstat_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}_flagstat.txt",  # mapped and high-qual reads
         length_fastq_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}.length",
     output:
-        temp(
-            "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv"
+        "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv"
             #"{folder}/04_stats/{dir}{GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv"
-        ),
     log:
         "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.log",
         #"{folder}/04_stats/{dir}/{GENOME}/04_stats/{SM}/{LB}/{ID}/fastq_stats.log",
@@ -566,6 +564,9 @@ rule plot_bamdamage:
             --genome={wildcards.GENOME} \
             --length_svg={output.length} \
             --damage_svg={output.damage}
+        
+        ## delete the unwanted created Rplots.pdf...
+        rm Rplots.pdf
         """
 
 
