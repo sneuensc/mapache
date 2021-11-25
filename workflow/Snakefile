@@ -59,16 +59,18 @@ module_seqtk = recursive_get(["envmodules","seqtk"], "")
 ## is at least a reference genome defined
 genome = list(recursive_get(["genome"], ""))
 if len(genome) == 0:
-    print("ERROR: Reference genome is not specified (parameter genome)!")
+    print("ERROR: Reference genome is not specified (parameter 'genome')!")
     os._exit(1)
 
 ## test if for each reference a fasta file is defined
 ## check the chromosome names (and adjust config)
-
-    
 for GENOME in genome:
-    if "fasta" not in list(recursive_get(["genome",GENOME], "")):
-        print("ERROR: Each reference genome requires a fasta file!")
+    fasta = recursive_get(["genome",GENOME,"fasta"], "")
+    if "fasta" == "":
+        print(f"ERROR: Reference genome '{GENOME}' has no fasta file defined!")
+        os._exit(1)
+    elif not os.path.isfile(fasta):
+        print(f"ERROR: Reference genome '{GENOME}': Fasta file '{fasta}' does not exist!")
         os._exit(1)
 
     check_chromosome_names(GENOME)
@@ -80,7 +82,7 @@ if run_mapDamage_rescale and recursive_get(["stats","run_damage"], "False") != "
     print(
         "ERROR: To use 'mapdamage:run_rescale' the parameter 'stats:run_damage' has to be set to 'mapDamage'!"
     )
-    os._exit(0)
+    os._exit(1)
 
 ## filter mappings and keep low quality mappings or not?
 if run_filtering:
@@ -120,8 +122,6 @@ else:
         )
         param_dupl = f"{param_dupl} --REMOVE_DUPLICATES true"
 
-
-
 config = update_value(
     keys=["markduplicates", "params"], 
     value=param_dupl
@@ -130,7 +130,7 @@ config = update_value(
 
 ##########################################################################################
 ## read the sample file
-# sample_file="sample_file.txt"
+# sample_file="config/samples.tsv"
 delim = recursive_get(["delim"], "\s+")
 db = pd.read_csv(sample_file, sep=delim)
 
@@ -144,7 +144,14 @@ if len(db.columns) == 6:
         print(
             "ERROR: The column names in the sample file are wrong! Expected are for single-end reads: ID, Data, MAPQ, LB, PL, SM"
         )
-        os._exit(0)
+        os._exit(1)
+    
+    ## test if all fastq files exist
+    for fq in db['Data'].tolist():
+        if not os.path.isfile(fq):
+            print(f"ERROR: Fastq file '{fq}' does not exist!")
+            os._exit(1)
+
 elif len(db.columns) == 7:
     paired_end = True
     adaptrem_params = config.get("adapterremoval", {}).get("params_paired_end", "")
@@ -158,21 +165,26 @@ elif len(db.columns) == 7:
         print(
             "ERROR: The column names in the sample file are wrong! Expected are for paired-end reads: ID, Data1, Data2, MAPQ, LB, PL, SM"
         )
-        os._exit(0)
+        os._exit(1)
+
+    ## test if all fastq files exist
+    for fq in [db['Data1'].tolist(), db['Data2'].tolist()]:
+        if not os.path.isfile(fq):
+            print(f"ERROR: Fastq file '{fq}' does not exist!")
+            os._exit(1)
+
 else:
     print(
         f"ERROR: The number of columns in the sample file is wrong ({len(db.columns)} columns)!"
     )
-    os._exit(0)
+    os._exit(1)
 
 
 ## check if all IDs per LB and SM are unique
-
 all_fastq = db.groupby(["ID", "LB", "SM"])["ID"].agg(["count"]).reset_index()
-
 if max(all_fastq["count"]) > 1:
     print("ERROR: The ID's have to be unique within a library and sample!")
-    os._exit(0)
+    os._exit(1)
 
 
 ## dataframe to nested dict

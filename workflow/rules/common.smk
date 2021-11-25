@@ -400,7 +400,7 @@ def get_bam_for_sorting(wildcards):
         print(
             f"ERROR: The parameter mapper is not correctly specified: {mapper} is unknown!"
         )
-        os._exit(0)
+        os._exit(1)
     return f"{wildcards.folder}/01_fastq/02_mapped/{folder}/{wildcards.SM}/{wildcards.LB}/{wildcards.ID}.{wildcards.GENOME}.bam"
 
 
@@ -414,7 +414,7 @@ def get_final_bam_fastq(wildcards):
         bam = f"{wildcards.folder}/01_fastq/03_filtered/01_bam_filter_low_qual/{wildcards.SM}/{wildcards.LB}/{wildcards.ID}.{wildcards.GENOME}.bam"
     else:
         print(f"ERROR: def get_final_bam_library({wildcards.type}): should never happen!")
-        os._exit(0)
+        os._exit(1)
     return bam
 
 
@@ -440,7 +440,7 @@ def get_final_bam_library(wildcards):
         bam = f"{wildcards.folder}/02_library/01_duplicated/01_rmdup/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}_duplicates.bam"
     else:
         print(f"ERROR: def get_final_bam_library({wildcards.type}): should never happen!")
-        os._exit(0)
+        os._exit(1)
     return bam
 
 
@@ -517,5 +517,5 @@ def path_stats_by_level(wildcards):
         ]
     else:
         print(f"ERROR: def path_stats_by_level({wildcards.level}): should never happen!")
-        os._exit(0)
+        os._exit(1)
     return paths
