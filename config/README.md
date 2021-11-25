@@ -30,3 +30,10 @@ where
 * **ID**: uniq identifier for the fastq file (row)
 * **Data**: path to the ``fastq file`` 
 
+For more details, please read the [Wiki](https://github.com/sneuensc/mapache/wiki). The code is available on [GitHub](https://github.com/sneuensc/mapache).
+
+# Run mapache
+After configuering the files ``config/config.yaml`` and the ``samples.tsv`` you can run ``mapache`` using the command
+```
+snakemake -j1
+``` 
