@@ -144,7 +144,7 @@ reads_raw <- sum(length_dist_raw$Count)
 length_reads_raw <- calc_avg_len(length_dist_raw)
 
 ## trimmed fastqc
-if(path_fastqc_trim == "Not trimmed"){
+if(path_fastqc_trim == "Not_trimmed"){
     reads_trim <- 0
     length_reads_trimmed <- 0
 }else{
