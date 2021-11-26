@@ -6,7 +6,7 @@ localrules:
     samtools_idxstats,
     plot_summary_statistics,
     merge_DoC_chr,
-    assign_sex,
+    asign_sex,
     merge_stats_per_fastq,
     merge_stats_per_lb,
     merge_stats_per_sm,
@@ -25,7 +25,9 @@ rule fastqc:
     Quality control of fastq file by fastqc (SE or R1)
     """
     input:
-        inputs_fastqc,
+        lambda wildcards: inputs_fastqc(
+            wildcards, run_adapter_removal=run_adapter_removal
+        ),
     output:
         html="{folder}/04_stats/01_sparse_stats/01_fastq/{type}/{SM}/{LB}/{ID}_fastqc.html",
         zip="{folder}/04_stats/01_sparse_stats/01_fastq/{type}/{SM}/{LB}/{ID}_fastqc.zip",
@@ -123,7 +125,7 @@ rule read_length:
         """
 
 
-#rule samtools_index:
+# rule samtools_index:
 #    input:
 #        "{file}.bam",
 #    output:
@@ -162,7 +164,7 @@ rule samtools_idxstats:
         """
 
 
-rule assign_sex:
+rule asign_sex:
     input:
         idxstats="{folder}/04_stats/01_sparse_stats/{file}.{GENOME}.idxstats",
         #idxstats="{folder}/{file}.{GENOME}.idxstats",
@@ -172,18 +174,14 @@ rule assign_sex:
     params:
         run_sex=str2bool(
             lambda wildcards: recursive_get(
-                ["genome", wildcards.GENOME, "sex_inference", "run"], 
-                False
+                ["genome", wildcards.GENOME, "sex_inference", "run"], False
             )
         ),
-
         sex_params=lambda wildcards: " ".join(
             [
                 f"--{key}='{value}'"
                 for key, value in recursive_get(
-                    ["genome", wildcards.GENOME, "sex_inference", "params"], 
-                    {}
-                
+                    ["genome", wildcards.GENOME, "sex_inference", "params"], {}
                 ).items()
             ]
         ),
@@ -221,12 +219,15 @@ rule assign_sex:
 rule merge_stats_per_fastq:
     input:
         fastqc_orig="{folder}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_fastqc.zip",  # raw sequenced reads
-        fastqc_trim="{folder}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_files_trim/{SM}/{LB}/{ID}_fastqc.zip" if run_adapter_removal else "Not trimmed",  # raw trimmed reads
+        fastqc_trim="{folder}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_files_trim/{SM}/{LB}/{ID}_fastqc.zip"
+        if run_adapter_removal
+        else "Not_trimmed",
+        # raw trimmed reads
         flagstat_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}_flagstat.txt",  # mapped and high-qual reads
         length_fastq_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}.length",
     output:
-        "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv"
-            #"{folder}/04_stats/{dir}{GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv"
+        "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv",
+        #"{folder}/04_stats/{dir}{GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv"
     log:
         "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.log",
         #"{folder}/04_stats/{dir}/{GENOME}/04_stats/{SM}/{LB}/{ID}/fastq_stats.log",
@@ -255,7 +256,9 @@ rule merge_stats_per_lb:
     input:
         fastq_stats=lambda wildcards: expand(
             "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv",
-            ID=samples[wildcards.SM][wildcards.LB], allow_missing = True),
+            ID=samples[wildcards.SM][wildcards.LB],
+            allow_missing=True,
+        ),
         flagstat_raw="{folder}/04_stats/01_sparse_stats/02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}_flagstat.txt",
         flagstat_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_flagstat.txt",
         length_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}.length",
@@ -266,8 +269,7 @@ rule merge_stats_per_lb:
         "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/library_stats.csv",
     params:
         chrs_selected=lambda wildcards: recursive_get(
-            ["genome", wildcards.GENOME, "depth_chromosomes"],  
-            "not requested"
+            ["genome", wildcards.GENOME, "depth_chromosomes"], "not_requested"
         ),
     log:
         "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/library_stats.log",
@@ -281,7 +283,7 @@ rule merge_stats_per_lb:
         """
         list_fastq_stats=$(echo {input.fastq_stats} |sed 's/ /,/g');
 
-        if [ {params.chrs_selected} == "not requested" ] 
+        if [ {params.chrs_selected} == "not_requested" ] 
         then
             chrsSelected=""
         else
@@ -307,7 +309,9 @@ rule merge_stats_per_sm:
     input:
         lb_stats=lambda wildcards: expand(
             "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/library_stats.csv",
-            LB=samples[wildcards.SM], allow_missing = True),
+            LB=samples[wildcards.SM],
+            allow_missing=True,
+        ),
         flagstat_unique="{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_flagstat.txt",
         length_unique="{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.length",
         idxstats_unique="{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.idxstats",
@@ -316,8 +320,7 @@ rule merge_stats_per_sm:
         "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/sample_stats.csv",
     params:
         chrs_selected=lambda wildcards: recursive_get(
-            ["genome", wildcards.GENOME, "depth_chromosomes"], 
-            "not requested"
+            ["genome", wildcards.GENOME, "depth_chromosomes"], "not_requested"
         ),
     log:
         "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/sample_stats.log",
@@ -331,7 +334,7 @@ rule merge_stats_per_sm:
         """
         list_lb_stats=$(echo {input.lb_stats} |sed 's/ /,/g');
 
-        if [ {params.chrs_selected} == "not requested" ] 
+        if [ {params.chrs_selected} == "not_requested" ] 
         then
             chrsSelected=""
         else
@@ -360,7 +363,7 @@ rule merge_stats_by_level_and_genome:
     input:
         paths=path_stats_by_level,
     output:
-        "{folder}/04_stats/03_summary/{level}_stats.{GENOME}.csv"
+        "{folder}/04_stats/03_summary/{level}_stats.{GENOME}.csv",
         #"{folder}/{level}_stats.{GENOME}.csv"
     log:
         "{folder}/04_stats/03_summary/{level}_stats.{GENOME}.log",
@@ -380,7 +383,8 @@ rule merge_stats_all_genomes:
     input:
         expand(
             "{folder}/04_stats/03_summary/{level}_stats.{GENOME}.csv",
-            GENOME=genome, allow_missing = True
+            GENOME=genome,
+            allow_missing=True,
         ),
     output:
         report(
@@ -438,7 +442,8 @@ rule merge_DoC_chr:
     input:
         lambda wildcards: expand(
             "{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_DoC_chrs.csv",
-            SM=samples, allow_missing = True
+            SM=samples,
+            allow_missing=True,
         ),
     output:
         "{folder}/04_stats/03_summary/DoC_by_chrs.{GENOME}.csv",
@@ -496,8 +501,8 @@ rule bamdamage:
     message:
         "--- RUN BAMDAMAGE {input.bam}"
     params:
-        bamdamage_params=recursive_get(["bamdamage_params"], "" ),
-        fraction=recursive_get(["bamdamage_fraction"], 0 ),
+        bamdamage_params=recursive_get(["bamdamage_params"], ""),
+        fraction=recursive_get(["bamdamage_fraction"], 0),
     log:
         "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}_bamdamage.log",
     conda:
@@ -564,7 +569,7 @@ rule plot_bamdamage:
             --genome={wildcards.GENOME} \
             --length_svg={output.length} \
             --damage_svg={output.damage}
-        
+
         ## delete the unwanted created Rplots.pdf...
         rm Rplots.pdf
         """
@@ -574,43 +579,6 @@ rule plot_bamdamage:
 # plots
 # -----------------------------------------------------------------------------#
 # plotting
-
-
-rule plot_depth_statistics:
-    input:
-        sample_depth="{folder}/depth_stats_{GENOME}.csv",
-    output:
-        plot_5_AvgReadDepth=report(
-            "{folder}/5_AvgReadDepth.{GENOME}.svg",
-            caption="../report/5_AvgReadDepth.rst",
-            category="Mapping statistics",
-            subcategory="Plots",
-        ),
-        plot_6_AvgReadDepth_MT=report(
-            "{folder}/6_AvgReadDepth_MT.{GENOME}.svg",
-            caption="../report/6_AvgReadDepth_MT.rst",
-            category="Mapping statistics",
-            subcategory="Plots",
-        ),
-        plot_7_Sex=report(
-            "{folder}/7_Sex.{GENOME}.svg",
-            caption="../report/7_Sex.rst",
-            category="Mapping statistics",
-            subcategory="Plots",
-        ),
-    threads: 1
-    log:
-        "{folder}/depth_stats_plot.{GENOME}.csv.log",
-    message:
-        "--- PLOT DEPTH"
-    conda:
-        "../envs/r.yaml"
-    envmodules:
-        module_r,
-    message:
-        "--- PLOT DEPTH STATISTICS OF {input}"
-    script:
-        "../scripts/plot_depth.R"
 
 
 rule plot_summary_statistics:
@@ -659,11 +627,11 @@ rule plot_summary_statistics:
     message:
         "--- PLOT SUMMARY STATISTICS"
     params:
-        samples=recursive_get(["sample_file"], "" ),
-        x_axis=recursive_get(["stats", "plots", "x_axis"], "sample" ),
-        split_plot=recursive_get(["stats",  "plots",  "split_plot"], "F" ),
-        n_col=recursive_get(["stats",  "plots",  "n_col"], 1 ),
-        n_row=recursive_get(["stats",  "plots",  "n_row"], 1 ),
+        samples=recursive_get(["sample_file"], ""),
+        x_axis=recursive_get(["stats", "plots", "x_axis"], "sample"),
+        split_plot=recursive_get(["stats", "plots", "split_plot"], "F"),
+        n_col=recursive_get(["stats", "plots", "n_col"], 1),
+        n_row=recursive_get(["stats", "plots", "n_row"], 1),
     shell:
         """
         Rscript workflow/scripts/plot_stats.R \
