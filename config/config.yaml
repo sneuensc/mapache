@@ -111,7 +111,7 @@ mapping:
     threads: 4
     mem: 16
     time: 30
-mapper: 'bwa_aln'
+    mapper: 'bwa_aln'
 
 
 ## samtools_sort
