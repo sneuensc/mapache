@@ -5,36 +5,38 @@ import pathlib
 
 
 ##########################################################################################
-# 
-#global MESSAGE_MAPACHE 
+#
+# global MESSAGE_MAPACHE
 MESSAGE_MAPACHE = open("messages_from_mapache.log", "w")
 ##########################################################################################
 ## all functions for main snakemake file
 
-def recursive_get(keys, def_value, my_dict = config):
+
+def recursive_get(keys, def_value, my_dict=config):
     key = keys[0]
     if len(keys) == 1:
         value = my_dict.get(key, def_value)
     else:
-        value = recursive_get(keys[1:], def_value, my_dict = my_dict.get(key, {}))
+        value = recursive_get(keys[1:], def_value, my_dict=my_dict.get(key, {}))
     return value
 
-def update_value(keys, value, my_dict = config):
+
+def update_value(keys, value, my_dict=config):
     key = keys[0]
     if len(keys) == 1:
-        new_dict={}
+        new_dict = {}
         new_dict[key] = value
         return new_dict
     else:
         if key in my_dict:
             new_dict = update_value(keys[1:], value, my_dict[key])
             my_dict[key].update(new_dict)
-            return(my_dict)
+            return my_dict
         else:
             my_dict[key] = {}
             new_dict = update_value(keys[1:], value, my_dict[key])
             my_dict[key].update(new_dict)
-            return(my_dict)
+            return my_dict
 
 
 ##########################################################################################
@@ -87,13 +89,14 @@ def eval_list_to_csv(x):
 ## function to test the chromosome names
 def check_chromosome_names(GENOME, MESSAGE_MAPACHE=MESSAGE_MAPACHE):
 
-
     sex_chr = "X"
-    MESSAGE_MAPACHE.write(f"""
+    MESSAGE_MAPACHE.write(
+        f"""
     Evaluating GENOME:
         {GENOME}
 
-    """)
+    """
+    )
 
     ## get all chromsome names from the reference GENOME
     fasta = recursive_get(["genome", GENOME, "fasta"], "")
@@ -110,12 +113,11 @@ def check_chromosome_names(GENOME, MESSAGE_MAPACHE=MESSAGE_MAPACHE):
         cmd = f"grep '^>' {fasta} | cut -c2- | awk '{{print $1}}'"
         allChr = subprocess.check_output(cmd, shell=True, text=True).split()
     else:
-        # print(f"ERROR: Reference genome 'genome:{GENOME}:fasta' does not exist!")
-        os._exit(1)
+        sys.exit(f"ERROR: Reference genome 'genome:{GENOME}:fasta' does not exist!")
+    # os._exit(1)
 
     # check if chromosomes for which DoC was requested exist
     depth_chromosomes = recursive_get(["genome", GENOME, "depth_chromosomes"], "")
-
 
     if len(depth_chromosomes):
         chromosomes = depth_chromosomes.split(",")
@@ -125,7 +127,7 @@ def check_chromosome_names(GENOME, MESSAGE_MAPACHE=MESSAGE_MAPACHE):
 
     for chr in chromosomes:
         if chr not in allChr:
-            MESSAGE_MAPACHE.write(
+            sys.exit(
                 f"""
             WARNING: at least one chromosome specified in config[genome][{GENOME}][depth_chromosomes] does not exist in FASTA reference file. 
             chr: {chr}
@@ -133,7 +135,7 @@ def check_chromosome_names(GENOME, MESSAGE_MAPACHE=MESSAGE_MAPACHE):
             """
             )
 
-            os._exit(1)
+    # os._exit(1)
 
     # print(f"""
     # chromosomes which will have their DoC reported in main table: {chromosomes}
@@ -146,13 +148,13 @@ def check_chromosome_names(GENOME, MESSAGE_MAPACHE=MESSAGE_MAPACHE):
             f"    Checking if chromosomes specified in config file for sex inference exist in genome {GENOME}."
         )
         sex_chr = recursive_get(
-            ["genome", GENOME, "sex_inference", "params", "sex_chr"],
-             "X"
+            ["genome", GENOME, "sex_inference", "params", "sex_chr"], "X"
         )
 
         if sex_chr not in allChr:
 
-            MESSAGE_MAPACHE.write(f"""
+            sys.exit(
+                f"""
             WARNING: sex chromosome specified in config[genome][{GENOME}][sex_inference][params][sex_chr] does not exist in FASTA reference file. 
             sex_chr: {sex_chr}
             Please set the right chromosome name for this reference genome.
@@ -161,16 +163,16 @@ def check_chromosome_names(GENOME, MESSAGE_MAPACHE=MESSAGE_MAPACHE):
             """
             )
 
-            os._exit(1)
+        # os._exit(1)
 
         # autosomes specified for sex inference
         chromosomes = list(
             map(
                 str,
                 eval_to_list(
-                    recursive_get( 
-                        ["genome", GENOME, "sex_inference", "params", "autosomes"], 
-                        [i for i in range(1, 23)] 
+                    recursive_get(
+                        ["genome", GENOME, "sex_inference", "params", "autosomes"],
+                        [i for i in range(1, 23)],
                     )
                 ),
             )
@@ -178,7 +180,7 @@ def check_chromosome_names(GENOME, MESSAGE_MAPACHE=MESSAGE_MAPACHE):
 
         for chr in chromosomes:
             if chr not in allChr:
-                MESSAGE_MAPACHE.write(
+                sys.exit(
                     f"""
                 WARNING: at least one chromosome specified in config[genome][{GENOME}][sex_inference][params][autosomes] does not exist in FASTA reference file. 
                 chr: {chr}
@@ -188,11 +190,12 @@ def check_chromosome_names(GENOME, MESSAGE_MAPACHE=MESSAGE_MAPACHE):
                 """
                 )
 
-                os._exit(1)
+        # os._exit(1)
         autosomes = 'c("' + '","'.join(chromosomes) + '")'
 
-        config = update_value(["genome", GENOME, "sex_inference", "params", "autosomes"], autosomes)
-
+        config = update_value(
+            ["genome", GENOME, "sex_inference", "params", "autosomes"], autosomes
+        )
 
         MESSAGE_MAPACHE.write(
             f"""
@@ -200,8 +203,9 @@ def check_chromosome_names(GENOME, MESSAGE_MAPACHE=MESSAGE_MAPACHE):
         autosomes: {autosomes}
         """
         )
-    MESSAGE_MAPACHE.write(f"WELL DONE. The chromosome names are well specified for genome {GENOME}.\n\n\n")
-
+    MESSAGE_MAPACHE.write(
+        f"WELL DONE. The chromosome names are well specified for genome {GENOME}.\n\n\n"
+    )
 
 
 ## convert string to boolean
@@ -220,7 +224,7 @@ def str2bool(v):
 def get_memory_alloc(module, attempt, default=2):
     mem_start = int(recursive_get([module, "mem"], default))
     mem_incre = int(
-        recursive_get([module,"mem_increment"], memory_increment_ratio * mem_start)
+        recursive_get([module, "mem_increment"], memory_increment_ratio * mem_start)
     )
     return int(1024 * ((attempt - 1) * mem_incre + mem_start))
 
@@ -263,7 +267,14 @@ def get_damage(run_damage):
             files += [
                 (
                     "{RESULT_DIR}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.{type}.{ext}"
-                ).format(SM=row["SM"], LB=row["LB"], GENOME=GENOME, type=type, ext=ext, RESULT_DIR=RESULT_DIR)
+                ).format(
+                    SM=row["SM"],
+                    LB=row["LB"],
+                    GENOME=GENOME,
+                    type=type,
+                    ext=ext,
+                    RESULT_DIR=RESULT_DIR,
+                )
                 for index, row in all_libraries.iterrows()
                 for type in ["dam", "length"]
                 for ext in ["pdf", "svg"]
@@ -273,7 +284,9 @@ def get_damage(run_damage):
             files += [
                 (
                     "{RESULT_DIR}/04_stats/01_sparse_stats/02_library/04_mapDamage/{LB}.{GENOME}_results_mapDamage/Fragmisincorporation_plot.pdf"
-                ).format(SM=row["SM"], LB=row["LB"], GENOME=GENOME, RESULT_DIR=RESULT_DIR)
+                ).format(
+                    SM=row["SM"], LB=row["LB"], GENOME=GENOME, RESULT_DIR=RESULT_DIR
+                )
                 for index, row in all_libraries.iterrows()
             ]
     else:
@@ -283,14 +296,15 @@ def get_damage(run_damage):
 
 ##########################################################################################
 
+
 def get_picard_indexing_cmd():
-    jar= recursive_get(["software", "picard_jar"], "picard.jar")
+    jar = recursive_get(["software", "picard_jar"], "picard.jar")
     if jar[-4:] == ".jar":
-        bin="java -XX:ParallelGCThreads={threads} -XX:+UseParallelGC -XX:-UsePerfData \
+        bin = "java -XX:ParallelGCThreads={threads} -XX:+UseParallelGC -XX:-UsePerfData \
             -Xms{resources.memory}m -Xmx{resources.memory}m -jar {params.PICARD}"
     else:
-        bin="{params.PICARD}"
-    return(jar)
+        bin = "{params.PICARD}"
+    return jar
 
 
 ##########################################################################################
@@ -303,7 +317,7 @@ def get_fastq_of_ID(wildcards):
     elif "_R2" == wildcards.ID[-3:]:
         filename = samples[wildcards.SM][wildcards.LB][wildcards.ID[:-3]]["Data2"]
     elif paired_end:
-    #elif paired_end != 0:  ## SE library in a paired-end sample file
+        # elif paired_end != 0:  ## SE library in a paired-end sample file
         filename = samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data1"]
     else:
         filename = samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data"]
@@ -311,74 +325,101 @@ def get_fastq_of_ID(wildcards):
 
 
 def get_fastq_for_mapping(wildcards, run_adapter_removal=True):
-    if run_adapter_removal: 
+    if run_adapter_removal:
         if collapse:
             folder = f"{wildcards.folder}/01_fastq/01_trimmed/01_adapter_removal_collapsed/{wildcards.SM}/{wildcards.LB}"
             filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
         else:
             # single-end mode and paired-end without collapsing
             folder = f"{wildcards.folder}/01_fastq/01_trimmed/01_adapter_removal/{wildcards.SM}/{wildcards.LB}"
-            #if str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) == "nan":
-            if str(recursive_get([wildcards.SM,wildcards.LB,wildcards.ID,"Data2"], "nan", my_dict=samples)) == "nan":
+            # if str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) == "nan":
+            if (
+                str(
+                    recursive_get(
+                        [wildcards.SM, wildcards.LB, wildcards.ID, "Data2"],
+                        "nan",
+                        my_dict=samples,
+                    )
+                )
+                == "nan"
+            ):
                 # single-end files
                 filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
             else:
                 # paired-end files, not collapsing
                 filename = [
-                        f"{folder}/{wildcards.ID}_R1.fastq.gz",
-                        f"{folder}/{wildcards.ID}_R2.fastq.gz",
-                    ]
+                    f"{folder}/{wildcards.ID}_R1.fastq.gz",
+                    f"{folder}/{wildcards.ID}_R2.fastq.gz",
+                ]
     else:
         folder = (
             f"results/01_fastq/00_reads/01_files_orig/{wildcards.SM}/{wildcards.LB}"
         )
-        if str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) == "nan":
-            #checking a single-end file
+        if (
+            samples[wildcards.SM][wildcards.LB][wildcards.ID].get("Data2", "nan")
+            == "nan"
+        ):
+            # checking a single-end file
             filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
         else:
-                filename = [
+            filename = [
                 f"{folder}/{wildcards.ID}_R1.fastq.gz",
                 f"{folder}/{wildcards.ID}_R2.fastq.gz",
-            ]    
+            ]
 
     return filename
 
-def inputs_fastqc(wildcards):
-    if "trim" in wildcards.type:
-        if run_adapter_removal: 
+
+def inputs_fastqc(wildcards, run_adapter_removal=True):
+    if "trim" in wildcards.folder:
+        if run_adapter_removal:
             if collapse:
                 folder = f"{wildcards.folder}/01_fastq/01_trimmed/01_adapter_removal_collapsed/{wildcards.SM}/{wildcards.LB}"
                 filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
             else:
                 # single-end mode and paired-end without collapsing
                 folder = f"{wildcards.folder}/01_fastq/01_trimmed/01_adapter_removal/{wildcards.SM}/{wildcards.LB}"
-                #if str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) == "nan":
-                if str(recursive_get([wildcards.SM,wildcards.LB,wildcards.ID,"Data2"], "nan", my_dict=samples)) == "nan":
+                # if str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) == "nan":
+                if (
+                    str(
+                        recursive_get(
+                            [wildcards.SM, wildcards.LB, wildcards.ID, "Data2"],
+                            "nan",
+                            my_dict=samples,
+                        )
+                    )
+                    == "nan"
+                ):
                     # single-end files
                     filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
                 else:
                     # paired-end files, not collapsing
                     filename = [
-                            f"{folder}/{wildcards.ID}_R1.fastq.gz",
-                            f"{folder}/{wildcards.ID}_R2.fastq.gz",
-                        ]
+                        f"{folder}/{wildcards.ID}_R1.fastq.gz",
+                        f"{folder}/{wildcards.ID}_R2.fastq.gz",
+                    ]
     else:
-        folder = (
-            f"{wildcards.folder}/01_fastq/00_reads/01_files_orig/{wildcards.SM}/{wildcards.LB}"
-        )
-        #if str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) == "nan":
-        if str(recursive_get([wildcards.SM,wildcards.LB,wildcards.ID,"Data2"], "nan", my_dict = samples)) == "nan":
-            #checking a single-end file
+        folder = f"{wildcards.folder}/01_fastq/00_reads/01_files_orig/{wildcards.SM}/{wildcards.LB}"
+        # if str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) == "nan":
+        if (
+            str(
+                recursive_get(
+                    [wildcards.SM, wildcards.LB, wildcards.ID, "Data2"],
+                    "nan",
+                    my_dict=samples,
+                )
+            )
+            == "nan"
+        ):
+            # checking a single-end file
             filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
         else:
-                filename = [
+            filename = [
                 f"{folder}/{wildcards.ID}_R1.fastq.gz",
                 f"{folder}/{wildcards.ID}_R2.fastq.gz",
-            ]    
+            ]
 
     return filename
-
-
 
 
 def get_bam_for_sorting(wildcards):
@@ -386,8 +427,15 @@ def get_bam_for_sorting(wildcards):
         if (
             # paired_end == 2
             not collapse
-            #and str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) != "nan"
-            and str(recursive_get([wildcards.SM, wildcards.LB, wildcards.ID, "Data2"], "nan", my_dict = samples)) != "nan"
+            # and str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) != "nan"
+            and str(
+                recursive_get(
+                    [wildcards.SM, wildcards.LB, wildcards.ID, "Data2"],
+                    "nan",
+                    my_dict=samples,
+                )
+            )
+            != "nan"
         ):
             folder = "02_bwa_sampe"
         else:
@@ -397,7 +445,7 @@ def get_bam_for_sorting(wildcards):
     elif mapper == "bowtie2":
         folder = "02_bowtie2"
     else:
-        print(
+        sys.exit(
             f"ERROR: The parameter mapper is not correctly specified: {mapper} is unknown!"
         )
         os._exit(1)
@@ -413,7 +461,9 @@ def get_final_bam_fastq(wildcards):
     elif wildcards.type == "01_bam_low_qual":
         bam = f"{wildcards.folder}/01_fastq/03_filtered/01_bam_filter_low_qual/{wildcards.SM}/{wildcards.LB}/{wildcards.ID}.{wildcards.GENOME}.bam"
     else:
-        print(f"ERROR: def get_final_bam_library({wildcards.type}): should never happen!")
+        print(
+            f"ERROR: def get_final_bam_library({wildcards.type}): should never happen!"
+        )
         os._exit(1)
     return bam
 
@@ -439,7 +489,9 @@ def get_final_bam_library(wildcards):
     elif wildcards.type == "01_bam_duplicate":
         bam = f"{wildcards.folder}/02_library/01_duplicated/01_rmdup/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}_duplicates.bam"
     else:
-        print(f"ERROR: def get_final_bam_library({wildcards.type}): should never happen!")
+        print(
+            f"ERROR: def get_final_bam_library({wildcards.type}): should never happen!"
+        )
         os._exit(1)
     return bam
 
@@ -480,7 +532,6 @@ def get_md_flag_bam(wildcards):
     return bam
 
 
-
 def symlink_rev(input, output):
     shell("ln -srf {input} {output}")
 
@@ -490,7 +541,6 @@ def symlink_rev(input, output):
 
 ##########################################################################################
 ## all functions for the stats
-
 
 
 def path_stats_by_level(wildcards):
@@ -516,6 +566,8 @@ def path_stats_by_level(wildcards):
             for SM in samples
         ]
     else:
-        print(f"ERROR: def path_stats_by_level({wildcards.level}): should never happen!")
+        print(
+            f"ERROR: def path_stats_by_level({wildcards.level}): should never happen!"
+        )
         os._exit(1)
     return paths

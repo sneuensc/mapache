@@ -20,9 +20,9 @@ rule get_fastq:
         "{folder}/00_reads/01_files_orig/{SM}/{LB}/{ID}.fastq.gz",
     threads: 1
     params:
-        run=recursive_get(["subsampling","run"], False),
-        number=recursive_get(["subsampling","number"], 100),
-        params=recursive_get(["subsampling","params"], "-s1"),
+        run=recursive_get(["subsampling", "run"], False),
+        number=recursive_get(["subsampling", "number"], 100),
+        params=recursive_get(["subsampling", "params"], "-s1"),
     conda:
         "../envs/seqtk.yaml"
     envmodules:
@@ -41,7 +41,7 @@ rule get_fasta:
     Symlink and rename the reference (.fasta/.fa) to a new folder.
     """
     input:
-        lambda wildcards: recursive_get(["genome",wildcards.GENOME,"fasta"], ""),
+        lambda wildcards: recursive_get(["genome", wildcards.GENOME, "fasta"], ""),
     output:
         "{folder}/00_reference/{GENOME}/{GENOME}.fasta",
     threads: 1
@@ -59,10 +59,17 @@ rule get_fasta:
 ## trimming
 if paired_end:
     if collapse:
+
         ruleorder: adapter_removal_collapse > adapter_removal_pe > adapter_removal_se
+
+
     else:
-        ruleorder:  adapter_removal_pe > adapter_removal_collapse  > adapter_removal_se
+
+        ruleorder: adapter_removal_pe > adapter_removal_collapse > adapter_removal_se
+
+
 else:
+
     ruleorder: adapter_removal_se > adapter_removal_collapse > adapter_removal_pe
 
 
@@ -74,12 +81,12 @@ rule adapter_removal_collapse:
         R1="{folder}/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_R1.fastq.gz",
         R2="{folder}/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_R2.fastq.gz",
     output:
-        R=       "{folder}/01_fastq/01_trimmed/01_adapter_removal_collapsed/{SM}/{LB}/{ID}.fastq.gz",
-        trunc=   "{folder}/01_fastq/01_trimmed/01_adapter_removal_collapsed/{SM}/{LB}/{ID}_truncated.fastq.gz",
-        R1=      "{folder}/01_fastq/01_trimmed/01_adapter_removal_collapsed/{SM}/{LB}/{ID}_R1.fastq.gz",
-        R2=      "{folder}/01_fastq/01_trimmed/01_adapter_removal_collapsed/{SM}/{LB}/{ID}_R2.fastq.gz",
-        strunc=  "{folder}/01_fastq/01_trimmed/01_adapter_removal_collapsed/{SM}/{LB}/{ID}.singleton.truncated.gz",
-        disc=    "{folder}/01_fastq/01_trimmed/01_adapter_removal_collapsed/{SM}/{LB}/{ID}.discarded.gz",
+        R="{folder}/01_fastq/01_trimmed/01_adapter_removal_collapsed/{SM}/{LB}/{ID}.fastq.gz",
+        trunc="{folder}/01_fastq/01_trimmed/01_adapter_removal_collapsed/{SM}/{LB}/{ID}_truncated.fastq.gz",
+        R1="{folder}/01_fastq/01_trimmed/01_adapter_removal_collapsed/{SM}/{LB}/{ID}_R1.fastq.gz",
+        R2="{folder}/01_fastq/01_trimmed/01_adapter_removal_collapsed/{SM}/{LB}/{ID}_R2.fastq.gz",
+        strunc="{folder}/01_fastq/01_trimmed/01_adapter_removal_collapsed/{SM}/{LB}/{ID}.singleton.truncated.gz",
+        disc="{folder}/01_fastq/01_trimmed/01_adapter_removal_collapsed/{SM}/{LB}/{ID}.discarded.gz",
         settings="{folder}/01_fastq/01_trimmed/01_adapter_removal_collapsed/{SM}/{LB}/{ID}.settings",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("adapterremoval", attempt, 4),
@@ -88,9 +95,8 @@ rule adapter_removal_collapse:
         ),
     params:
         recursive_get(
-            ["adapterremoval","params_paired_end"],
-            "--minlength 30 --trimns --trimqualities --collapse"
-            
+            ["adapterremoval", "params_paired_end"],
+            "--minlength 30 --trimns --trimqualities --collapse",
         ),
     log:
         "{folder}/01_fastq/01_trimmed/01_adapter_removal_collapsed/{SM}/{LB}/{ID}.log",
@@ -133,7 +139,7 @@ rule adapter_removal_pe:
     params:
         recursive_get(
             ["adapterremoval", "params_paired_end"],
-            "--minlength 30 --trimns --trimqualities"
+            "--minlength 30 --trimns --trimqualities",
         ),
     log:
         "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.log",
@@ -153,7 +159,6 @@ rule adapter_removal_pe:
         """
 
 
-
 rule adapter_removal_se:
     """
     Remove adapter and low quality bases at the edges
@@ -171,8 +176,8 @@ rule adapter_removal_se:
         ),
     params:
         recursive_get(
-            ["adapterremoval","params_single_end"],
-            "--minlength 30 --trimns --trimqualities"
+            ["adapterremoval", "params_single_end"],
+            "--minlength 30 --trimns --trimqualities",
         ),
     log:
         "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.log",
@@ -190,10 +195,6 @@ rule adapter_removal_se:
                 --basename ${{out%%.fastq.gz}} --gzip \
                 --output1 {output.fastq} 2> {log};
         """
-
-
-
-
 
 
 ##########################################################################################
@@ -215,14 +216,16 @@ rule mapping_bwa_aln_se:
             ".pac",
         ),
         ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
-        fastq=lambda wildcards: get_fastq_for_mapping(wildcards, run_adapter_removal=run_adapter_removal),
+        fastq=lambda wildcards: get_fastq_for_mapping(
+            wildcards, run_adapter_removal=run_adapter_removal
+        ),
     output:
         "{folder}/01_fastq/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}.sai",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
-        recursive_get(["mapping","bwa_aln_params"], "-l 1024"),
+        recursive_get(["mapping", "bwa_aln_params"], "-l 1024"),
     log:
         "{folder}/01_fastq/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}.log",
     threads: get_threads("mapping", 4)
@@ -252,14 +255,16 @@ rule mapping_bwa_aln_pe:
             ".pac",
         ),
         ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
-        fastq=lambda wildcards: get_fastq_for_mapping(wildcards, run_adapter_removal=run_adapter_removal),
+        fastq=lambda wildcards: get_fastq_for_mapping(
+            wildcards, run_adapter_removal=run_adapter_removal
+        ),
     output:
         "{folder}/01_fastq/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}_R{id_read}.sai",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
-        recursive_get(["mapping","bwa_aln_params"], "-l 1024"),
+        recursive_get(["mapping", "bwa_aln_params"], "-l 1024"),
     log:
         "{folder}/01_fastq/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}_R{id_read}.log",
     threads: get_threads("mapping", 4)
@@ -289,7 +294,9 @@ rule mapping_bwa_samse:
             ".pac",
         ),
         ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
-        fastq=lambda wildcards: get_fastq_for_mapping(wildcards, run_adapter_removal=run_adapter_removal),
+        fastq=lambda wildcards: get_fastq_for_mapping(
+            wildcards, run_adapter_removal=run_adapter_removal
+        ),
         sai="{folder}/01_fastq/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}.sai",
     output:
         "{folder}/01_fastq/02_mapped/02_bwa_samse/{SM}/{LB}/{ID}.{GENOME}.bam",
@@ -298,7 +305,7 @@ rule mapping_bwa_samse:
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
         PL=lambda wildcards: samples[wildcards.SM][wildcards.LB][wildcards.ID]["PL"],
-        bwa_samse_params=recursive_get(["mapping","bwa_samse_params"], "-n 3"),
+        bwa_samse_params=recursive_get(["mapping", "bwa_samse_params"], "-n 3"),
     log:
         "{folder}/01_fastq/02_mapped/02_bwa_samse/{SM}/{LB}/{ID}.{GENOME}.log",
     threads: 1
@@ -331,7 +338,10 @@ rule mapping_bwa_sampe:
             ".pac",
         ),
         ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
-        fastq=lambda wildcards: get_fastq_for_mapping(wildcards, run_adapter_removal=run_adapter_removal),  ## should get both pairs
+        fastq=lambda wildcards: get_fastq_for_mapping(
+            wildcards, run_adapter_removal=run_adapter_removal
+        ),
+        ## should get both pairs
         sai1="{folder}/01_fastq/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}_R1.sai",
         sai2="{folder}/01_fastq/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}_R2.sai",
     output:
@@ -341,7 +351,7 @@ rule mapping_bwa_sampe:
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
         PL=lambda wildcards: samples[wildcards.SM][wildcards.LB][wildcards.ID]["PL"],
-        bwa_samse_params=recursive_get(["mapping","bwa_samse_params"], "-n 3"),
+        bwa_samse_params=recursive_get(["mapping", "bwa_samse_params"], "-n 3"),
     log:
         "{folder}/01_fastq/02_mapped/02_bwa_sampe/{SM}/{LB}/{ID}.{GENOME}.log",
     threads: 1
@@ -375,7 +385,9 @@ rule mapping_bwa_mem:
             ".pac",
         ),
         ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
-        fastq=lambda wildcards: get_fastq_for_mapping(wildcards, run_adapter_removal=run_adapter_removal),
+        fastq=lambda wildcards: get_fastq_for_mapping(
+            wildcards, run_adapter_removal=run_adapter_removal
+        ),
     output:
         "{folder}/01_fastq/02_mapped/02_bwa_mem/{SM}/{LB}/{ID}.{GENOME}.bam",
     resources:
@@ -383,7 +395,7 @@ rule mapping_bwa_mem:
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
         PL=lambda wildcards: samples[wildcards.SM][wildcards.LB][wildcards.ID]["PL"],
-        bwa_mem_params=recursive_get(["mapping","bwa_mem_params"], ""),
+        bwa_mem_params=recursive_get(["mapping", "bwa_mem_params"], ""),
     log:
         "{folder}/01_fastq/02_mapped/02_bwa_mem/{SM}/{LB}/{ID}.{GENOME}.log",
     threads: get_threads("mapping", 4)
@@ -397,7 +409,7 @@ rule mapping_bwa_mem:
         """
         bwa mem {params.bwa_mem_params} -t {threads} \
             -R \"@RG\\tID:{wildcards.ID}\\tLB:{wildcards.LB}\\tSM:{wildcards.SM}\\tPL:{params.PL}\" \
-            {input.ref} ${input.fastq} > {output} 2> {log};
+            {input.ref} {input.fastq} > {output} 2> {log};
         """
 
 
@@ -416,14 +428,16 @@ rule mapping_bowtie2:
             ".rev.2.bt2",
         ),
         ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
-        fastq=lambda wildcards: get_fastq_for_mapping(wildcards, run_adapter_removal=run_adapter_removal),
+        fastq=lambda wildcards: get_fastq_for_mapping(
+            wildcards, run_adapter_removal=run_adapter_removal
+        ),
     output:
         "{folder}/01_fastq/02_mapped/02_bwa_bowtie2/{SM}/{LB}/{ID}.{GENOME}.bam",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
-        bowtie2_params=recursive_get(["mapping","bowtie2_params"], ""),
+        bowtie2_params=recursive_get(["mapping", "bowtie2_params"], ""),
     log:
         "{folder}/01_fastq/02_mapped/02_bwa_bowtie2/{SM}/{LB}/{ID}.{GENOME}.log",
     threads: get_threads("mapping", 4)

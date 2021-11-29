@@ -44,13 +44,13 @@ module_bowtie2 = recursive_get(["envmodules", "bowtie2"], "")
 module_bwa = recursive_get(["envmodules", "bwa"], "")
 module_picard = recursive_get(["envmodules", "picard"], "")
 module_gatk3 = recursive_get(["envmodules", "gatk3"], "")
-module_fastqc = recursive_get(["envmodules","fastqc"], "")
-module_r = recursive_get(["envmodules","r"], "")
-module_adapterremoval = recursive_get(["envmodules","adapterremoval"], "")
-module_mapdamage = recursive_get(["envmodules","mapdamage"], "")
-module_multiqc = recursive_get(["envmodules","multiqc"], "")
-module_bedtools = recursive_get(["envmodules","bedtools"], "")
-module_seqtk = recursive_get(["envmodules","seqtk"], "")
+module_fastqc = recursive_get(["envmodules", "fastqc"], "")
+module_r = recursive_get(["envmodules", "r"], "")
+module_adapterremoval = recursive_get(["envmodules", "adapterremoval"], "")
+module_mapdamage = recursive_get(["envmodules", "mapdamage"], "")
+module_multiqc = recursive_get(["envmodules", "multiqc"], "")
+module_bedtools = recursive_get(["envmodules", "bedtools"], "")
+module_seqtk = recursive_get(["envmodules", "seqtk"], "")
 
 
 ##########################################################################################
@@ -65,41 +65,46 @@ if len(genome) == 0:
 ## test if for each reference a fasta file is defined
 ## check the chromosome names (and adjust config)
 for GENOME in genome:
-    fasta = recursive_get(["genome",GENOME,"fasta"], "")
+    fasta = recursive_get(["genome", GENOME, "fasta"], "")
     if "fasta" == "":
-        print(f"ERROR: Reference genome '{GENOME}' has no fasta file defined!")
-        os._exit(1)
+        sys.exit(f"ERROR: Reference genome '{GENOME}' has no fasta file defined!")
+
     elif not os.path.isfile(fasta):
-        print(f"ERROR: Reference genome '{GENOME}': Fasta file '{fasta}' does not exist!")
-        os._exit(1)
+        sys.exit(
+            f"ERROR: Reference genome '{GENOME}': Fasta file '{fasta}' does not exist!"
+        )
 
     check_chromosome_names(GENOME)
 
-
+# add file for not trimmed data
+if not run_adapter_removal:
+    os.system("touch Not_trimmed")
 
 ## if the bam files have to be rescaled mapDamage has to be run
-if run_mapDamage_rescale and recursive_get(["stats","run_damage"], "False") != "mapDamage":
-    print(
+if (
+    run_mapDamage_rescale
+    and recursive_get(["stats", "run_damage"], "False") != "mapDamage"
+):
+    sys.exit(
         "ERROR: To use 'mapdamage:run_rescale' the parameter 'stats:run_damage' has to be set to 'mapDamage'!"
     )
-    os._exit(1)
 
 ## filter mappings and keep low quality mappings or not?
 if run_filtering:
-    save_low_qual = str2bool(recursive_get(["filtering","save_low_qual"], "True"))
+    save_low_qual = str2bool(recursive_get(["filtering", "save_low_qual"], "True"))
 else:
     save_low_qual = False
 
 ## if one wants to extract the duplicates, MarkDuplicate has to mark the duplicates in order to extract them
 if run_mark_duplicates:
-    save_duplicates = recursive_get( 
-        ["markduplicates","save_duplicates"], "remove"
+    save_duplicates = recursive_get(
+        ["markduplicates", "save_duplicates"], "remove"
     )  ## remove, mark, extract
 else:  ## true,   false,false (false is default)
     save_duplicates = "remove"
 
 ## check that MarkDuplicates has the correct parameters
-param_dupl = recursive_get(["markduplicates","params"], "")
+param_dupl = recursive_get(["markduplicates", "params"], "")
 if "-REMOVE_DUPLICATES true" in param_dupl:
     if save_duplicates != "remove":
         print(
@@ -107,7 +112,7 @@ if "-REMOVE_DUPLICATES true" in param_dupl:
         )
         param_dupl.replace("--REMOVE_DUPLICATES true", "--REMOVE_DUPLICATES false")
 
-        
+
 elif "-REMOVE_DUPLICATES false" in param_dupl:
     if save_duplicates == "remove":
         print(
@@ -122,10 +127,7 @@ else:
         )
         param_dupl = f"{param_dupl} --REMOVE_DUPLICATES true"
 
-config = update_value(
-    keys=["markduplicates", "params"], 
-    value=param_dupl
-    )
+config = update_value(keys=["markduplicates", "params"], value=param_dupl)
 
 
 ##########################################################################################
@@ -137,54 +139,51 @@ db = pd.read_csv(sample_file, sep=delim)
 
 ## check number of columns and column names
 if len(db.columns) == 6:
-    #paired_end = 0  ## single-end library
+    # paired_end = 0  ## single-end library
     paired_end = False
     collapse = False
     if not set(["ID", "Data", "MAPQ", "LB", "PL", "SM"]).issubset(db.columns):
-        print(
+
+        sys.exit(
             "ERROR: The column names in the sample file are wrong! Expected are for single-end reads: ID, Data, MAPQ, LB, PL, SM"
         )
-        os._exit(1)
-    
+
     ## test if all fastq files exist
-    for fq in db['Data'].tolist():
+    for fq in db["Data"].tolist():
         if not os.path.isfile(fq):
-            print(f"ERROR: Fastq file '{fq}' does not exist!")
-            os._exit(1)
+            sys.exit(f"ERROR: Fastq file '{fq}' does not exist!")
+
 
 elif len(db.columns) == 7:
     paired_end = True
     adaptrem_params = config.get("adapterremoval", {}).get("params_paired_end", "")
     if "--collapse" in adaptrem_params:
         collapse = True
-        # paired_end = 1  ## paired-end libraries, which are collapsed with adapterremoval
+    # paired_end = 1  ## paired-end libraries, which are collapsed with adapterremoval
     else:
         collapse = False
-        # paired_end = 2  ## paired-end libraries, which are mapped as paired-end
+    # paired_end = 2  ## paired-end libraries, which are mapped as paired-end
     if not set(["ID", "Data1", "Data2", "MAPQ", "LB", "PL", "SM"]).issubset(db.columns):
-        print(
+        sys.exit(
             "ERROR: The column names in the sample file are wrong! Expected are for paired-end reads: ID, Data1, Data2, MAPQ, LB, PL, SM"
         )
-        os._exit(1)
 
     ## test if all fastq files exist
-    for fq in [db['Data1'].tolist(), db['Data2'].tolist()]:
+    for fq in [db["Data1"].tolist(), db["Data2"].tolist()]:
         if not os.path.isfile(fq):
-            print(f"ERROR: Fastq file '{fq}' does not exist!")
-            os._exit(1)
+            sys.exit(f"ERROR: Fastq file '{fq}' does not exist!")
+
 
 else:
-    print(
+    sys.exit(
         f"ERROR: The number of columns in the sample file is wrong ({len(db.columns)} columns)!"
     )
-    os._exit(1)
 
 
 ## check if all IDs per LB and SM are unique
 all_fastq = db.groupby(["ID", "LB", "SM"])["ID"].agg(["count"]).reset_index()
 if max(all_fastq["count"]) > 1:
-    print("ERROR: The ID's have to be unique within a library and sample!")
-    os._exit(1)
+    sys.exit("ERROR: The ID's have to be unique within a library and sample!")
 
 
 ## dataframe to nested dict
@@ -234,7 +233,6 @@ final_bam = [
         f"{RESULT_DIR}/03_sample/03_final_sample/01_bam/{{SM}}.{{GENOME}}.bam",
         SM=samples,
         GENOME=genome,
-         
     ),
 ]
 # -----------------------------------------------------------------------------#
@@ -244,14 +242,14 @@ final_bam_low_qual = [
         f"{RESULT_DIR}/03_sample/03_final_sample/01_bam_low_qual/{{SM}}.{{GENOME}}.bam",
         SM=samples,
         GENOME=genome,
-     )
+    )
     if save_low_qual
     else [],
     expand(
         "{RESULT_DIR}/03_sample/03_final_sample/01_bam_duplicate/{{SM}}.{{GENOME}}.bam",
         SM=samples,
         GENOME=genome,
-     )
+    )
     if save_duplicates == "extract"
     else [],
 ]
@@ -266,20 +264,23 @@ fastqc = [
     for folder in ["00_reads/01_files_orig", "01_trimmed/01_files_trim"]
 ]
 
-flagstats = list(set([
-    f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}_flagstat.txt"
-    for GENOME in genome
-    for SM in samples
-    for LB in samples[SM]
-    for ID in samples[SM][LB]
-    for file in [
-        f"01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}",
-        f"02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}",
-        f"02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}",
-        f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}",
-    ]
-]
-))
+flagstats = list(
+    set(
+        [
+            f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}_flagstat.txt"
+            for GENOME in genome
+            for SM in samples
+            for LB in samples[SM]
+            for ID in samples[SM][LB]
+            for file in [
+                f"01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}",
+                f"02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}",
+                f"02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}",
+                f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}",
+            ]
+        ]
+    )
+)
 
 lengths = [
     f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}.length"
@@ -318,7 +319,7 @@ sex_files = [
         f"02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}",
         f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}",
     ]
-    if str2bool(recursive_get(["genome",GENOME,"sex_inference","run"], False))
+    if str2bool(recursive_get(["genome", GENOME, "sex_inference", "run"], False))
 ]
 
 sex_files = list(set(sex_files))
@@ -332,6 +333,7 @@ stats_mapping_checkpoint = [
     get_damage(run_damage),
 ]
 
+
 # -----------------------------------------------------------------------------#
 ## get the minimal final summary stats
 final_stats = [
@@ -340,7 +342,10 @@ final_stats = [
     #     level=["SM", "LB", "FASTQ"],
     #     GENOME=genome
     # ),
-    expand(f"{RESULT_DIR}/04_stats/03_summary/{{level}}_stats.csv", level=["SM", "LB", "FASTQ"])
+    expand(
+        f"{RESULT_DIR}/04_stats/03_summary/{{level}}_stats.csv",
+        level=["SM", "LB", "FASTQ"],
+    )
 ]
 # -----------------------------------------------------------------------------#
 
@@ -403,7 +408,9 @@ rule stats:
 onsuccess:
     print("Wow, 'mapache' finished successfully!")
     shell("cat {log} > snakemake.run.log")
-    email = recursive_get(["email"], "" )
+    email = recursive_get(["email"], "")
+    if os.path.isfile("Not_trimmed"):
+        os.system("rm Not_trimmed")
     if email != "":
         print(f"sending email to {email}")
         shell(
@@ -414,7 +421,7 @@ onsuccess:
 onerror:
     print("An error occurred, stored to 'snakemake.run.log'")
     shell("cat {log} > snakemake.run.log")
-    email = recursive_get(["email"], "" )
+    email = recursive_get(["email"], "")
     if email != "":
         print(f"sending email to {email}")
         shell(
