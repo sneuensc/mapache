@@ -525,7 +525,7 @@ rule bamdamage:
            nth_line=$(( $nb / {params.fraction} )); 
         fi;
 
-        perl workflow/scripts/bamdamage {params.bamdamage_params} \
+        workflow/scripts/bamdamage {params.bamdamage_params} \
             --nth_read $nth_line --output {output.damage_pdf} \
             --output_length {output.length_pdf} {input.bam} 2> {log};
         """
