@@ -122,7 +122,7 @@ rule read_length:
     shell:
         """
         pwd > {log};
-        samtools view {input.bam} | workflow/scripts/read_length.pl -o {output.length}
+        samtools view {input.bam} | workflow/scripts/read_length.pl -o {output.length} >> {log}
         """
 
 
@@ -530,7 +530,7 @@ rule bamdamage:
 
         workflow/scripts/bamdamage.pl {params.bamdamage_params} \
             --nth_read $nth_line --output {output.damage_pdf} \
-            --output_length {output.length_pdf} {input.bam} 2> {log};
+            --output_length {output.length_pdf} {input.bam} 2>> {log};
         """
 
 
