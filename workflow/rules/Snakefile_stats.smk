@@ -121,6 +121,7 @@ rule read_length:
         "--- READ LENGTH of {input}"
     shell:
         """
+        pwd > {log};
         samtools view {input.bam} | workflow/scripts/read_length.pl -o {output.length}
         """
 
