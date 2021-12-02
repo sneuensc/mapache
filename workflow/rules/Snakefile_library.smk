@@ -43,7 +43,7 @@ rule remove_duplicates:
             "markduplicates", attempt, 24
         ),
     params:
-        rmdup_params= recursive_get(["markduplicates", "params"], "REMOVE_DUPLICATES=true"),
+        params= recursive_get(["markduplicates", "params"], "--REMOVE_DUPLICATES true"),
         PICARD= recursive_get(["software", "picard_jar"], "picard.jar"),
     threads: get_threads("markduplicates", 4)
     log:
@@ -67,7 +67,7 @@ rule remove_duplicates:
 
         ## run MarkDuplicates
         $bin MarkDuplicates --INPUT {input} --OUTPUT {output.bam} --METRICS_FILE {output.stats} \
-            {params.rmdup_params} --ASSUME_SORT_ORDER coordinate --VALIDATION_STRINGENCY LENIENT 2> {log};
+            {params.params} --ASSUME_SORT_ORDER coordinate --VALIDATION_STRINGENCY LENIENT 2> {log};
         """
 
 rule samtools_extract_duplicates:

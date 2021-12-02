@@ -475,7 +475,7 @@ def get_final_bam_fastq(wildcards):
 
 def get_final_bam_library(wildcards):
     if wildcards.type == "01_bam":
-        if run_mapDamage_rescale:
+        if run_damage_rescale:
             bam = f"{wildcards.folder}/02_library/02_rescaled/01_mapDamage/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
         elif run_mark_duplicates:
             if save_duplicates == "extract":

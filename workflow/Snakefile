@@ -26,7 +26,7 @@ mapper = recursive_get(["mapping", "mapper"], "bwa_aln")
 run_adapter_removal = str2bool(recursive_get(["adapterremoval", "run"], True))
 run_filtering = str2bool(recursive_get(["filtering", "run"], True))
 run_mark_duplicates = str2bool(recursive_get(["markduplicates", "run"], True))
-run_mapDamage_rescale = str2bool(recursive_get(["mapdamage", "run_rescale"], False))
+run_damage_rescale = str2bool(recursive_get(["damage_rescale", "run"], False))
 run_realign = str2bool(recursive_get(["realign", "run"], True))
 run_compute_md = str2bool(recursive_get(["compute_md", "run"], True))
 
@@ -82,11 +82,11 @@ if not run_adapter_removal:
 
 ## if the bam files have to be rescaled mapDamage has to be run
 if (
-    run_mapDamage_rescale
+    run_damage_rescale
     and recursive_get(["stats", "run_damage"], "False") != "mapDamage"
 ):
     sys.exit(
-        "ERROR: To use 'mapdamage:run_rescale' the parameter 'stats:run_damage' has to be set to 'mapDamage'!"
+        "ERROR: To use 'damage_rescale:run' the parameter 'stats:run_damage' has to be set to 'mapDamage'!"
     )
 
 ## filter mappings and keep low quality mappings or not?

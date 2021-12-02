@@ -351,7 +351,7 @@ rule mapping_bwa_sampe:
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
         PL=lambda wildcards: samples[wildcards.SM][wildcards.LB][wildcards.ID]["PL"],
-        bwa_samse_params=recursive_get(["mapping", "bwa_samse_params"], "-n 3"),
+        bwa_sampe_params=recursive_get(["mapping", "bwa_sampe_params"], "-n 3"),
     log:
         "{folder}/01_fastq/02_mapped/02_bwa_sampe/{SM}/{LB}/{ID}.{GENOME}.log",
     threads: 1
@@ -364,7 +364,7 @@ rule mapping_bwa_sampe:
         "--- BWA SAMPE {input.fastq}"
     shell:
         """
-        (bwa sampe {params.bwa_samse_params} \
+        (bwa sampe {params.bwa_sampe_params} \
              -r \"@RG\\tID:{wildcards.ID}\\tLB:{wildcards.LB}\\tSM:{wildcards.SM}\\tPL:{params.PL}\" \
              {input.ref} {input.sai1} {input.sai2} {input.fastq} | \
              samtools view -Sb > {output}) 2> {log}
