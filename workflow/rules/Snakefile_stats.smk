@@ -524,6 +524,8 @@ rule bamdamage:
         elif [ {params.fraction} -lt "$nb" ]; then
            nth_line=$(( $nb / {params.fraction} )); 
         fi;
+        
+        pwd > {log};
 
         workflow/scripts/bamdamage.pl {params.bamdamage_params} \
             --nth_read $nth_line --output {output.damage_pdf} \
