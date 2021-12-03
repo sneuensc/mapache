@@ -121,31 +121,8 @@ rule read_length:
         "--- READ LENGTH of {input}"
     shell:
         """
-        pwd > {log};
-        ls >> {log};
-        ls workflow/scripts/ >> {log};
         samtools view {input.bam} | workflow/scripts/read_length.pl -o {output.length} >> {log}
         """
-
-
-# rule samtools_index:
-#    input:
-#        "{file}.bam",
-#    output:
-#        "{file}.bam.bai",
-#    log:
-#        "{file}.bam.bai.log",
-#    conda:
-#        "../envs/samtools.yaml"
-#    envmodules:
-#        module_samtools,
-#    message:
-#        "--- SAMTOOLS INDEX of {input}"
-#    shell:
-#        """
-#        samtools index {input}
-#        """
-
 
 rule samtools_idxstats:
     input:
@@ -528,8 +505,6 @@ rule bamdamage:
            nth_line=$(( $nb / {params.fraction} )); 
         fi;
         
-        pwd > {log};
-
         workflow/scripts/bamdamage.pl {params.bamdamage_params} \
             --nth_read $nth_line --output {output.damage_pdf} \
             --output_length {output.length_pdf} {input.bam} 2>> {log};
