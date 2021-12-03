@@ -122,7 +122,7 @@ rule read_length:
     shell:
         """
         pwd > {log};
-        ll workflow/scripts/ >> {log};
+        ls -l workflow/scripts/ >> {log};
         samtools view {input.bam} | workflow/scripts/read_length.pl -o {output.length} >> {log}
         """
 
