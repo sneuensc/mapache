@@ -12,6 +12,7 @@ dependencies:
   - picard = 2.25.5
   - samtools = 1.14
   - bedtools = 2.30.0
+  - seqtk = 1.3
   - R = 4.0
   - r-ggplot2
   - r-rcolorbrewer
