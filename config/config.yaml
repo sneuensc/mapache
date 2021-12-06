@@ -12,7 +12,6 @@ envmodules:
     r:              "gcc r/4.0.4"
     adapterremoval: "gcc adapterremoval/2.3.2"
     mapdamage:      ""
-    multiqc:        ""
     bedtools:       "gcc bedtools2/2.29.2"
     seqtk:          ""
 
