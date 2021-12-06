@@ -210,12 +210,6 @@ rule asign_sex:
 
 # -----------------------------------------------------------------------------#
 ## merging individual stats
-# path_multiqc_orig = "results/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/multiqc_fastqc_data/multiqc_fastqc.txt"  # raw sequenced reads
-# path_multiqc_trim = "results/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_files_trim/multiqc_fastqc_data/multiqc_fastqc.txt" # raw trimmed reads
-# path_flagstat_mapped_highQ = "results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/ind1/lib1_lb/lib1_R1_002_fq.hg19_flagstat.txt"       # mapped and high-qual reads
-# path_length_mapped_highQ = "results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/ind1/lib1_lb/lib1_R1_002_fq.hg19.length"
-
-
 rule merge_stats_per_fastq:
     input:
         fastqc_orig="{folder}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_fastqc.zip",  # raw sequenced reads
@@ -525,7 +519,7 @@ rule bamdamage:
            nth_line=$(( $nb / {params.fraction} )); 
         fi;
 
-        workflow/scripts/bamdamage.pl {params.bamdamage_params} \
+        workflow/scripts/bamdamage {params.bamdamage_params} \
             --nth_read $nth_line --output {output.damage_pdf} \
             --output_length {output.length_pdf} {input.bam} 2> {log};
         """
