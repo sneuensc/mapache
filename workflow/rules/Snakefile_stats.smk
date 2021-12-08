@@ -123,9 +123,7 @@ rule read_length:
         "--- READ LENGTH of {input}"
     shell:
         """
-        ll {params.script} >> {log}
-        {params.script} >> {log}
-        samtools view {input.bam} | {params.script}/read_length.pl -o {output.length} >> {log}
+        samtools view {input.bam} | perl {params.script} -o {output.length} >> {log}
         """
 
 rule samtools_idxstats:
@@ -205,10 +203,10 @@ rule merge_stats_per_fastq:
         length_fastq_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}.length",
     output:
         "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv",
-        #"{folder}/04_stats/{dir}{GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv"
     log:
         "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.log",
-        #"{folder}/04_stats/{dir}/{GENOME}/04_stats/{SM}/{LB}/{ID}/fastq_stats.log",
+    params:
+        script=workflow.source_path("../scripts/merge_stats_per_fastq.R")
     conda:
         "../envs/r.yaml"
     envmodules:
@@ -217,7 +215,7 @@ rule merge_stats_per_fastq:
         "--- MERGE FASTQ LEVEL STATS"
     shell:
         """
-        Rscript workflow/scripts/merge_stats_per_fastq.R \
+        Rscript {params.script} \
             --ID={wildcards.ID} \
             --LB={wildcards.LB} \
             --SM={wildcards.SM} \
@@ -249,6 +247,7 @@ rule merge_stats_per_lb:
         chrs_selected=lambda wildcards: recursive_get(
             ["genome", wildcards.GENOME, "depth_chromosomes"], "not_requested"
         ),
+        script=workflow.source_path("../scripts/merge_stats_per_LB.R")
     log:
         "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/library_stats.log",
     conda:
@@ -268,7 +267,7 @@ rule merge_stats_per_lb:
             chrsSelected="--chrs_selected={params.chrs_selected}"
         fi
 
-        Rscript workflow/scripts/merge_stats_per_LB.R \
+        Rscript {params.script} \
             --LB={wildcards.LB} \
             --SM={wildcards.SM} \
             --genome={wildcards.GENOME} \
@@ -300,6 +299,7 @@ rule merge_stats_per_sm:
         chrs_selected=lambda wildcards: recursive_get(
             ["genome", wildcards.GENOME, "depth_chromosomes"], "not_requested"
         ),
+        script=workflow.source_path("../scripts/merge_stats_per_SM.R")
     log:
         "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/sample_stats.log",
     conda:
@@ -319,7 +319,7 @@ rule merge_stats_per_sm:
             chrsSelected="--chrs_selected={params.chrs_selected}"
         fi
 
-        Rscript workflow/scripts/merge_stats_per_SM.R \
+        Rscript {params.script} \
             --SM={wildcards.SM} \
             --genome={wildcards.GENOME} \
             --output_file={output} \
@@ -400,7 +400,7 @@ rule DoC_chr_SM:
     output:
         "{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_DoC_chrs.csv",
     params:
-        SM="{SM}",
+        script=workflow.source_path("../scripts/depth_by_chr.R")
     log:
         "{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_DoC_chrs.log",
     conda:
@@ -409,9 +409,9 @@ rule DoC_chr_SM:
         module_r,
     shell:
         """
-        Rscript workflow/scripts/depth_by_chr.R \
+        Rscript {params.script} \
             --path_genomecov={input} \
-            --SM={params.SM} \
+            --SM={wildcards.SM} \
             --output_file={output}
         """
 
@@ -504,7 +504,7 @@ rule bamdamage:
            nth_line=$(( $nb / {params.fraction} )); 
         fi;
 
-        {params.script} {params.bamdamage_params} \
+        perl {params.script} {params.bamdamage_params} \
             --nth_read $nth_line --output {output.damage_pdf} \
             --output_length {output.length_pdf} {input.bam} 2>> {log};
         """
@@ -531,6 +531,8 @@ rule plot_bamdamage:
         ),
     message:
         "--- PLOT DAMAGE"
+    params:
+        script=workflow.source_path("../scripts/plot_bamdamage.R")
     log:
         "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}_plot.log",
     conda:
@@ -539,7 +541,7 @@ rule plot_bamdamage:
         module_r,
     shell:
         """
-        Rscript workflow/scripts/plot_bamdamage.R \
+        Rscript {params.script} \
             --length={input.length_table} \
             --five_prime={input.dam_5prime_table} \
             --three_prime={input.dam_3prime_table} \
@@ -611,9 +613,10 @@ rule plot_summary_statistics:
         split_plot=recursive_get(["stats", "plots", "split_plot"], "F"),
         n_col=recursive_get(["stats", "plots", "n_col"], 1),
         n_row=recursive_get(["stats", "plots", "n_row"], 1),
+        script=workflow.source_path("../scripts/plot_stats.R")
     shell:
         """
-        Rscript workflow/scripts/plot_stats.R \
+        Rscript {params.script} \
             --samples={params.samples} \
             --SM={input.sample_stats}  \
             --out_1_reads={output.plot_1_nb_reads} \
