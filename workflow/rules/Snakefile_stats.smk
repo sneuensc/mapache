@@ -121,7 +121,7 @@ rule read_length:
         "--- READ LENGTH of {input}"
     shell:
         """
-        samtools view {input.bam} | workflow/scripts/read_length.pl -o {output.length} >> {log}
+        samtools view {input.bam} | {SNAKE_DIR}/scripts/read_length.pl -o {output.length} >> {log}
         """
 
 rule samtools_idxstats:
@@ -499,7 +499,7 @@ rule bamdamage:
            nth_line=$(( $nb / {params.fraction} )); 
         fi;
 
-        workflow/scripts/bamdamage {params.bamdamage_params} \
+        {SNAKE_DIR}/scripts/bamdamage {params.bamdamage_params} \
             --nth_read $nth_line --output {output.damage_pdf} \
             --output_length {output.length_pdf} {input.bam} 2>> {log};
         """
