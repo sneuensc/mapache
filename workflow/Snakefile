@@ -7,6 +7,10 @@ Date: 28/10/2019
 
 
 ##########################################################################################
+import logging
+LOGGER = logging.getLogger("snakemake.logging")
+
+
 ## read the config file
 configfile: "config/config.yaml"
 
@@ -18,6 +22,8 @@ include: "rules/common.smk"
 
 
 ## default values
+SNAKE_DIR = workflow.basedir 
+#LOGGER.info("Working directory is %s", {SNAKE_DIR)
 sample_file = recursive_get(["sample_file"], "samples.txt")
 RESULT_DIR = recursive_get(["result_dir"], "results")
 mapper = recursive_get(["mapping", "mapper"], "bwa_aln")
@@ -48,7 +54,6 @@ module_fastqc = recursive_get(["envmodules", "fastqc"], "")
 module_r = recursive_get(["envmodules", "r"], "")
 module_adapterremoval = recursive_get(["envmodules", "adapterremoval"], "")
 module_mapdamage = recursive_get(["envmodules", "mapdamage"], "")
-module_multiqc = recursive_get(["envmodules", "multiqc"], "")
 module_bedtools = recursive_get(["envmodules", "bedtools"], "")
 module_seqtk = recursive_get(["envmodules", "seqtk"], "")
 
@@ -134,7 +139,7 @@ config = update_value(keys=["markduplicates", "params"], value=param_dupl)
 ## read the sample file
 # sample_file="config/samples.tsv"
 delim = recursive_get(["delim"], "\s+")
-db = pd.read_csv(sample_file, sep=delim)
+db = pd.read_csv(sample_file, sep=delim, comment='#')
 
 
 ## check number of columns and column names
