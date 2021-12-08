@@ -123,7 +123,7 @@ rule read_length:
         "--- READ LENGTH of {input}"
     shell:
         """
-        samtools view {input.bam} | {params.script} -o {output.length} >> {log}
+        samtools view {input.bam} | {params.script}/read_length.pl -o {output.length} >> {log}
         """
 
 rule samtools_idxstats:
