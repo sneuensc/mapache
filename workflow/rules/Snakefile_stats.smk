@@ -117,11 +117,13 @@ rule read_length:
         "../envs/samtools.yaml"
     envmodules:
         module_samtools,
+    params:
+        script=workflow.source_path("../scripts/read_length.pl")
     message:
         "--- READ LENGTH of {input}"
     shell:
         """
-        samtools view {input.bam} | {SNAKE_DIR}/scripts/read_length.pl -o {output.length} >> {log}
+        samtools view {input.bam} | {params.script} -o {output.length} >> {log}
         """
 
 rule samtools_idxstats:
@@ -477,6 +479,7 @@ rule bamdamage:
     params:
         bamdamage_params=recursive_get(["bamdamage_params"], ""),
         fraction=recursive_get(["bamdamage_fraction"], 0),
+        script=workflow.source_path("../scripts/bamdamage")
     log:
         "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}_bamdamage.log",
     conda:
@@ -499,7 +502,7 @@ rule bamdamage:
            nth_line=$(( $nb / {params.fraction} )); 
         fi;
 
-        {SNAKE_DIR}/scripts/bamdamage {params.bamdamage_params} \
+        {params.script} {params.bamdamage_params} \
             --nth_read $nth_line --output {output.damage_pdf} \
             --output_length {output.length_pdf} {input.bam} 2>> {log};
         """
