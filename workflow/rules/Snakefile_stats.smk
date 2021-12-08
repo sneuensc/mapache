@@ -31,11 +31,8 @@ rule fastqc:
     output:
         html="{folder}/04_stats/01_sparse_stats/01_fastq/{type}/{SM}/{LB}/{ID}_fastqc.html",
         zip="{folder}/04_stats/01_sparse_stats/01_fastq/{type}/{SM}/{LB}/{ID}_fastqc.zip",
-        #html="{folder}/{SM}/{LB}/{ID}_fastqc.html",
-        #zip="{folder}/{SM}/{LB}/{ID}_fastqc.zip",
     log:
         "{folder}/04_stats/01_sparse_stats/01_fastq/{type}/{SM}/{LB}/{ID}_fastqc.log",
-        #"{folder}/{SM}/{LB}/{ID}_fastqc.log",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("fastqc_mem", attempt, 2),
         runtime=lambda wildcards, attempt: get_runtime_alloc("fastqc_time", attempt, 1),
@@ -149,10 +146,8 @@ rule samtools_idxstats:
 rule asign_sex:
     input:
         idxstats="{folder}/04_stats/01_sparse_stats/{file}.{GENOME}.idxstats",
-        #idxstats="{folder}/{file}.{GENOME}.idxstats",
     output:
         sex="{folder}/04_stats/01_sparse_stats/{file}.{GENOME}.sex",
-        #sex="{folder}/{file}.{GENOME}.sex",
     params:
         run_sex=str2bool(
             lambda wildcards: recursive_get(
@@ -167,6 +162,7 @@ rule asign_sex:
                 ).items()
             ]
         ),
+        script=workflow.source_path("../scripts/assign_sex.R")
     log:
         "{folder}/{file}.{GENOME}.sex.log",
     conda:
@@ -182,7 +178,7 @@ rule asign_sex:
             echo "Sex" > {output.sex}
             echo "Not requested in config" >> {output.sex}
         else
-            Rscript workflow/scripts/assign_sex.R \
+            Rscript {params.script} \
                 --idxstats={input.idxstats} \
                 --out={output.sex} \
                 {params.sex_params}
@@ -206,7 +202,8 @@ rule merge_stats_per_fastq:
     log:
         "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.log",
     params:
-        script=workflow.source_path("../scripts/merge_stats_per_fastq.R")
+        script=workflow.source_path("../scripts/merge_stats_per_fastq.R"),
+        script_parse_fastqc=workflow.source_path("../scripts/parse_fastqc.R")
     conda:
         "../envs/r.yaml"
     envmodules:
@@ -224,7 +221,8 @@ rule merge_stats_per_fastq:
             --path_fastqc_orig={input.fastqc_orig} \
             --path_fastqc_trim={input.fastqc_trim} \
             --path_flagstat_mapped_highQ={input.flagstat_mapped_highQ} \
-            --path_length_mapped_highQ={input.length_fastq_mapped_highQ}
+            --path_length_mapped_highQ={input.length_fastq_mapped_highQ} \
+            --script_parse_fastqc={params.script_parse_fastqc}
         """
 
 
@@ -342,10 +340,8 @@ rule merge_stats_by_level_and_genome:
         paths=path_stats_by_level,
     output:
         "{folder}/04_stats/03_summary/{level}_stats.{GENOME}.csv",
-        #"{folder}/{level}_stats.{GENOME}.csv"
     log:
         "{folder}/04_stats/03_summary/{level}_stats.{GENOME}.log",
-        #"{folder}/{level}_stats.{GENOME}.log",
     message:
         "--- MERGE STATS by {wildcards.level}"
     run:

@@ -91,6 +91,7 @@ path_fastqc_orig = get_args(argsL, "path_fastqc_orig")
 path_fastqc_trim = get_args(argsL, "path_fastqc_trim")
 path_flagstat_mapped_highQ = get_args(argsL, "path_flagstat_mapped_highQ")
 path_length_mapped_highQ = get_args(argsL, "path_length_mapped_highQ")
+script_parse_fastqc = get_args(argsL, "script_parse_fastqc")
 
 #-----------------------------------------------------------------------------#
 
@@ -103,7 +104,7 @@ mapped_raw = as.numeric(strsplit(readLines(path_flagstat_mapped_highQ)[1], " ")[
 #-----------------------------------------------------------------------------#
 ## original fastqc
 #options(readr.show_col_types = FALSE)
-source("workflow/scripts/parse_fastqc.R")
+source(script_parse_fastqc)
 
 # lines_to_skip <-  as.integer(
 #     system(
