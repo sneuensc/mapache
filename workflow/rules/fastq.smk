@@ -403,13 +403,14 @@ rule mapping_bwa_mem:
         "../envs/bwa.yaml"
     envmodules:
         module_bwa,
+        module_samtools,
     message:
         "--- BWA MEM {input.fastq}"
     shell:
         """
         bwa mem {params.bwa_mem_params} -t {threads} \
             -R \"@RG\\tID:{wildcards.ID}\\tLB:{wildcards.LB}\\tSM:{wildcards.SM}\\tPL:{params.PL}\" \
-            {input.ref} {input.fastq} > {output} 2> {log};
+            {input.ref} {input.fastq} 2> {log} | samtools sort --threads {threads} -o {output};
         """
 
 
