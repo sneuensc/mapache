@@ -410,7 +410,7 @@ rule mapping_bwa_mem:
         """
         bwa mem {params.bwa_mem_params} -t {threads} \
             -R \"@RG\\tID:{wildcards.ID}\\tLB:{wildcards.LB}\\tSM:{wildcards.SM}\\tPL:{params.PL}\" \
-            {input.ref} {input.fastq} 2> {log} | samtools sort --threads {threads} -o {output};
+            {input.ref} {input.fastq} 2> {log} | samtools view -bS --threads {threads} - > {output};
         """
 
 
