@@ -48,7 +48,7 @@ delim: '\s+'
 #delim: ' '
 #delim: "\t"
 
-result_dir: 'result3'
+result_dir: 'results'
 
 ## global variables to define about resource increments after job failure
 ## 0: no change between failures
