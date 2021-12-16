@@ -1,8 +1,7 @@
 .snakemake
 report.html
-results
+result*
 snakemake.run.log
 **pyc
-pyc
-dag.svg
+*.svg
 slurm-*
