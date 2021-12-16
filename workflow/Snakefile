@@ -55,6 +55,7 @@ module_mapdamage = recursive_get(["envmodules", "mapdamage"], "")
 module_bedtools = recursive_get(["envmodules", "bedtools"], "")
 module_seqtk = recursive_get(["envmodules", "seqtk"], "")
 module_qualimap = recursive_get(["envmodules", "qualimap"], "")
+module_multiqc = recursive_get(["envmodules", "multiqc"], "")
 
 
 ##########################################################################################
@@ -291,6 +292,24 @@ flagstats = list(
     )
 )
 
+samtools_stats = list(
+    set(
+        [
+            f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}_stats.txt"
+            for GENOME in genome
+            for SM in samples
+            for LB in samples[SM]
+            for ID in samples[SM][LB]
+            for file in [
+                f"01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}",
+                f"02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}",
+                f"02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}",
+                f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}",
+            ]
+        ]
+    )
+)
+
 lengths = [
     f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}.length"
     for GENOME in genome
@@ -334,20 +353,27 @@ sex_files = [
 sex_files = list(set(sex_files))
 
 qualimap_files = [
-    f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}_qualimap"
+    f"{RESULT_DIR}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_qualimap"
     for GENOME in genome
     for SM in samples
-     for file in [
-        f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}",
-    ]
     if str2bool(recursive_get(["stats", "qualimap"], False))
-]
+] 
 
 qualimap_files = list(set(qualimap_files))
+
+multiqc_files = [
+    f"{RESULT_DIR}/04_stats/02_separate_tables/{GENOME}/multiqc_fastqc.html"
+    for GENOME in genome
+    if str2bool(recursive_get(["stats", "multiqc"], False))
+]
+
+multiqc_files = list(set(multiqc_files))
+
 
 stats_mapping_checkpoint = [
     fastqc,
     flagstats,
+    samtools_stats,
     lengths,
     idxstats,
     sex_files,
@@ -368,6 +394,7 @@ final_stats = [
         level=["SM", "LB", "FASTQ"],
     ),
     qualimap_files,
+    multiqc_files,
 ]
 # -----------------------------------------------------------------------------#
 
@@ -397,6 +424,7 @@ rule all:
         final_bam_low_qual,
         final_stat_figures,
         final_stats,
+        samtools_stats,
 
 
 ## rules dag (just pipeline)

@@ -84,6 +84,33 @@ rule samtools_flagstat:
         "samtools flagstat --threads {threads} {input} > {output} 2> {log};"
 
 
+rule samtools_stats:
+    """
+    Compute samtools stats on bam file
+    """
+    input:
+        bam="{folder}/{file}.bam",
+    output:
+        "{folder}/04_stats/01_sparse_stats/{file}_stats.txt",
+    resources:
+        memory=lambda wildcards, attempt: get_memory_alloc(
+            "samtools_stats_mem", attempt, 2
+        ),
+        runtime=lambda wildcards, attempt: get_runtime_alloc(
+            "samtools_stats_time", attempt, 1
+        ),
+    log:
+        "{folder}/04_stats/01_sparse_stats/{file}_stats.log",
+    conda:
+        "../envs/samtools.yaml"
+    envmodules:
+        module_samtools,
+    message:
+        "--- SAMTOOLS FLAGSTAT {input}"
+    shell:
+        "samtools stats --threads {threads} {input} > {output} 2> {log};"
+
+
 rule bedtools_genomecov:
     input:
         bam="{folder}/{dir}/{file}.bam",
@@ -475,8 +502,8 @@ rule bamdamage:
     message:
         "--- RUN BAMDAMAGE {input.bam}"
     params:
-        bamdamage_params=recursive_get(["bamdamage_params"], ""),
-        fraction=recursive_get(["bamdamage_fraction"], 0),
+        bamdamage_params=recursive_get(["stats","bamdamage_params"], ""),
+        fraction=recursive_get(["stats","bamdamage_fraction"], 0),
         script=workflow.source_path("../scripts/bamdamage")
     log:
         "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}_bamdamage.log",
@@ -645,4 +672,76 @@ rule qualimap:
     shell:
         """
         qualimap bamqc -c -bam {input} -outdir {output} > {log}
+        """
+
+rule multiqc:
+    """
+    Running multiqc
+    """
+    input:
+        orig=lambda wildcards: [f"{{folder}}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_fastqc.zip"
+            for SM in samples
+            for LB in samples[SM]
+            for ID in samples[SM][LB]
+        ],
+        adaptRem=lambda wildcards: [f"{{folder}}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}"
+            for SM in samples
+            for LB in samples[SM]
+            for ID in samples[SM][LB]
+            if run_adapter_removal
+        ],
+        trim=lambda wildcards: [f"{{folder}}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_files_trim/{SM}/{LB}/{ID}_fastqc.zip"
+            for SM in samples
+            for LB in samples[SM]
+            for ID in samples[SM][LB]
+            if run_adapter_removal
+        ],
+#        flagstat1=lambda wildcards: [f"{{folder}}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/"
+#            for SM in samples
+#            for LB in samples[SM]
+#            for ID in samples[SM][LB]
+#        ],
+        samtools_stats1= lambda wildcards: [f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}_stats.txt"
+            for GENOME in genome
+            for SM in samples
+            for LB in samples[SM]
+            for ID in samples[SM][LB]
+        ],
+        samtools_stats2= lambda wildcards: [f"{RESULT_DIR}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_stats.txt"
+            for GENOME in genome
+            for SM in samples
+            for LB in samples[SM]
+            for ID in samples[SM][LB]
+        ],
+        samtools_stats3= lambda wildcards: [f"{RESULT_DIR}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_stats.txt"
+            for GENOME in genome
+            for SM in samples
+            for LB in samples[SM]
+            for ID in samples[SM][LB]
+        ],
+        qualimap= lambda wildcards: [f"{RESULT_DIR}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_qualimap"
+            for GENOME in genome
+            for SM in samples
+            for LB in samples[SM]
+            for ID in samples[SM][LB]
+            if str2bool(recursive_get(["stats", "qualimap"], False))
+        ],
+    output:
+        html=report("{folder}/04_stats/02_separate_tables/{GENOME}/multiqc_fastqc.html",
+            category=" Quality control",
+        ),
+    resources:
+        memory=lambda wildcards, attempt: get_memory_alloc("multiqc_mem", attempt, 2),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("multiqc_time", attempt, 1),
+    log:
+        "{folder}/04_stats/02_separate_tables/{GENOME}/multiqc_fastqc.log",
+    conda:
+        "../envs/multiqc.yaml"
+    envmodules:
+        module_multiqc,
+    message:
+        "--- MULTIQC fastqc of {GENOME}"
+    shell:
+        """
+        multiqc -c resources/multiqc_config.yaml -n $(basename {output.html}) -f -d -o $(dirname {output.html}) {input}  2> {log}
         """
