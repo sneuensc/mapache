@@ -625,3 +625,24 @@ rule plot_summary_statistics:
             --n_col={params.n_col} \
             --n_row={params.n_row}
         """
+
+rule qualimap:
+    """ 
+    Run qualimap
+    """
+    input:
+        bam="{folder}/{file}.bam",
+    output:
+        directory("{folder}/04_stats/01_sparse_stats/{file}_qualimap")
+    log:
+        "{folder}/04_stats/01_sparse_stats/{file}_qualimap.log",
+    message:
+        "--- QUALIMAP on {input}"
+    conda:
+        "../envs/qualimap.yaml"
+    envmodules:
+        module_qualimap,
+    shell:
+        """
+        qualimap bamqc -c -bam {input} -outdir {output} > {log}
+        """

@@ -14,6 +14,7 @@ envmodules:
     mapdamage:      ""
     bedtools:       "gcc bedtools2/2.29.2"
     seqtk:          ""
+    qualimap:       ""
 
 ##########################################################################################
 ##########################################################################################
@@ -176,6 +177,8 @@ stats:
     run_damage: 'bamdamage'        #("False", "mapDamage", "bamdamage")
     bamdamage_fraction: 5000
     bamdamage_params: ' --rlength 300 '
+
+    qualimap: True
 # specific to Mapping statistics plot in the report
     plots:
         # x_axis: either "sample" or "genome"

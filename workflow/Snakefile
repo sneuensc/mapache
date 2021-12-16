@@ -22,8 +22,6 @@ include: "rules/common.smk"
 
 
 ## default values
-SNAKE_DIR = workflow.basedir 
-#LOGGER.info("Working directory is %s", {SNAKE_DIR)
 sample_file = recursive_get(["sample_file"], "samples.txt")
 RESULT_DIR = recursive_get(["result_dir"], "results")
 mapper = recursive_get(["mapping", "mapper"], "bwa_aln")
@@ -56,6 +54,7 @@ module_adapterremoval = recursive_get(["envmodules", "adapterremoval"], "")
 module_mapdamage = recursive_get(["envmodules", "mapdamage"], "")
 module_bedtools = recursive_get(["envmodules", "bedtools"], "")
 module_seqtk = recursive_get(["envmodules", "seqtk"], "")
+module_qualimap = recursive_get(["envmodules", "qualimap"], "")
 
 
 ##########################################################################################
@@ -66,6 +65,11 @@ genome = list(recursive_get(["genome"], ""))
 if len(genome) == 0:
     print("ERROR: Reference genome is not specified (parameter 'genome')!")
     os._exit(1)
+
+FORMAT = '%(asctime)s %(clientip)-15s %(user)-8s %(message)s'
+LOGGER.info(f"{len(genome)} reference genome(s) are specified.")
+
+
 
 ## test if for each reference a fasta file is defined
 ## check the chromosome names (and adjust config)
@@ -112,7 +116,7 @@ else:  ## true,   false,false (false is default)
 param_dupl = recursive_get(["markduplicates", "params"], "")
 if "-REMOVE_DUPLICATES true" in param_dupl:
     if save_duplicates != "remove":
-        print(
+        LOGGER.info(
             "WARNING: To save/mark duplicates in MarkDuplicates the parameter 'markduplicates:params' has to contain the parameter '--REMOVE_DUPLICATES false' or not to be set! Adjusted!"
         )
         param_dupl.replace("--REMOVE_DUPLICATES true", "--REMOVE_DUPLICATES false")
@@ -120,14 +124,14 @@ if "-REMOVE_DUPLICATES true" in param_dupl:
 
 elif "-REMOVE_DUPLICATES false" in param_dupl:
     if save_duplicates == "remove":
-        print(
+        LOGGER.info(
             "WARNING: To remove duplicates in MarkDuplicates the parameter 'markduplicates:params' has to contain the parameter '--REMOVE_DUPLICATES true'! Adjusted!"
         )
         param_dupl.replace("--REMOVE_DUPLICATES false", "--REMOVE_DUPLICATES true")
 
 else:
     if save_duplicates == "remove":
-        print(
+        LOGGER.info(
             "WARNING: To remove duplicates in MarkDuplicates the parameter 'markduplicates:params' has to contain the parameter '--REMOVE_DUPLICATES true'! Adjusted!"
         )
         param_dupl = f"{param_dupl} --REMOVE_DUPLICATES true"
@@ -329,6 +333,18 @@ sex_files = [
 
 sex_files = list(set(sex_files))
 
+qualimap_files = [
+    f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}_qualimap"
+    for GENOME in genome
+    for SM in samples
+     for file in [
+        f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}",
+    ]
+    if str2bool(recursive_get(["stats", "qualimap"], False))
+]
+
+qualimap_files = list(set(qualimap_files))
+
 stats_mapping_checkpoint = [
     fastqc,
     flagstats,
@@ -350,7 +366,8 @@ final_stats = [
     expand(
         f"{RESULT_DIR}/04_stats/03_summary/{{level}}_stats.csv",
         level=["SM", "LB", "FASTQ"],
-    )
+    ),
+    qualimap_files,
 ]
 # -----------------------------------------------------------------------------#
 
@@ -411,7 +428,7 @@ rule stats:
 
 
 onsuccess:
-    print("Wow, 'mapache' finished successfully!")
+    LOGGER.info("Wow, 'mapache' finished successfully!")
     shell("cat {log} > snakemake.run.log")
     email = recursive_get(["email"], "")
     if os.path.isfile("Not_trimmed"):
