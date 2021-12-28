@@ -8,8 +8,11 @@ rule merge_bam_fastq2library:
     Merge the bam files of the fastq step
     """
     input:
-        mapped=lambda wildcards: expand("{folder}/01_fastq/04_final_fastq/{type}/{SM}/{LB}/{ID}.{GENOME}.bam",
-             ID=samples[wildcards.SM][wildcards.LB], allow_missing=True)
+        mapped=lambda wildcards: expand(
+            "{folder}/01_fastq/04_final_fastq/{type}/{SM}/{LB}/{ID}.{GENOME}.bam",
+            ID=samples[wildcards.SM][wildcards.LB],
+            allow_missing=True,
+        ),
     output:
         "{folder}/02_library/00_merged_fastq/{type}/{SM}/{LB}.{GENOME}.bam",
     resources:
@@ -43,8 +46,8 @@ rule remove_duplicates:
             "markduplicates", attempt, 24
         ),
     params:
-        params= recursive_get(["markduplicates", "params"], "--REMOVE_DUPLICATES true"),
-        PICARD= get_picard_bin(),
+        params=recursive_get(["markduplicates", "params"], "--REMOVE_DUPLICATES true"),
+        PICARD=get_picard_bin(),
     threads: get_threads("markduplicates", 4)
     log:
         "{folder}/02_library/01_duplicated/01_rmdup/{SM}/{LB}.{GENOME}.log",
@@ -59,6 +62,7 @@ rule remove_duplicates:
         {params.PICARD} MarkDuplicates --INPUT {input} --OUTPUT {output.bam} --METRICS_FILE {output.stats} \
             {params.params} --ASSUME_SORT_ORDER coordinate --VALIDATION_STRINGENCY LENIENT 2> {log};
         """
+
 
 rule samtools_extract_duplicates:
     """
@@ -113,7 +117,7 @@ rule mapDamage_stats:
         memory=lambda wildcards, attempt: get_memory_alloc("mapdamage", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapdamage", attempt, 24),
     params:
-        params= recursive_get(["mapdamage", "params"], ""),
+        params=recursive_get(["mapdamage", "params"], ""),
     conda:
         "../envs/mapdamage.yaml"
     message:
@@ -142,7 +146,7 @@ rule mapDamage_rescale:
         "{folder}/02_library/02_rescaled/01_mapDamage/{SM}/{LB}.{GENOME}_rescale.log",
     threads: 1
     params:
-        params= recursive_get(["mapdamage", "params"], ""),
+        params=recursive_get(["mapdamage", "params"], ""),
     conda:
         "../envs/mapdamage.yaml"
     message:
@@ -169,4 +173,3 @@ rule get_final_library:
         "{folder}/02_library/03_final_library/{type}/{SM}/{LB}.{GENOME}.bam.log",
     run:
         symlink_rev(input, output)
-

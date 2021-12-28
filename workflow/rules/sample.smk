@@ -10,8 +10,11 @@ rule merge_bam_library2sample:
     Merge the bam files of the library step
     """
     input:
-        mapped=lambda wildcards: expand("{folder}/02_library/03_final_library/{type}/{SM}/{LB}.{GENOME}.bam",
-             LB=samples[wildcards.SM], allow_missing=True)
+        mapped=lambda wildcards: expand(
+            "{folder}/02_library/03_final_library/{type}/{SM}/{LB}.{GENOME}.bam",
+            LB=samples[wildcards.SM],
+            allow_missing=True,
+        ),
     output:
         "{folder}/03_sample/00_merged_library/{type}/{SM}.{GENOME}.bam",
     resources:

@@ -8,10 +8,10 @@ Date: 28/10/2019
 
 ##########################################################################################
 import logging
-LOGGER = logging.getLogger("snakemake.logging")
-#logging.basicConfig(filename='example.log', encoding='utf-8', level=logging.DEBUG)
-# logging.basicConfig(format='%(levelname)s %(message)s')
 
+LOGGER = logging.getLogger("snakemake.logging")
+# logging.basicConfig(filename='example.log', encoding='utf-8', level=logging.DEBUG)
+# logging.basicConfig(format='%(levelname)s %(message)s')
 
 
 ## read the config file
@@ -70,12 +70,11 @@ if len(genome) == 0:
     LOGGER.error("ERROR: Reference genome is not specified (parameter 'genome')!")
     os._exit(1)
 
-FORMAT = '%(asctime)s %(clientip)-15s %(user)-8s %(message)s'
+FORMAT = "%(asctime)s %(clientip)-15s %(user)-8s %(message)s"
 if len(genome) > 3:
     LOGGER.info(f"{len(genome)} reference genome(s) are specified.")
 else:
     LOGGER.info(f"{len(genome)} reference genome(s) are specified: {genome}")
-
 
 
 ## test if for each reference a fasta file is defined
@@ -86,7 +85,9 @@ for GENOME in genome:
         LOGGER.error(f"ERROR: Reference genome '{GENOME}' has no fasta file defined!")
 
     elif not os.path.isfile(fasta):
-        LOGGER.error( f"ERROR: Reference genome '{GENOME}': Fasta file '{fasta}' does not exist!")
+        LOGGER.error(
+            f"ERROR: Reference genome '{GENOME}': Fasta file '{fasta}' does not exist!"
+        )
 
     check_chromosome_names(GENOME)
 
@@ -149,7 +150,9 @@ config = update_value(keys=["markduplicates", "params"], value=param_dupl)
 ## reading sample file
 # sample_file="config/samples.tsv"
 delim = recursive_get(["delim"], "\s+")
-db = pd.read_csv(sample_file, sep=delim, comment='#', dtype = str) #, keep_default_na = False )
+db = pd.read_csv(
+    sample_file, sep=delim, comment="#", dtype=str
+)  # , keep_default_na = False )
 
 ## check number of columns and column names
 if len(db.columns) == 6:
@@ -173,7 +176,9 @@ if len(db.columns) == 6:
 elif len(db.columns) == 7:
     LOGGER.info(f"The sample file '{sample_file}' (in paired-end format) contains:")
     paired_end = True
-    adaptrem_params = recursive_get(["adapterremoval", "params"],"--minlength 30 --trimns --trimqualities")
+    adaptrem_params = recursive_get(
+        ["adapterremoval", "params"], "--minlength 30 --trimns --trimqualities"
+    )
     if "--collapse" in adaptrem_params:
         collapse = True
     # paired_end = 1  ## paired-end libraries, which are collapsed with adapterremoval
@@ -188,14 +193,14 @@ elif len(db.columns) == 7:
 
     ## test if all fastq files exist
     for fq in db["Data1"].tolist():
-        if fq != fq: # test if NaN
+        if fq != fq:  # test if NaN
             LOGGER.error(f"ERROR: Fastq file '{fq}' in column Data1 is missing!")
             sys.exit(1)
         if not fq and not os.path.isfile(fq):
             LOGGER.error(f"ERROR: Fastq file '{fq}' does not exist!")
             sys.exit(1)
     for fq in db["Data2"].tolist():
-         if fq == fq and not os.path.isfile(fq):
+        if fq == fq and not os.path.isfile(fq):
             LOGGER.error(f"ERROR: Fastq file '{fq}' in column Data2 does not exist!")
             sys.exit(1)
 else:
@@ -231,6 +236,7 @@ for index, row in db.iterrows():
 LOGGER.info(f"  - {len(samples)} samples")
 LOGGER.info(f"  - {len([v for v in samples])} libraries")
 LOGGER.info(f"  - {len([vv for v in samples for vv in samples[v]])} fastq files")
+
 
 ##########################################################################################
 include: "rules/index.smk"
@@ -373,7 +379,7 @@ qualimap_files = [
     for GENOME in genome
     for SM in samples
     if str2bool(recursive_get(["stats", "qualimap"], False))
-] 
+]
 
 qualimap_files = list(set(qualimap_files))
 
@@ -416,13 +422,16 @@ final_stats = [
 
 final_stat_figures = [
     get_damage(run_damage),
-    expand(f"{RESULT_DIR}/04_stats/04_plots/{{plot_type}}.svg" ,
+    expand(
+        f"{RESULT_DIR}/04_stats/04_plots/{{plot_type}}.svg",
         plot_type=[
             "1_nb_reads",
             "2_mapped",
             "3_endogenous",
             "4_duplication",
-            "5_AvgReadDepth"])
+            "5_AvgReadDepth",
+        ],
+    ),
 ]
 
 
@@ -438,7 +447,7 @@ rule all:
         final_stat_figures,
         final_stats,
         samtools_stats,
-        stats_mapping_checkpoint
+        stats_mapping_checkpoint,
 
 
 ## rules dag (just pipeline)
@@ -477,9 +486,7 @@ onsuccess:
         os.system("rm Not_trimmed")
     if email != "":
         Logger.info(f"Sending email to {email}")
-        shell(
-            "mail -s \"'Mapache' finished successfully\" {email} < {log}"
-        )
+        shell("mail -s \"'Mapache' finished successfully\" {email} < {log}")
 
 
 onerror:
@@ -488,6 +495,4 @@ onerror:
     email = recursive_get(["email"], "")
     if email != "":
         LOGGER.info(f"Sending email to {email}")
-        shell(
-            "mail -s \"'Mapache' finished with error(s)\" {email} < {log}"
-        )
+        shell("mail -s \"'Mapache' finished with error(s)\" {email} < {log}")

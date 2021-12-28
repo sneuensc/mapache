@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import itertools
 import pathlib
+import re
 
 
 ##########################################################################################
@@ -104,7 +105,9 @@ def check_chromosome_names(GENOME, MESSAGE_MAPACHE=MESSAGE_MAPACHE):
         allChr = list(
             map(str, pd.read_csv(f"{fasta}.fai", header=None, sep="\t")[0].tolist())
         )
-    elif pathlib.Path(f"{RESULT_DIR}/00_reference/{GENOME}/{GENOME}.fasta.fai").exists():
+    elif pathlib.Path(
+        f"{RESULT_DIR}/00_reference/{GENOME}/{GENOME}.fasta.fai"
+    ).exists():
         fasta = f"{RESULT_DIR}/00_reference/{GENOME}/{GENOME}.fasta"
         allChr = list(
             map(str, pd.read_csv(f"{fasta}.fai", header=None, sep="\t")[0].tolist())
@@ -222,19 +225,29 @@ def str2bool(v):
 ## input is in GB; output is in MB;
 ## global variable memory_increment_ratio defines by how much (ratio) the memory is increased if not defined specifically
 def get_memory_alloc(module, attempt, default=2):
-    if type(module) is not list: module = [module]
-    mem_start = int(recursive_get(module + ["mem"], default))
+    moduleList = module
+    if type(moduleList) is list:
+        moduleList = [module]
+    mem_start = int(recursive_get(moduleList + ["mem"], default))
     mem_incre = int(
-        recursive_get(module + ["mem_increment"], memory_increment_ratio * mem_start)
+        recursive_get(
+            moduleList + ["mem_increment"], memory_increment_ratio * mem_start
+        )
     )
     return int(1024 * ((attempt - 1) * mem_incre + mem_start))
 
+
 ## in this second verion the 'mem' is added to the word of the last element
 def get_memory_alloc2(module, attempt, default=2):
-    if type(module) is not list: module = [module]
-    mem_start = int(recursive_get(module[:-1] + [module[-1] + "_mem"], default))
+    moduleList = module
+    if type(moduleList) is list:
+        moduleList = [moduleList]
+    mem_start = int(recursive_get(moduleList[:-1] + [moduleList[-1] + "_mem"], default))
     mem_incre = int(
-        recursive_get(module[:-1] + [module[-1] + "_mem_increment"], memory_increment_ratio * mem_start)
+        recursive_get(
+            moduleList[:-1] + [moduleList[-1] + "_mem_increment"],
+            memory_increment_ratio * mem_start,
+        )
     )
     return int(1024 * ((attempt - 1) * mem_incre + mem_start))
 
@@ -254,21 +267,34 @@ def convert_time(seconds):
 ## input is in hours; output is in minutes;
 ## global variable runtime_increment_ratio defines by how much (ratio) the time is increased if not defined specifically
 def get_runtime_alloc(module, attempt, default=12):
-    if type(module) is not list: module = [module]
-    time_start = int(recursive_get(module + ["time"], default))
+    moduleList = module
+    if type(moduleList) is list:
+        moduleList = [module]
+    time_start = int(recursive_get(moduleList + ["time"], default))
     time_incre = int(
-        recursive_get(module + ["time_increment"], runtime_increment_ratio * time_start)
+        recursive_get(
+            moduleList + ["time_increment"], runtime_increment_ratio * time_start
+        )
     )
     return int(60 * ((attempt - 1) * time_incre + time_start))
 
+
 ## in this second verion the 'time' is added to the word of the last element
 def get_runtime_alloc2(module, attempt, default=12):
-    if type(module) is not list: module = [module]
-    time_start = int(recursive_get(module[:-1] + [module[-1] + "_time"], default))
+    moduleList = module
+    if type(moduleList) is list:
+        moduleList = [module]
+    time_start = int(
+        recursive_get(moduleList[:-1] + [moduleList[-1] + "_time"], default)
+    )
     time_incre = int(
-        recursive_get(module[:-1] + [module[-1] + "_time_increment"], runtime_increment_ratio * time_start)
+        recursive_get(
+            moduleList[:-1] + [moduleList[-1] + "_time_increment"],
+            runtime_increment_ratio * time_start,
+        )
     )
     return int(60 * ((attempt - 1) * time_incre + time_start))
+
 
 # return convert_time(60*60 * ((attempt-1) * time_incre + time_start))
 
@@ -311,6 +337,7 @@ def get_picard_bin():
             -Xms{resources.memory}m -Xmx{resources.memory}m -jar bin"
     return bin
 
+
 def get_gatk_bin():
     bin = recursive_get(["software", "gatk3_jar"], "GenomeAnalysisTK.jar")
     if bin[-4:] == ".jar":
@@ -345,8 +372,12 @@ def get_fastq_for_mapping(wildcards, run_adapter_removal):
             filename = rules.adapter_removal_collapse.output.R
         else:
             # if str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) == "nan":
-            data2 = recursive_get([wildcards.SM, wildcards.LB, wildcards.ID, "Data2"],"nan",my_dict=samples,)
-            if data2!=data2:
+            data2 = recursive_get(
+                [wildcards.SM, wildcards.LB, wildcards.ID, "Data2"],
+                "nan",
+                my_dict=samples,
+            )
+            if data2 != data2:
                 # single-end files
                 filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
             else:
@@ -360,16 +391,20 @@ def get_fastq_for_mapping(wildcards, run_adapter_removal):
         if not paired_end:
             filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
         else:
-            data2 = recursive_get([wildcards.SM, wildcards.LB, wildcards.ID, "Data2"],"nan",my_dict=samples,)
+            data2 = recursive_get(
+                [wildcards.SM, wildcards.LB, wildcards.ID, "Data2"],
+                "nan",
+                my_dict=samples,
+            )
             # checking a single-end file
-            if data2!=data2:
+            if data2 != data2:
                 filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
             else:
                 filename = [
                     f"{folder}/{wildcards.ID}_R1.fastq.gz",
                     f"{folder}/{wildcards.ID}_R2.fastq.gz",
                 ]
-    
+
     return filename
 
 
