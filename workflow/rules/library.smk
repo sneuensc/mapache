@@ -44,7 +44,7 @@ rule remove_duplicates:
         ),
     params:
         params= recursive_get(["markduplicates", "params"], "--REMOVE_DUPLICATES true"),
-        PICARD= recursive_get(["software", "picard_jar"], "picard.jar"),
+        PICARD= get_picard_bin(),
     threads: get_threads("markduplicates", 4)
     log:
         "{folder}/02_library/01_duplicated/01_rmdup/{SM}/{LB}.{GENOME}.log",
@@ -56,17 +56,7 @@ rule remove_duplicates:
         "--- MARKDUPLICATES {input}"
     shell:
         """
-        ## get binary
-        jar={params.PICARD}
-        if [ "${{jar: -4}}" == ".jar" ]; then
-            bin="java -XX:ParallelGCThreads={threads} -XX:+UseParallelGC -XX:-UsePerfData \
-                    -Xms{resources.memory}m -Xmx{resources.memory}m -jar {params.PICARD}"
-        else
-            bin={params.PICARD}
-        fi
-
-        ## run MarkDuplicates
-        $bin MarkDuplicates --INPUT {input} --OUTPUT {output.bam} --METRICS_FILE {output.stats} \
+        {params.PICARD} MarkDuplicates --INPUT {input} --OUTPUT {output.bam} --METRICS_FILE {output.stats} \
             {params.params} --ASSUME_SORT_ORDER coordinate --VALIDATION_STRINGENCY LENIENT 2> {log};
         """
 

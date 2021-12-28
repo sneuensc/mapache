@@ -104,8 +104,8 @@ def check_chromosome_names(GENOME, MESSAGE_MAPACHE=MESSAGE_MAPACHE):
         allChr = list(
             map(str, pd.read_csv(f"{fasta}.fai", header=None, sep="\t")[0].tolist())
         )
-    elif pathlib.Path(f"results/00_reference/{GENOME}/{GENOME}.fasta.fai").exists():
-        fasta = f"results/00_reference/{GENOME}/{GENOME}.fasta"
+    elif pathlib.Path(f"{RESULT_DIR}/00_reference/{GENOME}/{GENOME}.fasta.fai").exists():
+        fasta = f"{RESULT_DIR}/00_reference/{GENOME}/{GENOME}.fasta"
         allChr = list(
             map(str, pd.read_csv(f"{fasta}.fai", header=None, sep="\t")[0].tolist())
         )
@@ -113,8 +113,8 @@ def check_chromosome_names(GENOME, MESSAGE_MAPACHE=MESSAGE_MAPACHE):
         cmd = f"grep '^>' {fasta} | cut -c2- | awk '{{print $1}}'"
         allChr = subprocess.check_output(cmd, shell=True, text=True).split()
     else:
-        sys.exit(f"ERROR: Reference genome 'genome:{GENOME}:fasta' does not exist!")
-    # os._exit(1)
+        LOGGER.error(f"ERROR: Reference genome 'genome:{GENOME}:fasta' does not exist!")
+        os._exit(1)
 
     # check if chromosomes for which DoC was requested exist
     depth_chromosomes = recursive_get(["genome", GENOME, "depth_chromosomes"], "")
@@ -222,9 +222,19 @@ def str2bool(v):
 ## input is in GB; output is in MB;
 ## global variable memory_increment_ratio defines by how much (ratio) the memory is increased if not defined specifically
 def get_memory_alloc(module, attempt, default=2):
-    mem_start = int(recursive_get([module, "mem"], default))
+    if type(module) is not list: module = [module]
+    mem_start = int(recursive_get(module + ["mem"], default))
     mem_incre = int(
-        recursive_get([module, "mem_increment"], memory_increment_ratio * mem_start)
+        recursive_get(module + ["mem_increment"], memory_increment_ratio * mem_start)
+    )
+    return int(1024 * ((attempt - 1) * mem_incre + mem_start))
+
+## in this second verion the 'mem' is added to the word of the last element
+def get_memory_alloc2(module, attempt, default=2):
+    if type(module) is not list: module = [module]
+    mem_start = int(recursive_get(module[:-1] + [module[-1] + "_mem"], default))
+    mem_incre = int(
+        recursive_get(module[:-1] + [module[-1] + "_mem_increment"], memory_increment_ratio * mem_start)
     )
     return int(1024 * ((attempt - 1) * mem_incre + mem_start))
 
@@ -244,12 +254,21 @@ def convert_time(seconds):
 ## input is in hours; output is in minutes;
 ## global variable runtime_increment_ratio defines by how much (ratio) the time is increased if not defined specifically
 def get_runtime_alloc(module, attempt, default=12):
-    time_start = int(recursive_get([module, "time"], default))
+    if type(module) is not list: module = [module]
+    time_start = int(recursive_get(module + ["time"], default))
     time_incre = int(
-        recursive_get([module, "time_increment"], runtime_increment_ratio * time_start)
+        recursive_get(module + ["time_increment"], runtime_increment_ratio * time_start)
     )
     return int(60 * ((attempt - 1) * time_incre + time_start))
 
+## in this second verion the 'time' is added to the word of the last element
+def get_runtime_alloc2(module, attempt, default=12):
+    if type(module) is not list: module = [module]
+    time_start = int(recursive_get(module[:-1] + [module[-1] + "_time"], default))
+    time_incre = int(
+        recursive_get(module[:-1] + [module[-1] + "_time_increment"], runtime_increment_ratio * time_start)
+    )
+    return int(60 * ((attempt - 1) * time_incre + time_start))
 
 # return convert_time(60*60 * ((attempt-1) * time_incre + time_start))
 
@@ -261,50 +280,43 @@ def get_threads(module, default=1):
 
 ## define how to quantify the deamination pattern
 def get_damage(run_damage):
-    files = []
     if run_damage == "bamdamage":
-        for GENOME in genome:
-            files += [
-                (
-                    "{RESULT_DIR}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.{type}.{ext}"
-                ).format(
-                    SM=row["SM"],
-                    LB=row["LB"],
-                    GENOME=GENOME,
-                    type=type,
-                    ext=ext,
-                    RESULT_DIR=RESULT_DIR,
-                )
-                for index, row in all_libraries.iterrows()
-                for type in ["dam", "length"]
-                for ext in ["pdf", "svg"]
-            ]
+        files = [
+            f"{RESULT_DIR}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.{type}.{ext}"
+            for SM in samples
+            for LB in samples[SM]
+            for type in ["dam", "length"]
+            for ext in ["pdf", "svg"]
+            for GENOME in genome
+        ]
     elif run_damage == "mapDamage":
-        for GENOME in genome:
-            files += [
-                (
-                    "{RESULT_DIR}/04_stats/01_sparse_stats/02_library/04_mapDamage/{LB}.{GENOME}_results_mapDamage/Fragmisincorporation_plot.pdf"
-                ).format(
-                    SM=row["SM"], LB=row["LB"], GENOME=GENOME, RESULT_DIR=RESULT_DIR
-                )
-                for index, row in all_libraries.iterrows()
-            ]
+        files = [
+            f"{{RESULT_DIR}}/04_stats/01_sparse_stats/02_library/04_mapDamage/{SM}/{LB}.{GENOME}_results_mapDamage/Fragmisincorporation_plot.pdf"
+            for SM in samples
+            for LB in samples[SM]
+            for GENOME in genome
+        ]
     else:
-        print(f"ERROR: def get_damage({run_damage}): should never happen!")
+        LOGGER.error(f"ERROR: def get_damage({run_damage}): should never happen!")
+        sys.exit(1)
     return files
 
 
 ##########################################################################################
-
-
-def get_picard_indexing_cmd():
-    jar = recursive_get(["software", "picard_jar"], "picard.jar")
-    if jar[-4:] == ".jar":
+## check if java is called by a .jar file or by a wrapper
+def get_picard_bin():
+    bin = recursive_get(["software", "picard_jar"], "picard.jar")
+    if bin[-4:] == ".jar":
         bin = "java -XX:ParallelGCThreads={threads} -XX:+UseParallelGC -XX:-UsePerfData \
-            -Xms{resources.memory}m -Xmx{resources.memory}m -jar {params.PICARD}"
-    else:
-        bin = "{params.PICARD}"
-    return jar
+            -Xms{resources.memory}m -Xmx{resources.memory}m -jar bin"
+    return bin
+
+def get_gatk_bin():
+    bin = recursive_get(["software", "gatk3_jar"], "GenomeAnalysisTK.jar")
+    if bin[-4:] == ".jar":
+        bin = "java -XX:ParallelGCThreads={threads} -XX:+UseParallelGC -XX:-UsePerfData \
+            -Xms{resources.memory}m -Xmx{resources.memory}m -jar bin"
+    return bin
 
 
 ##########################################################################################
@@ -324,25 +336,17 @@ def get_fastq_of_ID(wildcards):
     return filename
 
 
-def get_fastq_for_mapping(wildcards, run_adapter_removal=True):
+def get_fastq_for_mapping(wildcards, run_adapter_removal):
     if run_adapter_removal:
-        if collapse:
-            folder = f"{wildcards.folder}/01_fastq/01_trimmed/01_adapter_removal_collapsed/{wildcards.SM}/{wildcards.LB}"
+        folder = f"{wildcards.folder}/01_fastq/01_trimmed/01_adapter_removal/{wildcards.SM}/{wildcards.LB}"
+        if not paired_end:
             filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
+        elif collapse:
+            filename = rules.adapter_removal_collapse.output.R
         else:
-            # single-end mode and paired-end without collapsing
-            folder = f"{wildcards.folder}/01_fastq/01_trimmed/01_adapter_removal/{wildcards.SM}/{wildcards.LB}"
             # if str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) == "nan":
-            if (
-                str(
-                    recursive_get(
-                        [wildcards.SM, wildcards.LB, wildcards.ID, "Data2"],
-                        "nan",
-                        my_dict=samples,
-                    )
-                )
-                == "nan"
-            ):
+            data2 = recursive_get([wildcards.SM, wildcards.LB, wildcards.ID, "Data2"],"nan",my_dict=samples,)
+            if data2!=data2:
                 # single-end files
                 filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
             else:
@@ -352,74 +356,28 @@ def get_fastq_for_mapping(wildcards, run_adapter_removal=True):
                     f"{folder}/{wildcards.ID}_R2.fastq.gz",
                 ]
     else:
-        folder = (
-            f"results/01_fastq/00_reads/01_files_orig/{wildcards.SM}/{wildcards.LB}"
-        )
-        if (
-            samples[wildcards.SM][wildcards.LB][wildcards.ID].get("Data2", "nan")
-            == "nan"
-        ):
-            # checking a single-end file
+        folder = f"{wildcards.folder}/01_fastq/00_reads/01_files_orig/{wildcards.SM}/{wildcards.LB}"
+        if not paired_end:
             filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
         else:
-            filename = [
-                f"{folder}/{wildcards.ID}_R1.fastq.gz",
-                f"{folder}/{wildcards.ID}_R2.fastq.gz",
-            ]
-
-    return filename
-
-
-def inputs_fastqc(wildcards, run_adapter_removal=True):
-    if "trim" in wildcards.folder:
-        if run_adapter_removal:
-            if collapse:
-                folder = f"{wildcards.folder}/01_fastq/01_trimmed/01_adapter_removal_collapsed/{wildcards.SM}/{wildcards.LB}"
+            data2 = recursive_get([wildcards.SM, wildcards.LB, wildcards.ID, "Data2"],"nan",my_dict=samples,)
+            # checking a single-end file
+            if data2!=data2:
                 filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
             else:
-                # single-end mode and paired-end without collapsing
-                folder = f"{wildcards.folder}/01_fastq/01_trimmed/01_adapter_removal/{wildcards.SM}/{wildcards.LB}"
-                # if str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) == "nan":
-                if (
-                    str(
-                        recursive_get(
-                            [wildcards.SM, wildcards.LB, wildcards.ID, "Data2"],
-                            "nan",
-                            my_dict=samples,
-                        )
-                    )
-                    == "nan"
-                ):
-                    # single-end files
-                    filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
-                else:
-                    # paired-end files, not collapsing
-                    filename = [
-                        f"{folder}/{wildcards.ID}_R1.fastq.gz",
-                        f"{folder}/{wildcards.ID}_R2.fastq.gz",
-                    ]
-    else:
-        folder = f"{wildcards.folder}/01_fastq/00_reads/01_files_orig/{wildcards.SM}/{wildcards.LB}"
-        # if str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) == "nan":
-        if (
-            str(
-                recursive_get(
-                    [wildcards.SM, wildcards.LB, wildcards.ID, "Data2"],
-                    "nan",
-                    my_dict=samples,
-                )
-            )
-            == "nan"
-        ):
-            # checking a single-end file
-            filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
-        else:
-            filename = [
-                f"{folder}/{wildcards.ID}_R1.fastq.gz",
-                f"{folder}/{wildcards.ID}_R2.fastq.gz",
-            ]
-
+                filename = [
+                    f"{folder}/{wildcards.ID}_R1.fastq.gz",
+                    f"{folder}/{wildcards.ID}_R2.fastq.gz",
+                ]
+    
     return filename
+
+
+def inputs_fastqc(wildcards):
+    if "trim" in wildcards.folder:
+        return get_fastq_for_mapping(wildcards, True)
+    else:
+        return get_fastq_for_mapping(wildcards, False)
 
 
 def get_bam_for_sorting(wildcards):
@@ -445,7 +403,7 @@ def get_bam_for_sorting(wildcards):
     elif mapper == "bowtie2":
         folder = "02_bowtie2"
     else:
-        sys.exit(
+        LOGGER.error(
             f"ERROR: The parameter mapper is not correctly specified: {mapper} is unknown!"
         )
         os._exit(1)
@@ -461,7 +419,7 @@ def get_final_bam_fastq(wildcards):
     elif wildcards.type == "01_bam_low_qual":
         bam = f"{wildcards.folder}/01_fastq/03_filtered/01_bam_filter_low_qual/{wildcards.SM}/{wildcards.LB}/{wildcards.ID}.{wildcards.GENOME}.bam"
     else:
-        print(
+        LOGGER.error(
             f"ERROR: def get_final_bam_library({wildcards.type}): should never happen!"
         )
         os._exit(1)
@@ -489,7 +447,7 @@ def get_final_bam_library(wildcards):
     elif wildcards.type == "01_bam_duplicate":
         bam = f"{wildcards.folder}/02_library/01_duplicated/01_rmdup/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}_duplicates.bam"
     else:
-        print(
+        LOGGER.error(
             f"ERROR: def get_final_bam_library({wildcards.type}): should never happen!"
         )
         os._exit(1)
@@ -566,7 +524,7 @@ def path_stats_by_level(wildcards):
             for SM in samples
         ]
     else:
-        print(
+        LOGGER.error(
             f"ERROR: def path_stats_by_level({wildcards.level}): should never happen!"
         )
         os._exit(1)

@@ -25,17 +25,15 @@ rule fastqc:
     Quality control of fastq file by fastqc (SE or R1)
     """
     input:
-        lambda wildcards: inputs_fastqc(
-            wildcards, run_adapter_removal=run_adapter_removal
-        ),
+        inputs_fastqc,
     output:
         html="{folder}/04_stats/01_sparse_stats/01_fastq/{type}/{SM}/{LB}/{ID}_fastqc.html",
         zip="{folder}/04_stats/01_sparse_stats/01_fastq/{type}/{SM}/{LB}/{ID}_fastqc.zip",
     log:
         "{folder}/04_stats/01_sparse_stats/01_fastq/{type}/{SM}/{LB}/{ID}_fastqc.log",
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("fastqc_mem", attempt, 2),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("fastqc_time", attempt, 1),
+        memory=lambda wildcards, attempt: get_memory_alloc2(["stats","fastqc"], attempt, 2),
+        runtime=lambda wildcards, attempt: get_runtime_alloc2(["stats","fastqc"], attempt, 1),
     conda:
         "../envs/fastqc.yaml"
     envmodules:
@@ -66,11 +64,11 @@ rule samtools_flagstat:
     output:
         "{folder}/04_stats/01_sparse_stats/{file}_flagstat.txt",
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc(
-            "samtools_flagstat_mem", attempt, 2
+        memory=lambda wildcards, attempt: get_memory_alloc2(
+            ["stats","samtools_flagstat"], attempt, 2
         ),
-        runtime=lambda wildcards, attempt: get_runtime_alloc(
-            "samtools_flagstat_time", attempt, 1
+        runtime=lambda wildcards, attempt: get_runtime_alloc2(
+            ["stats","samtools_flagstat"], attempt, 1
         ),
     log:
         "{folder}/04_stats/01_sparse_stats/{file}_flagstat.log",
@@ -93,11 +91,11 @@ rule samtools_stats:
     output:
         "{folder}/04_stats/01_sparse_stats/{file}_stats.txt",
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc(
-            "samtools_stats_mem", attempt, 2
+        memory=lambda wildcards, attempt: get_memory_alloc2(
+            ["stats","samtools_stats"], attempt, 2
         ),
-        runtime=lambda wildcards, attempt: get_runtime_alloc(
-            "samtools_stats_time", attempt, 1
+        runtime=lambda wildcards, attempt: get_runtime_alloc2(
+            ["stats","samtools_stats"], attempt, 1
         ),
     log:
         "{folder}/04_stats/01_sparse_stats/{file}_stats.log",
@@ -116,6 +114,13 @@ rule bedtools_genomecov:
         bam="{folder}/{dir}/{file}.bam",
     output:
         genomecov="{folder}/04_stats/01_sparse_stats/{dir}/{file}.genomecov",
+    resources:
+        memory=lambda wildcards, attempt: get_memory_alloc2(
+            ["stats","bedtools_genomecov"], attempt, 2
+        ),
+        runtime=lambda wildcards, attempt: get_runtime_alloc2(
+            ["stats","bedtools_genomecov"], attempt, 1
+        ),
     log:
         "{folder}/04_stats/01_sparse_stats/{dir}/{file}.genomecov.log",
     conda:
@@ -135,6 +140,13 @@ rule read_length:
         bam="{folder}/{file}.bam",
     output:
         length="{folder}/04_stats/01_sparse_stats/{file}.length",
+    resources:
+        memory=lambda wildcards, attempt: get_memory_alloc2(
+            ["stats","read_length"], attempt, 2
+        ),
+        runtime=lambda wildcards, attempt: get_runtime_alloc2(
+            ["stats","read_length"], attempt, 1
+        ),
     log:
         "{folder}/04_stats/01_sparse_stats/{file}.length.log",
     conda:
@@ -156,6 +168,13 @@ rule samtools_idxstats:
         bai="{folder}/{dir}/{file}.bam.bai",
     output:
         idxstats="{folder}/04_stats/01_sparse_stats/{dir}/{file}.idxstats",
+    resources:
+        memory=lambda wildcards, attempt: get_memory_alloc2(
+            ["stats","samtools_idxstats"], attempt, 2
+        ),
+        runtime=lambda wildcards, attempt: get_runtime_alloc2(
+            ["stats","samtools_idxstats"], attempt, 1
+        ),
     log:
         "{folder}/04_stats/01_sparse_stats/{dir}/{file}.idxstats.log",
     conda:
@@ -175,6 +194,13 @@ rule asign_sex:
         idxstats="{folder}/04_stats/01_sparse_stats/{file}.{GENOME}.idxstats",
     output:
         sex="{folder}/04_stats/01_sparse_stats/{file}.{GENOME}.sex",
+    resources:
+        memory=lambda wildcards, attempt: get_memory_alloc2(
+            ["stats","asign_sex"], attempt, 2
+        ),
+        runtime=lambda wildcards, attempt: get_runtime_alloc2(
+            ["stats","asign_sex"], attempt, 1
+        ),
     params:
         run_sex=str2bool(
             lambda wildcards: recursive_get(
@@ -218,7 +244,7 @@ rule asign_sex:
 rule merge_stats_per_fastq:
     input:
         fastqc_orig="{folder}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_fastqc.zip",  # raw sequenced reads
-        fastqc_trim="{folder}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_files_trim/{SM}/{LB}/{ID}_fastqc.zip"
+        fastqc_trim="{folder}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}_fastqc.zip"
         if run_adapter_removal
         else "Not_trimmed",
         # raw trimmed reads
@@ -422,6 +448,13 @@ rule DoC_chr_SM:
         "{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.genomecov",
     output:
         "{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_DoC_chrs.csv",
+    resources:
+        memory=lambda wildcards, attempt: get_memory_alloc2(
+            ["stats","DoC_chr_SM"], attempt, 2
+        ),
+        runtime=lambda wildcards, attempt: get_runtime_alloc2(
+            ["stats","DoC_chr_SM"], attempt, 1
+        ),
     params:
         script=workflow.source_path("../scripts/depth_by_chr.R")
     log:
@@ -495,9 +528,9 @@ rule bamdamage:
         "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}_bamdamage.log",
     threads: 1
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("mapdamage_mem", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc(
-            "bamdamage_time", attempt, 24
+        memory=lambda wildcards, attempt: get_memory_alloc2(["stats","mapdamage"], attempt, 4),
+        runtime=lambda wildcards, attempt: get_runtime_alloc2(
+            ["stats","bamdamage"], attempt, 24
         ),
     message:
         "--- RUN BAMDAMAGE {input.bam}"
@@ -661,6 +694,11 @@ rule qualimap:
         bam="{folder}/{file}.bam",
     output:
         directory("{folder}/04_stats/01_sparse_stats/{file}_qualimap")
+    resources:
+        memory=lambda wildcards, attempt: get_memory_alloc2(
+            ["stats","qualimap"], attempt, 2
+        ),
+        runtime=lambda wildcards, attempt: get_runtime_alloc2(["stats","qualimap"], attempt, 1),
     log:
         "{folder}/04_stats/01_sparse_stats/{file}_qualimap.log",
     message:
@@ -684,13 +722,13 @@ rule multiqc:
             for LB in samples[SM]
             for ID in samples[SM][LB]
         ],
-        adaptRem=lambda wildcards: [f"{{folder}}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}"
+        adaptRem=lambda wildcards: [f"{{folder}}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.settings"
             for SM in samples
             for LB in samples[SM]
             for ID in samples[SM][LB]
             if run_adapter_removal
         ],
-        trim=lambda wildcards: [f"{{folder}}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_files_trim/{SM}/{LB}/{ID}_fastqc.zip"
+        trim=lambda wildcards: [f"{{folder}}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}_fastqc.zip"
             for SM in samples
             for LB in samples[SM]
             for ID in samples[SM][LB]
@@ -724,6 +762,7 @@ rule multiqc:
             for SM in samples
             for LB in samples[SM]
             for ID in samples[SM][LB]
+            for files in ['genome_results.txt', 'raw_data_qualimapReport']
             if str2bool(recursive_get(["stats", "qualimap"], False))
         ],
     output:
@@ -731,8 +770,8 @@ rule multiqc:
             category=" Quality control",
         ),
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("multiqc_mem", attempt, 2),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("multiqc_time", attempt, 1),
+        memory=lambda wildcards, attempt: get_memory_alloc2(["stats","multiqc"], attempt, 2),
+        runtime=lambda wildcards, attempt: get_runtime_alloc2(["stats","multiqc"], attempt, 1),
     log:
         "{folder}/04_stats/02_separate_tables/{GENOME}/multiqc_fastqc.log",
     conda:

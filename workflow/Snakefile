@@ -9,6 +9,9 @@ Date: 28/10/2019
 ##########################################################################################
 import logging
 LOGGER = logging.getLogger("snakemake.logging")
+#logging.basicConfig(filename='example.log', encoding='utf-8', level=logging.DEBUG)
+# logging.basicConfig(format='%(levelname)s %(message)s')
+
 
 
 ## read the config file
@@ -22,7 +25,7 @@ include: "rules/common.smk"
 
 
 ## default values
-sample_file = recursive_get(["sample_file"], "samples.txt")
+sample_file = recursive_get(["sample_file"], "samples.tsv")
 RESULT_DIR = recursive_get(["result_dir"], "results")
 mapper = recursive_get(["mapping", "mapper"], "bwa_aln")
 
@@ -64,11 +67,14 @@ module_multiqc = recursive_get(["envmodules", "multiqc"], "")
 ## is at least a reference genome defined
 genome = list(recursive_get(["genome"], ""))
 if len(genome) == 0:
-    print("ERROR: Reference genome is not specified (parameter 'genome')!")
+    LOGGER.error("ERROR: Reference genome is not specified (parameter 'genome')!")
     os._exit(1)
 
 FORMAT = '%(asctime)s %(clientip)-15s %(user)-8s %(message)s'
-LOGGER.info(f"{len(genome)} reference genome(s) are specified.")
+if len(genome) > 3:
+    LOGGER.info(f"{len(genome)} reference genome(s) are specified.")
+else:
+    LOGGER.info(f"{len(genome)} reference genome(s) are specified: {genome}")
 
 
 
@@ -77,12 +83,10 @@ LOGGER.info(f"{len(genome)} reference genome(s) are specified.")
 for GENOME in genome:
     fasta = recursive_get(["genome", GENOME, "fasta"], "")
     if "fasta" == "":
-        sys.exit(f"ERROR: Reference genome '{GENOME}' has no fasta file defined!")
+        LOGGER.error(f"ERROR: Reference genome '{GENOME}' has no fasta file defined!")
 
     elif not os.path.isfile(fasta):
-        sys.exit(
-            f"ERROR: Reference genome '{GENOME}': Fasta file '{fasta}' does not exist!"
-        )
+        LOGGER.error( f"ERROR: Reference genome '{GENOME}': Fasta file '{fasta}' does not exist!")
 
     check_chromosome_names(GENOME)
 
@@ -95,9 +99,10 @@ if (
     run_damage_rescale
     and recursive_get(["stats", "run_damage"], "False") != "mapDamage"
 ):
-    sys.exit(
+    LOGGER.error(
         "ERROR: To use 'damage_rescale:run' the parameter 'stats:run_damage' has to be set to 'mapDamage'!"
     )
+    sys.exit(1)
 
 ## filter mappings and keep low quality mappings or not?
 if run_filtering:
@@ -141,32 +146,34 @@ config = update_value(keys=["markduplicates", "params"], value=param_dupl)
 
 
 ##########################################################################################
-## read the sample file
+## reading sample file
 # sample_file="config/samples.tsv"
 delim = recursive_get(["delim"], "\s+")
-db = pd.read_csv(sample_file, sep=delim, comment='#')
-
+db = pd.read_csv(sample_file, sep=delim, comment='#', dtype = str) #, keep_default_na = False )
 
 ## check number of columns and column names
 if len(db.columns) == 6:
     # paired_end = 0  ## single-end library
+    LOGGER.info(f"The sample file '{sample_file}' (in single-end format) contains:")
     paired_end = False
     collapse = False
     if not set(["ID", "Data", "MAPQ", "LB", "PL", "SM"]).issubset(db.columns):
 
-        sys.exit(
+        LOGGER.error(
             "ERROR: The column names in the sample file are wrong! Expected are for single-end reads: ID, Data, MAPQ, LB, PL, SM"
         )
+        sys.exit(1)
 
     ## test if all fastq files exist
     for fq in db["Data"].tolist():
         if not os.path.isfile(fq):
-            sys.exit(f"ERROR: Fastq file '{fq}' does not exist!")
-
+            LOGGER.error(f"ERROR: Fastq file '{fq}' does not exist!")
+            sys.exit(1)
 
 elif len(db.columns) == 7:
+    LOGGER.info(f"The sample file '{sample_file}' (in paired-end format) contains:")
     paired_end = True
-    adaptrem_params = config.get("adapterremoval", {}).get("params_paired_end", "")
+    adaptrem_params = recursive_get(["adapterremoval", "params"],"--minlength 30 --trimns --trimqualities")
     if "--collapse" in adaptrem_params:
         collapse = True
     # paired_end = 1  ## paired-end libraries, which are collapsed with adapterremoval
@@ -174,26 +181,34 @@ elif len(db.columns) == 7:
         collapse = False
     # paired_end = 2  ## paired-end libraries, which are mapped as paired-end
     if not set(["ID", "Data1", "Data2", "MAPQ", "LB", "PL", "SM"]).issubset(db.columns):
-        sys.exit(
+        LOGGER.error(
             "ERROR: The column names in the sample file are wrong! Expected are for paired-end reads: ID, Data1, Data2, MAPQ, LB, PL, SM"
         )
+        sys.exit(1)
 
     ## test if all fastq files exist
-    for fq in [db["Data1"].tolist(), db["Data2"].tolist()]:
-        if not os.path.isfile(fq):
-            sys.exit(f"ERROR: Fastq file '{fq}' does not exist!")
-
-
+    for fq in db["Data1"].tolist():
+        if fq != fq: # test if NaN
+            LOGGER.error(f"ERROR: Fastq file '{fq}' in column Data1 is missing!")
+            sys.exit(1)
+        if not fq and not os.path.isfile(fq):
+            LOGGER.error(f"ERROR: Fastq file '{fq}' does not exist!")
+            sys.exit(1)
+    for fq in db["Data2"].tolist():
+         if fq == fq and not os.path.isfile(fq):
+            LOGGER.error(f"ERROR: Fastq file '{fq}' in column Data2 does not exist!")
+            sys.exit(1)
 else:
-    sys.exit(
+    LOGGER.error(
         f"ERROR: The number of columns in the sample file is wrong ({len(db.columns)} columns)!"
     )
-
+    sys.exit(1)
 
 ## check if all IDs per LB and SM are unique
 all_fastq = db.groupby(["ID", "LB", "SM"])["ID"].agg(["count"]).reset_index()
 if max(all_fastq["count"]) > 1:
-    sys.exit("ERROR: The ID's have to be unique within a library and sample!")
+    LOGGER.error("ERROR: The ID's have to be unique within a library and sample!")
+    sys.exit(1)
 
 
 ## dataframe to nested dict
@@ -212,9 +227,10 @@ for index, row in db.iterrows():
     for col in cols:
         samples[row["SM"]][row["LB"]][row["ID"]][col] = row[col]
 
-## Building dictionnary for libraries
-all_libraries = db.groupby(["LB", "SM"])["ID"].agg(["count"]).reset_index()
-
+## print a summary of the contents
+LOGGER.info(f"  - {len(samples)} samples")
+LOGGER.info(f"  - {len([v for v in samples])} libraries")
+LOGGER.info(f"  - {len([vv for v in samples for vv in samples[v]])} fastq files")
 
 ##########################################################################################
 include: "rules/index.smk"
@@ -271,7 +287,7 @@ fastqc = [
     for SM in samples
     for LB in samples[SM]
     for ID in samples[SM][LB]
-    for folder in ["00_reads/01_files_orig", "01_trimmed/01_files_trim"]
+    for folder in ["00_reads/01_files_orig", "01_trimmed/01_adapter_removal"]
 ]
 
 flagstats = list(
@@ -400,16 +416,13 @@ final_stats = [
 
 final_stat_figures = [
     get_damage(run_damage),
-    expand(
-        f"{RESULT_DIR}/04_stats/04_plots/{{plot_type}}.svg",
+    expand(f"{RESULT_DIR}/04_stats/04_plots/{{plot_type}}.svg" ,
         plot_type=[
             "1_nb_reads",
             "2_mapped",
             "3_endogenous",
             "4_duplication",
-            "5_AvgReadDepth",
-        ],
-    ),
+            "5_AvgReadDepth"])
 ]
 
 
@@ -425,6 +438,7 @@ rule all:
         final_stat_figures,
         final_stats,
         samtools_stats,
+        stats_mapping_checkpoint
 
 
 ## rules dag (just pipeline)
@@ -462,18 +476,18 @@ onsuccess:
     if os.path.isfile("Not_trimmed"):
         os.system("rm Not_trimmed")
     if email != "":
-        print(f"sending email to {email}")
+        Logger.info(f"Sending email to {email}")
         shell(
-            "mail -s \"Snakemake workflow 'mapache' finished successfully\" {email} < {log}"
+            "mail -s \"'Mapache' finished successfully\" {email} < {log}"
         )
 
 
 onerror:
-    print("An error occurred, stored to 'snakemake.run.log'")
+    LOGGER.error("'Mapache' finished with error(s), log stored in 'snakemake.run.log'")
     shell("cat {log} > snakemake.run.log")
     email = recursive_get(["email"], "")
     if email != "":
-        print(f"sending email to {email}")
+        LOGGER.info(f"Sending email to {email}")
         shell(
-            "mail -s \"Snakemake workflow 'mapache' finished with error(s)\" {email} < {log}"
+            "mail -s \"'Mapache' finished with error(s)\" {email} < {log}"
         )
