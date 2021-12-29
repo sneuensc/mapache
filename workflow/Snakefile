@@ -32,7 +32,7 @@ mapper = recursive_get(["mapping", "mapper"], "bwa_aln")
 ## mapping options
 run_adapter_removal = str2bool(recursive_get(["adapterremoval", "run"], True))
 run_filtering = str2bool(recursive_get(["filtering", "run"], True))
-run_mark_duplicates = str2bool(recursive_get(["markduplicates", "run"], True))
+remove_duplicates = recursive_get(["remove_duplicates", "run"], "adapterremoval")
 run_damage_rescale = str2bool(recursive_get(["damage_rescale", "run"], False))
 run_realign = str2bool(recursive_get(["realign", "run"], True))
 run_compute_md = str2bool(recursive_get(["compute_md", "run"], True))
@@ -62,7 +62,8 @@ module_multiqc = recursive_get(["envmodules", "multiqc"], "")
 
 
 ##########################################################################################
-## some test to verify that the minimal requirements are met
+## GENOME
+##########################################################################################
 
 ## is at least a reference genome defined
 genome = list(recursive_get(["genome"], ""))
@@ -91,63 +92,11 @@ for GENOME in genome:
 
     check_chromosome_names(GENOME)
 
-# add file for not trimmed data
-if not run_adapter_removal:
-    os.system("touch Not_trimmed")
-
-## if the bam files have to be rescaled mapDamage has to be run
-if (
-    run_damage_rescale
-    and recursive_get(["stats", "run_damage"], "False") != "mapDamage"
-):
-    LOGGER.error(
-        "ERROR: To use 'damage_rescale:run' the parameter 'stats:run_damage' has to be set to 'mapDamage'!"
-    )
-    sys.exit(1)
-
-## filter mappings and keep low quality mappings or not?
-if run_filtering:
-    save_low_qual = str2bool(recursive_get(["filtering", "save_low_qual"], "True"))
-else:
-    save_low_qual = False
-
-## if one wants to extract the duplicates, MarkDuplicate has to mark the duplicates in order to extract them
-if run_mark_duplicates:
-    save_duplicates = recursive_get(
-        ["markduplicates", "save_duplicates"], "remove"
-    )  ## remove, mark, extract
-else:  ## true,   false,false (false is default)
-    save_duplicates = "remove"
-
-## check that MarkDuplicates has the correct parameters
-param_dupl = recursive_get(["markduplicates", "params"], "")
-if "-REMOVE_DUPLICATES true" in param_dupl:
-    if save_duplicates != "remove":
-        LOGGER.info(
-            "WARNING: To save/mark duplicates in MarkDuplicates the parameter 'markduplicates:params' has to contain the parameter '--REMOVE_DUPLICATES false' or not to be set! Adjusted!"
-        )
-        param_dupl.replace("--REMOVE_DUPLICATES true", "--REMOVE_DUPLICATES false")
-
-
-elif "-REMOVE_DUPLICATES false" in param_dupl:
-    if save_duplicates == "remove":
-        LOGGER.info(
-            "WARNING: To remove duplicates in MarkDuplicates the parameter 'markduplicates:params' has to contain the parameter '--REMOVE_DUPLICATES true'! Adjusted!"
-        )
-        param_dupl.replace("--REMOVE_DUPLICATES false", "--REMOVE_DUPLICATES true")
-
-else:
-    if save_duplicates == "remove":
-        LOGGER.info(
-            "WARNING: To remove duplicates in MarkDuplicates the parameter 'markduplicates:params' has to contain the parameter '--REMOVE_DUPLICATES true'! Adjusted!"
-        )
-        param_dupl = f"{param_dupl} --REMOVE_DUPLICATES true"
-
-config = update_value(keys=["markduplicates", "params"], value=param_dupl)
-
 
 ##########################################################################################
-## reading sample file
+## SAMPLE FILE
+##########################################################################################
+
 # sample_file="config/samples.tsv"
 delim = recursive_get(["delim"], "\s+")
 db = pd.read_csv(
@@ -156,7 +105,6 @@ db = pd.read_csv(
 
 ## check number of columns and column names
 if len(db.columns) == 6:
-    # paired_end = 0  ## single-end library
     LOGGER.info(f"The sample file '{sample_file}' (in single-end format) contains:")
     paired_end = False
     collapse = False
@@ -181,10 +129,8 @@ elif len(db.columns) == 7:
     )
     if "--collapse" in adaptrem_params:
         collapse = True
-    # paired_end = 1  ## paired-end libraries, which are collapsed with adapterremoval
     else:
         collapse = False
-    # paired_end = 2  ## paired-end libraries, which are mapped as paired-end
     if not set(["ID", "Data1", "Data2", "MAPQ", "LB", "PL", "SM"]).issubset(db.columns):
         LOGGER.error(
             "ERROR: The column names in the sample file are wrong! Expected are for paired-end reads: ID, Data1, Data2, MAPQ, LB, PL, SM"
@@ -236,6 +182,80 @@ for index, row in db.iterrows():
 LOGGER.info(f"  - {len(samples)} samples")
 LOGGER.info(f"  - {len([v for v in samples])} libraries")
 LOGGER.info(f"  - {len([vv for v in samples for vv in samples[v]])} fastq files")
+
+
+##########################################################################################
+## TEST PARAMETERS
+##########################################################################################
+
+# add file for not trimmed data
+if not run_adapter_removal:
+    os.system("touch Not_trimmed")
+
+## if the bam files have to be rescaled mapDamage has to be run
+if (
+    run_damage_rescale
+    and recursive_get(["stats", "run_damage"], "False") != "mapDamage"
+):
+    LOGGER.error(
+        "ERROR: To use 'damage_rescale:run' the parameter 'stats:run_damage' has to be set to 'mapDamage'!"
+    )
+    sys.exit(1)
+
+## filter mappings and keep low quality mappings or not?
+if run_filtering:
+    save_low_qual = str2bool(recursive_get(["filtering", "save_low_qual"], "True"))
+else:
+    save_low_qual = False
+
+## --------------------------------------------------------------------------------------------------
+## remove duplicates
+## if one wants to extract the duplicates, MarkDuplicate has to mark the duplicates in order to extract them
+if remove_duplicates == "adapterremoval":
+    save_duplicates = recursive_get(["remove_duplicates", "save_duplicates"], "remove")  ## remove, mark, extract
+    else:  ## true,   false,false (false is default)
+        save_duplicates = "remove"
+
+    ## check that MarkDuplicates has the correct parameters
+    param_dupl = recursive_get(["remove_duplicates", "params_markduplicates"], "")
+    if "--REMOVE_DUPLICATES true" in param_dupl:
+        if save_duplicates != "remove":
+            LOGGER.info(
+                "WARNING: To save/mark duplicates in MarkDuplicates the parameter 'remove_duplicates:params_markduplicates' has to contain the parameter '--REMOVE_DUPLICATES false' or not to be set! Adjusted!"
+            )
+            param_dupl.replace("--REMOVE_DUPLICATES true", "--REMOVE_DUPLICATES false")
+            config = update_value(keys=["remove_duplicates", "params_markduplicates"], value=param_dupl)
+    
+    elif "--REMOVE_DUPLICATES false" in param_dupl:
+        if save_duplicates == "remove":
+            LOGGER.info(
+                "WARNING: To remove duplicates in MarkDuplicates the parameter 'remove_duplicates:params_markduplicates' has to contain the parameter '--REMOVE_DUPLICATES true'! Adjusted!"
+            )
+            param_dupl.replace("--REMOVE_DUPLICATES false", "--REMOVE_DUPLICATES true")
+            config = update_value(keys=["remove_duplicates", "params_markduplicates"], value=param_dupl)
+
+    else:
+        if save_duplicates == "remove":
+            LOGGER.info(
+                "WARNING: To remove duplicates in MarkDuplicates the parameter 'remove_duplicates:params_markduplicates' has to contain the parameter '--REMOVE_DUPLICATES true'! Adjusted!"
+            )
+            param_dupl = f"{param_dupl} --REMOVE_DUPLICATES true"
+            config = update_value(keys=["remove_duplicates", "params_markduplicates"], value=param_dupl)
+
+elif remove_duplicates == "dedup":
+    if not paired_end:
+        LOGGER.info(
+            "WARNING: 'Dedup' is not recommended for single-end reads (parameter 'remove_duplicates:run')!"
+        )        
+    save_duplicates = recursive_get(["remove_duplicates", "save_duplicates"], "remove") 
+    if save_duplicates != "remove":
+        save_duplicates = "remove"
+        LOGGER.info(
+            "WARNING: 'Dedup' always removes duplicates (parameter 'remove_duplicates:save_duplicates')! Adjusted!"
+        )
+        config = update_value(keys=["remove_duplicates", "save_duplicates"], value=save_duplicates)
+
+
 
 
 ##########################################################################################

@@ -263,35 +263,13 @@ top_modules: []
 module_order:
     # MultiQC general module for catching output from custom scripts
     - 'custom_content'
-    # Post-alignment QC
-    - preseq:
-        module_tag:
-            - DNA
-            - RNA
 
-    # Post-alignment processing
-    - dedup:
-        module_tag:
-            - DNA
-            - ancient
-    - damageprofiler:
-        module_tag:
-            - DNA
-            - ancient
-    - picard:
-        module_tag:
-            - DNA
-            - RNA
     - sentieon:
         module_tag:
             - DNA
     - sexdeterrmine:
         module_tag:
             - DNA
-
-    # Alignment tool stats
-    - bowtie2:
-        module_tag:
 
     # Pre-alignment QC
     - fastqc:
@@ -318,10 +296,16 @@ module_order:
         info: "This section of the report shows FastQC results after adapter trimming."
         target: ""
         path_filters:
-            - "*/01_files_trim/*_fastqc.zip"
+            - "*/01_adapter_removal*/*_fastqc.zip"
         module_tag:
             - RNA
             - DNA
+    
+    # Alignment tool stats
+    - bowtie2:
+        module_tag: 
+    
+    # Post-alignment QC fastq level
     - samtools:
         name: "Sammtools  (fastq)"
         anchor: "samtools_fastq"
@@ -332,6 +316,8 @@ module_order:
         module_tag:
             - DNA
             - RNA
+
+    # Post-alignment QC library level
     - samtools:
         name: "Sammtools  (library)"
         anchor: "samtools_library"
@@ -342,6 +328,22 @@ module_order:
         module_tag:
             - DNA
             - RNA
+    - dedup:
+        module_tag:
+            - DNA
+            - ancient
+    - damageprofiler:
+        module_tag:
+            - DNA
+            - ancient
+    - picard:
+        path_filters:
+            - "*/03_final_sample/*_stats.txt"
+        module_tag:
+            - DNA
+            - RNA
+    
+    # Post-alignment QC sample level
     - samtools:
         name: "Sammtools  (sample)"
         anchor: "samtools_sample"
@@ -352,6 +354,7 @@ module_order:
         module_tag:
             - DNA
             - RNA
+
     - qualimap:
         module_tag:
             - DNA

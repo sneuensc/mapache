@@ -418,7 +418,6 @@ def inputs_fastqc(wildcards):
 def get_bam_for_sorting(wildcards):
     if mapper == "bwa_aln":
         if (
-            # paired_end == 2
             not collapse
             # and str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) != "nan"
             and str(
@@ -472,15 +471,15 @@ def get_final_bam_library(wildcards):
             bam = f"{wildcards.folder}/02_library/02_rescaled/01_mapDamage/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
         elif run_mark_duplicates:
             if save_duplicates == "extract":
-                bam = f"{wildcards.folder}/02_library/01_duplicated/01_rmdup/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}_mapped.bam"
+                bam = f"{wildcards.folder}/02_library/01_duplicated/01_markduplicates/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}_mapped.bam"
             else:
-                bam = f"{wildcards.folder}/02_library/01_duplicated/01_rmdup/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
+                bam = f"{wildcards.folder}/02_library/01_duplicated/01_markduplicates/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
         else:
             bam = f"{wildcards.folder}/02_library/00_merged_fastq/01_bam/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
     elif wildcards.type == "01_bam_low_qual":
         bam = f"{wildcards.folder}/02_library/00_merged_fastq/01_bam_low_qual/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
     elif wildcards.type == "01_bam_duplicate":
-        bam = f"{wildcards.folder}/02_library/01_duplicated/01_rmdup/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}_duplicates.bam"
+        bam = f"{wildcards.folder}/02_library/01_duplicated/01_markduplicates/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}_duplicates.bam"
     else:
         LOGGER.error(
             f"ERROR: def get_final_bam_library({wildcards.type}): should never happen!"
@@ -492,9 +491,9 @@ def get_final_bam_library(wildcards):
 def get_mapDamage_bam(wildcards):
     if run_mark_duplicates:
         if save_duplicates == "extract":
-            bam = f"{wildcards.folder}/02_library/01_duplicated/01_rmdup/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}_mapped.bam"
+            bam = f"{wildcards.folder}/02_library/01_duplicated/01_markduplicates/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}_mapped.bam"
         else:
-            bam = f"{wildcards.folder}/02_library/01_duplicated/01_rmdup/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
+            bam = f"{wildcards.folder}/02_library/01_duplicated/01_markduplicates/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
     else:
         bam = f"{wildcards.folder}/02_library/00_merged_fastq/01_bam/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
     return bam

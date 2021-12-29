@@ -31,26 +31,26 @@ rule merge_bam_fastq2library:
         "../scripts/merge_bam.py"
 
 
-rule remove_duplicates:
+rule markduplicates:
     """
-    Remove duplicated mappings
+    Remove duplicated mappings with pricards markduplicates
     """
     input:
         "{folder}/02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}.bam",
     output:
-        bam="{folder}/02_library/01_duplicated/01_rmdup/{SM}/{LB}.{GENOME}.bam",
-        stats="{folder}/02_library/01_duplicated/01_rmdup/{SM}/{LB}.{GENOME}.stats",
+        bam="{folder}/02_library/01_duplicated/01_markduplicates/{SM}/{LB}.{GENOME}.bam",
+        stats="{folder}/02_library/01_duplicated/01_markduplicates/{SM}/{LB}.{GENOME}.stats",
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("markduplicates", attempt, 4),
+        memory=lambda wildcards, attempt: get_memory_alloc("remove_duplciates", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc(
-            "markduplicates", attempt, 24
+            "remove_duplciates", attempt, 24
         ),
     params:
-        params=recursive_get(["markduplicates", "params"], "--REMOVE_DUPLICATES true"),
+        params=recursive_get(["remove_duplciates", "params_markduplicates"], "--REMOVE_DUPLICATES true"),
         PICARD=get_picard_bin(),
-    threads: get_threads("markduplicates", 4)
+    threads: get_threads("remove_duplciates", 4)
     log:
-        "{folder}/02_library/01_duplicated/01_rmdup/{SM}/{LB}.{GENOME}.log",
+        "{folder}/02_library/01_duplicated/01_markduplicates/{SM}/{LB}.{GENOME}.log",
     conda:
         "../envs/picard.yaml"
     envmodules:
@@ -64,23 +64,23 @@ rule remove_duplicates:
         """
 
 
-rule samtools_extract_duplicates:
+rule markduplicates_extract:
     """
     Extract duplicates of bam file
     """
     input:
-        "{folder}/02_library/01_duplicated/01_rmdup/{SM}/{LB}.{GENOME}.bam",
+        "{folder}/02_library/01_duplicated/01_markduplicates/{SM}/{LB}.{GENOME}.bam",
     output:
-        mapped="{folder}/02_library/01_duplicated/01_rmdup/{SM}/{LB}.{GENOME}_mapped.bam",
-        dup="{folder}/02_library/01_duplicated/01_rmdup/{SM}/{LB}.{GENOME}_duplicates.bam",
+        mapped="{folder}/02_library/01_duplicated/01_markduplicates/{SM}/{LB}.{GENOME}_mapped.bam",
+        dup="{folder}/02_library/01_duplicated/01_markduplicates/{SM}/{LB}.{GENOME}_duplicates.bam",
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("markduplicates", attempt, 4),
+        memory=lambda wildcards, attempt: get_memory_alloc("remove_duplciates", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc(
-            "markduplicates", attempt, 24
+            "remove_duplciates", attempt, 24
         ),
-    threads: get_threads("markduplicates", 4)
+    threads: get_threads("remove_duplciates", 4)
     log:
-        "{folder}/02_library/01_duplicated/01_rmdup/{SM}/{LB}.{GENOME}_extract_duplicates.log",
+        "{folder}/02_library/01_duplicated/01_markduplicates/{SM}/{LB}.{GENOME}_extract_duplicates.log",
     conda:
         "../envs/samtools.yaml"
     envmodules:
@@ -90,6 +90,41 @@ rule samtools_extract_duplicates:
     shell:
         """
         samtools view -b --threads {threads} -F 1024 -U {output.dup} {input} > {output.mapped} 2> {log}
+        """
+
+
+rule dedup:
+    """
+    Remove duplicated mappings with dedup (only for collapsed PE reads!!!)
+    """
+    input:
+        "{folder}/02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}.bam",
+    output:
+        json="{folder}/02_library/01_duplicated/01_dedup/{SM}/{LB}.{GENOME}.dedup.json",
+        hist="{folder}/02_library/01_duplicated/01_dedup/{SM}/{LB}.{GENOME}.hist",
+        log="{folder}/02_library/01_duplicated/01_dedup/{SM}/{LB}.{GENOME}.log",
+        bam="{folder}/02_library/01_duplicated/01_dedup/{SM}/{LB}.{GENOME}.bam",
+    resources:
+        memory=lambda wildcards, attempt: get_memory_alloc("remove_duplciates", attempt, 4),
+        runtime=lambda wildcards, attempt: get_runtime_alloc(
+            "remove_duplciates", attempt, 24
+        ),
+    params:
+        params=recursive_get(["markduplicates", "params"], "--REMOVE_DUPLICATES true"),
+    #threads: get_threads("remove_duplciates", 1)
+    log:
+        "{folder}/02_library/01_duplicated/01_dedup/{SM}/{LB}.{GENOME}.log",
+    conda:
+        "../envs/dedup.yaml"
+    envmodules:
+        module_picard,
+    message:
+        "--- DEDUP {input}"
+    shell:
+        """
+        bam={output$bam}
+        dedup -i {input} -m  -o $(dirname $bam);
+        mv ${bam%%.bam}_rmdup.bam $bam
         """
 
 

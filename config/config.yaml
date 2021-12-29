@@ -55,8 +55,8 @@ result_dir: 'results'
 ## global variables to define about resource increments after job failure
 ## 0: no change between failures
 ## 1: doubling after each failure
-memory_increment_ratio: 1
-runtime_increment_ratio: 0
+memory_increment_ratio: 0.5
+runtime_increment_ratio: 0.5
 
 # ## indexing
 indexing:
@@ -80,8 +80,7 @@ subsampling:
 # adapter_removal (optional)
 adapterremoval:
     run: True
-    params_paired_end: '--minlength 30 --trimns --trimqualities --collapse'
-    params_single_end: '--minlength 30 --trimns --trimqualities'
+    params: '--minlength 30 --trimns --trimqualities'
     threads: 4 
     mem: 4 ## in GB
     time: 2
@@ -127,12 +126,13 @@ merging:
 # ## extract_duplicates (optional)
 # ## in this case parameter 'rmdup_params' has NOT to be set to '--REMOVE_DUPLICATES true'
 markduplicates:
-    run: True  
-    params: '--REMOVE_DUPLICATES true'
-    threads: 4
+    run: True  # (False, markduplicates, dedup)
+    params_markduplicates: '--REMOVE_DUPLICATES true'
+    params_dedup: '-m'
+    threads: 4  ## 1 for dedup
     mem: 16
     time: 2
-    save_duplicates: remove  ## remove, mark, extract
+    save_duplicates: remove  ## remove, mark (only markduplicates), extract (only markduplicates)
 
 
 ## mapDamage (optional, by default not run: see below)
@@ -173,6 +173,7 @@ compute_md:
 ##########################################################################################
 ## stats on the final bam file
 stats:
+    fastqc_time: 4
 
 ## deamination (has to be added to the library and final bam file)
     run_damage: 'bamdamage'        #("False", "mapDamage", "bamdamage")
