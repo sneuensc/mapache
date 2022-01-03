@@ -226,7 +226,7 @@ def str2bool(v):
 ## global variable memory_increment_ratio defines by how much (ratio) the memory is increased if not defined specifically
 def get_memory_alloc(module, attempt, default=2):
     moduleList = module
-    if type(moduleList) is list:
+    if type(moduleList) is not list:
         moduleList = [module]
     mem_start = int(recursive_get(moduleList + ["mem"], default))
     mem_incre = int(
@@ -240,7 +240,7 @@ def get_memory_alloc(module, attempt, default=2):
 ## in this second verion the 'mem' is added to the word of the last element
 def get_memory_alloc2(module, attempt, default=2):
     moduleList = module
-    if type(moduleList) is list:
+    if type(moduleList) is not list:
         moduleList = [moduleList]
     mem_start = int(recursive_get(moduleList[:-1] + [moduleList[-1] + "_mem"], default))
     mem_incre = int(
@@ -268,7 +268,7 @@ def convert_time(seconds):
 ## global variable runtime_increment_ratio defines by how much (ratio) the time is increased if not defined specifically
 def get_runtime_alloc(module, attempt, default=12):
     moduleList = module
-    if type(moduleList) is list:
+    if type(moduleList) is not list:
         moduleList = [module]
     time_start = int(recursive_get(moduleList + ["time"], default))
     time_incre = int(
@@ -282,7 +282,7 @@ def get_runtime_alloc(module, attempt, default=12):
 ## in this second verion the 'time' is added to the word of the last element
 def get_runtime_alloc2(module, attempt, default=12):
     moduleList = module
-    if type(moduleList) is list:
+    if type(moduleList) is not list:
         moduleList = [module]
     time_start = int(
         recursive_get(moduleList[:-1] + [moduleList[-1] + "_time"], default)
@@ -469,17 +469,14 @@ def get_final_bam_library(wildcards):
     if wildcards.type == "01_bam":
         if run_damage_rescale:
             bam = f"{wildcards.folder}/02_library/02_rescaled/01_mapDamage/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
-        elif run_mark_duplicates:
-            if save_duplicates == "extract":
-                bam = f"{wildcards.folder}/02_library/01_duplicated/01_markduplicates/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}_mapped.bam"
-            else:
-                bam = f"{wildcards.folder}/02_library/01_duplicated/01_markduplicates/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
+        elif remove_duplicates == "markduplicates":
+            bam = f"{wildcards.folder}/02_library/01_duplicated/01_markduplicates/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
+        elif remove_duplicates == "dedup":
+            bam = f"{wildcards.folder}/02_library/01_duplicated/01_dedup/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
         else:
             bam = f"{wildcards.folder}/02_library/00_merged_fastq/01_bam/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
     elif wildcards.type == "01_bam_low_qual":
         bam = f"{wildcards.folder}/02_library/00_merged_fastq/01_bam_low_qual/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
-    elif wildcards.type == "01_bam_duplicate":
-        bam = f"{wildcards.folder}/02_library/01_duplicated/01_markduplicates/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}_duplicates.bam"
     else:
         LOGGER.error(
             f"ERROR: def get_final_bam_library({wildcards.type}): should never happen!"
@@ -489,11 +486,10 @@ def get_final_bam_library(wildcards):
 
 
 def get_mapDamage_bam(wildcards):
-    if run_mark_duplicates:
-        if save_duplicates == "extract":
-            bam = f"{wildcards.folder}/02_library/01_duplicated/01_markduplicates/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}_mapped.bam"
-        else:
-            bam = f"{wildcards.folder}/02_library/01_duplicated/01_markduplicates/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
+    if remove_duplicates == "markduplicates":
+        bam = f"{wildcards.folder}/02_library/01_duplicated/01_markduplicates/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
+    elif remove_duplicates == "dedup":
+        bam = f"{wildcards.folder}/02_library/01_duplicated/01_dedup/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
     else:
         bam = f"{wildcards.folder}/02_library/00_merged_fastq/01_bam/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
     return bam
