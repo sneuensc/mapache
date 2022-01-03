@@ -41,14 +41,14 @@ rule markduplicates:
         bam="{folder}/02_library/01_duplicated/01_markduplicates/{SM}/{LB}.{GENOME}.bam",
         stats="{folder}/02_library/01_duplicated/01_markduplicates/{SM}/{LB}.{GENOME}.stats",
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("remove_duplciates", attempt, 4),
+        memory=lambda wildcards, attempt: get_memory_alloc("remove_duplicates", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc(
-            "remove_duplciates", attempt, 24
+            "remove_duplicates", attempt, 24
         ),
     params:
-        params=recursive_get(["remove_duplciates", "params_markduplicates"], "--REMOVE_DUPLICATES true"),
+        params=recursive_get(["remove_duplicates", "params_markduplicates"], "--REMOVE_DUPLICATES true"),
         PICARD=get_picard_bin(),
-    threads: get_threads("remove_duplciates", 4)
+    threads: get_threads("remove_duplicates", 4)
     log:
         "{folder}/02_library/01_duplicated/01_markduplicates/{SM}/{LB}.{GENOME}.log",
     conda:
@@ -64,38 +64,9 @@ rule markduplicates:
         """
 
 
-rule markduplicates_extract:
-    """
-    Extract duplicates of bam file
-    """
-    input:
-        "{folder}/02_library/01_duplicated/01_markduplicates/{SM}/{LB}.{GENOME}.bam",
-    output:
-        mapped="{folder}/02_library/01_duplicated/01_markduplicates/{SM}/{LB}.{GENOME}_mapped.bam",
-        dup="{folder}/02_library/01_duplicated/01_markduplicates/{SM}/{LB}.{GENOME}_duplicates.bam",
-    resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("remove_duplciates", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc(
-            "remove_duplciates", attempt, 24
-        ),
-    threads: get_threads("remove_duplciates", 4)
-    log:
-        "{folder}/02_library/01_duplicated/01_markduplicates/{SM}/{LB}.{GENOME}_extract_duplicates.log",
-    conda:
-        "../envs/samtools.yaml"
-    envmodules:
-        module_samtools,
-    message:
-        "--- SAMTOOLS EXTRACT DUPLICATES {input}"
-    shell:
-        """
-        samtools view -b --threads {threads} -F 1024 -U {output.dup} {input} > {output.mapped} 2> {log}
-        """
-
-
 rule dedup:
     """
-    Remove duplicated mappings with dedup (only for collapsed PE reads!!!)
+    Remove duplicated mappings with dedup (-m only for collapsed PE reads!!!)
     """
     input:
         "{folder}/02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}.bam",
@@ -105,26 +76,34 @@ rule dedup:
         log="{folder}/02_library/01_duplicated/01_dedup/{SM}/{LB}.{GENOME}.log",
         bam="{folder}/02_library/01_duplicated/01_dedup/{SM}/{LB}.{GENOME}.bam",
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("remove_duplciates", attempt, 4),
+        memory=lambda wildcards, attempt: get_memory_alloc("remove_duplicates", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc(
-            "remove_duplciates", attempt, 24
+            "remove_duplicates", attempt, 24
         ),
     params:
-        params=recursive_get(["markduplicates", "params"], "--REMOVE_DUPLICATES true"),
-    #threads: get_threads("remove_duplciates", 1)
+        params=recursive_get(["remove_duplicates", "params_dedup"], "-m"),
+        collapsed=collapse and "nan" not in [i['Data2'] for i in recursive_get([wildcards.SM, wildcards.LB, wildcards.ID, "Data2"],[], my_dict=samples).values()]
+        #threads: get_threads("remove_duplciates", 1)
     log:
         "{folder}/02_library/01_duplicated/01_dedup/{SM}/{LB}.{GENOME}.log",
     conda:
         "../envs/dedup.yaml"
     envmodules:
-        module_picard,
+        module_dedup,
     message:
         "--- DEDUP {input}"
     shell:
         """
-        bam={output$bam}
-        dedup -i {input} -m  -o $(dirname $bam);
-        mv ${bam%%.bam}_rmdup.bam $bam
+        ## remove -m or --merged from $params (needed for SE or not collapsed PE reads)
+        if [ {params.collapsed} ]; then
+            params={params.params}
+        else
+            params=$(echo {params.params} | sed  's/ -m/ /g' | sed  's/ --merged/ /g')
+        fi
+
+        bam={output.bam}
+        dedup -i {input} $params  -o $(dirname $bam);
+        mv ${{bam%%.bam}}_rmdup.bam $bam
         """
 
 
