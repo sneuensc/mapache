@@ -59,6 +59,7 @@ module_bedtools = recursive_get(["envmodules", "bedtools"], "")
 module_seqtk = recursive_get(["envmodules", "seqtk"], "")
 module_qualimap = recursive_get(["envmodules", "qualimap"], "")
 module_multiqc = recursive_get(["envmodules", "multiqc"], "")
+module_dedup = recursive_get(["envmodules", "dedup"], "")
 
 
 ##########################################################################################
@@ -105,7 +106,6 @@ db = pd.read_csv(
 
 ## check number of columns and column names
 if len(db.columns) == 6:
-    LOGGER.info(f"The sample file '{sample_file}' (in single-end format) contains:")
     paired_end = False
     collapse = False
     if not set(["ID", "Data", "MAPQ", "LB", "PL", "SM"]).issubset(db.columns):
@@ -122,7 +122,6 @@ if len(db.columns) == 6:
             sys.exit(1)
 
 elif len(db.columns) == 7:
-    LOGGER.info(f"The sample file '{sample_file}' (in paired-end format) contains:")
     paired_end = True
     adaptrem_params = recursive_get(
         ["adapterremoval", "params"], "--minlength 30 --trimns --trimqualities"
@@ -179,9 +178,20 @@ for index, row in db.iterrows():
         samples[row["SM"]][row["LB"]][row["ID"]][col] = row[col]
 
 ## print a summary of the contents
-LOGGER.info(f"  - {len(samples)} samples")
-LOGGER.info(f"  - {len([v for v in samples])} libraries")
-LOGGER.info(f"  - {len([vv for v in samples for vv in samples[v]])} fastq files")
+if paired_end:
+    LOGGER.info(f"The sample file '{sample_file}' (in paired-end format) contains:")
+    LOGGER.info(f"  - {len(samples)} samples")
+    LOGGER.info(f"  - {len([l for s in samples.values() for l in s])} libraries")
+    tmp =  [i['Data2'] for s in samples.values() for l in s.values() for i in l.values()]
+    LOGGER.info(f"  - {len([x for x in tmp if str(x) != 'nan'])} paired-end fastq files")
+    nb = len([x for x in tmp if str(x) == 'nan'])
+    if nb:
+        LOGGER.info(f"  - {nb} single-end fastq files")
+else:
+    LOGGER.info(f"The sample file '{sample_file}' (in single-end format) contains:")
+    LOGGER.info(f"  - {len(samples)} samples")
+    LOGGER.info(f"  - {len([l for s in samples.values() for l in s])} libraries")
+    LOGGER.info(f"  - {len([i for s in samples.values() for l in s.values() for i in l])} single-end fastq files")
 
 
 ##########################################################################################
@@ -210,50 +220,11 @@ else:
 
 ## --------------------------------------------------------------------------------------------------
 ## remove duplicates
-## if one wants to extract the duplicates, MarkDuplicate has to mark the duplicates in order to extract them
-if remove_duplicates == "adapterremoval":
-    save_duplicates = recursive_get(["remove_duplicates", "save_duplicates"], "remove")  ## remove, mark, extract
-    else:  ## true,   false,false (false is default)
-        save_duplicates = "remove"
-
-    ## check that MarkDuplicates has the correct parameters
-    param_dupl = recursive_get(["remove_duplicates", "params_markduplicates"], "")
-    if "--REMOVE_DUPLICATES true" in param_dupl:
-        if save_duplicates != "remove":
-            LOGGER.info(
-                "WARNING: To save/mark duplicates in MarkDuplicates the parameter 'remove_duplicates:params_markduplicates' has to contain the parameter '--REMOVE_DUPLICATES false' or not to be set! Adjusted!"
-            )
-            param_dupl.replace("--REMOVE_DUPLICATES true", "--REMOVE_DUPLICATES false")
-            config = update_value(keys=["remove_duplicates", "params_markduplicates"], value=param_dupl)
-    
-    elif "--REMOVE_DUPLICATES false" in param_dupl:
-        if save_duplicates == "remove":
-            LOGGER.info(
-                "WARNING: To remove duplicates in MarkDuplicates the parameter 'remove_duplicates:params_markduplicates' has to contain the parameter '--REMOVE_DUPLICATES true'! Adjusted!"
-            )
-            param_dupl.replace("--REMOVE_DUPLICATES false", "--REMOVE_DUPLICATES true")
-            config = update_value(keys=["remove_duplicates", "params_markduplicates"], value=param_dupl)
-
-    else:
-        if save_duplicates == "remove":
-            LOGGER.info(
-                "WARNING: To remove duplicates in MarkDuplicates the parameter 'remove_duplicates:params_markduplicates' has to contain the parameter '--REMOVE_DUPLICATES true'! Adjusted!"
-            )
-            param_dupl = f"{param_dupl} --REMOVE_DUPLICATES true"
-            config = update_value(keys=["remove_duplicates", "params_markduplicates"], value=param_dupl)
-
-elif remove_duplicates == "dedup":
+if remove_duplicates == "dedup":
     if not paired_end:
         LOGGER.info(
             "WARNING: 'Dedup' is not recommended for single-end reads (parameter 'remove_duplicates:run')!"
         )        
-    save_duplicates = recursive_get(["remove_duplicates", "save_duplicates"], "remove") 
-    if save_duplicates != "remove":
-        save_duplicates = "remove"
-        LOGGER.info(
-            "WARNING: 'Dedup' always removes duplicates (parameter 'remove_duplicates:save_duplicates')! Adjusted!"
-        )
-        config = update_value(keys=["remove_duplicates", "save_duplicates"], value=save_duplicates)
 
 
 
@@ -297,13 +268,7 @@ final_bam_low_qual = [
     )
     if save_low_qual
     else [],
-    expand(
-        "{RESULT_DIR}/03_sample/03_final_sample/01_bam_duplicate/{{SM}}.{{GENOME}}.bam",
-        SM=samples,
-        GENOME=genome,
-    )
-    if save_duplicates == "extract"
-    else [],
+
 ]
 
 # -----------------------------------------------------------------------------#
