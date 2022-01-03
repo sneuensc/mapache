@@ -13,6 +13,7 @@ dependencies:
   - samtools = 1.14
   - bedtools = 2.30.0
   - seqtk = 1.3
+  - dedup = 0.12.8
   - R = 4.0
   - r-ggplot2
   - r-rcolorbrewer
