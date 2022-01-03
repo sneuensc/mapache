@@ -93,10 +93,13 @@ chrs_selected = get_args(argsL, "chrs_selected", NA)
 # chrs_selected = unlist(strsplit("X,Y,MT", ","))
 #-----------------------------------------------------------------------------#
 
+## double is used instead of integer, as integers are limited in size:
+##   "Note that current implementations of R use 32-bit integers for integer vectors, so the range
+##   of representable integers is restricted to about +/-2*10^9: doubles can hold much larger integers exactly.""
 stats_fastq = do.call(rbind, lapply(strsplit(path_list_stats_fastq, ",")[[1]], read.csv ))
-mapped_raw = as.numeric(strsplit(readLines(path_flagstat_raw)[1], " ")[[1]][1])
+mapped_raw = as.double(strsplit(readLines(path_flagstat_raw)[1], " ")[[1]][1])
 # mapped_raw   = sum(stats_fastq$mapped_raw) # should give the same
-mapped_unique = as.numeric(strsplit(readLines(path_flagstat_unique)[1], " ")[[1]][1])
+mapped_unique = as.double(strsplit(readLines(path_flagstat_unique)[1], " ")[[1]][1])
 length_unique_table = read.table(path_length_unique, header = T, sep = "\t")
 #genomecov_unique = read.table(path_genomecov_unique, header = F, sep = "\t")
 #colnames(genomecov_unique) =  c("chr", "depth", "counts", "length", "frac")
