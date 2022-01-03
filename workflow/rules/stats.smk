@@ -169,7 +169,7 @@ rule read_length:
 rule samtools_idxstats:
     input:
         bam="{folder}/{dir}/{file}.bam",
-        bai="{folder}/{dir}/{file}.bam.bai",
+        bai="{folder}/{dir}/{file}.bai",
     output:
         idxstats="{folder}/04_stats/01_sparse_stats/{dir}/{file}.idxstats",
     resources:
@@ -509,7 +509,7 @@ rule bamdamage:
     input:
         ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
         bam="{folder}/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}.bam",
-        bai="{folder}/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}.bam.bai",
+        bai="{folder}/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}.bai",
     output:
         damage_pdf="{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.dam.pdf",
         length_pdf="{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.length.pdf",
