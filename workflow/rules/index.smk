@@ -138,7 +138,7 @@ rule samtools_index_bam:
     input:
         "{folder}/{file}.bam",
     output:
-        "{folder}/{file}.bam.bai",
+        "{folder}/{file}.bai",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 24),
