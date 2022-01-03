@@ -42,7 +42,7 @@ rule realign:
         fai="{folder}/00_reference/{GENOME}/{GENOME}.fasta.fai",
         dict="{folder}/00_reference/{GENOME}/{GENOME}.dict",
         bam="{folder}/03_sample/00_merged_library/01_bam/{SM}.{GENOME}.bam",
-        bai="{folder}/03_sample/00_merged_library/01_bam/{SM}.{GENOME}.bam.bai",
+        bai="{folder}/03_sample/00_merged_library/01_bam/{SM}.{GENOME}.bai",
     output:
         bam="{folder}/03_sample/01_realigned/01_realign/{SM}.{GENOME}.bam",
         intervals="{folder}/03_sample/01_realigned/01_realign/{SM}.{GENOME}.intervals",
