@@ -6,10 +6,6 @@ import re
 
 
 ##########################################################################################
-#
-# global MESSAGE_MAPACHE
-MESSAGE_MAPACHE = open("messages_from_mapache.log", "w")
-##########################################################################################
 ## all functions for main snakemake file
 
 
@@ -88,16 +84,8 @@ def eval_list_to_csv(x):
 
 ##########################################################################################
 ## function to test the chromosome names
-def check_chromosome_names(GENOME, MESSAGE_MAPACHE=MESSAGE_MAPACHE):
-
-    sex_chr = "X"
-    MESSAGE_MAPACHE.write(
-        f"""
-    Evaluating GENOME:
-        {GENOME}
-
-    """
-    )
+def check_chromosome_names(GENOME, logging=True):
+    if logging: LOGGER.info(f"  Genome '{GENOME}':")
 
     ## get all chromsome names from the reference GENOME
     fasta = recursive_get(["genome", GENOME, "fasta"], "")
@@ -114,101 +102,62 @@ def check_chromosome_names(GENOME, MESSAGE_MAPACHE=MESSAGE_MAPACHE):
         )
     elif pathlib.Path(fasta).exists():
         cmd = f"grep '^>' {fasta} | cut -c2- | awk '{{print $1}}'"
-        allChr = subprocess.check_output(cmd, shell=True, text=True).split()
+        allChr = map(str, subprocess.check_output(cmd, shell=True, text=True).split())
     else:
         LOGGER.error(f"ERROR: Reference genome 'genome:{GENOME}:fasta' does not exist!")
         os._exit(1)
 
-    # check if chromosomes for which DoC was requested exist
-    depth_chromosomes = recursive_get(["genome", GENOME, "depth_chromosomes"], "")
-
-    if len(depth_chromosomes):
-        chromosomes = depth_chromosomes.split(",")
-
+    ## try to recognise if it is the human hg19 or GRCh38 genome. If so apply default chromosome names
+    hg19 = map(str, list(range(1, 23)) + ['X', 'Y', 'MT'])
+    GRCh38 = [f"chr{x}" for x in list(range(1, 23)) + ['X', 'Y', 'M']]
+    if sorted(allChr) == sorted(hg19):
+        detectedChromosomes = ['X', 'Y', 'MT']
+        detectedAutosomes = list(set(allChr) - set(detectedChromosomes))
+        if logging: LOGGER.info(f"    - Detected genome as 'hg19': Appliyng default chromosome names for sex and mt chromsomes: {detectedChromosomes}.")
+    elif sorted(allChr) == sorted(GRCh38):
+        detectedChromosomes = ['chrX', 'chrY', 'chrM']
+        detectedAutosomes = list(set(allChr) - set(detectedChromosomes))
+        if logging: LOGGER.info(f"    - Detected genome as 'GRCh38': Appliyng default chromosome names for sex and mt chromsomes {detectedChromosomes}.")
     else:
-        chromosomes = []
-
-    for chr in chromosomes:
-        if chr not in allChr:
-            sys.exit(
-                f"""
-            WARNING: at least one chromosome specified in config[genome][{GENOME}][depth_chromosomes] does not exist in FASTA reference file. 
-            chr: {chr}
-
-            """
-            )
-
-    # os._exit(1)
-
-    # print(f"""
-    # chromosomes which will have their DoC reported in main table: {chromosomes}
-    # """)
-
+        detectedChromosomes = ['', '', '']
+        detectedAutosomes = []
+    
     # check if the chromosomes specified in sex determination exist
     # sex chromosome
     if recursive_get(["genome", GENOME, "sex_inference", "run"], False):
-        MESSAGE_MAPACHE.write(
-            f"    Checking if chromosomes specified in config file for sex inference exist in genome {GENOME}."
-        )
-        sex_chr = recursive_get(
-            ["genome", GENOME, "sex_inference", "params", "sex_chr"], "X"
-        )
-
+        if logging: LOGGER.info(f"    - Infering sex.")
+        ## X chromosome specified for the sex inference
+        sex_chr = recursive_get(["genome", GENOME, "sex_inference", "params", "sex_chr"], detectedChromosomes[0])
         if sex_chr not in allChr:
+            LOGGER.error(f"ERROR: Sex chromosome specified in 'config[genome][{GENOME}][sex_inference][params][sex_chr]' ({sex_chr}) does not exist in FASTA reference genome.")
+            os._exit(1)
 
-            sys.exit(
-                f"""
-            WARNING: sex chromosome specified in config[genome][{GENOME}][sex_inference][params][sex_chr] does not exist in FASTA reference file. 
-            sex_chr: {sex_chr}
-            Please set the right chromosome name for this reference genome.
-            If you do not plan to infer sex from the mappings to this genome, set the option "run" to False for this genome.
-
-            """
-            )
-
-        # os._exit(1)
-
-        # autosomes specified for sex inference
-        chromosomes = list(
+       # autosomes specified for sex inference
+        autosomes = list(
             map(
                 str,
                 eval_to_list(
-                    recursive_get(
-                        ["genome", GENOME, "sex_inference", "params", "autosomes"],
-                        [i for i in range(1, 23)],
-                    )
+                    recursive_get(["genome", GENOME, "sex_inference", "params", "autosomes"], detectedAutosomes)
                 ),
             )
         )
+        if list(set(autosomes) - set(allChr)):
+            LOGGER.error(f"ERROR: In 'config[genome][{GENOME}][sex_inference][params][autosomes]', the following chromsome names are not recognized: {list(set(autosomes) - set(allChr))}!")
+            os._exit(1)
+   
+        config = update_value(["genome", GENOME, "sex_inference", "params", "autosomes"], 'c("' + '","'.join(autosomes) + '")')
 
-        for chr in chromosomes:
-            if chr not in allChr:
-                sys.exit(
-                    f"""
-                WARNING: at least one chromosome specified in config[genome][{GENOME}][sex_inference][params][autosomes] does not exist in FASTA reference file. 
-                chr: {chr}
-                Please set the right chromosome names for this reference genome.
-                If you do not plan to infer sex from the mappings to this genome, set the option "run" to False for this genome.
 
-                """
-                )
+    # check if chromosomes for which DoC was requested exist
+    depth_chromosomes = recursive_get(["genome", GENOME, "depth_chromosomes"], "")
+    chromosomes = depth_chromosomes.split(",") if len(depth_chromosomes) else []
+    if list(set(chromosomes) - set(allChr)):
+        LOGGER.error(f"In 'config[genome][{GENOME}][depth_chromosomes]', the following chromsome names are not recognized: {list(set(chromosomes) - set(allChr))}!")
+        os._exit(1)
+    if logging and depth_chromosomes: LOGGER.info(f"    - Computing depth of chromosomes {depth_chromosomes}.")
 
-        # os._exit(1)
-        autosomes = 'c("' + '","'.join(chromosomes) + '")'
 
-        config = update_value(
-            ["genome", GENOME, "sex_inference", "params", "autosomes"], autosomes
-        )
 
-        MESSAGE_MAPACHE.write(
-            f"""
-        sex_chr: {sex_chr}
-        autosomes: {autosomes}
-        """
-        )
-    MESSAGE_MAPACHE.write(
-        f"WELL DONE. The chromosome names are well specified for genome {GENOME}.\n\n\n"
-    )
 
 
 ## convert string to boolean
