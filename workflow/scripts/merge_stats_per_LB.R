@@ -52,7 +52,7 @@ argsL <- as.list(as.character(argsDF$V2))
 names(argsL) <- argsDF$V1
 #print(argsL)
 
-get_args <- function(argsL, name, default){
+get_args <- function(argsL, name, default=""){
     if(name %in% names(argsL)){
         value = argsL[[name]]
     }else if("default" %in% objects()){
@@ -97,6 +97,7 @@ chrs_selected = get_args(argsL, "chrs_selected", NA)
 ##   "Note that current implementations of R use 32-bit integers for integer vectors, so the range
 ##   of representable integers is restricted to about +/-2*10^9: doubles can hold much larger integers exactly.""
 stats_fastq = do.call(rbind, lapply(strsplit(path_list_stats_fastq, ",")[[1]], read.csv ))
+stats_fastq[,unlist(lapply(stats_fastq, is.numeric))] <- sapply(stats_fastq[,unlist(lapply(stats_fastq, is.numeric))], as.double)
 mapped_raw = as.double(strsplit(readLines(path_flagstat_raw)[1], " ")[[1]][1])
 # mapped_raw   = sum(stats_fastq$mapped_raw) # should give the same
 mapped_unique = as.double(strsplit(readLines(path_flagstat_unique)[1], " ")[[1]][1])
