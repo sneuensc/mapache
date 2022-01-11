@@ -72,11 +72,12 @@ if len(genome) == 0:
     LOGGER.error("ERROR: Reference genome is not specified (parameter 'genome')!")
     os._exit(1)
 
-FORMAT = "%(asctime)s %(clientip)-15s %(user)-8s %(message)s"
-if len(genome) > 3:
-    LOGGER.info(f"{len(genome)} reference genome(s) are specified.")
+if len(genome) == 1:
+    LOGGER.info(f"{len(genome)} reference genome is specified:")
+elif len(genome) < 4:
+    LOGGER.info(f"{len(genome)} reference genomes are specified:")
 else:
-    LOGGER.info(f"{len(genome)} reference genome(s) are specified: {genome}")
+    LOGGER.info(f"{len(genome)} reference genomes are specified.")
 
 
 ## test if for each reference a fasta file is defined
@@ -91,7 +92,7 @@ for GENOME in genome:
             f"ERROR: Reference genome '{GENOME}': Fasta file '{fasta}' does not exist!"
         )
 
-    check_chromosome_names(GENOME)
+    check_chromosome_names(GENOME, len(genome) <= 3)
 
 
 ##########################################################################################
@@ -433,6 +434,8 @@ rule all:
         final_stats,
         samtools_stats,
         stats_mapping_checkpoint,
+    message:
+        "--- RUNNING ALL"
 
 
 ## rules dag (just pipeline)
@@ -442,7 +445,8 @@ rule dag:
     """
     input:
         final_bam,
-
+    message:
+        "--- RUNNING DAG"
 
 rule mapping:
     """
@@ -452,6 +456,8 @@ rule mapping:
         final_bam,
         final_bam_low_qual,
         stats_mapping_checkpoint,
+    message:
+        "--- RUNNING MAPPING"
 
 
 rule stats:
@@ -461,6 +467,8 @@ rule stats:
     input:
         final_stat_figures,
         final_stats,
+    message:
+        "--- RUNNING STATS"
 
 
 onsuccess:
