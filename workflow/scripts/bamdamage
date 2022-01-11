@@ -36,6 +36,7 @@ my @retval = GetOptions
   "outputfile|output|o=s" => \$opt::output,
   "outputfile_length|output_length|O=s" => \$opt::output_length,
   "nth_read=s" => \$opt::nth_read,
+  "plot_length=s" => \$opt::plot_length,
 ) or usage(1);
 
 if($opt::help) { usage(0); }
@@ -58,6 +59,7 @@ my $damage_ub = 20;
 my $outfile = $opt::output;
 my $outfile_length = $opt::output_length;
 my $nth_read = $opt::nth_read || 1; # by default every read
+my $plot_length = $opt::plot_length || 25; # damage plot: number of bases to plot from each end
 
 my $file = $ARGV[0];
 
@@ -501,7 +503,7 @@ $file_no_bam =~ s:.*/::; # Remove full path
 $file_no_bam =~ s/\.bam$//i;
 open(R,"|-","R --vanilla > /dev/null") || die;
 print 
-print R R_script($opt::sample||$file_no_bam, $outfile, $outfile_length, @out);
+print R R_script($opt::sample||$file_no_bam, $outfile, $outfile_length, $plot_length, @out);
 close R;
 
 sub debug {
@@ -551,7 +553,8 @@ sub usage {
   "  --sample|-s=s                            use name for the legend in plots (default is the file name)\n",
   "  --outputfile|--output|-o=s               filename of damage plot (foo.dam.pdf)\n",
   "  --outputfile_length|--output_length|-O=s filename of length plot (foo.length.pdf)\n",
-  "  --nth_read=s                             subsample: consider only nth alignment (1; each line)\n",
+  "  --nth_read=i                             subsample: consider only every nth alignment (1; each alignment)\n",
+  "  --plot_length=i                          damage plot: number of bases to plot from each end\n",
   "  --help|-h                                show this help\n",
   "  --debug|-D                               write debug information\n",
   "  --verbose|-v                             verbose output\n",
@@ -579,6 +582,7 @@ sub R_script {
   my $sample_name = shift;
   my $pdffile = shift;
   my $pdffile_length = shift;
+  my $plot_length = shift;
   my @values = @_;
   my @script =
     (
@@ -586,6 +590,7 @@ sub R_script {
         sample_name <- "$sample_name"
         pdfname <- "$pdffile"
         pdfname_length <- "$pdffile_length"
+        plot_length <- "$plot_length"
         str <- "@values"),
       q(
         open_plot_file <- function(damage_file) {
@@ -689,6 +694,7 @@ sub R_script {
         nda <- dam
         yma <- max(nda[1:25,c(3:6,8:11,13:16)])
         yma <- round(yma*1000+0.5)/1000
+        xmax <- min(nrow(nda), as.numeric(plot_length))
         
         Colors = c("olivedrab3","deepskyblue1","violetred","olivedrab3","gold","darkorange","deepskyblue1","gold","darkblue","violetred","darkorange","darkblue")
         Linetypes = c(1,1,1,2,1,2,2,2,1,2,1,2)
@@ -700,7 +706,7 @@ sub R_script {
         rownames(dd)<-1:nrow(dd)
         write.csv(dd, gsub(".pdf", "_5prime.csv", pdfname), quote=F, row.names = TRUE)
         
-        plot(nda[,3], main=paste("damage pattern 5' end",sample_name,sep=" "),xlab="position from 5' end",ylab="frequency",ylim=c(0,yma),col="black",type="l",lwd=0.0,cex.axis=0.6,cex.lab=0.6,cex.main=0.8);
+        plot(nda[,3], main=paste("damage pattern 5' end",sample_name,sep=" "),xlab="position from 5' end",ylab="frequency",ylim=c(0,yma),col="black",type="l",lwd=0.0,cex.axis=0.6,cex.lab=0.6,cex.main=0.8,xlim=c(0,xmax));
         #points(nda[,4],type="l",col="deepskyblue1",lwd=2);
         #points(nda[,15],type="l",col="darkorange",lwd=2);
         count = 0;
@@ -727,7 +733,7 @@ sub R_script {
         rownames(dd)<-1:nrow(dd)
         write.csv(dd, gsub(".pdf", "_3prime.csv", pdfname), quote=F, row.names = TRUE)
         
-        plot(nda[,3], main=paste("damage pattern 3' end",sample_name,sep=" "),xlab="position from 3' end",ylab="frequency",ylim=c(0,yma),col=2,type="l",lwd=1,cex.axis=0.6,cex.lab=0.6,cex.main=0.8,xlim=rev(range(0:(length(nda[,3])-1))));
+        plot(nda[,3], main=paste("damage pattern 3' end",sample_name,sep=" "),xlab="position from 3' end",ylab="frequency",ylim=c(0,yma),col=2,type="l",lwd=1,cex.axis=0.6,cex.lab=0.6,cex.main=0.8,xlim=c(xmax, 0));
         #points(nda[,4],type="l",col="deepskyblue1",lwd=2);
         #points(nda[,15],type="l",,col="darkorange",lwd=2);
         count = 0;

@@ -5,7 +5,7 @@ localrules:
     samtools_idxstats,
     plot_summary_statistics,
     merge_DoC_chr,
-    asign_sex,
+    assign_sex,
     merge_stats_per_fastq,
     merge_stats_per_lb,
     merge_stats_per_sm,
@@ -193,17 +193,17 @@ rule samtools_idxstats:
         """
 
 
-rule asign_sex:
+rule assign_sex:
     input:
         idxstats="{folder}/04_stats/01_sparse_stats/{file}.{GENOME}.idxstats",
     output:
         sex="{folder}/04_stats/01_sparse_stats/{file}.{GENOME}.sex",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
-            ["stats", "asign_sex"], attempt, 2
+            ["stats", "assign_sex"], attempt, 2
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
-            ["stats", "asign_sex"], attempt, 1
+            ["stats", "assign_sex"], attempt, 1
         ),
     params:
         run_sex=str2bool(
@@ -533,7 +533,7 @@ rule bamdamage:
     threads: 1
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
-            ["stats", "mapdamage"], attempt, 4
+            ["stats", "bamdamage"], attempt, 4
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
             ["stats", "bamdamage"], attempt, 24
@@ -541,7 +541,7 @@ rule bamdamage:
     message:
         "--- RUN BAMDAMAGE {input.bam}"
     params:
-        bamdamage_params=recursive_get(["stats", "bamdamage_params"], ""),
+        params=recursive_get(["stats", "bamdamage_params"], ""),
         fraction=recursive_get(["stats", "bamdamage_fraction"], 0),
         script=workflow.source_path("../scripts/bamdamage"),
     log:
@@ -553,6 +553,7 @@ rule bamdamage:
         module_samtools,
     shell:
         """
+        ## get the subsampling interval
         nb=$(awk '{{sum += $3}} END {{print sum}}' {input.bai}); 
         nth_line=1; 
 
@@ -566,7 +567,7 @@ rule bamdamage:
            nth_line=$(( $nb / {params.fraction} )); 
         fi;
 
-        perl {params.script} {params.bamdamage_params} \
+        perl {params.script} {params.params} \
             --nth_read $nth_line --output {output.damage_pdf} \
             --output_length {output.length_pdf} {input.bam} 2>> {log};
         """
@@ -595,6 +596,7 @@ rule plot_bamdamage:
         "--- PLOT DAMAGE"
     params:
         script=workflow.source_path("../scripts/plot_bamdamage.R"),
+        params = recursive_get(["stats", "bamdamage_params"], "")
     log:
         "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}_plot.log",
     conda:
@@ -603,6 +605,10 @@ rule plot_bamdamage:
         module_r,
     shell:
         """
+        ## extract the plot_length
+        plot_length=$(echo {params.params} | sed 's/=/ /g' | awk -F '--plot_length' '{{print $2}}'  | awk '{{print $1}}')
+        if [ "$plot_length" != "" ]; then plot_length=--plot_length=$plot_length; fi
+
         Rscript {params.script} \
             --length={input.length_table} \
             --five_prime={input.dam_5prime_table} \
@@ -611,7 +617,8 @@ rule plot_bamdamage:
             --library={wildcards.LB} \
             --genome={wildcards.GENOME} \
             --length_svg={output.length} \
-            --damage_svg={output.damage}
+            --damage_svg={output.damage} \
+            $plot_length
 
         ## delete the unwanted created Rplots.pdf...
         rm Rplots.pdf

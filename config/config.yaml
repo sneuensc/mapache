@@ -27,7 +27,6 @@ genome:
     hg19: 
         fasta: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/hs.build37.1/hs.build37.1.fa
         #fasta: ref/hs.build37.1.fa
-        # mtChr: MT
         # If you want the DoC to be reported for some chromosomes in the main stats table, list them below. 
         depth_chromosomes: "X,Y,MT,4"
 
@@ -44,6 +43,8 @@ genome:
                 system: XY
                 signif: 0.9
                 thresholds:  list( "XX" = c(0.8, 1), "XY" = c(0, 0.6), "consistent with XX but not XY" = c(0.6, 1), "consistent with XY but not XX" = c(0, 0.8) )
+    GRCh38:
+        fasta: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/GCA_000001405.15_GRCh38.p13_onlyChrom/GCA_000001405.15_GRCh38.fa
     
 
 delim: '\s+'
@@ -135,20 +136,13 @@ remove_duplicates:
 
 
 ## mapDamage (optional, by default not run: see below)
-mapdamage:
-    run_rescale: False
+damage_rescale:
+    run: False
     params: ''
     time: 2
     threads: 1 ## hardcoded at 1
     mem: 8
 
-bamdamage:
-    run: False
-    params: ''
-    fraction: 0
-    time: 2
-    threads: 1 ## hardcoded at 1
-    mem: 8
 
 
 ##########################################################################################
@@ -174,10 +168,14 @@ compute_md:
 stats:
     fastqc_time: 4
 
+
+
+    
 ## deamination (has to be added to the library and final bam file)
     run_damage: 'bamdamage'        #("False", "mapDamage", "bamdamage")
     bamdamage_fraction: 5000
-    bamdamage_params: ' --rlength 300 '
+    bamdamage_params: ' --rlength 100 --plot_length 30'
+
 
     qualimap: True
 
@@ -191,7 +189,7 @@ stats:
         # default: sample
         x_axis: genome
         split_plot: T # possible values: FALSE, F, TRUE, T
-        # set maximum number of bars (columns) on the x-axis across n_row rowa. 
+        # set maximum number of bars (columns) on the x-axis across n_row rows. 
         # We recommend
         # a large n_col (around 20) and/or a small n_row (1 to 3)
         n_col: 11
