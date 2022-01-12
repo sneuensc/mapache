@@ -207,8 +207,8 @@ rule assign_sex:
         ),
     params:
         run_sex=str2bool(
-            lambda wildcards: recursive_get(
-                ["genome", wildcards.GENOME, "sex_inference", "run"], False
+            lambda wildcards: recursive_get_and_test(
+                ["genome", wildcards.GENOME, "sex_inference", "run"], ["False","True"]
             )
         ),
         sex_params=lambda wildcards: " ".join(
@@ -500,8 +500,6 @@ rule merge_DoC_chr:
 ##########################################################################################
 #
 # bamdamage
-
-
 rule bamdamage:
     """
     Run bamdamage to quantify the deamination pattern
@@ -725,7 +723,7 @@ rule qualimap:
         module_qualimap,
     shell:
         """
-        qualimap bamqc -c -bam {input} -outdir {output} > {log}
+        qualimap bamqc -c -bam {input} -outdir {output} --java-mem-size={resources.memory} > {log}
         """
 
 

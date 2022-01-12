@@ -8,7 +8,7 @@ import re
 ##########################################################################################
 ## all functions for main snakemake file
 
-
+## get recursively the argument of the given keys in a nested dict
 def recursive_get(keys, def_value, my_dict=config):
     key = keys[0]
     if len(keys) == 1:
@@ -17,7 +17,18 @@ def recursive_get(keys, def_value, my_dict=config):
         value = recursive_get(keys[1:], def_value, my_dict=my_dict.get(key, {}))
     return value
 
+## same as above, but the argument is tested if it is present in the 'available_args'
+## first argument of 'available_args' is the default
+def recursive_get_and_test(key, available_args, my_dict=config):
+    arg = str(recursive_get(key, available_args[0], my_dict))
+    if arg not in available_args:
+        LOGGER.error(
+            f"ERROR: The parameter '{':'.join(key)}' has no valid argument (currently '{arg}'; available {available_args})!"
+        )
+        sys.exit(1)
+    return arg
 
+## update the arguemnt in a nested dict (and create leaves if needed)
 def update_value(keys, value, my_dict=config):
     key = keys[0]
     if len(keys) == 1:
@@ -34,6 +45,7 @@ def update_value(keys, value, my_dict=config):
             new_dict = update_value(keys[1:], value, my_dict[key])
             my_dict[key].update(new_dict)
             return my_dict
+
 
 
 ##########################################################################################
@@ -85,10 +97,16 @@ def eval_list_to_csv(x):
 ##########################################################################################
 ## function to test the chromosome names
 def check_chromosome_names(GENOME, logging=True):
-    if logging: LOGGER.info(f"  Genome '{GENOME}':")
+    if logging: LOGGER.info(f"  - Genome '{GENOME}':")
+
+    ## test if fasta is valid
+    fasta = recursive_get(["genome", GENOME, "fasta"], "")
+    if "fasta" == "":
+        LOGGER.error(f"ERROR: Reference genome '{GENOME}' has no fasta file defined!")
+    elif not os.path.isfile(fasta):
+        LOGGER.error(f"ERROR: Reference genome '{GENOME}': Fasta file '{fasta}' does not exist!")
 
     ## get all chromsome names from the reference GENOME
-    fasta = recursive_get(["genome", GENOME, "fasta"], "")
     if pathlib.Path(f"{fasta}.fai").exists():
         allChr = list(
             map(str, pd.read_csv(f"{fasta}.fai", header=None, sep="\t")[0].tolist())
@@ -125,7 +143,7 @@ def check_chromosome_names(GENOME, logging=True):
     # check if the chromosomes specified in sex determination exist
     # sex chromosome
     if recursive_get(["genome", GENOME, "sex_inference", "run"], False):
-        if logging: LOGGER.info(f"    - Infering sex.")
+        if logging: LOGGER.info(f"    - Inferring sex")
         ## X chromosome specified for the sex inference
         sex_chr = recursive_get(["genome", GENOME, "sex_inference", "params", "sex_chr"], detectedChromosomes[0])
         if sex_chr not in allChr:

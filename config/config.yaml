@@ -47,10 +47,6 @@ genome:
         fasta: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/GCA_000001405.15_GRCh38.p13_onlyChrom/GCA_000001405.15_GRCh38.fa
     
 
-delim: '\s+'
-#delim: ' '
-#delim: "\t"
-
 result_dir: 'results'
 
 ## global variables to define about resource increments after job failure
@@ -127,7 +123,7 @@ merging:
 # ## extract_duplicates (optional)
 # ## in this case parameter 'rmdup_params' has NOT to be set to '--REMOVE_DUPLICATES true'
 remove_duplicates:
-    run: True  # (False, markduplicates, dedup)
+    run: markduplicates  # (False, markduplicates, dedup)
     params_markduplicates: '--REMOVE_DUPLICATES true'
     params_dedup: '-m'
     threads: 4  ## 1 for dedup
@@ -172,7 +168,7 @@ stats:
 
     
 ## deamination (has to be added to the library and final bam file)
-    run_damage: 'bamdamage'        #("False", "mapDamage", "bamdamage")
+    run_damage: 'bamdamage'        #("False", "bamdamage", "mapDamage")
     bamdamage_fraction: 5000
     bamdamage_params: ' --rlength 100 --plot_length 30'
 
