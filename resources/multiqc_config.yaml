@@ -307,7 +307,7 @@ module_order:
     
     # Post-alignment QC fastq level
     - samtools:
-        name: "Sammtools  (fastq)"
+        name: "Samtools  (fastq)"
         anchor: "samtools_fastq"
         info: "This section of the report shows the summary of the final bam file of the fastq level."
         target: ""
@@ -319,7 +319,7 @@ module_order:
 
     # Post-alignment QC library level
     - samtools:
-        name: "Sammtools  (library)"
+        name: "Samtools  (library)"
         anchor: "samtools_library"
         info: "This section of the report shows the summary of the final bam file of the library level."
         target: ""
@@ -345,7 +345,7 @@ module_order:
     
     # Post-alignment QC sample level
     - samtools:
-        name: "Sammtools  (sample)"
+        name: "Samtools  (sample)"
         anchor: "samtools_sample"
         info: "This section of the report shows the summary of the final bam file of the sample level."
         target: ""

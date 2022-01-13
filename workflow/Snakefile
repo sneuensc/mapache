@@ -567,7 +567,7 @@ if run_qualimap:
     )
     for i, file in enumerate(qualimap_files):
         if i < 4:
-            LOGGER.info(f"    - {file}/qualimapReport.html")
+            LOGGER.info(f"    - {file}")
         elif i == 4:
             LOGGER.info(f"    - ...")
         else:

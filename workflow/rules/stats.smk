@@ -717,6 +717,7 @@ rule qualimap:
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
             ["stats", "qualimap"], attempt, 1
         ),
+    threads: get_threads2(["stats", "qualimap"], 4)
     log:
         "{folder}/04_stats/01_sparse_stats/{file}_qualimap.log",
     message:
@@ -727,7 +728,7 @@ rule qualimap:
         module_qualimap,
     shell:
         """
-        qualimap bamqc -c -bam {input} -outdir {output} --java-mem-size={resources.memory}M > {log}
+        qualimap bamqc -c -bam {input} -outdir {output} --java-mem-size={resources.memory}M -nt {threads}> {log}
         """
 
 

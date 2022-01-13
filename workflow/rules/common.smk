@@ -291,7 +291,17 @@ def get_runtime_alloc2(module, attempt, default=12):
 
 ## get the number of threads of the given parameter
 def get_threads(module, default=1):
-    return int(config.get(module, {}).get("threads", default))
+    moduleList = module
+    if type(moduleList) is not list:
+        moduleList = [module]    
+    return int(recursive_get(moduleList, ["threads"], default))
+
+## in this second verion the 'threads' is added to the word of the last element
+def get_threads2(module, default=1):
+    moduleList = module
+    if type(moduleList) is not list:
+        moduleList = [module]    
+    return int(recursive_get(moduleList[:-1] + [moduleList[-1] + "threads"], default))
 
 
 ## define how to quantify the deamination pattern
