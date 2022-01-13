@@ -435,18 +435,10 @@ def get_bam_for_sorting(wildcards):
 
 
 def get_final_bam_fastq(wildcards):
-    if wildcards.type == "01_bam":
-        if run_filtering:
-            bam = f"{wildcards.folder}/01_fastq/03_filtered/01_bam_filter/{wildcards.SM}/{wildcards.LB}/{wildcards.ID}.{wildcards.GENOME}.bam"
-        else:
-            bam = f"{wildcards.folder}/01_fastq/02_mapped/03_bam_sort/{wildcards.SM}/{wildcards.LB}/{wildcards.ID}.{wildcards.GENOME}.bam"
-    elif wildcards.type == "01_bam_low_qual":
-        bam = f"{wildcards.folder}/01_fastq/03_filtered/01_bam_filter_low_qual/{wildcards.SM}/{wildcards.LB}/{wildcards.ID}.{wildcards.GENOME}.bam"
+    if run_filtering:
+        bam = f"{wildcards.folder}/01_fastq/03_filtered/01_bam_filter/{wildcards.SM}/{wildcards.LB}/{wildcards.ID}.{wildcards.GENOME}.bam"
     else:
-        LOGGER.error(
-            f"ERROR: def get_final_bam_library({wildcards.type}): should never happen!"
-        )
-        os._exit(1)
+        bam = f"{wildcards.folder}/01_fastq/02_mapped/03_bam_sort/{wildcards.SM}/{wildcards.LB}/{wildcards.ID}.{wildcards.GENOME}.bam"
     return bam
 
 
@@ -456,22 +448,14 @@ def get_final_bam_fastq(wildcards):
 
 
 def get_final_bam_library(wildcards):
-    if wildcards.type == "01_bam":
-        if run_damage_rescale:
-            bam = f"{wildcards.folder}/02_library/02_rescaled/01_mapDamage/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
-        elif remove_duplicates == "markduplicates":
-            bam = f"{wildcards.folder}/02_library/01_duplicated/01_markduplicates/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
-        elif remove_duplicates == "dedup":
-            bam = f"{wildcards.folder}/02_library/01_duplicated/01_dedup/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
-        else:
-            bam = f"{wildcards.folder}/02_library/00_merged_fastq/01_bam/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
-    elif wildcards.type == "01_bam_low_qual":
-        bam = f"{wildcards.folder}/02_library/00_merged_fastq/01_bam_low_qual/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
+    if run_damage_rescale:
+        bam = f"{wildcards.folder}/02_library/02_rescaled/01_mapDamage/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
+    elif remove_duplicates == "markduplicates":
+        bam = f"{wildcards.folder}/02_library/01_duplicated/01_markduplicates/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
+    elif remove_duplicates == "dedup":
+        bam = f"{wildcards.folder}/02_library/01_duplicated/01_dedup/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
     else:
-        LOGGER.error(
-            f"ERROR: def get_final_bam_library({wildcards.type}): should never happen!"
-        )
-        os._exit(1)
+        bam = f"{wildcards.folder}/02_library/00_merged_fastq/01_bam/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
     return bam
 
 

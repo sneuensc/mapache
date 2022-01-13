@@ -108,7 +108,7 @@ filtering:
     threads: 4
     mem: 16
     time: 2
-    save_low_qual: False
+    save_low_qual: True
 
 ##########################################################################################
 ## library level
