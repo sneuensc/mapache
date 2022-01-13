@@ -6,6 +6,7 @@ localrules:
     plot_summary_statistics,
     merge_DoC_chr,
     assign_sex,
+    assign_no_sex,
     merge_stats_per_fastq,
     merge_stats_per_lb,
     merge_stats_per_sm,
@@ -142,7 +143,7 @@ rule read_length:
     input:
         bam="{folder}/{file}.bam",
     output:
-        length="{folder}/04_stats/01_sparse_stats/{file}.length",
+        length="{folder}/04_stats/01_sparse_stats/{file}_length.txt",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
             ["stats", "read_length"], attempt, 2
@@ -151,7 +152,7 @@ rule read_length:
             ["stats", "read_length"], attempt, 1
         ),
     log:
-        "{folder}/04_stats/01_sparse_stats/{file}.length.log",
+        "{folder}/04_stats/01_sparse_stats/{file}_length.log",
     conda:
         "../envs/samtools.yaml"
     envmodules:
@@ -206,11 +207,6 @@ rule assign_sex:
             ["stats", "assign_sex"], attempt, 1
         ),
     params:
-        run_sex=str2bool(
-            lambda wildcards: recursive_get_and_test(
-                ["genome", wildcards.GENOME, "sex_inference", "run"], ["False","True"]
-            )
-        ),
         sex_params=lambda wildcards: " ".join(
             [
                 f"--{key}='{value}'"
@@ -230,16 +226,24 @@ rule assign_sex:
         "--- SEX ASSIGNEMENT {input}"
     shell:
         """
-        if [ {params.run_sex} == False ] 
-        then 
-            echo "Sex" > {output.sex}
-            echo "Not requested in config" >> {output.sex}
-        else
-            Rscript {params.script} \
+        Rscript {params.script} \
                 --idxstats={input.idxstats} \
                 --out={output.sex} \
                 {params.sex_params}
-        fi
+        """
+
+
+rule assign_no_sex:
+    output:
+        sex="{folder}/04_stats/01_sparse_stats/{file}.{GENOME}.nosex",
+    log:
+        "{folder}/{file}.{GENOME}.sex.log",
+    message:
+        "--- NO SEX ASSIGNEMENT"
+    shell:
+        """
+        echo "Sex" > {output.sex}
+        echo "NaN" >> {output.sex}
         """
 
 
@@ -253,7 +257,7 @@ rule merge_stats_per_fastq:
         else "Not_trimmed",
         # raw trimmed reads
         flagstat_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}_flagstat.txt",  # mapped and high-qual reads
-        length_fastq_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}.length",
+        length_fastq_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}_length.txt",
     output:
         "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv",
     log:
@@ -292,10 +296,10 @@ rule merge_stats_per_lb:
         ),
         flagstat_raw="{folder}/04_stats/01_sparse_stats/02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}_flagstat.txt",
         flagstat_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_flagstat.txt",
-        length_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}.length",
+        length_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_length.txt",
         #genomecov_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}.genomecov",
         idxstats_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}.idxstats",
-        sex_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}.sex",
+        sex_unique=lambda wildcards: get_sex_file(wildcards, "LB"),
     output:
         "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/library_stats.csv",
     params:
@@ -345,9 +349,9 @@ rule merge_stats_per_sm:
             allow_missing=True,
         ),
         flagstat_unique="{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_flagstat.txt",
-        length_unique="{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.length",
+        length_unique="{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_length.txt",
         idxstats_unique="{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.idxstats",
-        sex_unique="{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.sex",
+        sex_unique=lambda wildcards: get_sex_file(wildcards, "SM"),
     output:
         "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/sample_stats.csv",
     params:
@@ -378,7 +382,7 @@ rule merge_stats_per_sm:
             --SM={wildcards.SM} \
             --genome={wildcards.GENOME} \
             --output_file={output} \
-            --path_list_stats_fastq=${{list_lb_stats}} \
+            --path_list_stats_fastq=$list_lb_stats \
             --path_flagstat_unique={input.flagstat_unique} \
             --path_length_unique={input.length_unique} \
             --path_idxstats_unique={input.idxstats_unique} \
@@ -594,7 +598,7 @@ rule plot_bamdamage:
         "--- PLOT DAMAGE"
     params:
         script=workflow.source_path("../scripts/plot_bamdamage.R"),
-        params = recursive_get(["stats", "bamdamage_params"], "")
+        params=recursive_get(["stats", "bamdamage_params"], ""),
     log:
         "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}_plot.log",
     conda:
@@ -723,7 +727,7 @@ rule qualimap:
         module_qualimap,
     shell:
         """
-        qualimap bamqc -c -bam {input} -outdir {output} --java-mem-size={resources.memory} > {log}
+        qualimap bamqc -c -bam {input} -outdir {output} --java-mem-size={resources.memory}M > {log}
         """
 
 

@@ -324,7 +324,9 @@ run_multiqc = recursive_get_and_test(["stats", "multiqc"], ["False", "True"])
 ## --------------------------------------------------------------------------------------------------
 # print a summary of the stats
 LOGGER.info("STATISTICS:")
-LOGGER.info(f"  - Mapping statistics tables (SM_stats.csv, LB_stats.csv, FASTQ_stats.csv)")
+LOGGER.info(
+    f"  - Mapping statistics tables (SM_stats.csv, LB_stats.csv, FASTQ_stats.csv)"
+)
 
 if run_sex_inference:
     LOGGER.info(f"  - Inferring sex")
@@ -350,7 +352,9 @@ if run_damage != "False":
         )
 
 if run_qualimap:
-    LOGGER.info(f"  - Qualimap report: report on final bam file of the fastq, library and sample level")
+    LOGGER.info(
+        f"  - Qualimap report: report on final bam file of the fastq, library and sample level"
+    )
 
 if run_multiqc:
     LOGGER.info(f"  - Mulitqc report: HTML combining all detailed statistics")
@@ -382,13 +386,12 @@ localrules:
 
 # -----------------------------------------------------------------------------#
 ## get all final bam files
-final_bam = [
-    expand(
+final_bam = expand(
         f"{RESULT_DIR}/03_sample/03_final_sample/01_bam/{{SM}}.{{GENOME}}.bam",
         SM=samples,
         GENOME=genome,
-    ),
-]
+    )
+
 # -----------------------------------------------------------------------------#
 ## get all final bam files
 final_bam_low_qual = [
@@ -411,84 +414,87 @@ fastqc = [
     for folder in ["00_reads/01_files_orig", "01_trimmed/01_adapter_removal"]
 ]
 
-flagstats = list(
-    set(
-        [
-            f"{RESULT_DIR}/04_stats/01_sparse_stats/{folder}/01_bam/{SM}/{LB}/{ID}.{GENOME}_flagstat.txt"
-            for GENOME in genome
-            for SM in samples
-            for LB in samples[SM]
-            for ID in samples[SM][LB]
-            for folder in [
-                f"01_fastq/04_final_fastq",
-                f"02_library/00_merged_fastq",
-                f"02_library/03_final_library",
-                f"03_sample/03_final_sample/",
-            ]
-        ]
-    )
-)
-
-samtools_stats = list(
-    set(
-        [
-            f"{RESULT_DIR}/04_stats/01_sparse_stats/{folder}/01_bam/{SM}/{LB}/{ID}.{GENOME}_stats.txt"
-            for GENOME in genome
-            for SM in samples
-            for LB in samples[SM]
-            for ID in samples[SM][LB]
-            for folder in [
-                f"01_fastq/04_final_fastq",
-                f"02_library/00_merged_fastq",
-                f"02_library/03_final_library",
-                f"03_sample/03_final_sample",
-            ]
-        ]
-    )
-)
-
-lengths = [
-    f"{RESULT_DIR}/04_stats/01_sparse_stats/{folder}/{SM}/{LB}/{ID}.{GENOME}.length"
+flagstats = [
+    f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}_flagstat.txt"
     for GENOME in genome
     for SM in samples
     for LB in samples[SM]
     for ID in samples[SM][LB]
-    for folder in [
-        f"01_fastq/04_final_fastq",
-        f"02_library/03_final_library",
-        f"03_sample/03_final_sample",
+    for file in [
+        f"01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}",
+        f"02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}",
+        f"02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}",
+        f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}",
     ]
 ]
+flagstats = list(set(flagstats)) ## remove duplicates
 
-lengths = list(set(lengths))
+samtools_stats = [
+            f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}_stats.txt"
+            for GENOME in genome
+            for SM in samples
+            for LB in samples[SM]
+            for ID in samples[SM][LB]
+            for file in [
+                f"01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}",
+                f"02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}",
+                f"02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}",
+                f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}",
+            ]
+]
+samtools_stats = list(set(samtools_stats)) ## remove duplicates
+
+lengths = [
+    f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}_length.txt"
+    for GENOME in genome
+    for SM in samples
+    for LB in samples[SM]
+    for ID in samples[SM][LB]
+    for file in [
+        f"01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}",
+        f"02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}",
+        f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}",
+    ]
+]
+lengths = list(set(lengths))  ## remove duplicates
 
 idxstats = [
-    f"{RESULT_DIR}/04_stats/01_sparse_stats/{folder}/01_bam/{SM}/{LB}.{GENOME}.idxstats"
+    f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}.idxstats"
     for GENOME in genome
     for SM in samples
     for LB in samples[SM]
-    for folder in [
-        f"02_library/03_final_library",
-        f"03_sample/03_final_sample",
+    for file in [
+        f"02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}",
+        f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}",
     ]
 ]
-
-idxstats = list(set(idxstats))
+idxstats = list(set(idxstats))  ## remove duplicates
 
 sex_files = [
-    f"{RESULT_DIR}/04_stats/01_sparse_stats/{folder}/01_bam/{SM}/{LB}.{GENOME}.sex"
+    f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}.sex"
     for GENOME in genome
     for SM in samples
     for LB in samples[SM]
-    for folder in [
-        f"02_library/03_final_library",
-        f"03_sample/03_final_sample",
+    for file in [
+        f"02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}",
+        f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}",
     ]
-    if recursive_get_and_test(["genome", GENOME, "sex_inference", "run"], ["False", "True"])
+    if str2bool(recursive_get(["genome", GENOME, "sex_inference", "run"], False))
 ]
 
-sex_files = list(set(sex_files))
-print(sex_files)
+sex_files = []
+for GENOME in genome:
+    ext="sex" if str2bool(recursive_get(["genome", GENOME, "sex_inference", "run"], False)) else "nosex"
+        
+    sex_files += [f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}.{ext}"
+        for SM in samples
+        for LB in samples[SM]
+        for file in [
+            f"02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}",
+            f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}",
+        ]
+    ]    
+sex_files = list(set(sex_files))  ## remove duplicates
 
 qualimap_files = [
     f"{RESULT_DIR}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_qualimap"
@@ -497,15 +503,11 @@ qualimap_files = [
     if run_qualimap
 ]
 
-qualimap_files = list(set(qualimap_files))
-
 multiqc_files = [
     f"{RESULT_DIR}/04_stats/02_separate_tables/{GENOME}/multiqc_fastqc.html"
     for GENOME in genome
     if run_multiqc
 ]
-
-multiqc_files = list(set(multiqc_files))
 
 
 stats_mapping_checkpoint = [
@@ -522,11 +524,6 @@ stats_mapping_checkpoint = [
 # -----------------------------------------------------------------------------#
 ## get the minimal final summary stats
 final_stats = [
-    # expand(
-    #     "Missing input files for rule/04_stats/03_summary/{level}_stats.{GENOME}.csv",
-    #     level=["SM", "LB", "FASTQ"],
-    #     GENOME=genome
-    # ),
     expand(
         f"{RESULT_DIR}/04_stats/03_summary/{{level}}_stats.csv",
         level=["SM", "LB", "FASTQ"],
