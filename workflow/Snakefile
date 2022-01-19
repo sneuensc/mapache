@@ -71,7 +71,8 @@ for GENOME in genome:
 ##########################################################################################
 # sample_file="config/samples.tsv"
 sample_file = recursive_get(["sample_file"], "config/samples.tsv")
-db = pd.read_csv(sample_file, sep="\t", comment="#", dtype=str)
+delim = recursive_get(["delim"], "\s+")
+db = pd.read_csv(sample_file, sep=delim, comment="#", dtype=str)
 
 ## check number of columns and column names
 if len(db.columns) == 6:
@@ -188,7 +189,6 @@ subsampling_number = float(recursive_get(["subsampling", "number"], 0))
 if subsampling_number == 0:
     run_subsampling = False
 
-
 ## --------------------------------------------------------------------------------------------------
 ## adapterremoval
 run_adapter_removal = str2bool(
@@ -269,6 +269,7 @@ if run_subsampling:
     else:
         LOGGER.info(f"  - Subsampling {subsampling_number} reads per fastq file")
 
+
 if run_adapter_removal:
     if collapse:
         LOGGER.info(
@@ -290,7 +291,7 @@ if run_filtering:
 if remove_duplicates != "False":
     if remove_duplicates == "markduplicates":
         LOGGER.info(f"  - Removing duplicates with MarkDuplicates")
-    elif markduplicates == "dedup":
+    elif remove_duplicates == "dedup":
         LOGGER.info(f"  - Removing duplicates with DeDup")
     else:
         LOGGER.info(f"  - Removing duplicates with {remove_duplicates}")
@@ -320,6 +321,7 @@ run_sex_inference = recursive_get_and_test(
 run_qualimap = recursive_get_and_test(["stats", "qualimap"], ["False", "True"])
 
 run_multiqc = recursive_get_and_test(["stats", "multiqc"], ["False", "True"])
+
 
 
 ##########################################################################################
@@ -473,7 +475,6 @@ multiqc_files = [
     for GENOME in genome
     if run_multiqc
 ]
-
 
 stats_mapping_checkpoint = [
     fastqc,

@@ -294,14 +294,14 @@ def get_threads(module, default=1):
     moduleList = module
     if type(moduleList) is not list:
         moduleList = [module]    
-    return int(recursive_get(moduleList, ["threads"], default))
+    return int(recursive_get(moduleList + ["threads"], default))
 
 ## in this second verion the 'threads' is added to the word of the last element
 def get_threads2(module, default=1):
     moduleList = module
     if type(moduleList) is not list:
         moduleList = [module]    
-    return int(recursive_get(moduleList[:-1] + [moduleList[-1] + "threads"], default))
+    return int(recursive_get(moduleList[:-1] + [moduleList[-1] + "_threads"], default))
 
 
 ## define how to quantify the deamination pattern
