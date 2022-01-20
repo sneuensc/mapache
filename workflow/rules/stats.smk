@@ -728,7 +728,8 @@ rule qualimap:
         module_qualimap,
     shell:
         """
-        qualimap bamqc -c -bam {input} -outdir {output} --java-mem-size={resources.memory}M -nt {threads}> {log}
+        echo {threads}
+        qualimap bamqc -c -bam {input} -outdir {output} -nt {threads} --java-mem-size={resources.memory}M > {log}
         """
 
 
@@ -799,6 +800,8 @@ rule multiqc:
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
             ["stats", "multiqc"], attempt, 1
         ),
+    params:
+        config = "config/multiqc_config.yaml"
     log:
         "{folder}/04_stats/02_separate_tables/{GENOME}/multiqc_fastqc.log",
     conda:
@@ -809,5 +812,5 @@ rule multiqc:
         "--- MULTIQC fastqc of {GENOME}"
     shell:
         """
-        multiqc -c resources/multiqc_config.yaml -n $(basename {output.html}) -f -d -o $(dirname {output.html}) {input}  2> {log}
+        multiqc -c {params.config} -n $(basename {output.html}) -f -d -o $(dirname {output.html}) {input}  2> {log}
         """

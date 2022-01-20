@@ -18,7 +18,7 @@ report_header_info: null
 show_analysis_paths: True
 show_analysis_time: True
 config_file: null
-custom_logo: 'resources/mapache_logo.png'
+custom_logo: 'config/mapache_logo.png'
 custom_logo_url: null
 custom_logo_title: null
 simple_output: false
