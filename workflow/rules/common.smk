@@ -139,6 +139,8 @@ def check_chromosome_names(GENOME, logging=True):
             LOGGER.info(
                 f"    - Detected genome as 'hg19': Appliyng default chromosome names for sex and mt chromsomes: {detectedChromosomes}."
             )
+        config = update_value(["genome", GENOME, "sex_inference", "params", "sex_chr"],detectedChromosomes[0])  
+        config = update_value(["genome", GENOME, "sex_inference", "params", "autosomes"], detectedAutosomes)
     elif sorted(allChr) == sorted(GRCh38):
         detectedChromosomes = ["chrX", "chrY", "chrM"]
         detectedAutosomes = list(set(allChr) - set(detectedChromosomes))
@@ -146,20 +148,16 @@ def check_chromosome_names(GENOME, logging=True):
             LOGGER.info(
                 f"    - Detected genome as 'GRCh38': Appliyng default chromosome names for sex and mt chromsomes {detectedChromosomes}."
             )
-    else:
-        detectedChromosomes = ["", "", ""]
-        detectedAutosomes = []
+        config = update_value(["genome", GENOME, "sex_inference", "params", "sex_chr"],detectedChromosomes[0])  
+        config = update_value(["genome", GENOME, "sex_inference", "params", "autosomes"], detectedAutosomes)
 
     # check if the chromosomes specified in sex determination exist
     # sex chromosome
     if recursive_get(["genome", GENOME, "sex_inference", "run"], False):
         if logging:
             LOGGER.info(f"    - Inferring sex")
-        ## X chromosome specified for the sex inference
-        sex_chr = recursive_get(
-            ["genome", GENOME, "sex_inference", "params", "sex_chr"],
-            detectedChromosomes[0],
-        )
+        ## X chromosome specified for the sex inferenceß
+        sex_chr = recursive_get( ["genome", GENOME, "sex_inference", "params", "sex_chr"], [])
         if sex_chr not in allChr:
             LOGGER.error(
                 f"ERROR: Sex chromosome specified in 'config[genome][{GENOME}][sex_inference][params][sex_chr]' ({sex_chr}) does not exist in FASTA reference genome."
@@ -173,7 +171,7 @@ def check_chromosome_names(GENOME, logging=True):
                 eval_to_list(
                     recursive_get(
                         ["genome", GENOME, "sex_inference", "params", "autosomes"],
-                        detectedAutosomes,
+                        [],
                     )
                 ),
             )
@@ -184,10 +182,12 @@ def check_chromosome_names(GENOME, logging=True):
             )
             os._exit(1)
 
+        ## for the autosomes transfer python to R format
         config = update_value(
             ["genome", GENOME, "sex_inference", "params", "autosomes"],
             'c("' + '","'.join(autosomes) + '")',
         )
+
 
     # check if chromosomes for which DoC was requested exist
     depth_chromosomes = recursive_get(["genome", GENOME, "depth_chromosomes"], "")
