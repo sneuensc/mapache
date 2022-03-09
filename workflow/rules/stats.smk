@@ -51,8 +51,8 @@ rule fastqc:
         symlink=${{html%%_fastqc.html}}.fastq.gz
         ln -srf {input.fastq[0]} $symlink
 
-        ## run fastqc
-        fastqc --quiet --outdir $(dirname $html) $symlink 2> {log};
+        ## run fastqc (-t 2 is a trick to increase the memory allocation / multitreathing is per file, so still only 1CPU used)
+        fastqc --quiet -t 2 --outdir $(dirname $html) $symlink 2> {log};
 
         ## remove symlink again
         rm $symlink
