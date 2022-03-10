@@ -98,8 +98,7 @@ def eval_list_to_csv(x):
 ##########################################################################################
 ## function to test the chromosome names
 def check_chromosome_names(GENOME, logging=True):
-    if logging:
-        LOGGER.info(f"  - Genome '{GENOME}':")
+    if logging: LOGGER.info(f"  - Genome '{GENOME}':") 
 
     ## test if fasta is valid
     fasta = recursive_get(["genome", GENOME, "fasta"], "")
@@ -135,27 +134,24 @@ def check_chromosome_names(GENOME, logging=True):
     if sorted(allChr) == sorted(hg19):
         detectedChromosomes = ["X", "Y", "MT"]
         detectedAutosomes = list(set(allChr) - set(detectedChromosomes))
-        if logging:
-            LOGGER.info(
-                f"    - Detected genome as 'hg19': Appliyng default chromosome names for sex and mt chromsomes: {detectedChromosomes}."
-            )
+        if logging: LOGGER.info(
+            f"    - Detected genome as 'hg19': Appliyng default chromosome names for sex and mt chromsomes: {detectedChromosomes}."
+        ) 
         config = update_value(["genome", GENOME, "sex_inference", "params", "sex_chr"],detectedChromosomes[0])  
         config = update_value(["genome", GENOME, "sex_inference", "params", "autosomes"], detectedAutosomes)
     elif sorted(allChr) == sorted(GRCh38):
         detectedChromosomes = ["chrX", "chrY", "chrM"]
         detectedAutosomes = list(set(allChr) - set(detectedChromosomes))
-        if logging:
-            LOGGER.info(
-                f"    - Detected genome as 'GRCh38': Appliyng default chromosome names for sex and mt chromsomes {detectedChromosomes}."
-            )
+        if logging: LOGGER.info(
+            f"    - Detected genome as 'GRCh38': Appliyng default chromosome names for sex and mt chromsomes {detectedChromosomes}."
+        ) 
         config = update_value(["genome", GENOME, "sex_inference", "params", "sex_chr"],detectedChromosomes[0])  
         config = update_value(["genome", GENOME, "sex_inference", "params", "autosomes"], detectedAutosomes)
 
     # check if the chromosomes specified in sex determination exist
     # sex chromosome
     if recursive_get(["genome", GENOME, "sex_inference", "run"], False):
-        if logging:
-            LOGGER.info(f"    - Inferring sex")
+        if logging: LOGGER.info(f"    - Inferring sex") 
         ## X chromosome specified for the sex inferenceß
         sex_chr = recursive_get( ["genome", GENOME, "sex_inference", "params", "sex_chr"], [])
         if sex_chr not in allChr:
@@ -458,14 +454,17 @@ def get_final_bam_fastq(wildcards):
 
 
 def get_final_bam_library(wildcards):
-    if run_damage_rescale:
-        bam = f"{wildcards.folder}/02_library/02_rescaled/01_mapDamage/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
-    elif remove_duplicates == "markduplicates":
-        bam = f"{wildcards.folder}/02_library/01_duplicated/01_markduplicates/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
-    elif remove_duplicates == "dedup":
-        bam = f"{wildcards.folder}/02_library/01_duplicated/01_dedup/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
+    if wildcards.type == "01_bam":
+        if run_damage_rescale:
+            bam = f"{wildcards.folder}/02_library/02_rescaled/01_mapDamage/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
+        elif remove_duplicates == "markduplicates":
+            bam = f"{wildcards.folder}/02_library/01_duplicated/01_markduplicates/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
+        elif remove_duplicates == "dedup":
+            bam = f"{wildcards.folder}/02_library/01_duplicated/01_dedup/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
+        else:
+            bam = f"{wildcards.folder}/02_library/00_merged_fastq/01_bam/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
     else:
-        bam = f"{wildcards.folder}/02_library/00_merged_fastq/01_bam/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
+        bam = f"{wildcards.folder}/02_library/00_merged_fastq/01_bam_low_qual/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
     return bam
 
 
