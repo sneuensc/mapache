@@ -801,7 +801,7 @@ rule multiqc:
             ["stats", "multiqc"], attempt, 1
         ),
     params:
-        config = "config/multiqc_config.yaml"
+        config="config/multiqc_config.yaml",
     log:
         "{folder}/04_stats/02_separate_tables/{GENOME}/multiqc_fastqc.log",
     conda:

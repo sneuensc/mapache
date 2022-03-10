@@ -157,9 +157,8 @@ if(sum(idxstats$reads == 0)){
 
   genome_length <- sum(idxstats$length)
   total_mapped <- sum(idxstats$reads)
-    
+  
   LM <- lm(reads ~ length, idxstats)
-
   # corresponding to f in Mittnik et al., 2016
   idxstats$fraction_mapped <- idxstats$reads / total_mapped
 

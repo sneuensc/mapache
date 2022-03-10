@@ -41,12 +41,16 @@ rule markduplicates:
         bam="{folder}/02_library/01_duplicated/01_markduplicates/{SM}/{LB}.{GENOME}.bam",
         stats="{folder}/02_library/01_duplicated/01_markduplicates/{SM}/{LB}.{GENOME}.stats",
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("remove_duplicates", attempt, 4),
+        memory=lambda wildcards, attempt: get_memory_alloc(
+            "remove_duplicates", attempt, 4
+        ),
         runtime=lambda wildcards, attempt: get_runtime_alloc(
             "remove_duplicates", attempt, 24
         ),
     params:
-        params=recursive_get(["remove_duplicates", "params_markduplicates"], "--REMOVE_DUPLICATES true"),
+        params=recursive_get(
+            ["remove_duplicates", "params_markduplicates"], "--REMOVE_DUPLICATES true"
+        ),
         PICARD=get_picard_bin(),
     threads: get_threads("remove_duplicates", 4)
     log:
@@ -76,13 +80,24 @@ rule dedup:
         log="{folder}/02_library/01_duplicated/01_dedup/{SM}/{LB}.{GENOME}.log",
         bam="{folder}/02_library/01_duplicated/01_dedup/{SM}/{LB}.{GENOME}.bam",
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("remove_duplicates", attempt, 4),
+        memory=lambda wildcards, attempt: get_memory_alloc(
+            "remove_duplicates", attempt, 4
+        ),
         runtime=lambda wildcards, attempt: get_runtime_alloc(
             "remove_duplicates", attempt, 24
         ),
     params:
         params=recursive_get(["remove_duplicates", "params_dedup"], "-m"),
-        collapsed=collapse and "nan" not in [i['Data2'] for i in recursive_get([wildcards.SM, wildcards.LB, wildcards.ID, "Data2"],[], my_dict=samples).values()]
+        collapsed=collapse
+        and "nan"
+        not in [
+            i["Data2"]
+            for i in recursive_get(
+                [wildcards.SM, wildcards.LB, wildcards.ID, "Data2"],
+                [],
+                my_dict=samples,
+            ).values()
+        ],
         #threads: get_threads("remove_duplciates", 1)
     log:
         "{folder}/02_library/01_duplicated/01_dedup/{SM}/{LB}.{GENOME}.log",
