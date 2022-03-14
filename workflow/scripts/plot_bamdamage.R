@@ -20,6 +20,7 @@ if("--help" %in% args) {
         --sample                                     - name of the sample
         --library                                    - name of the library
         --genome                                     - name of the genome
+        --plot_length                                - number of bases to plot from each end (default 25)
         
         Output files:  
         --length_svg                                 - read length plot filename
@@ -65,6 +66,8 @@ sample = get_args(argsL, "sample", "")
 library = get_args(argsL, "library", "")
 genome = get_args(argsL, "genome", "")
 
+plot_length = as.numeric(get_args(argsL, "plot_length", "25"))
+
 ############################################################################
 library(ggplot2)
 library(RColorBrewer) 
@@ -92,7 +95,12 @@ ggsave(length_svg, my_plot, width = 11, height = 7)
 ##  read files
 p5 <- read.csv(five_prime_csv)
 p3 <- read.csv(three_prime_csv)
-range.y <- c(0,max(p3[-1],p5[-1]))
+
+max.x <- min(max(p3$X, p5$X), plot_length)
+p5 <- p5[1:max.x,]
+p3 <- p3[1:max.x,]
+
+range.y <- c(0, max(p3[-1],p5[-1]))
 
 ## 5' plot
 d <- melt(p5, 1)
@@ -100,11 +108,11 @@ p1 <- ggplot(d, aes(x=X, y=value, group=variable)) +
   geom_line(size=1, color="gray") +
   geom_line(data=subset(d, variable == 'G..A'), size=1.5, color="blue") +
   geom_line(data=subset(d, variable == 'C..T'), size=1.5, color="orange") +
-  ylim(range.y) +
   xlab("position from 5' end") +
   ylab("frequency") +
-  geom_text(x=mean(p5$X), y=0.95*max(range.y), label="C>T", color="orange", fontface="bold") +
-  theme_classic() 
+  geom_text(x=max.x/2, y=0.95*max(range.y), label="C>T", color="orange", fontface="bold") +
+  theme_classic() +
+  ylim(range.y)
 
 ## 3' plot
 d <- melt(p3, 1)
@@ -114,7 +122,7 @@ p2 <- ggplot(d, aes(x=X, y=value, group=variable)) +
   geom_line(data=subset(d, variable == 'G..A'), size=1.5, color="blue") +
   xlab("position from 3' end") +
   ylab("frequency") +
-  geom_text(x=-mean(p3$X), y=0.95*max(range.y), label="G>A", color="blue", fontface="bold") +
+  geom_text(x=-max.x/2, y=0.95*max(range.y), label="G>A", color="blue", fontface="bold") +
   theme_classic() +
   scale_y_continuous(lim=range.y, position = "right") +
   scale_x_reverse()

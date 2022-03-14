@@ -12,9 +12,10 @@ envmodules:
     r:              "gcc r/4.0.4"
     adapterremoval: "gcc adapterremoval/2.3.2"
     mapdamage:      ""
-    multiqc:        ""
     bedtools:       "gcc bedtools2/2.29.2"
     seqtk:          ""
+    qualimap:       ""
+    multiqc:        ""
 
 ##########################################################################################
 ##########################################################################################
@@ -26,7 +27,6 @@ genome:
     hg19: 
         fasta: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/hs.build37.1/hs.build37.1.fa
         #fasta: ref/hs.build37.1.fa
-        # mtChr: MT
         # If you want the DoC to be reported for some chromosomes in the main stats table, list them below. 
         depth_chromosomes: "X,Y,MT,4"
 
@@ -43,19 +43,17 @@ genome:
                 system: XY
                 signif: 0.9
                 thresholds:  list( "XX" = c(0.8, 1), "XY" = c(0, 0.6), "consistent with XX but not XY" = c(0.6, 1), "consistent with XY but not XX" = c(0, 0.8) )
+    GRCh38:
+        fasta: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/GCA_000001405.15_GRCh38.p13_onlyChrom/GCA_000001405.15_GRCh38.fa
     
-
-delim: '\s+'
-#delim: ' '
-#delim: "\t"
 
 result_dir: 'results'
 
 ## global variables to define about resource increments after job failure
 ## 0: no change between failures
 ## 1: doubling after each failure
-memory_increment_ratio: 1
-runtime_increment_ratio: 0
+memory_increment_ratio: 0.5
+runtime_increment_ratio: 0.5
 
 # ## indexing
 indexing:
@@ -80,8 +78,7 @@ subsampling:
 # adapter_removal (optional)
 adapterremoval:
     run: True
-    params_paired_end: '--minlength 30 --trimns --trimqualities --collapse'
-    params_single_end: '--minlength 30 --trimns --trimqualities'
+    params: '--minlength 30 --trimns --trimqualities'
     threads: 4 
     mem: 4 ## in GB
     time: 2
@@ -112,7 +109,7 @@ filtering:
     threads: 4
     mem: 16
     time: 2
-    save_low_qual: False
+    save_low_qual: True
 
 ##########################################################################################
 ## library level
@@ -126,30 +123,23 @@ merging:
 
 # ## extract_duplicates (optional)
 # ## in this case parameter 'rmdup_params' has NOT to be set to '--REMOVE_DUPLICATES true'
-markduplicates:
-    run: True  
-    params: '--REMOVE_DUPLICATES true'
-    threads: 4
+remove_duplicates:
+    run: markduplicates  # (False, markduplicates, dedup)
+    params_markduplicates: '--REMOVE_DUPLICATES true'
+    params_dedup: '-m'
+    threads: 4  ## 1 for dedup
     mem: 16
     time: 2
-    save_duplicates: remove  ## remove, mark, extract
 
 
 ## mapDamage (optional, by default not run: see below)
-mapdamage:
-    run_rescale: False
+damage_rescale:
+    run: False
     params: ''
     time: 2
     threads: 1 ## hardcoded at 1
     mem: 8
 
-bamdamage:
-    run: False
-    params: ''
-    fraction: 0
-    time: 2
-    threads: 1 ## hardcoded at 1
-    mem: 8
 
 
 ##########################################################################################
@@ -173,11 +163,21 @@ compute_md:
 ##########################################################################################
 ## stats on the final bam file
 stats:
+    fastqc_time: 4
 
+
+
+    
 ## deamination (has to be added to the library and final bam file)
-    run_damage: 'bamdamage'        #("False", "mapDamage", "bamdamage")
+    run_damage: 'bamdamage'        #("False", "bamdamage", "mapDamage")
     bamdamage_fraction: 5000
-    bamdamage_params: ' --rlength 300 '
+    bamdamage_params: ' --rlength 100 --plot_length 30'
+
+
+    qualimap: True
+
+    multiqc: True
+    
 # specific to Mapping statistics plot in the report
     plots:
         # x_axis: either "sample" or "genome"
@@ -186,7 +186,7 @@ stats:
         # default: sample
         x_axis: genome
         split_plot: T # possible values: FALSE, F, TRUE, T
-        # set maximum number of bars (columns) on the x-axis across n_row rowa. 
+        # set maximum number of bars (columns) on the x-axis across n_row rows. 
         # We recommend
         # a large n_col (around 20) and/or a small n_row (1 to 3)
         n_col: 11

@@ -8,8 +8,11 @@ rule merge_bam_fastq2library:
     Merge the bam files of the fastq step
     """
     input:
-        mapped=lambda wildcards: expand("{folder}/01_fastq/04_final_fastq/{type}/{SM}/{LB}/{ID}.{GENOME}.bam",
-             ID=samples[wildcards.SM][wildcards.LB], allow_missing=True)
+        mapped=lambda wildcards: expand(
+            "{folder}/01_fastq/04_final_fastq/{type}/{SM}/{LB}/{ID}.{GENOME}.bam",
+            ID=samples[wildcards.SM][wildcards.LB],
+            allow_missing=True,
+        ),
     output:
         "{folder}/02_library/00_merged_fastq/{type}/{SM}/{LB}.{GENOME}.bam",
     resources:
@@ -28,26 +31,30 @@ rule merge_bam_fastq2library:
         "../scripts/merge_bam.py"
 
 
-rule remove_duplicates:
+rule markduplicates:
     """
-    Remove duplicated mappings
+    Remove duplicated mappings with pricards markduplicates
     """
     input:
         "{folder}/02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}.bam",
     output:
-        bam="{folder}/02_library/01_duplicated/01_rmdup/{SM}/{LB}.{GENOME}.bam",
-        stats="{folder}/02_library/01_duplicated/01_rmdup/{SM}/{LB}.{GENOME}.stats",
+        bam="{folder}/02_library/01_duplicated/01_markduplicates/{SM}/{LB}.{GENOME}.bam",
+        stats="{folder}/02_library/01_duplicated/01_markduplicates/{SM}/{LB}.{GENOME}.stats",
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("markduplicates", attempt, 4),
+        memory=lambda wildcards, attempt: get_memory_alloc(
+            "remove_duplicates", attempt, 4
+        ),
         runtime=lambda wildcards, attempt: get_runtime_alloc(
-            "markduplicates", attempt, 24
+            "remove_duplicates", attempt, 24
         ),
     params:
-        rmdup_params= recursive_get(["markduplicates", "params"], "REMOVE_DUPLICATES=true"),
-        PICARD= recursive_get(["software", "picard_jar"], "picard.jar"),
-    threads: get_threads("markduplicates", 4)
+        params=recursive_get(
+            ["remove_duplicates", "params_markduplicates"], "--REMOVE_DUPLICATES true"
+        ),
+        PICARD=get_picard_bin(),
+    threads: get_threads("remove_duplicates", 4)
     log:
-        "{folder}/02_library/01_duplicated/01_rmdup/{SM}/{LB}.{GENOME}.log",
+        "{folder}/02_library/01_duplicated/01_markduplicates/{SM}/{LB}.{GENOME}.log",
     conda:
         "../envs/picard.yaml"
     envmodules:
@@ -56,46 +63,62 @@ rule remove_duplicates:
         "--- MARKDUPLICATES {input}"
     shell:
         """
-        ## get binary
-        jar={params.PICARD}
-        if [ "${{jar: -4}}" == ".jar" ]; then
-            bin="java -XX:ParallelGCThreads={threads} -XX:+UseParallelGC -XX:-UsePerfData \
-                    -Xms{resources.memory}m -Xmx{resources.memory}m -jar {params.PICARD}"
-        else
-            bin={params.PICARD}
-        fi
-
-        ## run MarkDuplicates
-        $bin MarkDuplicates --INPUT {input} --OUTPUT {output.bam} --METRICS_FILE {output.stats} \
-            {params.rmdup_params} --ASSUME_SORT_ORDER coordinate --VALIDATION_STRINGENCY LENIENT 2> {log};
+        {params.PICARD} MarkDuplicates --INPUT {input} --OUTPUT {output.bam} --METRICS_FILE {output.stats} \
+            {params.params} --ASSUME_SORT_ORDER coordinate --VALIDATION_STRINGENCY LENIENT 2> {log};
         """
 
-rule samtools_extract_duplicates:
+
+rule dedup:
     """
-    Extract duplicates of bam file
+    Remove duplicated mappings with dedup (-m only for collapsed PE reads!!!)
     """
     input:
-        "{folder}/02_library/01_duplicated/01_rmdup/{SM}/{LB}.{GENOME}.bam",
+        "{folder}/02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}.bam",
     output:
-        mapped="{folder}/02_library/01_duplicated/01_rmdup/{SM}/{LB}.{GENOME}_mapped.bam",
-        dup="{folder}/02_library/01_duplicated/01_rmdup/{SM}/{LB}.{GENOME}_duplicates.bam",
+        json="{folder}/02_library/01_duplicated/01_dedup/{SM}/{LB}.{GENOME}.dedup.json",
+        hist="{folder}/02_library/01_duplicated/01_dedup/{SM}/{LB}.{GENOME}.hist",
+        log="{folder}/02_library/01_duplicated/01_dedup/{SM}/{LB}.{GENOME}.log",
+        bam="{folder}/02_library/01_duplicated/01_dedup/{SM}/{LB}.{GENOME}.bam",
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("markduplicates", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc(
-            "markduplicates", attempt, 24
+        memory=lambda wildcards, attempt: get_memory_alloc(
+            "remove_duplicates", attempt, 4
         ),
-    threads: get_threads("markduplicates", 4)
+        runtime=lambda wildcards, attempt: get_runtime_alloc(
+            "remove_duplicates", attempt, 24
+        ),
+    params:
+        params=recursive_get(["remove_duplicates", "params_dedup"], "-m"),
+        collapsed=collapse
+        and "nan"
+        not in [
+            i["Data2"]
+            for i in recursive_get(
+                [wildcards.SM, wildcards.LB, wildcards.ID, "Data2"],
+                [],
+                my_dict=samples,
+            ).values()
+        ],
+        #threads: get_threads("remove_duplciates", 1)
     log:
-        "{folder}/02_library/01_duplicated/01_rmdup/{SM}/{LB}.{GENOME}_extract_duplicates.log",
+        "{folder}/02_library/01_duplicated/01_dedup/{SM}/{LB}.{GENOME}.log",
     conda:
-        "../envs/samtools.yaml"
+        "../envs/dedup.yaml"
     envmodules:
-        module_samtools,
+        module_dedup,
     message:
-        "--- SAMTOOLS EXTRACT DUPLICATES {input}"
+        "--- DEDUP {input}"
     shell:
         """
-        samtools view -b --threads {threads} -F 1024 -U {output.dup} {input} > {output.mapped} 2> {log}
+        ## remove -m or --merged from $params (needed for SE or not collapsed PE reads)
+        if [ {params.collapsed} ]; then
+            params={params.params}
+        else
+            params=$(echo {params.params} | sed  's/ -m/ /g' | sed  's/ --merged/ /g')
+        fi
+
+        bam={output.bam}
+        dedup -i {input} $params  -o $(dirname $bam);
+        mv ${{bam%%.bam}}_rmdup.bam $bam
         """
 
 
@@ -123,7 +146,7 @@ rule mapDamage_stats:
         memory=lambda wildcards, attempt: get_memory_alloc("mapdamage", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapdamage", attempt, 24),
     params:
-        params= recursive_get(["mapdamage", "params"], ""),
+        params=recursive_get(["mapdamage", "params"], ""),
     conda:
         "../envs/mapdamage.yaml"
     message:
@@ -152,7 +175,7 @@ rule mapDamage_rescale:
         "{folder}/02_library/02_rescaled/01_mapDamage/{SM}/{LB}.{GENOME}_rescale.log",
     threads: 1
     params:
-        params= recursive_get(["mapdamage", "params"], ""),
+        params=recursive_get(["mapdamage", "params"], ""),
     conda:
         "../envs/mapdamage.yaml"
     message:
@@ -179,4 +202,3 @@ rule get_final_library:
         "{folder}/02_library/03_final_library/{type}/{SM}/{LB}.{GENOME}.bam.log",
     run:
         symlink_rev(input, output)
-

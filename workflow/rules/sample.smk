@@ -2,7 +2,7 @@
 ## all rules for the samples
 ##########################################################################################
 localrules:
-    get_final_bam,  ## executed locally on a cluster
+    get_final_bam,
 
 
 rule merge_bam_library2sample:
@@ -10,8 +10,11 @@ rule merge_bam_library2sample:
     Merge the bam files of the library step
     """
     input:
-        mapped=lambda wildcards: expand("{folder}/02_library/03_final_library/{type}/{SM}/{LB}.{GENOME}.bam",
-             LB=samples[wildcards.SM], allow_missing=True)
+        mapped=lambda wildcards: expand(
+            "{folder}/02_library/03_final_library/{type}/{SM}/{LB}.{GENOME}.bam",
+            LB=samples[wildcards.SM],
+            allow_missing=True,
+        ),
     output:
         "{folder}/03_sample/00_merged_library/{type}/{SM}.{GENOME}.bam",
     resources:
@@ -39,7 +42,7 @@ rule realign:
         fai="{folder}/00_reference/{GENOME}/{GENOME}.fasta.fai",
         dict="{folder}/00_reference/{GENOME}/{GENOME}.dict",
         bam="{folder}/03_sample/00_merged_library/01_bam/{SM}.{GENOME}.bam",
-        bai="{folder}/03_sample/00_merged_library/01_bam/{SM}.{GENOME}.bam.bai",
+        bai="{folder}/03_sample/00_merged_library/01_bam/{SM}.{GENOME}.bai",
     output:
         bam="{folder}/03_sample/01_realigned/01_realign/{SM}.{GENOME}.bam",
         intervals="{folder}/03_sample/01_realigned/01_realign/{SM}.{GENOME}.intervals",
@@ -49,7 +52,7 @@ rule realign:
         runtime=lambda wildcards, attempt: get_runtime_alloc("realign", attempt, 24),
     threads: get_threads("realign", 4)
     params:
-        GATK=recursive_get(["software", "gatk3_jar"], "GenomeAnalysisTK.jar"),
+        GATK=get_gatk_bin(),
     log:
         "{folder}/03_sample/01_realigned/01_realign/{SM}.{GENOME}.log",
     conda:
@@ -60,18 +63,8 @@ rule realign:
         "--- GATK INDELREALIGNER {input.bam}"
     shell:
         """
-        ## get binary
-        jar={params.GATK};
-        if [ "${{jar: -4}}" == ".jar" ]; then
-            bin="java -Djava.io.tmpdir=/tmp/ -XX:ParallelGCThreads={threads} -XX:+UseParallelGC \
-                -XX:-UsePerfData -Xms15000m -Xmx15000m -jar {params.GATK}"
-           else
-               bin={params.GATK}
-           fi
-
-        ## run GATK
-        $bin -I {input.bam} -R {input.ref} -T RealignerTargetCreator -o {output.intervals} 2> {log}; \
-        $bin -I {input.bam} -T IndelRealigner -R {input.ref} -targetIntervals \
+        {params.GATK} -I {input.bam} -R {input.ref} -T RealignerTargetCreator -o {output.intervals} 2> {log}; \
+        {params.GATK} -I {input.bam} -T IndelRealigner -R {input.ref} -targetIntervals \
                 {output.intervals} -o {output.bam} 2>> {log};         
         """
 
