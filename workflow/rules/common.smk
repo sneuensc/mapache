@@ -97,8 +97,9 @@ def eval_list_to_csv(x):
 
 ##########################################################################################
 ## function to test the chromosome names
-def check_chromosome_names(GENOME, logging=True):
-    if logging: LOGGER.info(f"  - Genome '{GENOME}':") 
+def check_chromosome_names(GENOME, Logging=True):
+    if Logging:
+        LOGGER.info(f"  - Genome '{GENOME}':")
 
     ## test if fasta is valid
     fasta = recursive_get(["genome", GENOME, "fasta"], "")
@@ -134,26 +135,45 @@ def check_chromosome_names(GENOME, logging=True):
     if sorted(allChr) == sorted(hg19):
         detectedChromosomes = ["X", "Y", "MT"]
         detectedAutosomes = list(set(allChr) - set(detectedChromosomes))
-        if logging: LOGGER.info(
-            f"    - Detected genome as 'hg19': Appliyng default chromosome names for sex and mt chromsomes: {detectedChromosomes}."
-        ) 
-        config = update_value(["genome", GENOME, "sex_inference", "params", "sex_chr"],detectedChromosomes[0])  
-        config = update_value(["genome", GENOME, "sex_inference", "params", "autosomes"], detectedAutosomes)
+        if Logging:
+            LOGGER.info(
+                f"    - Detected genome as 'hg19': Appliyng default chromosome names for sex and mt chromsomes: {detectedChromosomes}."
+            )
+
+        config = update_value(
+            ["genome", GENOME, "sex_inference", "params", "sex_chr"],
+            detectedChromosomes[0],
+        )
+        config = update_value(
+            ["genome", GENOME, "sex_inference", "params", "autosomes"],
+            detectedAutosomes,
+        )
     elif sorted(allChr) == sorted(GRCh38):
         detectedChromosomes = ["chrX", "chrY", "chrM"]
         detectedAutosomes = list(set(allChr) - set(detectedChromosomes))
-        if logging: LOGGER.info(
-            f"    - Detected genome as 'GRCh38': Appliyng default chromosome names for sex and mt chromsomes {detectedChromosomes}."
-        ) 
-        config = update_value(["genome", GENOME, "sex_inference", "params", "sex_chr"],detectedChromosomes[0])  
-        config = update_value(["genome", GENOME, "sex_inference", "params", "autosomes"], detectedAutosomes)
+        if Logging:
+            LOGGER.info(
+                f"    - Detected genome as 'GRCh38': Appliyng default chromosome names for sex and mt chromsomes {detectedChromosomes}."
+            )
+
+        config = update_value(
+            ["genome", GENOME, "sex_inference", "params", "sex_chr"],
+            detectedChromosomes[0],
+        )
+        config = update_value(
+            ["genome", GENOME, "sex_inference", "params", "autosomes"],
+            detectedAutosomes,
+        )
 
     # check if the chromosomes specified in sex determination exist
     # sex chromosome
     if recursive_get(["genome", GENOME, "sex_inference", "run"], False):
-        if logging: LOGGER.info(f"    - Inferring sex") 
+        if Logging:
+            LOGGER.info(f"    - Inferring sex")
         ## X chromosome specified for the sex inferenceß
-        sex_chr = recursive_get( ["genome", GENOME, "sex_inference", "params", "sex_chr"], [])
+        sex_chr = recursive_get(
+            ["genome", GENOME, "sex_inference", "params", "sex_chr"], []
+        )
         if sex_chr not in allChr:
             LOGGER.error(
                 f"ERROR: Sex chromosome specified in 'config[genome][{GENOME}][sex_inference][params][sex_chr]' ({sex_chr}) does not exist in FASTA reference genome."
@@ -184,7 +204,6 @@ def check_chromosome_names(GENOME, logging=True):
             'c("' + '","'.join(autosomes) + '")',
         )
 
-
     # check if chromosomes for which DoC was requested exist
     depth_chromosomes = recursive_get(["genome", GENOME, "depth_chromosomes"], "")
     chromosomes = depth_chromosomes.split(",") if len(depth_chromosomes) else []
@@ -193,7 +212,7 @@ def check_chromosome_names(GENOME, logging=True):
             f"In 'config[genome][{GENOME}][depth_chromosomes]', the following chromsome names are not recognized: {list(set(chromosomes) - set(allChr))}!"
         )
         os._exit(1)
-    if logging and depth_chromosomes:
+    if Logging and depth_chromosomes:
         LOGGER.info(f"    - Computing depth of chromosomes {depth_chromosomes}.")
 
 
@@ -289,14 +308,15 @@ def get_runtime_alloc2(module, attempt, default=12):
 def get_threads(module, default=1):
     moduleList = module
     if type(moduleList) is not list:
-        moduleList = [module]    
+        moduleList = [module]
     return int(recursive_get(moduleList + ["threads"], default))
+
 
 ## in this second verion the 'threads' is added to the word of the last element
 def get_threads2(module, default=1):
     moduleList = module
     if type(moduleList) is not list:
-        moduleList = [module]    
+        moduleList = [module]
     return int(recursive_get(moduleList[:-1] + [moduleList[-1] + "_threads"], default))
 
 
@@ -509,9 +529,9 @@ def symlink_rev(input, output):
 
 def get_sex_file(wildcards, level):
     if level == "SM":
-        folder=f"{wildcards.folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{wildcards.SM}.{wildcards.GENOME}"
+        folder = f"{wildcards.folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{wildcards.SM}.{wildcards.GENOME}"
     else:
-        folder=f"{wildcards.folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}"
+        folder = f"{wildcards.folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}"
 
     if str2bool(
         recursive_get_and_test(
@@ -521,7 +541,6 @@ def get_sex_file(wildcards, level):
         return f"{folder}.sex"
     else:
         return f"{folder}.nosex"
-
 
 
 ##########################################################################################
