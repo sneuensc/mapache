@@ -23,9 +23,15 @@ include: "rules/common.smk"
 
 RESULT_DIR = recursive_get(["result_dir"], "results")
 
-## the file is executed for each session: be verbose only in the first one
-if 'VERBOSE' not in globals():
+## the file is executed for each session: be verbose only in the first one (use a file as flag)
+fileVerbose = pathlib.Path(f"{RESULT_DIR}/verbose.touch")
+if not fileVerbose.is_file():
+    fileVerbose.parent.mkdir(parents=True, exist_ok=True)
+    fileVerbose.touch()
     VERBOSE = recursive_get(["VERBOSE"], True)
+else:
+    VERBOSE = False
+
 
 ## retry failed jobs
 memory_increment_ratio = float(recursive_get(["memory_increment_ratio"], 1))
@@ -67,7 +73,7 @@ if VERBOSE:
 
 ## test fasta and chomosomne names
 for GENOME in genome:
-    check_chromosome_names(GENOME, len(genome) <= 3)
+    check_chromosome_names(GENOME, (len(genome)) <= 3 and VERBOSE)
 
 
 ##########################################################################################
@@ -335,8 +341,6 @@ run_qualimap = recursive_get_and_test(["stats", "qualimap"], ["False", "True"])
 
 run_multiqc = recursive_get_and_test(["stats", "multiqc"], ["False", "True"])
 
-VERBOSE = False
-
 
 ##########################################################################################
 include: "rules/index.smk"
@@ -527,23 +531,12 @@ final_stat_figures = [
 
 ## --------------------------------------------------------------------------------------------------
 ## print location of final bam files
-LOGGER.info("FINAL BAM FILES:")
-LOGGER.info(
-    f"  - BAM FILES ({len(final_bam)} files in folder '{os.path.dirname(final_bam[0])}'):"
-)
-for i, file in enumerate(final_bam):
-    if i < 4:
-        LOGGER.info(f"    - {file}")
-    elif i == 4:
-        LOGGER.info(f"    - ...")
-    else:
-        break
-
-if save_low_qual:
+if VERBOSE:
+    LOGGER.info("FINAL BAM FILES:")
     LOGGER.info(
-        f"  - LOW QUALITY AND UNMAPPED BAM FILES ({len(final_bam_low_qual)} files in folder '{os.path.dirname(final_bam_low_qual[0])}'):"
+        f"  - BAM FILES ({len(final_bam)} files in folder '{os.path.dirname(final_bam[0])}'):"
     )
-    for i, file in enumerate(final_bam_low_qual):
+    for i, file in enumerate(final_bam):
         if i < 4:
             LOGGER.info(f"    - {file}")
         elif i == 4:
@@ -551,64 +544,74 @@ if save_low_qual:
         else:
             break
 
-# print a summary of the stats
-LOGGER.info("STATISTICS:")
-if run_sex_inference:
-    LOGGER.info(f"  - Inferring sex")
-
-if run_damage != "False":
-    if run_damage == "mapDamage":
+    if save_low_qual:
         LOGGER.info(
-            f"  - Inferring damage and read length with MapDamage2 on all alignments"
+            f"  - LOW QUALITY AND UNMAPPED BAM FILES ({len(final_bam_low_qual)} files in folder '{os.path.dirname(final_bam_low_qual[0])}'):"
         )
+        for i, file in enumerate(final_bam_low_qual):
+            if i < 4:
+                LOGGER.info(f"    - {file}")
+            elif i == 4:
+                LOGGER.info(f"    - ...")
+            else:
+                break
 
-    fraction = recursive_get(["stats", "bamdamage_fraction"], 0)
-    if fraction == 0:
-        LOGGER.info(
-            f"  - Inferring damage and read length with bamdamge on all alignments"
-        )
-    elif fraction < 1:
-        LOGGER.info(
-            f"  - Inferring damage and read length with bamdamge on {100 * fraction}% of the alignments"
-        )
-    else:
-        LOGGER.info(
-            f"  - Inferring damage and read length with bamdamge on {fraction} alignments"
-        )
+        # print a summary of the stats
+        LOGGER.info("STATISTICS:")
+        if run_sex_inference:
+            LOGGER.info(f"  - Inferring sex")
 
-LOGGER.info(f"  - Mapping statistics tables:")
-for i, file in enumerate(stat_csv):
-    LOGGER.info(f"    - {file}")
+        if run_damage != "False":
+            if run_damage == "mapDamage":
+                LOGGER.info(
+                    f"  - Inferring damage and read length with MapDamage2 on all alignments"
+                )
 
-if run_qualimap:
-    LOGGER.info(
-        f"  - Qualimap report: {len(qualimap_files)} report(s) on final bam files:"
-    )
-    for i, file in enumerate(qualimap_files):
-        if i < 4:
+            fraction = recursive_get(["stats", "bamdamage_fraction"], 0)
+            if fraction == 0:
+                LOGGER.info(
+                    f"  - Inferring damage and read length with bamdamge on all alignments"
+                )
+            elif fraction < 1:
+                LOGGER.info(
+                    f"  - Inferring damage and read length with bamdamge on {100 * fraction}% of the alignments"
+                )
+            else:
+                LOGGER.info(
+                    f"  - Inferring damage and read length with bamdamge on {fraction} alignments"
+                )
+
+        LOGGER.info(f"  - Mapping statistics tables:")
+        for i, file in enumerate(stat_csv):
             LOGGER.info(f"    - {file}")
-        elif i == 4:
-            LOGGER.info(f"    - ...")
-        else:
-            break
 
+        if run_qualimap:
+            LOGGER.info(
+                f"  - Qualimap report: {len(qualimap_files)} report(s) on final bam files:"
+            )
+            for i, file in enumerate(qualimap_files):
+                if i < 4:
+                    LOGGER.info(f"    - {file}")
+                elif i == 4:
+                    LOGGER.info(f"    - ...")
+                else:
+                    break
 
-if run_multiqc:
-    LOGGER.info(
-        f"  - Mulitqc report: {len(multiqc_files)} HTML report(s) combining statistics per genome:"
-    )
-    for i, file in enumerate(multiqc_files):
-        if i < 4:
-            LOGGER.info(f"    - {file}")
-        elif i == 4:
-            LOGGER.info(f"    - ...")
-        else:
-            break
+        if run_multiqc:
+            LOGGER.info(
+                f"  - Mulitqc report: {len(multiqc_files)} HTML report(s) combining statistics per genome:"
+            )
+            for i, file in enumerate(multiqc_files):
+                if i < 4:
+                    LOGGER.info(f"    - {file}")
+                elif i == 4:
+                    LOGGER.info(f"    - ...")
+                else:
+                    break
 
-
-LOGGER.info(
-    f"  => Snakemake report: run 'snakemake --report report.html' after finalisation of the run to get the report"
-)
+        LOGGER.info(
+            f"  => Snakemake report: run 'snakemake --report report.html' after finalisation of the run to get the report"
+        )
 
 
 ##########################################################################################
@@ -664,8 +667,13 @@ rule stats:
 
 onsuccess:
     LOGGER.info("Wow, 'mapache' finished successfully!")
+    LOGGER.info(
+        "To generate the Snakemake report: run 'snakemake --report report.html'!"
+    )
     shell("cat {log} > snakemake.run.log")
     email = recursive_get(["email"], "")
+    if os.path.exists(f"{RESULT_DIR}/verbose.touch"):
+        os.remove(f"{RESULT_DIR}/verbose.touch")
     if os.path.isfile("Not_trimmed"):
         os.system("rm Not_trimmed")
     if email != "":
@@ -677,6 +685,8 @@ onerror:
     LOGGER.error("'Mapache' finished with error(s), log stored in 'snakemake.run.log'")
     shell("cat {log} > snakemake.run.log")
     email = recursive_get(["email"], "")
+    if os.path.exists(f"{RESULT_DIR}/verbose.touch"):
+        os.remove(f"{RESULT_DIR}/verbose.touch")
     if email != "":
         LOGGER.info(f"Sending email to {email}")
         shell("mail -s \"'Mapache' finished with error(s)\" {email} < {log}")
