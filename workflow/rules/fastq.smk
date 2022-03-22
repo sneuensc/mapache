@@ -555,7 +555,7 @@ rule get_final_fastq:
     input:
         get_final_bam_fastq,
     output:
-        "{folder}/01_fastq/04_final_fastq/01_bam_filter/{SM}/{LB}/{ID}.{GENOME}.bam",
+        "{folder}/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}.bam",
     message:
         "--- GET FINAL BAM {input} (FASTQ LEVEL)"
     log:

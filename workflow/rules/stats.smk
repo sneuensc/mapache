@@ -623,7 +623,7 @@ rule plot_bamdamage:
             $plot_length
 
         ## delete the unwanted created Rplots.pdf...
-        rm Rplots.pdf
+        rm -f Rplots.pdf
         """
 
 

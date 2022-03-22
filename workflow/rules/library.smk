@@ -98,7 +98,6 @@ rule dedup:
                 my_dict=samples,
             ).values()
         ],
-        #threads: get_threads("remove_duplciates", 1)
     log:
         "{folder}/02_library/01_duplicated/01_dedup/{SM}/{LB}.{GENOME}.log",
     conda:
