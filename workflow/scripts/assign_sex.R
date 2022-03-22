@@ -120,7 +120,7 @@ system                  = get_args(argsL, "system", "XY")
 sex_chr                 = get_args(argsL, "sex_chr", sex_system[[system]]$sex_chr)
 autosomes_expression    = get_args(argsL, "autosomes", "1:22")
 thresholds              = get_args(argsL, "thresholds", sex_system[[system]]$thresholds)
-signif                  =get_args(argsL, "signif", 0.95)
+signif                  = as.numeric(get_args(argsL, "signif", 0.95))
 
 output_file             = get_args(argsL, "out", "sex.out")
 SM                      = get_args(argsL, "SM", NA)
