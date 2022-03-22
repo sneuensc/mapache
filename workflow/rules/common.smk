@@ -124,7 +124,9 @@ def check_chromosome_names(GENOME, Logging=True):
         )
     elif pathlib.Path(fasta).exists():
         cmd = f"grep '^>' {fasta} | cut -c2- | awk '{{print $1}}'"
-        allChr = map(str, subprocess.check_output(cmd, shell=True, text=True).split())
+        allChr = list(
+            map(str, subprocess.check_output(cmd, shell=True, text=True).split())
+        )
     else:
         LOGGER.error(f"ERROR: Reference genome 'genome:{GENOME}:fasta' does not exist!")
         os._exit(1)

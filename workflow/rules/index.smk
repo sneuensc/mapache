@@ -116,7 +116,8 @@ rule genome_index_picard:
         memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
     params:
-        cmd="f'{get_picard_bin()} CreateSequenceDictionary --REFERENCE {snakemake.input.fasta} --OUTPUT {snakemake.output}'",
+        picard_cmd=get_picard_bin(),
+    #     cmd=get_picard_bin() + f' CreateSequenceDictionary --REFERENCE {input.fasta} --OUTPUT {output}',
     log:
         "{folder}/{GENOME}_picard_index.log",
     threads: 1
