@@ -340,9 +340,8 @@ def get_damage(run_damage):
             for LB in samples[SM]
             for GENOME in genome
         ]
-    else:
-        LOGGER.error(f"ERROR: def get_damage({run_damage}): should never happen!")
-        sys.exit(1)
+    else: ## if False
+        files = []
     return files
 
 
