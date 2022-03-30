@@ -1,7 +1,6 @@
 library(ggplot2)
 library(RColorBrewer)
-#library(reshape)
-
+library(scales)
 
 args <- commandArgs(TRUE)
  
@@ -17,7 +16,6 @@ if("--help" %in% args) {
  
       Arguments:
         Input files:
-        --samples=samples.txt                        - input containing the samples names, libraries, etc.
         --SM=SM.csv                                  - summary statistics file name at the sample level. Default: SM.csv
         --FQ=FASTQ.csv                               - summary statistics file name at the fastq level. Default: FASTQ.csv
         --LB=LB.csv                                  - summary statistics file name at the library level. Default: LB.csv
@@ -58,10 +56,9 @@ get_args <- function(argsL, name, default){
 }
 
 # getting arguments
-# fq                   = get_args(argsL, "FQ", "FASTQ.csv")
-# lb                   = get_args(argsL, "LB", "LB.csv")
-sm                   = get_args(argsL, "SM", "SM.csv")
-samples_filename                   = get_args(argsL, "samples", "samples.txt")
+# fq                 = get_args(argsL, "FQ", "FASTQ.csv")
+# lb                 = get_args(argsL, "LB", "LB.csv")
+sm                  = get_args(argsL, "SM", "SM.csv")
 
 out_1_reads         = get_args(argsL, "out_1_reads", "plot_1_nb_reads.png")
 out_2_mapped        = get_args(argsL, "out_2_mapped", "plot_2_mapped.png")
@@ -94,8 +91,6 @@ make_barplot <- function(
 
 #--------------------------------------------------------------------------#
 # make barplots for some of the statistics
-samples <- read.table(samples_filename, header = T)
-
 sample_stats <- read.csv(sm)
 sample_stats$SM <- factor(
   sample_stats$SM,
@@ -123,12 +118,11 @@ if(x_axis == "sample"){
 
 n_colors <- length(unique(sample_stats[,color_by]))
 
-n_samples <- length(unique(samples$SM))
+n_samples <- length(unique(sample_stats$SM))
 
 colors_by_sample <- colorRampPalette(brewer.pal(8, "Set2"))(n_colors)
 #--------------------------------------------------------------------------#
 # group stats in panels, if requested
-
 break_into_panels <- function(my_plot, df, n_x_bars){
   if(n_x_bars == 1){
     return(my_plot)
@@ -206,9 +200,9 @@ if(split_plot){
 }
 
 ggsave(out_2_mapped, my_plot, width = 11, height = 7)
+
 #--------------------------------------------------------------------------#
 # "Endogenous content"
-require(scales)
 my_plot <- make_barplot(
   data = sample_stats, x = "SM", y = "endogenous_unique", color_by = color_by, 
   fill_by = fill_by, title = "Endogenous content (unique reads)",
@@ -229,7 +223,6 @@ ggsave(out_3_endogenous, my_plot, width = 11, height = 7)
 
 #--------------------------------------------------------------------------#
 # "Duplication level"
-require(scales)
 my_plot <- make_barplot(
   data = sample_stats, x = "SM", y = "duplicates_prop", color_by = color_by, 
   fill_by = fill_by, title = "Duplicates per sample (percentage)",
@@ -250,7 +243,6 @@ ggsave(out_4_duplication, my_plot, width = 11, height = 7)
 
 #--------------------------------------------------------------------------#
 # "Average read depth"
-require(scales)
 my_plot <- make_barplot(
   data = sample_stats, x = "SM", y = "read_depth", color_by = color_by, 
   fill_by = fill_by, title = "Average read depth",

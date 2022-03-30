@@ -366,7 +366,7 @@ rule merge_stats_per_sm:
     envmodules:
         module_r,
     message:
-        "--- MERGE SAMPLE LEVEL STATS of  of {wildcards.SM} / {wildcards.GENOME}"
+        "--- MERGE SAMPLE LEVEL STATS of {wildcards.SM} / {wildcards.GENOME}"
     shell:
         """
         list_lb_stats=$(echo {input.lb_stats} |sed 's/ /,/g');
@@ -382,7 +382,7 @@ rule merge_stats_per_sm:
             --SM={wildcards.SM} \
             --genome={wildcards.GENOME} \
             --output_file={output} \
-            --path_list_stats_fastq=$list_lb_stats \
+            --path_list_stats_lb=$list_lb_stats \
             --path_flagstat_unique={input.flagstat_unique} \
             --path_length_unique={input.length_unique} \
             --path_idxstats_unique={input.idxstats_unique} \
@@ -679,7 +679,6 @@ rule plot_summary_statistics:
     message:
         "--- PLOT SUMMARY STATISTICS"
     params:
-        samples=recursive_get(["sample_file"], ""),
         x_axis=recursive_get(["stats", "plots", "x_axis"], "sample"),
         split_plot=recursive_get(["stats", "plots", "split_plot"], "F"),
         n_col=recursive_get(["stats", "plots", "n_col"], 1),
@@ -688,7 +687,6 @@ rule plot_summary_statistics:
     shell:
         """
         Rscript {params.script} \
-            --samples={params.samples} \
             --SM={input.sample_stats}  \
             --out_1_reads={output.plot_1_nb_reads} \
             --out_2_mapped={output.plot_2_mapped} \

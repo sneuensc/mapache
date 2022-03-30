@@ -72,7 +72,7 @@ SM = get_args(argsL, "SM")
 genome = get_args(argsL, "genome")
 output_file = get_args(argsL, "output_file")
 
-path_list_stats_lb = get_args(argsL, "path_list_stats_fastq")
+path_list_stats_lb = get_args(argsL, "path_list_stats_lb")
 path_flagstat_unique = get_args(argsL, "path_flagstat_unique")
 path_length_unique = get_args(argsL, "path_length_unique")
 #path_genomecov_unique = get_args(argsL, "path_genomecov_unique")
@@ -95,11 +95,11 @@ chrs_selected = get_args(argsL, "chrs_selected", NULL)
 ## double is used instead of integer, as integers are limited in size:
 ##   "Note that current implementations of R use 32-bit integers for integer vectors, so the range
 ##   of representable integers is restricted to about +/-2*10^9: doubles can hold much larger integers exactly.""
-stats_lb = do.call(rbind, lapply(strsplit(path_list_stats_lb, ",")[[1]], read.csv ))
-stats_lb[,unlist(lapply(stats_lb, is.numeric))] <- sapply(stats_lb[,unlist(lapply(stats_lb, is.numeric))], as.double)
+stats_lb = do.call(rbind, lapply(strsplit(path_list_stats_lb, ",")[[1]], read.csv, 
+        colClasses = c(rep("character", 3), rep("numeric",13), "character", "numeric")))
 # mapped_raw   = sum(stats_fastq$mapped_raw) # should give the same
 mapped_unique = as.double(strsplit(readLines(path_flagstat_unique)[1], " ")[[1]][1])
-length_unique_table = read.table(path_length_unique, header = T, sep = "\t")
+length_unique_table = read.table(path_length_unique, header = T, sep = "\t", colClasses = c("numeric", "numeric"))
 #genomecov_unique = read.table(path_genomecov_unique, header = F, sep = "\t")
 #colnames(genomecov_unique) =  c("chr", "depth", "counts", "length", "frac")
 idxstats = read.table(

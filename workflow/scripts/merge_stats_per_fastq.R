@@ -98,48 +98,21 @@ script_parse_fastqc = get_args(argsL, "script_parse_fastqc")
 calc_avg_len <- function(l){ sum(l$Count * l$Length) / sum(l$Count) }
 
 #-----------------------------------------------------------------------------#
-length_mapped_highQ = read.table(path_length_mapped_highQ, sep = "\t", header = T, col.names = c("Count", "Length"))
-mapped_raw = as.numeric(strsplit(readLines(path_flagstat_mapped_highQ)[1], " ")[[1]][1])
+length_mapped_highQ = read.table(path_length_mapped_highQ, sep = "\t", header = T, 
+        col.names = c("Count", "Length"), 
+        colClasses = c("numeric", "numeric"))
+mapped_raw = as.double(strsplit(readLines(path_flagstat_mapped_highQ)[1], " ")[[1]][1])
         
 #-----------------------------------------------------------------------------#
 ## original fastqc
 #options(readr.show_col_types = FALSE)
 source(script_parse_fastqc)
 
-# lines_to_skip <-  as.integer(
-#     system(
-#         paste0(
-#             "grep -n 'Length distribution' ",
-#             path_adapterremoval,
-#             " | cut -f 1 -d:"
-#         ),
-#         intern = T
-#     )
-# )
-
-# length_dist_trimmed <- read.table(path_adapterremoval, skip = lines_to_skip, header = T)
 
 length_dist_raw <- parse_fastqc(file_name = path_fastqc_orig, df_name = "Sequence Length Distribution") 
+length_dist_raw$Count <- as.double(length_dist_raw$Count)
 length_dist_raw <- adjust_lengths(length_dist_raw)
 reads_raw <- sum(length_dist_raw$Count)
-# raw reads
-
-# grep_adapterremoval <- function(line){
-#     as.integer(
-#             system(
-#                 paste0("grep ", line, path_adapterremoval, "|rev|cut -f1 -d ' ' |rev"), 
-#                 intern = T
-#             )
-#     )
-# }
-
-# if(paired){
-#     line <- 'Total number of read pairs:'
-# }else{
-#     line <- 'Total number of reads:'
-# }
-
-# reads_raw <- grep_adapterremoval(line)
 
 
 length_reads_raw <- calc_avg_len(length_dist_raw)
@@ -152,47 +125,9 @@ if(path_fastqc_trim == "Not_trimmed"){
     length_dist_trimmed <- parse_fastqc(file_name = path_fastqc_trim, df_name = "Sequence Length Distribution")
     length_dist_trimmed <- adjust_lengths(length_dist_trimmed)
     length_reads_trimmed <- calc_avg_len(length_dist_trimmed)
-    reads_trim <- sum(length_dist_trimmed$Count)
+    reads_trim <- sum(as.double(length_dist_trimmed$Count))
 }
 
-
-
-# if(paired){
-#     if(collapsed){
-#         line <- 'Number of full-length collapsed pairs:'
-#         reads_trim <- grep_adapterremoval(line)
-
-#         length_reads_trimmed <- sum(
-#             length_dist_trimmed$Collapsed * length_dist_trimmed$Length
-#         ) / sum(length_dist_trimmed$Collapsed)
-
-#     }else{
-#         well_aligned <- grep_adapterremoval('Number of well aligned read pairs:')
-        
-#         unaligned <- grep_adapterremoval('Number of unaligned read pairs:')
-
-#         discarded <- grep_adapterremoval('Number of discarded mate 1 reads:') +
-#             grep_adapterremoval('Number of discarded mate 2 reads:')
-
-#         singleton <- grep_adapterremoval('Number of singleton mate 1 reads:') +
-#             grep_adapterremoval('Number of singleton mate 2 reads:')
-        
-#         reads_trim <- well_aligned + unaligned - discarded - singleton
-
-#         length_reads_trimmed <- sum(
-#             length_dist_trimmed$Length * 
-#             (length_dist_trimmed$Mate1 + length_dist_trimmed$Mate2)
-#             ) / (2 * reads_trim)
-#     }
-# }else{
-#     line <- 'Number of retained reads:'
-#     reads_trim <- grep_adapterremoval(line)
-
-#     length_reads_trimmed <- sum(
-#             length_dist_trimmed$Length * 
-#             length_dist_trimmed$Mate1 
-#             ) / reads_trim
-# }
 
 trim_prop = reads_trim / reads_raw
 endogenous_raw = mapped_raw / reads_raw
