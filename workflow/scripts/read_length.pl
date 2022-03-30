@@ -55,7 +55,7 @@ if($i >0){
 
 print OUTPUT "n_reads\tlength\n";
 
-foreach $i (sort keys %lengths){
+foreach $i (sort { $a <=> $b } keys %lengths){
   print OUTPUT "$lengths{$i}\t$i\n";
 }
 
