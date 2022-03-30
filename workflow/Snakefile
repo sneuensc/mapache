@@ -668,7 +668,7 @@ rule stats:
 onsuccess:
     LOGGER.info("Wow, 'mapache' finished successfully!")
     LOGGER.info(
-        "To generate the Snakemake report: run 'snakemake --report report.html'!"
+        "=> To generate the Snakemake report: run 'snakemake --report report.html'."
     )
     shell("cat {log} > snakemake.run.log")
     email = recursive_get(["email"], "")
