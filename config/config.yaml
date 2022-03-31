@@ -191,3 +191,19 @@ stats:
         # a large n_col (around 20) and/or a small n_row (1 to 3)
         n_col: 11
         n_row: 3
+
+##########################################################################################
+# Imputation with  GLIMPSE
+imputation_GLIMPSE:
+    ref_genome: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/hs.build37.1/hs.build37.1.fa
+    GP_filter: [0.8]
+    threads: 8
+    path_map: "genetic_maps_b37/chr{chr}.b37.gmap.gz"
+    path_panel: "1000G_chr{chr}.vcf.gz"
+    # Input BAM files can be listed individually under the "paths" keyword
+    # Alternatively, you can pass a plain text file (bam_list)
+    # with the paths in it
+    bam_list: None
+    paths:
+        ind1: results/03_sample/03_final_sample/01_bam/ind1.hg19.bam
+        ind2: results/03_sample/03_final_sample/01_bam/ind2.hg19.bam
