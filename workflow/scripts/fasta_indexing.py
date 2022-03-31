@@ -25,5 +25,5 @@ elif all([os.path.isfile(f) for f in files2]):  ## foo.ext
     for idx, item in enumerate(files2):
         os.symlink(item, out_files[idx])
 else:    ## index is not present: create the index
-    cmd = snakemake.params.picard_cmd + f' CreateSequenceDictionary --REFERENCE {snakemake.input.fasta} --OUTPUT {snakemake.output}'
-    subprocess.run(cmd, shell=True)
+    #print(eval(snakemake.params.cmd))
+    subprocess.run(eval(snakemake.params.cmd), shell=True)
