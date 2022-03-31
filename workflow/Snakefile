@@ -337,10 +337,9 @@ run_sex_inference = recursive_get_and_test(
     ["genome", GENOME, "sex_inference", "run"], ["False", "True"]
 )
 
-run_qualimap = recursive_get_and_test(["stats", "qualimap"], ["False", "True"])
+run_qualimap = str2bool(recursive_get_and_test(["stats", "qualimap"], ["False", "True"]))
 
-run_multiqc = recursive_get_and_test(["stats", "multiqc"], ["False", "True"])
-
+run_multiqc = str2bool(recursive_get_and_test(["stats", "multiqc"], ["False", "True"]))
 
 ##########################################################################################
 include: "rules/index.smk"
@@ -556,62 +555,62 @@ if VERBOSE:
             else:
                 break
 
-        # print a summary of the stats
-        LOGGER.info("STATISTICS:")
-        if run_sex_inference:
-            LOGGER.info(f"  - Inferring sex")
+    # print a summary of the stats
+    LOGGER.info("STATISTICS:")
+    if run_sex_inference:
+        LOGGER.info(f"  - Inferring sex")
 
-        if run_damage != "False":
-            if run_damage == "mapDamage":
-                LOGGER.info(
-                    f"  - Inferring damage and read length with MapDamage2 on all alignments"
-                )
-
-            fraction = recursive_get(["stats", "bamdamage_fraction"], 0)
-            if fraction == 0:
-                LOGGER.info(
-                    f"  - Inferring damage and read length with bamdamge on all alignments"
-                )
-            elif fraction < 1:
-                LOGGER.info(
-                    f"  - Inferring damage and read length with bamdamge on {100 * fraction}% of the alignments"
-                )
-            else:
-                LOGGER.info(
-                    f"  - Inferring damage and read length with bamdamge on {fraction} alignments"
-                )
-
-        LOGGER.info(f"  - Mapping statistics tables:")
-        for i, file in enumerate(stat_csv):
-            LOGGER.info(f"    - {file}")
-
-        if run_qualimap:
+    if run_damage != "False":
+        if run_damage == "mapDamage":
             LOGGER.info(
-                f"  - Qualimap report: {len(qualimap_files)} report(s) on final bam files:"
+                f"  - Inferring damage and read length with MapDamage2 on all alignments"
             )
-            for i, file in enumerate(qualimap_files):
-                if i < 4:
-                    LOGGER.info(f"    - {file}")
-                elif i == 4:
-                    LOGGER.info(f"    - ...")
-                else:
-                    break
 
-        if run_multiqc:
+        fraction = recursive_get(["stats", "bamdamage_fraction"], 0)
+        if fraction == 0:
             LOGGER.info(
-                f"  - Mulitqc report: {len(multiqc_files)} HTML report(s) combining statistics per genome:"
+                f"  - Inferring damage and read length with bamdamge on all alignments"
             )
-            for i, file in enumerate(multiqc_files):
-                if i < 4:
-                    LOGGER.info(f"    - {file}")
-                elif i == 4:
-                    LOGGER.info(f"    - ...")
-                else:
-                    break
+        elif fraction < 1:
+            LOGGER.info(
+                f"  - Inferring damage and read length with bamdamge on {100 * fraction}% of the alignments"
+            )
+        else:
+            LOGGER.info(
+                f"  - Inferring damage and read length with bamdamge on {fraction} alignments"
+            )
 
+    LOGGER.info(f"  - Mapping statistics tables:")
+    for i, file in enumerate(stat_csv):
+        LOGGER.info(f"    - {file}")
+
+    if run_qualimap:
         LOGGER.info(
-            f"  => Snakemake report: run 'snakemake --report report.html' after finalisation of the run to get the report"
+            f"  - Qualimap report: {len(qualimap_files)} report(s) on final bam files:"
         )
+        for i, file in enumerate(qualimap_files):
+            if i < 4:
+                LOGGER.info(f"    - {file}")
+            elif i == 4:
+                LOGGER.info(f"    - ...")
+            else:
+                break
+
+    if run_multiqc:
+        LOGGER.info(
+            f"  - Mulitqc report: {len(multiqc_files)} HTML report(s) combining statistics per genome:"
+        )
+        for i, file in enumerate(multiqc_files):
+            if i < 4:
+                LOGGER.info(f"    - {file}")
+            elif i == 4:
+                LOGGER.info(f"    - ...")
+            else:
+                break
+
+    LOGGER.info(
+        f"  => Snakemake report: run 'snakemake --report report.html' after finalisation of the run to get the report"
+    )
 
 
 ##########################################################################################
