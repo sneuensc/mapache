@@ -212,10 +212,6 @@ run_adapter_removal = str2bool(
     recursive_get_and_test(["adapterremoval", "run"], ["True", "False"])
 )
 
-# add file for not trimmed data
-if not run_adapter_removal:
-    os.system("touch Not_trimmed")
-
 
 ## --------------------------------------------------------------------------------------------------
 ## mapping
@@ -673,8 +669,6 @@ onsuccess:
     email = recursive_get(["email"], "")
     if os.path.exists(f"{RESULT_DIR}/verbose.touch"):
         os.remove(f"{RESULT_DIR}/verbose.touch")
-    if os.path.isfile("Not_trimmed"):
-        os.system("rm Not_trimmed")
     if email != "":
         Logger.info(f"Sending email to {email}")
         shell("mail -s \"'Mapache' finished successfully\" {email} < {log}")
