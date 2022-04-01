@@ -42,7 +42,7 @@ genome:
                 sex_chr: X
                 system: XY
                 signif: 0.9
-                thresholds:  list( "XX" = c(0.8, 1), "XY" = c(0, 0.6), "consistent with XX but not XY" = c(0.6, 1), "consistent with XY but not XX" = c(0, 0.8) )
+                thresholds:  list( "XX"=c(0.8, 1), "XY"=c(0, 0.6), "consistent with XX but not XY"=c(0.6, 1), "consistent with XY but not XX"=c(0, 0.8) )
     GRCh38:
         fasta: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/GCA_000001405.15_GRCh38.p13_onlyChrom/GCA_000001405.15_GRCh38.fa
     
@@ -191,6 +191,9 @@ stats:
         # a large n_col (around 20) and/or a small n_row (1 to 3)
         n_col: 11
         n_row: 3
+        # This is to draw rectangles for the thresholds of the sex assignment;
+        # Adjust according to the thresholds/labels previously defined
+        sex_ribbons: 'c("XX", "XY")'
 
 ##########################################################################################
 # Imputation with  GLIMPSE

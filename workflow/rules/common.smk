@@ -49,6 +49,23 @@ def update_value(keys, value, my_dict=config):
             return my_dict
 
 
+def get_sex_threshold_plotting():
+
+    thresholds = {
+        GENOME: recursive_get(
+            keys=["genome", GENOME, "sex_inference", "params", "thresholds"],
+            def_value='list( "XX"=c(0.8, 1), "XY"=c(0, 0.6), "consistent with XX but not XY"=c(0.6, 1), "consistent with XY but not XX"=c(0, 0.8) )',
+        )
+        for GENOME in genome
+    }
+
+    sex_thresholds = "list({pair})".format(
+        pair=",     ".join([f'"{GENOME}"={thresholds[GENOME]}' for GENOME in genome])
+    )
+    sex_thresholds = sex_thresholds.replace("=", "?")
+    return sex_thresholds
+
+
 ##########################################################################################
 ## functions to evaluate python code if necessary
 
@@ -340,7 +357,7 @@ def get_damage(run_damage):
             for LB in samples[SM]
             for GENOME in genome
         ]
-    else: ## if False
+    else:  ## if False
         files = []
     return files
 

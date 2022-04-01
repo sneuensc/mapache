@@ -670,6 +670,12 @@ rule plot_summary_statistics:
             category="Mapping statistics",
             subcategory="Plots",
         ),
+        plot_6_Sex=report(
+            "{folder}/04_stats/04_plots/6_Sex.svg",
+            caption="../report/6_Sex.rst",
+            category="Mapping statistics",
+            subcategory="Plots",
+        ),
     log:
         "{folder}/04_stats/04_plots/plot_summary_statistics.log",
     conda:
@@ -684,6 +690,11 @@ rule plot_summary_statistics:
         n_col=recursive_get(["stats", "plots", "n_col"], 1),
         n_row=recursive_get(["stats", "plots", "n_row"], 1),
         script=workflow.source_path("../scripts/plot_stats.R"),
+        sex_path="results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/SM.GENOME",
+        sex_ribbons=config.get("stats", {})
+        .get("plots", {})
+        .get("sex_ribbons", "c('XX','XY')"),
+        sex_thresholds=get_sex_threshold_plotting(),
     shell:
         """
         Rscript {params.script} \
@@ -693,10 +704,14 @@ rule plot_summary_statistics:
             --out_3_endogenous={output.plot_3_endogenous} \
             --out_4_duplication={output.plot_4_duplication} \
             --out_5_AvgReadDepth={output.plot_5_AvgReadDepth} \
+            --out_6_Sex={output.plot_6_Sex} \
             --x_axis={params.x_axis} \
             --split_plot={params.split_plot} \
             --n_col={params.n_col} \
-            --n_row={params.n_row}
+            --n_row={params.n_row} \
+            --sex_path={params.sex_path} \
+            --thresholds='{params.sex_thresholds}' \
+            --sex_ribbons='{params.sex_ribbons}'
         """
 
 
