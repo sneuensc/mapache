@@ -1,6 +1,7 @@
 library(ggplot2)
 library(RColorBrewer)
 library(scales)
+require(plyr)
 
 args <- commandArgs(TRUE)
  
@@ -58,13 +59,26 @@ get_args <- function(argsL, name, default){
 # getting arguments
 # fq                 = get_args(argsL, "FQ", "FASTQ.csv")
 # lb                 = get_args(argsL, "LB", "LB.csv")
-sm                  = get_args(argsL, "SM", "SM.csv")
+sm                  = get_args(argsL, "SM", "SM_stats.csv")
+sex_path            = get_args(argsL, "sex_path", "sex.out")
+sex_thresholds      = get_args(
+                        argsL, 
+                        "thresholds", 
+                        list( 
+                          "XX" = c(0.8, 1), 
+                          "XY" = c(0, 0.6), 
+                          "consistent with XX but not XY" = c(0.6, 1),
+                          "consistent with XY but not XX" = c(0, 0.8) 
+                        )
+                      )
+sex_ribbons         = get_args(argsL, "sex_ribbons", c("XX", "XY"))
 
 out_1_reads         = get_args(argsL, "out_1_reads", "plot_1_nb_reads.png")
 out_2_mapped        = get_args(argsL, "out_2_mapped", "plot_2_mapped.png")
 out_3_endogenous    = get_args(argsL, "out_3_endogenous", "plot_3_endogenous.png")
 out_4_duplication   = get_args(argsL, "out_4_duplication", "plot_4_duplication.png")
 out_5_AvgReadDepth  = get_args(argsL, "out_5_AvgReadDepth", "plot_5_AvgReadDepth.png")
+out_6_Sex           = get_args(argsL, "out_6_plot", "plot_6_Sex.png")
 x_axis              = get_args(argsL, "x_axis", "sample")
 split_plot          = eval( parse( text = get_args(argsL, "split_plot", "FALSE") ) )
 
@@ -204,7 +218,7 @@ ggsave(out_2_mapped, my_plot, width = 11, height = 7)
 #--------------------------------------------------------------------------#
 # "Endogenous content"
 my_plot <- make_barplot(
-  data = sample_stats, x = "SM", y = "endogenous_unique", color_by = color_by, 
+  data = sample_stats, x = x, y = "endogenous_unique", color_by = color_by, 
   fill_by = fill_by, title = "Endogenous content (unique reads)",
   legend.position = "top"
   )
@@ -224,7 +238,7 @@ ggsave(out_3_endogenous, my_plot, width = 11, height = 7)
 #--------------------------------------------------------------------------#
 # "Duplication level"
 my_plot <- make_barplot(
-  data = sample_stats, x = "SM", y = "duplicates_prop", color_by = color_by, 
+  data = sample_stats, x = x, y = "duplicates_prop", color_by = color_by, 
   fill_by = fill_by, title = "Duplicates per sample (percentage)",
   legend.position = "top"
   )
@@ -244,7 +258,7 @@ ggsave(out_4_duplication, my_plot, width = 11, height = 7)
 #--------------------------------------------------------------------------#
 # "Average read depth"
 my_plot <- make_barplot(
-  data = sample_stats, x = "SM", y = "read_depth", color_by = color_by, 
+  data = sample_stats, x = x, y = "read_depth", color_by = color_by, 
   fill_by = fill_by, title = "Average read depth",
   legend.position = "top"
   )
@@ -261,6 +275,120 @@ if(split_plot){
 ggsave(out_5_AvgReadDepth, my_plot, width = 11, height = 7)
 ############################################################################
 
+#--------------------------------------------------------------------------#
+# "Inferred molecular sex"
+# Note that
+# For each sample, sex inference was
+# requested (file.sex)
+#   - inferred
+#   - not inferred if there were not reads mapping to sex chromosomes (Rx is NaN)
+# not requested (file.nosex with NaN)
+#sex_path <- "SM.GENOME"
 
+# Build data frame from individual tables
+sex <- data.frame
+
+for(i in 1:nrow(sample_stats)){
+  
+  sample_name <- sample_stats$SM[i]
+  genome_name <- sample_stats$genome[i]
+  path_ind <- sub( "GENOME", 
+                   genome_name, 
+                   sub( "SM", sample_name, sex_path)
+                   )
+  path_ind_sex <- paste0(path_ind, ".sex")
+  
+  if(file.exists(path_ind_sex)){
+    if(nrow(sex)){
+      sex_ind <- read.csv(path_ind_sex, stringsAsFactors = F)
+      sex_ind$SM <- sample_name
+      sex_ind$genome <- genome_name
+      sex <- rbind(sex, sex_ind)
+    }else{
+      sex <- read.csv(path_ind_sex, stringsAsFactors = F)
+      sex$SM <- sample_name
+      sex$genome <- genome_name
+    }
+  }
+}
+
+# This is necessary to plot all individuals, regardles of whether
+# sex inference was run or if the sex could not be assigned,
+# also considering all genomes present in the dataset
+sex <- join(sample_stats[,c("SM", "genome")], sex)
+sex$genome <- as.character(sex$genome)
+sex_with_data <- sex[!is.na(sex$Rx),]
+sex_no_data <- sex[is.na(sex$Rx),]
+
+# Get thresholds that will be plotted as ribbons/rectangles
+threshold_coord <- data.frame()
+
+for(sex_name in names(sex_thresholds)){
+  coord <- data.frame(
+    Sex = sex_name,
+    ymin = sex_thresholds[[sex_name]][1],
+    ymax = sex_thresholds[[sex_name]][2]
+  )
+  
+  if(nrow(threshold_coord)){
+    threshold_coord <- rbind(threshold_coord, coord)
+  }else{
+    threshold_coord <- coord
+  }
+}
+
+# add a point for the individuals/genomes
+# for which sex was not assigned/requested
+# (only when assignment was requested at least once; if it was not requested
+# at all, there will be a blank plot)
+not_assigned <- is.na(sex$Rx)
+sex$genome[not_assigned] <- paste0(sex$genome[not_assigned], "_not_assigned")
+sex$Rx[not_assigned] <- -.1
+sex$CI1[not_assigned] <- -.1
+sex$CI2[not_assigned] <- -.1
+sex$Sex[is.na(sex$Sex)] <- "Not requested"
+
+# remove sex names that were not requested to be plotted in ribbons
+threshold_coord <- threshold_coord[threshold_coord$Sex %in% sex_ribbons,]
+all_sexes <- unique(c(names(sex_thresholds), as.character(sex$Sex)))
+
+
+if(nrow(sex)){
+  
+  ribbons_color <- colorRampPalette(brewer.pal(8, "Set3"))(length(all_sexes))
+  sex_color <- colorRampPalette(brewer.pal(8, "Set2"))(length(all_sexes))
+  
+  my_plot <- ggplot() +
+    theme_bw() +
+    geom_point(data=sex, 
+               aes(
+                 x = SM, y = Rx, 
+                 color = Sex
+               )) +
+    geom_rect(data=threshold_coord,
+              mapping=aes(xmin = 0, xmax=length(unique(sex$SM))+1, 
+                          ymin=ymin,ymax=ymax, fill=Sex)
+    ) +
+    geom_point(data=sex, 
+               aes(
+                 x = SM, y = Rx, 
+                 color = Sex
+               )) +
+    geom_errorbar(data=sex, aes( x = SM, y = Rx, ymin = CI1, ymax = CI2, color = Sex), width=0.25) + 
+    scale_color_manual(breaks=all_sexes, values = sex_color, name="Sex inferred") +
+    scale_fill_manual(breaks=all_sexes, 
+                      values = alpha(ribbons_color, 0.5),
+                      name="Thresholds") +
+    facet_grid(genome~.) +
+    theme(legend.position = "top")
+}else{
+  my_plot <- ggplot() +
+    geom_text(data = data.frame(x=1,y=1), 
+              aes(x = x, y = y, label = "Sex inference was not requested")) +
+    theme_void()
+}
+  
+
+ggsave(out_6_Sex, my_plot, width = 11, height = 7)
 # ############################################################################
 
