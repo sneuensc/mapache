@@ -64,13 +64,22 @@ sex_path            = get_args(argsL, "sex_path", "sex.out")
 sex_thresholds      = get_args(
                         argsL, 
                         "thresholds", 
-                        list( 
-                          "XX" = c(0.8, 1), 
-                          "XY" = c(0, 0.6), 
-                          "consistent with XX but not XY" = c(0.6, 1),
-                          "consistent with XY but not XX" = c(0, 0.8) 
+                        list(
+                          "hg19" = list( 
+                            "XX" = c(0.8, 1), 
+                            "XY" = c(0, 0.6), 
+                            "consistent with XX but not XY" = c(0.6, 1),
+                            "consistent with XY but not XX" = c(0, 0.8) 
+                          ),
+                          "GRCh38" = list( 
+                            "XX" = c(0.8, 1), 
+                            "XY" = c(0, 0.6), 
+                            "consistent with XX but not XY" = c(0.6, 1),
+                            "consistent with XY but not XX" = c(0, 0.8) 
+                          )
                         )
-                      )
+)
+
 sex_ribbons         = get_args(argsL, "sex_ribbons", c("XX", "XY"))
 
 out_1_reads         = get_args(argsL, "out_1_reads", "plot_1_nb_reads.png")
@@ -322,18 +331,23 @@ sex_no_data <- sex[is.na(sex$Rx),]
 
 # Get thresholds that will be plotted as ribbons/rectangles
 threshold_coord <- data.frame()
-
-for(sex_name in names(sex_thresholds)){
-  coord <- data.frame(
-    Sex = sex_name,
-    ymin = sex_thresholds[[sex_name]][1],
-    ymax = sex_thresholds[[sex_name]][2]
-  )
+for(genome in names(sex_thresholds)){
   
-  if(nrow(threshold_coord)){
-    threshold_coord <- rbind(threshold_coord, coord)
-  }else{
-    threshold_coord <- coord
+  for(sex_name in names(sex_thresholds[[genome]])){
+    coord <- data.frame(
+      Sex = sex_name,
+      ymin = sex_thresholds[[genome]][[sex_name]][1],
+      ymax = sex_thresholds[[genome]][[sex_name]][2],
+      genome = genome
+    )
+    
+    coord_not_assigned <- coord
+    coord_not_assigned$genome <- paste0(coord_not_assigned$genome, "_not_assigned")
+    if(nrow(threshold_coord)){
+      threshold_coord <- rbind(threshold_coord, coord, coord_not_assigned)
+    }else{
+      threshold_coord <- rbind(coord, coord_not_assigned)
+    }
   }
 }
 
@@ -350,7 +364,13 @@ sex$Sex[is.na(sex$Sex)] <- "Not requested"
 
 # remove sex names that were not requested to be plotted in ribbons
 threshold_coord <- threshold_coord[threshold_coord$Sex %in% sex_ribbons,]
-all_sexes <- unique(c(names(sex_thresholds), as.character(sex$Sex)))
+
+all_sexes <- unique(
+  c(
+    sapply(names(sex_thresholds), function(genome) names(sex_thresholds[[genome]])),
+    as.character(sex$Sex)
+  )
+)
 
 
 if(nrow(sex)){
@@ -358,7 +378,7 @@ if(nrow(sex)){
   ribbons_color <- colorRampPalette(brewer.pal(8, "Set3"))(length(all_sexes))
   sex_color <- colorRampPalette(brewer.pal(8, "Set2"))(length(all_sexes))
   
-  my_plot <- ggplot() +
+  my_plot <-     ggplot() +
     theme_bw() +
     geom_point(data=sex, 
                aes(
