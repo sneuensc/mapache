@@ -1,7 +1,7 @@
 library(ggplot2)
 library(RColorBrewer)
 library(scales)
-require(plyr)
+library(plyr)
 
 args <- commandArgs(TRUE)
  

@@ -237,7 +237,7 @@ rule assign_no_sex:
     output:
         "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_nosex.txt",
     log:
-        "{folder}/{file}.{GENOME}_sex.log",
+        "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_sex.log",
     message:
         "--- NO SEX ASSIGNEMENT"
     shell:
