@@ -64,9 +64,9 @@ rule samtools_flagstat:
     Compute samtools flagstat on bam file
     """
     input:
-        bam="{folder}/{file}.bam",
+        bam=get_bam_file
     output:
-        "{folder}/04_stats/01_sparse_stats/{file}_flagstat.txt",
+        "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_flagstat.txt",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
             ["stats", "samtools_flagstat"], attempt, 2
@@ -75,7 +75,7 @@ rule samtools_flagstat:
             ["stats", "samtools_flagstat"], attempt, 1
         ),
     log:
-        "{folder}/04_stats/01_sparse_stats/{file}_flagstat.log",
+        "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_flagstat.log",
     conda:
         "../envs/samtools.yaml"
     envmodules:
@@ -91,9 +91,9 @@ rule samtools_stats:
     Compute samtools stats on bam file
     """
     input:
-        bam="{folder}/{file}.bam",
+        get_bam_file
     output:
-        "{folder}/04_stats/01_sparse_stats/{file}_stats.txt",
+        "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_stats.txt",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
             ["stats", "samtools_stats"], attempt, 2
@@ -102,7 +102,7 @@ rule samtools_stats:
             ["stats", "samtools_stats"], attempt, 1
         ),
     log:
-        "{folder}/04_stats/01_sparse_stats/{file}_stats.log",
+        "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_stats.log",
     conda:
         "../envs/samtools.yaml"
     envmodules:
@@ -115,9 +115,9 @@ rule samtools_stats:
 
 rule bedtools_genomecov:
     input:
-        bam="{folder}/{dir}/{file}.bam",
+        "{folder}/{dir}/{file}.bam",
     output:
-        genomecov="{folder}/04_stats/01_sparse_stats/{dir}/{file}.genomecov",
+        "{folder}/04_stats/01_sparse_stats/{dir}/{file}_genomecov",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
             ["stats", "bedtools_genomecov"], attempt, 2
@@ -126,7 +126,7 @@ rule bedtools_genomecov:
             ["stats", "bedtools_genomecov"], attempt, 1
         ),
     log:
-        "{folder}/04_stats/01_sparse_stats/{dir}/{file}.genomecov.log",
+        "{folder}/04_stats/01_sparse_stats/{dir}/{file}_genomecov.log",
     conda:
         "../envs/bedtools.yaml"
     envmodules:
@@ -135,15 +135,15 @@ rule bedtools_genomecov:
         "--- BEDTOOLS GENOMECOV of {input.bam}"
     shell:
         """
-        bedtools genomecov -ibam {input.bam} > {output.genomecov}
+        bedtools genomecov -ibam {input} > {output}
         """
 
 
 rule read_length:
     input:
-        bam="{folder}/{file}.bam",
+        get_bam_file
     output:
-        length="{folder}/04_stats/01_sparse_stats/{file}_length.txt",
+        "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_length.txt",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
             ["stats", "read_length"], attempt, 2
@@ -152,7 +152,7 @@ rule read_length:
             ["stats", "read_length"], attempt, 1
         ),
     log:
-        "{folder}/04_stats/01_sparse_stats/{file}_length.log",
+        "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_length.log",
     conda:
         "../envs/samtools.yaml"
     envmodules:
@@ -163,16 +163,16 @@ rule read_length:
         "--- READ LENGTH of {input}"
     shell:
         """
-        samtools view {input.bam} | perl {params.script} -o {output.length} >> {log}
+        samtools view {input} | perl {params.script} -o {output} >> {log}
         """
 
 
 rule samtools_idxstats:
     input:
-        bam="{folder}/{dir}/{file}.bam",
-        bai="{folder}/{dir}/{file}.bai",
+        bam=get_bam_file,
+        bai=get_bai_file
     output:
-        idxstats="{folder}/04_stats/01_sparse_stats/{dir}/{file}.idxstats",
+        "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_idxstats.txt",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
             ["stats", "samtools_idxstats"], attempt, 2
@@ -181,7 +181,7 @@ rule samtools_idxstats:
             ["stats", "samtools_idxstats"], attempt, 1
         ),
     log:
-        "{folder}/04_stats/01_sparse_stats/{dir}/{file}.idxstats.log",
+        "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_idxstats.log",
     conda:
         "../envs/samtools.yaml"
     envmodules:
@@ -190,15 +190,15 @@ rule samtools_idxstats:
         "--- SAMTOOLS IDXSTATS of {input.bam}"
     shell:
         """
-        samtools idxstats {input.bam} > {output.idxstats}
+        samtools idxstats {input.bam} > {output}
         """
 
 
 rule assign_sex:
     input:
-        idxstats="{folder}/04_stats/01_sparse_stats/{file}.{GENOME}.idxstats",
+        "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_idxstats.txt",
     output:
-        sex="{folder}/04_stats/01_sparse_stats/{file}.{GENOME}.sex",
+        "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_sex.txt",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
             ["stats", "assign_sex"], attempt, 2
@@ -217,7 +217,7 @@ rule assign_sex:
         ),
         script=workflow.source_path("../scripts/assign_sex.R"),
     log:
-        "{folder}/{file}.{GENOME}.sex.log",
+        "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_sex.log",
     conda:
         "../envs/r.yaml"
     envmodules:
@@ -227,23 +227,23 @@ rule assign_sex:
     shell:
         """
         Rscript {params.script} \
-                --idxstats={input.idxstats} \
-                --out={output.sex} \
+                --idxstats={input} \
+                --out={output} \
                 {params.sex_params}
         """
 
 
 rule assign_no_sex:
     output:
-        sex="{folder}/04_stats/01_sparse_stats/{file}.{GENOME}.nosex",
+        "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_nosex.txt",
     log:
-        "{folder}/{file}.{GENOME}.sex.log",
+        "{folder}/{file}.{GENOME}_sex.log",
     message:
         "--- NO SEX ASSIGNEMENT"
     shell:
         """
-        echo "Sex" > {output.sex}
-        echo "NaN" >> {output.sex}
+        echo "Sex" > {output}
+        echo "NaN" >> {output}
         """
 
 
@@ -297,8 +297,8 @@ rule merge_stats_per_lb:
         flagstat_raw="{folder}/04_stats/01_sparse_stats/02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}_flagstat.txt",
         flagstat_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_flagstat.txt",
         length_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_length.txt",
-        #genomecov_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}.genomecov",
-        idxstats_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}.idxstats",
+        #genomecov_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_genomecov.txt",
+        idxstats_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_idxstats.txt",
         sex_unique=lambda wildcards: get_sex_file(wildcards, "LB"),
     output:
         "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/library_stats.csv",
@@ -350,7 +350,7 @@ rule merge_stats_per_sm:
         ),
         flagstat_unique="{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_flagstat.txt",
         length_unique="{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_length.txt",
-        idxstats_unique="{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.idxstats",
+        idxstats_unique="{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_idxstats.txt",
         sex_unique=lambda wildcards: get_sex_file(wildcards, "SM"),
     output:
         "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/sample_stats.csv",
@@ -453,7 +453,7 @@ rule merge_stats_all_genomes:
 # read depth by chromosome
 rule DoC_chr_SM:
     input:
-        "{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.genomecov",
+        "{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_genomecov",
     output:
         "{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_DoC_chrs.csv",
     resources:
@@ -510,8 +510,8 @@ rule bamdamage:
     """
     input:
         ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
-        bam="{folder}/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}.bam",
-        bai="{folder}/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}.bai",
+        bam=lambda wildcards: get_final_bam_library(wildcards.folder, wildcards.SM, wildcards.LB, wildcards.GENOME, "01_bam", "bam"),
+        bai=lambda wildcards: get_final_bam_library(wildcards.folder, wildcards.SM, wildcards.LB, wildcards.GENOME, "01_bam", "bai")
     output:
         damage_pdf="{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.dam.pdf",
         length_pdf="{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.length.pdf",
@@ -671,8 +671,8 @@ rule plot_summary_statistics:
             subcategory="Plots",
         ),
         plot_6_Sex=report(
-            "{folder}/04_stats/04_plots/6_Sex.svg",
-            caption="../report/6_Sex.rst",
+            "{folder}/04_stats/04_plots/7_Sex.svg",
+            caption="../report/7_Sex.rst",
             category="Mapping statistics",
             subcategory="Plots",
         ),

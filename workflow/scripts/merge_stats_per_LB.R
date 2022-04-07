@@ -87,8 +87,8 @@ chrs_selected = get_args(argsL, "chrs_selected", NA)
 # path_flagstat_raw       = "results/04_stats/02_library/00_merged_fastq/01_bam/ind1/lib1_lb.hg19_flagstat.txt"
 # path_flagstat_unique    = "results/04_stats/02_library/03_final_library/01_bam/ind1/lib1_lb.hg19_flagstat.txt"  
 # path_length_unique      = "results/04_stats/02_library/03_final_library/01_bam/ind1/lib1_lb.hg19.length"
-# path_genomecov_unique   = "results/04_stats/02_library/03_final_library/01_bam/ind1/lib1_lb.hg19.genomecov"    
-# path_sex_unique         = "results/04_stats/02_library/03_final_library/01_bam/ind1/lib1_lb.hg19.sex"
+# path_genomecov_unique   = "results/04_stats/02_library/03_final_library/01_bam/ind1/lib1_lb.hg19_genomecov"    
+# path_sex_unique         = "results/04_stats/02_library/03_final_library/01_bam/ind1/lib1_lb.hg19_sex"
 # chrs_selected = c("X","Y", "MT")
 # chrs_selected = unlist(strsplit("X,Y,MT", ","))
 #-----------------------------------------------------------------------------#

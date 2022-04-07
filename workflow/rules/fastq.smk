@@ -547,34 +547,3 @@ else:
             """
 
 
-##########################################################################################
-rule get_final_fastq:
-    """
-    Get the final bam file from the fastq part
-    """
-    input:
-        get_final_bam_fastq,
-    output:
-        "{folder}/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}.bam",
-    message:
-        "--- GET FINAL BAM {input} (FASTQ LEVEL)"
-    log:
-        "{folder}/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}.bam.log",
-    run:
-        symlink_rev(input, output)
-
-
-rule get_final_fastq_low_qual:
-    """
-    Get the final bam file from the fastq part
-    """
-    input:
-        "{folder}/01_fastq/03_filtered/01_bam_filter_low_qual/{SM}/{LB}/{ID}.{GENOME}.bam",
-    output:
-        "{folder}/01_fastq/04_final_fastq/01_bam_low_qual/{SM}/{LB}/{ID}.{GENOME}.bam",
-    message:
-        "--- GET FINAL LOW_QUAL BAM {input} (FASTQ LEVEL)"
-    log:
-        "{folder}/04_final_fastq/01_bam_low_qual/{SM}/{LB}/{ID}.{GENOME}.bam.log",
-    run:
-        symlink_rev(input, output)

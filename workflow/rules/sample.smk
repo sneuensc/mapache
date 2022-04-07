@@ -10,11 +10,7 @@ rule merge_bam_library2sample:
     Merge the bam files of the library step
     """
     input:
-        mapped=lambda wildcards: expand(
-            "{folder}/02_library/03_final_library/{type}/{SM}/{LB}.{GENOME}.bam",
-            LB=samples[wildcards.SM],
-            allow_missing=True,
-        ),
+        mapped = lambda wildcards: [get_final_bam_library(wildcards.folder, wildcards.SM, LB, wildcards.GENOME, wildcards.type) for LB in samples[wildcards.SM]]
     output:
         "{folder}/03_sample/00_merged_library/{type}/{SM}.{GENOME}.bam",
     resources:
@@ -130,21 +126,6 @@ rule get_final_bam_low_qual:
         symlink_rev(input, output)
 
 
-rule move_final_bam_duplicate:
-    """
-    Get the final bam files
-    """
-    input:
-        "{folder}/00_merged_library/01_bam_duplicate/{SM}.{GENOME}.bam",
-    output:
-        "{folder}/03_final_sample/01_bam_duplicate/{SM}.{GENOME}.bam",
-    threads: 1
-    log:
-        "{folder}/03_final_sample/01_bam_duplicate/{SM}.{GENOME}.bam.log",
-    message:
-        "--- SIMLINKK FINAL DUPLICATE BAM"
-    run:
-        symlink_rev(input, output)
 
 
 ##########################################################################################

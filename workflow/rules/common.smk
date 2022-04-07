@@ -381,7 +381,7 @@ def get_gatk_bin():
 
 
 ##########################################################################################
-## all functions for fastq files
+## FASTQ LEVEL
 
 
 def get_fastq_of_ID(wildcards):
@@ -478,32 +478,37 @@ def get_bam_for_sorting(wildcards):
     return f"{wildcards.folder}/01_fastq/02_mapped/{folder}/{wildcards.SM}/{wildcards.LB}/{wildcards.ID}.{wildcards.GENOME}.bam"
 
 
-def get_final_bam_fastq(wildcards):
-    if run_filtering:
-        bam = f"{wildcards.folder}/01_fastq/03_filtered/01_bam_filter/{wildcards.SM}/{wildcards.LB}/{wildcards.ID}.{wildcards.GENOME}.bam"
-    else:
-        bam = f"{wildcards.folder}/01_fastq/02_mapped/03_bam_sort/{wildcards.SM}/{wildcards.LB}/{wildcards.ID}.{wildcards.GENOME}.bam"
-    return bam
-
-
-##########################################################################################
-##########################################################################################
-## all functions for libraries
-
-
-def get_final_bam_library(wildcards):
-    if wildcards.type == "01_bam":
-        if run_damage_rescale:
-            bam = f"{wildcards.folder}/02_library/02_rescaled/01_mapDamage/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
-        elif remove_duplicates == "markduplicates":
-            bam = f"{wildcards.folder}/02_library/01_duplicated/01_markduplicates/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
-        elif remove_duplicates == "dedup":
-            bam = f"{wildcards.folder}/02_library/01_duplicated/01_dedup/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
+## get the final bam (fastq level) file
+def get_final_bam_fastq(folder, SM, LB, ID, GENOME, type="01_bam", ext="bam"):
+    if type == "01_bam":
+        if run_filtering:
+            ffolder = f"{folder}/01_fastq/03_filtered/01_bam_filter"
         else:
-            bam = f"{wildcards.folder}/02_library/00_merged_fastq/01_bam/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
-    else:
-        bam = f"{wildcards.folder}/02_library/00_merged_fastq/01_bam_low_qual/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
-    return bam
+            ffolder = f"{folder}/01_fastq/02_mapped/03_bam_sort"        
+    else: ## 01_bam_low_qual
+        ffolder = f"{folder}/01_fastq/03_filtered/01_bam_filter_low_qual"
+    return f"{ffolder}/{SM}/{LB}/{ID}.{GENOME}.{ext}"
+
+
+
+##########################################################################################
+##########################################################################################
+## LIBRARY LEVEL
+
+## get the final bam (library level) file
+def get_final_bam_library(folder, SM, LB, GENOME, type="01_bam", ext="bam"):
+    if type == "01_bam":
+        if run_damage_rescale:
+            ffolder = f"{folder}/02_library/02_rescaled/01_mapDamage"
+        elif remove_duplicates == "markduplicates":
+            ffolder = f"{folder}/02_library/01_duplicated/01_markduplicates"
+        elif remove_duplicates == "dedup":
+            ffolder = f"{folder}/02_library/01_duplicated/01_dedup"
+        else:
+            ffolder = f"{folder}/02_library/00_merged_fastq/01_bam"
+    else: ## 01_bam_low_qual
+        ffolder = f"{folder}/02_library/00_merged_fastq/01_bam_low_qual"
+    return f"{ffolder}/{SM}/{LB}.{GENOME}.{ext}"
 
 
 def get_mapDamage_bam(wildcards):
@@ -517,11 +522,29 @@ def get_mapDamage_bam(wildcards):
 
 
 ##########################################################################################
-##########################################################################################
+## get the corresponding bam file (generic, across all levels):
+##  - if final bam file: get the corresponding final bam file at the different levels
+##  - otherwise retake the path
+def get_bam_file(wildcards):
+    paths = list(pathlib.Path(wildcards.file).parts)
+    if paths[1] == "04_final_fastq": ## fastq
+        return get_final_bam_fastq(wildcards.folder, paths[3], paths[4], paths[5], wildcards.GENOME)
+    elif paths[1] == "03_final_library": ## library
+        return get_final_bam_library(wildcards.folder, paths[3], paths[4], wildcards.GENOME)
+    else: ## the path is the right one
+        return f"{wildcards.folder}/{wildcards.file}.{wildcards.GENOME}.bam"
+    
+
+## get the corresponding bai file:
+def get_bai_file(wildcards):
+    bam = get_bam_file(wildcards)
+    return f"{bam[:len(bam) - 4]}.bai"
 
 ##########################################################################################
-## all functions for the samples
 
+
+##########################################################################################
+## SAMPLE LEVEL
 
 def get_final_bam(wildcards):
     if run_compute_md:
@@ -556,9 +579,9 @@ def get_sex_file(wildcards, level):
             ["genome", wildcards.GENOME, "sex_inference", "run"], ["False", "True"]
         )
     ):
-        return f"{folder}.sex"
+        return f"{folder}_sex.txt"
     else:
-        return f"{folder}.nosex"
+        return f"{folder}_nosex.txt"
 
 
 ##########################################################################################

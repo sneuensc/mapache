@@ -434,7 +434,7 @@ lengths = [
 lengths = list(set(lengths))  ## remove duplicates
 
 idxstats = [
-    f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}.idxstats"
+    f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}_idxstats.txt"
     for GENOME in genome
     for SM in samples
     for LB in samples[SM]
@@ -445,18 +445,6 @@ idxstats = [
 ]
 idxstats = list(set(idxstats))  ## remove duplicates
 
-sex_files = [
-    f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}.sex"
-    for GENOME in genome
-    for SM in samples
-    for LB in samples[SM]
-    for file in [
-        f"02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}",
-        f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}",
-    ]
-    if str2bool(recursive_get(["genome", GENOME, "sex_inference", "run"], False))
-]
-
 sex_files = []
 for GENOME in genome:
     ext = (
@@ -466,7 +454,7 @@ for GENOME in genome:
     )
 
     sex_files += [
-        f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}.{ext}"
+        f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}_{ext}.txt"
         for SM in samples
         for LB in samples[SM]
         for file in [

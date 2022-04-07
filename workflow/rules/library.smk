@@ -8,11 +8,7 @@ rule merge_bam_fastq2library:
     Merge the bam files of the fastq step
     """
     input:
-        mapped=lambda wildcards: expand(
-            "{folder}/01_fastq/04_final_fastq/{type}/{SM}/{LB}/{ID}.{GENOME}.bam",
-            ID=samples[wildcards.SM][wildcards.LB],
-            allow_missing=True,
-        ),
+        mapped = lambda wildcards: [get_final_bam_fastq(wildcards.folder, wildcards.SM, wildcards.LB, ID, wildcards.GENOME) for ID in samples[wildcards.SM][wildcards.LB]]
     output:
         "{folder}/02_library/00_merged_fastq/{type}/{SM}/{LB}.{GENOME}.bam",
     resources:
@@ -186,18 +182,4 @@ rule mapDamage_rescale:
         """
 
 
-##########################################################################################
-rule get_final_library:
-    """
-    Get the final bam file of the library part
-    """
-    input:
-        get_final_bam_library,
-    output:
-        "{folder}/02_library/03_final_library/{type}/{SM}/{LB}.{GENOME}.bam",
-    message:
-        "--- GET FINAL BAM {input} (LIBRARY LEVEL)"
-    log:
-        "{folder}/02_library/03_final_library/{type}/{SM}/{LB}.{GENOME}.bam.log",
-    run:
-        symlink_rev(input, output)
+

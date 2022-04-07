@@ -45,7 +45,7 @@ parseArgs <- function(x) strsplit(sub("^--", "", x), "=")
 argsDF <- as.data.frame(do.call("rbind", parseArgs(args)))
 argsL <- as.list(as.character(argsDF$V2))
 names(argsL) <- argsDF$V1
-print(argsL)
+# print(argsL)
 
 get_args <- function(argsL, name, default){
     if(name %in% names(argsL)){
@@ -314,7 +314,7 @@ for(i in 1:nrow(sample_stats)){
   }
 }
 
-print(sex)
+# print(sex)
 if(nrow(sex)){
   # This is necessary to plot all individuals, regardles of whether
   # sex inference was run or if the sex could not be assigned,
@@ -351,7 +351,7 @@ if(nrow(sex)){
   # (only when assignment was requested at least once; if it was not requested
   # at all, there will be a blank plot)
   not_assigned <- is.na(sex$Rx)
-  print(length(not_assigned))
+  #print(length(not_assigned))
   if(length(not_assigned)){
     sex$genome[not_assigned] <- paste0(sex$genome[not_assigned], "_not_assigned")
     sex$Rx[not_assigned] <- -.1
