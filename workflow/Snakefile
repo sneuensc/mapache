@@ -272,6 +272,36 @@ run_compute_md = str2bool(
     recursive_get_and_test(["compute_md", "run"], ["True", "False"])
 )
 
+## --------------------------------------------------------------------------------------------------
+## get last bam file folder (depends on the choice of the user)
+FINAL_BAM_FOLDER_FASTQ = ""
+if run_filtering:
+    FINAL_BAM_FOLDER_FASTQ = f"{RESULT_DIR}/01_fastq/03_filtered/01_bam_filter"
+else:
+    FINAL_BAM_FOLDER_FASTQ = f"{RESULT_DIR}/01_fastq/02_mapped/03_bam_sort"
+
+
+FINAL_BAM_FOLDER_LIBRARY = ""
+if run_damage_rescale:
+    FINAL_BAM_FOLDER_LIBRARY = f"{RESULT_DIR}/02_library/02_rescaled/01_mapDamage"
+elif remove_duplicates == "markduplicates":
+    FINAL_BAM_FOLDER_LIBRARY = (
+        f"{RESULT_DIR}/02_library/01_duplicated/01_markduplicates"
+    )
+elif remove_duplicates == "dedup":
+    FINAL_BAM_FOLDER_LIBRARY = f"{RESULT_DIR}/02_library/01_duplicated/01_dedup"
+else:
+    FINAL_BAM_FOLDER_LIBRARY = f"{RESULT_DIR}/02_library/00_merged_fastq/01_bam"
+
+
+FINAL_BAM_FOLDER_SAMPLE = ""
+if run_compute_md:
+    FINAL_BAM_FOLDER_SAMPLE = f"{RESULT_DIR}/03_sample/02_md_flag/01_md_flag"
+elif run_realign:
+    FINAL_BAM_FOLDER_SAMPLE = f"{RESULT_DIR}/03_sample/01_realigned/01_realign"
+else:
+    FINAL_BAM_FOLDER_SAMPLE = f"{RESULT_DIR}/03_sample/00_merged_library/01_bam"
+
 
 ## --------------------------------------------------------------------------------------------------
 # print a summary of the workflow
@@ -333,9 +363,12 @@ run_sex_inference = recursive_get_and_test(
     ["genome", GENOME, "sex_inference", "run"], ["False", "True"]
 )
 
-run_qualimap = str2bool(recursive_get_and_test(["stats", "qualimap"], ["False", "True"]))
+run_qualimap = str2bool(
+    recursive_get_and_test(["stats", "qualimap"], ["False", "True"])
+)
 
 run_multiqc = str2bool(recursive_get_and_test(["stats", "multiqc"], ["False", "True"]))
+
 
 ##########################################################################################
 include: "rules/index.smk"
@@ -397,7 +430,7 @@ flagstats = [
     for ID in samples[SM][LB]
     for file in [
         f"01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}",
-        f"02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}",
+        #f"02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}",
         f"02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}",
         f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}",
     ]
@@ -412,7 +445,7 @@ samtools_stats = [
     for ID in samples[SM][LB]
     for file in [
         f"01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}",
-        f"02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}",
+        #f"02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}",
         f"02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}",
         f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}",
     ]

@@ -64,7 +64,7 @@ rule samtools_flagstat:
     Compute samtools flagstat on bam file
     """
     input:
-        bam=get_bam_file
+        bam=get_bam_file,
     output:
         "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_flagstat.txt",
     resources:
@@ -91,7 +91,7 @@ rule samtools_stats:
     Compute samtools stats on bam file
     """
     input:
-        get_bam_file
+        get_bam_file,
     output:
         "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_stats.txt",
     resources:
@@ -141,7 +141,7 @@ rule bedtools_genomecov:
 
 rule read_length:
     input:
-        get_bam_file
+        get_bam_file,
     output:
         "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_length.txt",
     resources:
@@ -170,7 +170,7 @@ rule read_length:
 rule samtools_idxstats:
     input:
         bam=get_bam_file,
-        bai=get_bai_file
+        bai=get_bai_file,
     output:
         "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_idxstats.txt",
     resources:
@@ -254,7 +254,7 @@ rule merge_stats_per_fastq:
         fastqc_orig="{folder}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_fastqc.zip",  # raw sequenced reads
         fastqc_trim="{folder}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}_fastqc.zip"
         if run_adapter_removal
-        else "Not_trimmed",
+        else "{folder}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_fastqc.zip", ## as the orig file
         # raw trimmed reads
         flagstat_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}_flagstat.txt",  # mapped and high-qual reads
         length_fastq_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}_length.txt",
@@ -273,6 +273,7 @@ rule merge_stats_per_fastq:
         "--- MERGE FASTQ LEVEL STATS"
     shell:
         """
+        
         Rscript {params.script} \
             --ID={wildcards.ID} \
             --LB={wildcards.LB} \
@@ -294,7 +295,7 @@ rule merge_stats_per_lb:
             ID=samples[wildcards.SM][wildcards.LB],
             allow_missing=True,
         ),
-        flagstat_raw="{folder}/04_stats/01_sparse_stats/02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}_flagstat.txt",
+        #flagstat_raw="{folder}/04_stats/01_sparse_stats/02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}_flagstat.txt",
         flagstat_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_flagstat.txt",
         length_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_length.txt",
         #genomecov_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_genomecov.txt",
@@ -332,13 +333,13 @@ rule merge_stats_per_lb:
             --genome={wildcards.GENOME} \
             --output_file={output} \
             --path_list_stats_fastq=${{list_fastq_stats}} \
-            --path_flagstat_raw={input.flagstat_raw} \
             --path_flagstat_unique={input.flagstat_unique} \
             --path_length_unique={input.length_unique} \
             --path_idxstats_unique={input.idxstats_unique} \
             --path_sex_unique={input.sex_unique} \
             $chrsSelected
         """
+#--path_flagstat_raw={input.flagstat_raw} \
 
 
 rule merge_stats_per_sm:
@@ -510,8 +511,22 @@ rule bamdamage:
     """
     input:
         ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
-        bam=lambda wildcards: get_final_bam_library(wildcards.folder, wildcards.SM, wildcards.LB, wildcards.GENOME, "01_bam", "bam"),
-        bai=lambda wildcards: get_final_bam_library(wildcards.folder, wildcards.SM, wildcards.LB, wildcards.GENOME, "01_bam", "bai")
+        bam=lambda wildcards: get_final_bam_library(
+            wildcards.folder,
+            wildcards.SM,
+            wildcards.LB,
+            wildcards.GENOME,
+            "01_bam",
+            "bam",
+        ),
+        bai=lambda wildcards: get_final_bam_library(
+            wildcards.folder,
+            wildcards.SM,
+            wildcards.LB,
+            wildcards.GENOME,
+            "01_bam",
+            "bai",
+        ),
     output:
         damage_pdf="{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.dam.pdf",
         length_pdf="{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.length.pdf",
@@ -691,9 +706,7 @@ rule plot_summary_statistics:
         n_row=recursive_get(["stats", "plots", "n_row"], 1),
         script=workflow.source_path("../scripts/plot_stats.R"),
         sex_path="results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/SM.GENOME",
-        sex_ribbons=config.get("stats", {})
-        .get("plots", {})
-        .get("sex_ribbons", "c('XX','XY')"),
+        sex_ribbons=recursive_get(["stats", "plots", "sex_ribbons"], "c('XX','XY')"),
         sex_thresholds=get_sex_threshold_plotting(),
     shell:
         """

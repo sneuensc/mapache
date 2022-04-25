@@ -1,6 +1,11 @@
 ##########################################################################################
 ## all rules for libraries
 ##########################################################################################
+ruleorder: merge_bam_low_qual_fastq2library > merge_bam_fastq2library
+
+
+def get_bam_4_merge_bam_fastq2library(wildcards):
+    return [get_final_bam_fastq(wildcards.folder, wildcards.SM, wildcards.LB, ID, wildcards.GENOME) for ID in samples[wildcards.SM][wildcards.LB]]
 
 
 rule merge_bam_fastq2library:
@@ -8,7 +13,7 @@ rule merge_bam_fastq2library:
     Merge the bam files of the fastq step
     """
     input:
-        mapped = lambda wildcards: [get_final_bam_fastq(wildcards.folder, wildcards.SM, wildcards.LB, ID, wildcards.GENOME) for ID in samples[wildcards.SM][wildcards.LB]]
+        get_bam_4_merge_bam_fastq2library
     output:
         "{folder}/02_library/00_merged_fastq/{type}/{SM}/{LB}.{GENOME}.bam",
     resources:
@@ -27,14 +32,50 @@ rule merge_bam_fastq2library:
         "../scripts/merge_bam.py"
 
 
+rule merge_bam_low_qual_fastq2library:
+    """
+    Merge the bam files of the fastq step
+    """
+    input:
+        mapped=lambda wildcards: expand(
+            "{folder}/01_fastq/04_final_fastq/01_bam_low_qual/{SM}/{LB}/{ID}.{GENOME}.bam",
+            ID=samples[wildcards.SM][wildcards.LB],
+            allow_missing=True,
+        ),
+    output:
+        "{folder}/02_library/00_merged_fastq/01_bam_low_qual/{SM}/{LB}.{GENOME}.bam",
+    resources:
+        memory=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24),
+    threads: get_threads("merging", 4)
+    log:
+        "{folder}/02_library/00_merged_fastq/01_bam_low_qual/{SM}/{LB}.{GENOME}.log",
+    conda:
+        "../envs/samtools.yaml"
+    envmodules:
+        module_samtools,
+    message:
+        "--- SAMTOOLS MERGE {input}"
+    script:
+        "../scripts/merge_bam.py"
+
+
+def get_bam_4_markduplicates(wildcards):
+    bam = get_bam_4_merge_bam_fastq2library(wildcards)
+    if len(bam) > 1: ## library consits of more than one fastq file: return 00_merged_fastq
+        return f"{wildcards.folder}/02_library/00_merged_fastq/01_bam/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
+    else:              ## library consits of one fastq file: return return the location of the final library bam file
+        return bam[0]
+
+
 rule markduplicates:
     """
     Remove duplicated mappings with pricards markduplicates
     """
     input:
-        "{folder}/02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}.bam",
+        get_bam_4_markduplicates,
     output:
-        bam="{folder}/02_library/01_duplicated/01_markduplicates/{SM}/{LB}.{GENOME}.bam",
+        bam=temp("{folder}/02_library/01_duplicated/01_markduplicates/{SM}/{LB}.{GENOME}.bam"),
         stats="{folder}/02_library/01_duplicated/01_markduplicates/{SM}/{LB}.{GENOME}.stats",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc(
@@ -69,12 +110,12 @@ rule dedup:
     Remove duplicated mappings with dedup (-m only for collapsed PE reads!!!)
     """
     input:
-        "{folder}/02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}.bam",
+        get_bam_4_markduplicates,
     output:
         json="{folder}/02_library/01_duplicated/01_dedup/{SM}/{LB}.{GENOME}.dedup.json",
         hist="{folder}/02_library/01_duplicated/01_dedup/{SM}/{LB}.{GENOME}.hist",
         log="{folder}/02_library/01_duplicated/01_dedup/{SM}/{LB}.{GENOME}.log",
-        bam="{folder}/02_library/01_duplicated/01_dedup/{SM}/{LB}.{GENOME}.bam",
+        bam=temp("{folder}/02_library/01_duplicated/01_dedup/{SM}/{LB}.{GENOME}.bam"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc(
             "remove_duplicates", attempt, 4
@@ -116,6 +157,14 @@ rule dedup:
         mv ${{bam%%.bam}}_rmdup.bam $bam
         """
 
+def get_bam_4_damage(wildcards):
+    if remove_duplicates == "markduplicates":
+        bam = f"{wildcards.folder}/02_library/01_duplicated/01_markduplicates/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
+    elif remove_duplicates == "dedup":
+        bam = f"{wildcards.folder}/02_library/01_duplicated/01_dedup/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}.bam"
+    else:
+        bam = get_bam_4_markduplicates(wildcards)
+    return bam   
 
 rule mapDamage_stats:
     """
@@ -123,7 +172,7 @@ rule mapDamage_stats:
     """
     input:
         ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
-        bam=get_mapDamage_bam,
+        bam=get_bam_4_damage,
     output:
         #directory("{folder}/02_library/02_rescaled/01_mapDamage/{SM}/{LB}.{GENOME}_results_mapDamage"),
         deamination=report(
@@ -159,10 +208,10 @@ rule mapDamage_rescale:
     """
     input:
         ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
-        bam=get_mapDamage_bam,
+        bam=get_bam_4_damage,
         deamination="{folder}/02_library/02_rescaled/01_mapDamage/{SM}/{LB}.{GENOME}_results_mapDamage/Fragmisincorporation_plot.pdf",
     output:
-        bam="{folder}/02_library/02_rescaled/01_mapDamage/{SM}/{LB}.{GENOME}.bam",
+        bam=temp("{folder}/02_library/02_rescaled/01_mapDamage/{SM}/{LB}.{GENOME}.bam"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("mapdamage", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapdamage", attempt, 24),
@@ -180,6 +229,3 @@ rule mapDamage_rescale:
         mapDamage -i {input.bam} -r {input.ref} -d $(dirname {input.deamination}) \
         {params.params} --merge-reference-sequences --rescale-only --rescale-out {output} 2>> {log};
         """
-
-
-

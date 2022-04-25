@@ -62,19 +62,6 @@ get_args <- function(argsL, name, default){
 # fq                 = get_args(argsL, "FQ", "FASTQ.csv")
 # lb                 = get_args(argsL, "LB", "LB.csv")
 sm                  = get_args(argsL, "SM", "SM_stats.csv")
-sex_path            = get_args(argsL, "sex_path", "sex.out")
-sex_thresholds      = get_args(
-                        argsL, 
-                        "thresholds", 
-                        'list("hg19"=list("XX"=c(0.8, 1), "XY"=c(0, 0.6), "consistent with XX but not XY"=c(0.6, 1),"consistent with XY but not XX"=c(0, 0.8) ), "GRCh38"=list("XX"=c(0.8, 1), "XY"=c(0, 0.6), "consistent with XX but not XY"=c(0.6, 1),"consistent with XY but not XX"=c(0, 0.8) ))'
-                        )
-#print(paste0("SEX THRESHOLDS: \n", sex_thresholds))
-
-sex_thresholds      = eval(parse(text=gsub("\\?", "=", sex_thresholds)))
-
-
-sex_ribbons         = eval(parse(text=get_args(argsL, "sex_ribbons", 'c("XX", "XY")')))
-
 out_1_reads         = get_args(argsL, "out_1_reads", "plot_1_nb_reads.png")
 out_2_mapped        = get_args(argsL, "out_2_mapped", "plot_2_mapped.png")
 out_3_endogenous    = get_args(argsL, "out_3_endogenous", "plot_3_endogenous.png")
@@ -277,6 +264,21 @@ if(split_plot){
 ggsave(out_5_AvgReadDepth, my_plot, width = 11, height = 7)
 ############################################################################
 
+if(1==2){
+sex_path            = get_args(argsL, "sex_path", "sex.out")
+sex_thresholds      = get_args(
+                        argsL, 
+                        "thresholds", 
+                        'list("hg19"=list("XX"=c(0.8, 1), "XY"=c(0, 0.6), "consistent with XX but not XY"=c(0.6, 1),"consistent with XY but not XX"=c(0, 0.8) ), "GRCh38"=list("XX"=c(0.8, 1), "XY"=c(0, 0.6), "consistent with XX but not XY"=c(0.6, 1),"consistent with XY but not XX"=c(0, 0.8) ))'
+                        )
+#print(paste0("SEX THRESHOLDS: \n", sex_thresholds))
+
+sex_thresholds      = eval(parse(text=gsub("\\?", "=", sex_thresholds)))
+
+
+sex_ribbons         = eval(parse(text=get_args(argsL, "sex_ribbons", 'c("XX", "XY")')))
+
+
 #--------------------------------------------------------------------------#
 # "Inferred molecular sex"
 # Note that
@@ -298,7 +300,7 @@ for(i in 1:nrow(sample_stats)){
                    genome_name, 
                    sub( "SM", sample_name, sex_path)
                    )
-  path_ind_sex <- paste0(path_ind, ".sex")
+  path_ind_sex <- paste0(path_ind, "_sex.txt")
   
   if(file.exists(path_ind_sex)){
     if(nrow(sex)){
@@ -409,3 +411,6 @@ if(nrow(sex)){
 ggsave(out_6_Sex, my_plot, width = 11, height = 7)
 # ############################################################################
 
+}
+
+ggsave(out_6_Sex, my_plot, width = 11, height = 7)

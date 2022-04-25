@@ -138,7 +138,7 @@ rule samtools_index_bam:
     Index bam file with samtools
     """
     input:
-        "{folder}.bam"
+        "{folder}.bam",
     output:
         "{folder}.bai",
     resources:

@@ -81,12 +81,24 @@ rule adapter_removal_collapse:
         R1="{folder}/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_R1.fastq.gz",
         R2="{folder}/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_R2.fastq.gz",
     output:
-        R="{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.fastq.gz",
-        trunc="{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}_truncated.fastq.gz",
-        R1="{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}_R1.fastq.gz",
-        R2="{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}_R2.fastq.gz",
-        strunc="{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.singleton.truncated.gz",
-        disc="{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.discarded.gz",
+        R=temp(
+            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.fastq.gz"
+        ),
+        trunc=temp(
+            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}_truncated.fastq.gz"
+        ),
+        R1=temp(
+            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}_R1.fastq.gz"
+        ),
+        R2=temp(
+            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}_R2.fastq.gz"
+        ),
+        strunc=temp(
+            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.singleton.truncated.gz"
+        ),
+        disc=temp(
+            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.discarded.gz"
+        ),
         settings="{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.settings",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("adapterremoval", attempt, 4),
@@ -126,10 +138,18 @@ rule adapter_removal_pe:
         R1="{folder}/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_R1.fastq.gz",
         R2="{folder}/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_R2.fastq.gz",
     output:
-        R1="{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}_R1.fastq.gz",
-        R2="{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}_R2.fastq.gz",
-        singleton="{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.singleton.truncated.gz",
-        discarded="{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.discarded.gz",
+        R1=temp(
+            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}_R1.fastq.gz"
+        ),
+        R2=temp(
+            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}_R2.fastq.gz"
+        ),
+        singleton=temp(
+            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.singleton.truncated.gz"
+        ),
+        discarded=temp(
+            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.discarded.gz"
+        ),
         settings="{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.settings",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("adapterremoval", attempt, 4),
@@ -166,8 +186,12 @@ rule adapter_removal_se:
     input:
         "{folder}/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}.fastq.gz",
     output:
-        fastq="{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.fastq.gz",
-        discard="{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.discarded.gz",
+        fastq=temp(
+            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.fastq.gz"
+        ),
+        discard=temp(
+            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.discarded.gz"
+        ),
         settings="{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.settings",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("adapterremoval", attempt, 4),
@@ -221,7 +245,7 @@ rule mapping_bwa_aln_se:
         ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
         fastq=lambda wildcards: get_fastq_for_mapping(wildcards, run_adapter_removal),
     output:
-        "{folder}/01_fastq/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}.sai",
+        temp("{folder}/01_fastq/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}.sai"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
@@ -258,7 +282,9 @@ rule mapping_bwa_aln_pe:
         ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
         fastq=lambda wildcards: get_fastq_for_mapping(wildcards, run_adapter_removal),
     output:
-        "{folder}/01_fastq/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}_R{id_read}.sai",
+        temp(
+            "{folder}/01_fastq/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}_R{id_read}.sai"
+        ),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
@@ -455,7 +481,7 @@ rule samtools_sort:
     input:
         get_bam_for_sorting,
     output:
-        "{folder}/01_fastq/02_mapped/03_bam_sort/{SM}/{LB}/{ID}.{GENOME}.bam",
+        temp("{folder}/01_fastq/02_mapped/03_bam_sort/{SM}/{LB}/{ID}.{GENOME}.bam"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("sorting", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("sorting", attempt, 24),
@@ -486,8 +512,8 @@ if save_low_qual:
         input:
             "{folder}/01_fastq/02_mapped/03_bam_sort/{SM}/{LB}/{ID}.{GENOME}.bam",
         output:
-            mapped="{folder}/01_fastq/03_filtered/01_bam_filter/{SM}/{LB}/{ID}.{GENOME}.bam",
-            low_qual="{folder}/01_fastq/03_filtered/01_bam_filter_low_qual/{SM}/{LB}/{ID}.{GENOME}.bam",
+            mapped=temp("{folder}/01_fastq/03_filtered/01_bam_filter/{SM}/{LB}/{ID}.{GENOME}.bam"),
+            low_qual=temp("{folder}/01_fastq/03_filtered/01_bam_filter_low_qual/{SM}/{LB}/{ID}.{GENOME}.bam"),
         params:
             q=lambda wildcards: samples[wildcards.SM][wildcards.LB][wildcards.ID][
                 "MAPQ"
@@ -522,7 +548,7 @@ else:
         input:
             "{folder}/01_fastq/02_mapped/03_bam_sort/{SM}/{LB}/{ID}.{GENOME}.bam",
         output:
-            mapped="{folder}/01_fastq/03_filtered/01_bam_filter/{SM}/{LB}/{ID}.{GENOME}.bam",
+            mapped=temp("{folder}/01_fastq/03_filtered/01_bam_filter/{SM}/{LB}/{ID}.{GENOME}.bam"),
         params:
             q=lambda wildcards: samples[wildcards.SM][wildcards.LB][wildcards.ID][
                 "MAPQ"
@@ -545,5 +571,3 @@ else:
             """
             samtools view -b --threads {threads} -F 4 -q {params.q} {input} > {output.mapped} 2> {log}
             """
-
-
