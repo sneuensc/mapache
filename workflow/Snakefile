@@ -18,6 +18,7 @@ LOGGER = logging.getLogger("snakemake.logging")
 configfile: "config/config.yaml"
 
 
+include: "rules/utils.smk"
 include: "rules/common.smk"
 
 
@@ -430,7 +431,7 @@ flagstats = [
     for ID in samples[SM][LB]
     for file in [
         f"01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}",
-        #f"02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}",
+        # f"02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}",
         f"02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}",
         f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}",
     ]
@@ -445,7 +446,7 @@ samtools_stats = [
     for ID in samples[SM][LB]
     for file in [
         f"01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}",
-        #f"02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}",
+        # f"02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}",
         f"02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}",
         f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}",
     ]
@@ -517,7 +518,7 @@ stats_mapping_checkpoint = [
     lengths,
     idxstats,
     sex_files,
-    get_damage(run_damage),
+    get_damage_output(run_damage),
 ]
 
 
@@ -531,7 +532,7 @@ final_stats = [
 # -----------------------------------------------------------------------------#
 
 final_stat_figures = [
-    get_damage(run_damage),
+    get_damage_output(run_damage),
     expand(
         f"{RESULT_DIR}/04_stats/04_plots/{{plot_type}}.svg",
         plot_type=[

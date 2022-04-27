@@ -243,7 +243,7 @@ rule mapping_bwa_aln_se:
             ".pac",
         ),
         ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
-        fastq=lambda wildcards: get_fastq_for_mapping(wildcards, run_adapter_removal),
+        fastq=get_fastq_4_mapping,
     output:
         temp("{folder}/01_fastq/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}.sai"),
     resources:
@@ -280,7 +280,7 @@ rule mapping_bwa_aln_pe:
             ".pac",
         ),
         ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
-        fastq=lambda wildcards: get_fastq_for_mapping(wildcards, run_adapter_removal),
+        fastq=get_fastq_4_mapping,
     output:
         temp(
             "{folder}/01_fastq/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}_R{id_read}.sai"
@@ -319,7 +319,7 @@ rule mapping_bwa_samse:
             ".pac",
         ),
         ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
-        fastq=lambda wildcards: get_fastq_for_mapping(wildcards, run_adapter_removal),
+        fastq=get_fastq_4_mapping,
         sai="{folder}/01_fastq/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}.sai",
     output:
         temp("{folder}/01_fastq/02_mapped/02_bwa_samse/{SM}/{LB}/{ID}.{GENOME}.bam"),
@@ -361,7 +361,7 @@ rule mapping_bwa_sampe:
             ".pac",
         ),
         ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
-        fastq=lambda wildcards: get_fastq_for_mapping(wildcards, run_adapter_removal),
+        fastq=get_fastq_4_mapping,
         ## should get both pairs
         sai1="{folder}/01_fastq/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}_R1.sai",
         sai2="{folder}/01_fastq/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}_R2.sai",
@@ -406,7 +406,7 @@ rule mapping_bwa_mem:
             ".pac",
         ),
         ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
-        fastq=lambda wildcards: get_fastq_for_mapping(wildcards, run_adapter_removal),
+        fastq=get_fastq_4_mapping,
     output:
         temp("{folder}/01_fastq/02_mapped/02_bwa_mem/{SM}/{LB}/{ID}.{GENOME}.bam"),
     resources:
@@ -448,7 +448,7 @@ rule mapping_bowtie2:
             ".rev.2.bt2",
         ),
         ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
-        fastq=lambda wildcards: get_fastq_for_mapping(wildcards, run_adapter_removal),
+        fastq=get_fastq_4_mapping,
     output:
         temp("{folder}/01_fastq/02_mapped/02_bwa_bowtie2/{SM}/{LB}/{ID}.{GENOME}.bam"),
     resources:
@@ -479,7 +479,7 @@ rule samtools_sort:
     Sort bam file with samtools
     """
     input:
-        get_bam_for_sorting,
+        get_bam_4_sorting,
     output:
         temp("{folder}/01_fastq/02_mapped/03_bam_sort/{SM}/{LB}/{ID}.{GENOME}.bam"),
     resources:
@@ -512,8 +512,12 @@ if save_low_qual:
         input:
             "{folder}/01_fastq/02_mapped/03_bam_sort/{SM}/{LB}/{ID}.{GENOME}.bam",
         output:
-            mapped=temp("{folder}/01_fastq/03_filtered/01_bam_filter/{SM}/{LB}/{ID}.{GENOME}.bam"),
-            low_qual=temp("{folder}/01_fastq/03_filtered/01_bam_filter_low_qual/{SM}/{LB}/{ID}.{GENOME}.bam"),
+            mapped=temp(
+                "{folder}/01_fastq/03_filtered/01_bam_filter/{SM}/{LB}/{ID}.{GENOME}.bam"
+            ),
+            low_qual=temp(
+                "{folder}/01_fastq/03_filtered/01_bam_filter_low_qual/{SM}/{LB}/{ID}.{GENOME}.bam"
+            ),
         params:
             q=lambda wildcards: samples[wildcards.SM][wildcards.LB][wildcards.ID][
                 "MAPQ"
@@ -548,7 +552,9 @@ else:
         input:
             "{folder}/01_fastq/02_mapped/03_bam_sort/{SM}/{LB}/{ID}.{GENOME}.bam",
         output:
-            mapped=temp("{folder}/01_fastq/03_filtered/01_bam_filter/{SM}/{LB}/{ID}.{GENOME}.bam"),
+            mapped=temp(
+                "{folder}/01_fastq/03_filtered/01_bam_filter/{SM}/{LB}/{ID}.{GENOME}.bam"
+            ),
         params:
             q=lambda wildcards: samples[wildcards.SM][wildcards.LB][wildcards.ID][
                 "MAPQ"

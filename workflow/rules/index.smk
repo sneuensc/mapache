@@ -138,15 +138,15 @@ rule samtools_index_bam:
     Index bam file with samtools
     """
     input:
-        "{folder}.bam",
+        "{file}.bam",
     output:
-        "{folder}.bai",
+        "{file}.bai",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 24),
     threads: 1
     log:
-        "{folder}_samtools_index.log",
+        "{file}_samtools_index.log",
     conda:
         "../envs/samtools.yaml"
     envmodules:

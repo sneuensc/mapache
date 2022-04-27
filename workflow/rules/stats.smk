@@ -170,7 +170,7 @@ rule read_length:
 rule samtools_idxstats:
     input:
         bam=get_bam_file,
-        bai=get_bai_file,
+        bai=lambda wildcards: bam2bai(get_bam_file(wildcards)),
     output:
         "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_idxstats.txt",
     resources:
@@ -254,7 +254,8 @@ rule merge_stats_per_fastq:
         fastqc_orig="{folder}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_fastqc.zip",  # raw sequenced reads
         fastqc_trim="{folder}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}_fastqc.zip"
         if run_adapter_removal
-        else "{folder}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_fastqc.zip", ## as the orig file
+        else "{folder}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_fastqc.zip",
+        ## as the orig file
         # raw trimmed reads
         flagstat_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}_flagstat.txt",  # mapped and high-qual reads
         length_fastq_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}_length.txt",
@@ -273,7 +274,7 @@ rule merge_stats_per_fastq:
         "--- MERGE FASTQ LEVEL STATS"
     shell:
         """
-        
+
         Rscript {params.script} \
             --ID={wildcards.ID} \
             --LB={wildcards.LB} \
@@ -339,7 +340,9 @@ rule merge_stats_per_lb:
             --path_sex_unique={input.sex_unique} \
             $chrsSelected
         """
-#--path_flagstat_raw={input.flagstat_raw} \
+
+
+# --path_flagstat_raw={input.flagstat_raw} \
 
 
 rule merge_stats_per_sm:
@@ -511,22 +514,8 @@ rule bamdamage:
     """
     input:
         ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
-        bam=lambda wildcards: get_final_bam_library(
-            wildcards.folder,
-            wildcards.SM,
-            wildcards.LB,
-            wildcards.GENOME,
-            "01_bam",
-            "bam",
-        ),
-        bai=lambda wildcards: get_final_bam_library(
-            wildcards.folder,
-            wildcards.SM,
-            wildcards.LB,
-            wildcards.GENOME,
-            "01_bam",
-            "bai",
-        ),
+        bam=get_final_bam_LB,
+        bai=lambda wildcards: bam2bai(get_final_bam_LB(wildcards)),
     output:
         damage_pdf="{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.dam.pdf",
         length_pdf="{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.length.pdf",
