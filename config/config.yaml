@@ -67,8 +67,7 @@ indexing:
 
 ##########################################################################################
 ## FASTQ level
-fastqc:
-    time: 1
+
 ## subsampling (optional)
 subsampling:
     run: False
@@ -85,6 +84,7 @@ adapterremoval:
 
 # ## mapping (bwa_aln, bwa_mem, bowtie2)
 mapping:
+    mapper: 'bwa_mem'
     bwa_aln_params: '-l 1024'   
     bwa_samse_params: '-n 3'
     bwa_sampe_params: ''
@@ -93,7 +93,7 @@ mapping:
     threads: 4
     mem: 16
     time: 30
-    mapper: 'bwa_aln'
+
 
 
 ## samtools_sort
