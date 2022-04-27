@@ -342,9 +342,6 @@ rule merge_stats_per_lb:
         """
 
 
-# --path_flagstat_raw={input.flagstat_raw} \
-
-
 rule merge_stats_per_sm:
     input:
         lb_stats=lambda wildcards: expand(

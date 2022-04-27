@@ -273,36 +273,6 @@ run_compute_md = str2bool(
     recursive_get_and_test(["compute_md", "run"], ["True", "False"])
 )
 
-## --------------------------------------------------------------------------------------------------
-## get last bam file folder (depends on the choice of the user)
-FINAL_BAM_FOLDER_FASTQ = ""
-if run_filtering:
-    FINAL_BAM_FOLDER_FASTQ = f"{RESULT_DIR}/01_fastq/03_filtered/01_bam_filter"
-else:
-    FINAL_BAM_FOLDER_FASTQ = f"{RESULT_DIR}/01_fastq/02_mapped/03_bam_sort"
-
-
-FINAL_BAM_FOLDER_LIBRARY = ""
-if run_damage_rescale:
-    FINAL_BAM_FOLDER_LIBRARY = f"{RESULT_DIR}/02_library/02_rescaled/01_mapDamage"
-elif remove_duplicates == "markduplicates":
-    FINAL_BAM_FOLDER_LIBRARY = (
-        f"{RESULT_DIR}/02_library/01_duplicated/01_markduplicates"
-    )
-elif remove_duplicates == "dedup":
-    FINAL_BAM_FOLDER_LIBRARY = f"{RESULT_DIR}/02_library/01_duplicated/01_dedup"
-else:
-    FINAL_BAM_FOLDER_LIBRARY = f"{RESULT_DIR}/02_library/00_merged_fastq/01_bam"
-
-
-FINAL_BAM_FOLDER_SAMPLE = ""
-if run_compute_md:
-    FINAL_BAM_FOLDER_SAMPLE = f"{RESULT_DIR}/03_sample/02_md_flag/01_md_flag"
-elif run_realign:
-    FINAL_BAM_FOLDER_SAMPLE = f"{RESULT_DIR}/03_sample/01_realigned/01_realign"
-else:
-    FINAL_BAM_FOLDER_SAMPLE = f"{RESULT_DIR}/03_sample/00_merged_library/01_bam"
-
 
 ## --------------------------------------------------------------------------------------------------
 # print a summary of the workflow
@@ -387,8 +357,7 @@ report: "report/workflow.rst"
 localrules:
     all,
     dag,
-    mapping,
-    stats,  ## executed locally on a cluster
+    mapping,  ## executed locally on a cluster
 
 
 # -----------------------------------------------------------------------------#
@@ -669,17 +638,6 @@ rule mapping:
         stats_mapping_checkpoint,
     message:
         "--- RUNNING MAPPING"
-
-
-rule stats:
-    """
-    Computes all statistics
-    """
-    input:
-        final_stat_figures,
-        final_stats,
-    message:
-        "--- RUNNING STATS"
 
 
 onsuccess:

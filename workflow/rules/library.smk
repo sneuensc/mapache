@@ -11,7 +11,7 @@ rule merge_bam_fastq2library:
     input:
         get_bam_4_merge_bam_fastq2library,
     output:
-        "{folder}/02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}.bam",
+        temp("{folder}/02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}.bam"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24),
@@ -23,7 +23,7 @@ rule merge_bam_fastq2library:
     envmodules:
         module_samtools,
     message:
-        "--- SAMTOOLS MERGE {input}"
+        "--- SAMTOOLS MERGE {output}"
     script:
         "../scripts/merge_bam.py"
 
@@ -35,7 +35,9 @@ rule merge_bam_low_qual_fastq2library:
     input:
         get_bam_4_merge_bam_low_qual_fastq2library,
     output:
-        "{folder}/02_library/00_merged_fastq/01_bam_low_qual/{SM}/{LB}.{GENOME}.bam",
+        temp(
+            "{folder}/02_library/00_merged_fastq/01_bam_low_qual/{SM}/{LB}.{GENOME}.bam"
+        ),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24),
@@ -47,7 +49,7 @@ rule merge_bam_low_qual_fastq2library:
     envmodules:
         module_samtools,
     message:
-        "--- SAMTOOLS MERGE {input}"
+        "--- SAMTOOLS MERGE {output}"
     script:
         "../scripts/merge_bam.py"
 
@@ -83,7 +85,7 @@ rule markduplicates:
     envmodules:
         module_picard,
     message:
-        "--- MARKDUPLICATES {input}"
+        "--- MARKDUPLICATES {output.bam}"
     shell:
         """
         {params.PICARD} MarkDuplicates --INPUT {input} --OUTPUT {output.bam} --METRICS_FILE {output.stats} \
@@ -128,7 +130,7 @@ rule dedup:
     envmodules:
         module_dedup,
     message:
-        "--- DEDUP {input}"
+        "--- DEDUP {output.bam}"
     shell:
         """
         ## remove -m or --merged from $params (needed for SE or not collapsed PE reads)
@@ -201,7 +203,7 @@ rule mapDamage_rescale:
     conda:
         "../envs/mapdamage.yaml"
     message:
-        "--- MAPDAMAGE {input.bam}"
+        "--- MAPDAMAGE RESCALE {output.bam}"
     shell:
         """
         mapDamage -i {input.bam} -r {input.ref} -d $(dirname {input.deamination}) \

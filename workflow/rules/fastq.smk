@@ -17,7 +17,7 @@ rule get_fastq:
     input:
         get_fastq_of_ID,
     output:
-        "{folder}/00_reads/01_files_orig/{SM}/{LB}/{ID}.fastq.gz",
+        temp("{folder}/00_reads/01_files_orig/{SM}/{LB}/{ID}.fastq.gz"),
     threads: 1
     params:
         run=recursive_get(["subsampling", "run"], False),

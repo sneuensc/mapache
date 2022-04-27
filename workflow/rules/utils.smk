@@ -364,4 +364,5 @@ def get_gatk_bin():
 
 
 def symlink_rev(input, output):
-    shell("ln -srf {input} {output}")
+    shell("cp {input} {output}")
+# shell("ln -srf {input} {output}")
