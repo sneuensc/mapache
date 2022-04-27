@@ -1,346 +1,261 @@
-import pandas as pd
-import numpy as np
-import itertools
-import pathlib
-import re
-
-
 ##########################################################################################
-## all functions for main snakemake file
+## FASTQ LEVEL
 
-## get recursively the argument of the given keys in a nested dict
-def recursive_get(keys, def_value, my_dict=config):
-    key = keys[0]
-    if len(keys) == 1:
-        value = my_dict.get(key, def_value)
+## get the path to the fastq file given SM, LB and ID
+def get_fastq_of_ID(wc):
+    # print(f"get_fastq_of_ID: {wc}")
+    if "_R1" == wc.ID[-3:]:
+        filename = samples[wc.SM][wc.LB][wc.ID[:-3]]["Data1"]
+    elif "_R2" == wc.ID[-3:]:
+        filename = samples[wc.SM][wc.LB][wc.ID[:-3]]["Data2"]
+    elif paired_end:
+        # elif paired_end != 0:  ## SE library in a paired-end sample file
+        filename = samples[wc.SM][wc.LB][wc.ID]["Data1"]
     else:
-        value = recursive_get(keys[1:], def_value, my_dict=my_dict.get(key, {}))
-    return value
+        filename = samples[wc.SM][wc.LB][wc.ID]["Data"]
+    return filename
 
 
-## same as above, but the argument is tested if it is present in the 'available_args'
-## first argument of 'available_args' is the default
-def recursive_get_and_test(key, available_args, my_dict=config):
-    arg = str(recursive_get(key, available_args[0], my_dict))
-    if arg not in available_args:
-        LOGGER.error(
-            f"ERROR: The parameter '{':'.join(key)}' has no valid argument (currently '{arg}'; available {available_args})!"
-        )
-        sys.exit(1)
-    return arg
+## get the fastq file(s) used for mapping
+def get_fastq_4_mapping(wc, rem_adapt=""):
+    # print(f"get_fastq_4_mapping: {wc}")
+    if rem_adapt == "":  ## if not set take the global setting
+        rem_adapt = run_adapter_removal
 
-
-## update the arguemnt in a nested dict (and create leaves if needed)
-def update_value(keys, value, my_dict=config):
-    key = keys[0]
-    if len(keys) == 1:
-        new_dict = {}
-        new_dict[key] = value
-        return new_dict
-    else:
-        if key in my_dict:
-            new_dict = update_value(keys[1:], value, my_dict[key])
-            my_dict[key].update(new_dict)
-            return my_dict
+    if rem_adapt:
+        folder = f"{wc.folder}/01_fastq/01_trimmed/01_adapter_removal/{wc.SM}/{wc.LB}"
+        if not paired_end:
+            filename = [f"{folder}/{wc.ID}.fastq.gz"]
+        elif collapse:
+            filename = rules.adapter_removal_collapse.output.R
         else:
-            my_dict[key] = {}
-            new_dict = update_value(keys[1:], value, my_dict[key])
-            my_dict[key].update(new_dict)
-            return my_dict
+            # if str(samples[wc.SM][wc.LB][wc.ID]["Data2"]) == "nan":
+            data2 = recursive_get(
+                [wc.SM, wc.LB, wc.ID, "Data2"],
+                "nan",
+                my_dict=samples,
+            )
+            if data2 != data2:
+                # single-end files
+                filename = [f"{folder}/{wc.ID}.fastq.gz"]
+            else:
+                # paired-end files, not collapsing
+                filename = [
+                    f"{folder}/{wc.ID}_R1.fastq.gz",
+                    f"{folder}/{wc.ID}_R2.fastq.gz",
+                ]
+    else:
+        folder = f"{wc.folder}/01_fastq/00_reads/01_files_orig/{wc.SM}/{wc.LB}"
+        if not paired_end:
+            filename = [f"{folder}/{wc.ID}.fastq.gz"]
+        else:
+            data2 = recursive_get(
+                [wc.SM, wc.LB, wc.ID, "Data2"],
+                "nan",
+                my_dict=samples,
+            )
+            # checking a single-end file
+            if data2 != data2:
+                filename = [f"{folder}/{wc.ID}.fastq.gz"]
+            else:
+                filename = [
+                    f"{folder}/{wc.ID}_R1.fastq.gz",
+                    f"{folder}/{wc.ID}_R2.fastq.gz",
+                ]
+
+    return filename
 
 
-def get_sex_threshold_plotting():
+## fastqc may be run on the original or trimmed fastq files
+def inputs_fastqc(wc):
+    if "trim" in wc.folder:
+        return get_fastq_4_mapping(wc, True)
+    else:
+        return get_fastq_4_mapping(wc, False)
 
-    thresholds = {
-        GENOME: recursive_get(
-            keys=["genome", GENOME, "sex_inference", "params", "thresholds"],
-            def_value='list( "XX"=c(0.8, 1), "XY"=c(0, 0.6), "consistent with XX but not XY"=c(0.6, 1), "consistent with XY but not XX"=c(0, 0.8) )',
+
+## get the bam file used for sorting
+def get_bam_4_sorting(wc):
+    # print(f"get_bam_for_sorting: {wc}")
+    if mapper == "bwa_aln":
+        if (
+            not collapse
+            # and str(samples[wc.SM][wc.LB][wc.ID]["Data2"]) != "nan"
+            and str(
+                recursive_get(
+                    [wc.SM, wc.LB, wc.ID, "Data2"],
+                    "nan",
+                    my_dict=samples,
+                )
+            )
+            != "nan"
+        ):
+            folder = "02_bwa_sampe"
+        else:
+            folder = "02_bwa_samse"
+    elif mapper == "bwa_mem":
+        folder = "02_bwa_mem"
+    elif mapper == "bowtie2":
+        folder = "02_bowtie2"
+    else:
+        LOGGER.error(
+            f"ERROR: The parameter mapper is not correctly specified: {mapper} is unknown!"
         )
-        for GENOME in genome
-    }
+        os._exit(1)
+    return f"{wc.folder}/01_fastq/02_mapped/{folder}/{wc.SM}/{wc.LB}/{wc.ID}.{wc.GENOME}.bam"
 
-    sex_thresholds = "list({pair})".format(
-        pair=",     ".join([f'"{GENOME}"={thresholds[GENOME]}' for GENOME in genome])
-    )
-    sex_thresholds = sex_thresholds.replace("=", "?")
-    return sex_thresholds
+
+## get the final bam file of at the FASTQ level
+def get_final_bam_FASTQ(wc):
+    if run_filtering:
+        file = f"{wc.folder}/01_fastq/03_filtered/01_bam_filter/{wc.SM}/{wc.LB}/{wc.ID}.{wc.GENOME}.bam"
+    else:
+        file = f"{folder}/01_fastq/02_mapped/03_bam_sort/{wc.SM}/{wc.LB}/{wc.ID}.{wc.GENOME}.bam"
+    # print(f"get_bam_4_final_fastq: {file}")
+    return file
+
+
+def get_final_bam_low_qual_FASTQ(wc):
+    return f"{wc.folder}/01_fastq/03_filtered/01_bam_filter_low_qual/{wc.SM}/{wc.LB}/{wc.ID}.{wc.GENOME}.bam"
 
 
 ##########################################################################################
-## functions to evaluate python code if necessary
+##########################################################################################
+## LIBRARY LEVEL
 
-## eval single element if needed
-def eval_if_possible(x):
-    try:
-        return eval(x)
-    except:
-        return x
+## get the bam file(s) to be merged
+def get_bam_4_merge_bam_fastq2library(wc):
+    return [
+        get_final_bam_FASTQ(Wildcards(wc, {"ID": ID})) for ID in samples[wc.SM][wc.LB]
+    ]
 
 
-## eval single element if needed and return it as a list
-def eval_to_list(x):
-    a = eval_if_possible(x)
-    if isinstance(a, list):
-        return a
+def get_bam_4_merge_bam_low_qual_fastq2library(wc):
+    return [
+        get_final_bam_low_qual_FASTQ(Wildcards(wc, {"ID": ID}))
+        for ID in samples[wc.SM][wc.LB]
+    ]
+
+
+## get the (merged) bam file
+def get_merged_bam_LB(wc):
+    bam = get_bam_4_merge_bam_fastq2library(wc)
+    if (
+        len(bam) > 1
+    ):  ## library consits of more than one fastq file: return 00_merged_fastq
+        return f"{wc.folder}/02_library/00_merged_fastq/01_bam/{wc.SM}/{wc.LB}.{wc.GENOME}.bam"
+    else:  ## library consits of one fastq file: return return the location of the final library bam file
+        return bam[0]
+
+
+def get_merged_bam_low_qual_LB(wc):
+    bam = get_bam_4_merge_bam_low_qual_fastq2library(wc)
+    if (
+        len(bam) > 1
+    ):  ## library consits of more than one fastq file: return 00_merged_fastq
+        return f"{wc.folder}/02_library/00_merged_fastq/01_bam_low_qual/{wc.SM}/{wc.LB}.{wc.GENOME}.bam"
+    else:  ## library consits of one fastq file: return return the location of the final library bam file
+        return bam[0]
+
+
+## get the bam file used to remove duplicates
+def get_bam_4_markduplicates(wc):
+    return get_merged_bam_LB(wc)
+
+
+## get the bam file used to compte the damage
+def get_bam_4_damage(wc):
+    if remove_duplicates == "markduplicates":
+        bam = f"{wc.folder}/02_library/01_duplicated/01_markduplicates/{wc.SM}/{wc.LB}.{wc.GENOME}.bam"
+    elif remove_duplicates == "dedup":
+        bam = f"{wc.folder}/02_library/01_duplicated/01_dedup/{wc.SM}/{wc.LB}.{wc.GENOME}.bam"
     else:
-        return [a]
+        bam = get_bam_4_markduplicates(wc)
+    return bam
 
 
-## eval single element if needed and return it as a comma separated string
-def eval_to_csv(x):
-    return ",".join(list(map(str, eval_to_list(x))))
-
-
-## transform a list to a comma separated string
-def list_to_csv(x):
-    if isinstance(x, list):
-        return ",".join(x)
+## get the final bam files at the library level
+def get_final_bam_LB(wc):
+    if run_damage_rescale:
+        file = f"{wc.folder}/02_library/02_rescaled/01_mapDamage/{wc.SM}/{wc.LB}.{wc.GENOME}.bam"
     else:
-        return x
+        file = get_bam_4_damage(wc)
+    return file
 
 
-## replace any element of the list
-def eval_list(x):
-    if isinstance(x, list):
-        return list(map(eval_if_possible, x))
-    else:
-        return [eval_if_possible(x)]
-
-
-## replace any element of the list
-def eval_list_to_csv(x):
-    return ",".join(eval_list(x))
+def get_final_bam_low_qual_LB(wc):
+    return get_merged_bam_low_qual_LB(wc)
 
 
 ##########################################################################################
-## function to test the chromosome names
-def check_chromosome_names(GENOME, Logging=True):
-    if Logging:
-        LOGGER.info(f"  - Genome '{GENOME}':")
+##########################################################################################
+##########################################################################################
+## SAMPLE LEVEL
 
-    ## test if fasta is valid
-    fasta = recursive_get(["genome", GENOME, "fasta"], "")
-    if "fasta" == "":
-        LOGGER.error(f"ERROR: Reference genome '{GENOME}' has no fasta file defined!")
-    elif not os.path.isfile(fasta):
-        LOGGER.error(
-            f"ERROR: Reference genome '{GENOME}': Fasta file '{fasta}' does not exist!"
-        )
+## get the bam file(s) to be merged
+def get_bam_4_merge_bam_library2sample(wc):
+    return [get_final_bam_LB(Wildcards(wc, {"LB": LB})) for LB in samples[wc.SM]]
 
-    ## get all chromsome names from the reference GENOME
-    if pathlib.Path(f"{fasta}.fai").exists():
-        allChr = list(
-            map(str, pd.read_csv(f"{fasta}.fai", header=None, sep="\t")[0].tolist())
-        )
-    elif pathlib.Path(
-        f"{RESULT_DIR}/00_reference/{GENOME}/{GENOME}.fasta.fai"
-    ).exists():
-        fasta = f"{RESULT_DIR}/00_reference/{GENOME}/{GENOME}.fasta"
-        allChr = list(
-            map(str, pd.read_csv(f"{fasta}.fai", header=None, sep="\t")[0].tolist())
-        )
-    elif pathlib.Path(fasta).exists():
-        cmd = f"grep '^>' {fasta} | cut -c2- | awk '{{print $1}}'"
-        allChr = list(
-            map(str, subprocess.check_output(cmd, shell=True, text=True).split())
-        )
+
+def get_bam_4_merge_bam_low_qual_library2sample(wc):
+    return [
+        get_final_bam_low_qual_LB(Wildcards(wc, {"LB": LB})) for LB in samples[wc.SM]
+    ]
+
+
+## get the (merged) bam file
+def get_merged_bam_SM(wc):
+    bam = get_bam_4_merge_bam_library2sample(wc)
+    if (
+        len(bam) > 1
+    ):  ## sample consits of more than one library return 00_merged_library
+        return f"{wc.folder}/03_sample/00_merged_library/01_bam/{wc.SM}.{wc.GENOME}.bam"
+    else:  ## library consits of one fastq file: return return the location of the final library bam file
+        return bam[0]
+
+
+def get_merged_bam_low_qual_SM(wc):
+    bam = get_bam_4_merge_bam_low_qual_library2sample(wc)
+    if (
+        len(bam) > 1
+    ):  ## sample consits of more than one library return 00_merged_library
+        return f"{wc.folder}/03_sample/00_merged_library/01_bam_low_qual/{wc.SM}.{wc.GENOME}.bam"
+    else:  ## library consits of one fastq file: return return the location of the final library bam file
+        return bam[0]
+
+
+## get the bam file used to realign indels
+def get_bam_4_realign(wc):
+    return get_merged_bam_SM(wc)
+
+
+## get the bam file used to recompute the md flag
+def get_bam_4_samtools_calmd(wc):
+    if run_realign:
+        return f"{wc.folder}/03_sample/01_realigned/01_realign/{wc.SM}.{wc.GENOME}.bam"
     else:
-        LOGGER.error(f"ERROR: Reference genome 'genome:{GENOME}:fasta' does not exist!")
-        os._exit(1)
-
-    ## try to recognise if it is the human hg19 or GRCh38 genome. If so apply default chromosome names
-    hg19 = map(str, list(range(1, 23)) + ["X", "Y", "MT"])
-    GRCh38 = [f"chr{x}" for x in list(range(1, 23)) + ["X", "Y", "M"]]
-    if sorted(allChr) == sorted(hg19):
-        detectedChromosomes = ["X", "Y", "MT"]
-        detectedAutosomes = list(set(allChr) - set(detectedChromosomes))
-        if Logging:
-            LOGGER.info(
-                f"    - Detected genome as 'hg19': Appliyng default chromosome names for sex and mt chromsomes: {detectedChromosomes}."
-            )
-
-        config = update_value(
-            ["genome", GENOME, "sex_inference", "params", "sex_chr"],
-            detectedChromosomes[0],
-        )
-        config = update_value(
-            ["genome", GENOME, "sex_inference", "params", "autosomes"],
-            detectedAutosomes,
-        )
-    elif sorted(allChr) == sorted(GRCh38):
-        detectedChromosomes = ["chrX", "chrY", "chrM"]
-        detectedAutosomes = list(set(allChr) - set(detectedChromosomes))
-        if Logging:
-            LOGGER.info(
-                f"    - Detected genome as 'GRCh38': Appliyng default chromosome names for sex and mt chromsomes {detectedChromosomes}."
-            )
-
-        config = update_value(
-            ["genome", GENOME, "sex_inference", "params", "sex_chr"],
-            detectedChromosomes[0],
-        )
-        config = update_value(
-            ["genome", GENOME, "sex_inference", "params", "autosomes"],
-            detectedAutosomes,
-        )
-
-    # check if the chromosomes specified in sex determination exist
-    # sex chromosome
-    if recursive_get(["genome", GENOME, "sex_inference", "run"], False):
-        if Logging:
-            LOGGER.info(f"    - Inferring sex")
-        ## X chromosome specified for the sex inferenceß
-        sex_chr = recursive_get(
-            ["genome", GENOME, "sex_inference", "params", "sex_chr"], []
-        )
-        if sex_chr not in allChr:
-            LOGGER.error(
-                f"ERROR: Sex chromosome specified in 'config[genome][{GENOME}][sex_inference][params][sex_chr]' ({sex_chr}) does not exist in FASTA reference genome."
-            )
-            os._exit(1)
-
-        # autosomes specified for sex inference
-        autosomes = list(
-            map(
-                str,
-                eval_to_list(
-                    recursive_get(
-                        ["genome", GENOME, "sex_inference", "params", "autosomes"],
-                        [],
-                    )
-                ),
-            )
-        )
-        if list(set(autosomes) - set(allChr)):
-            LOGGER.error(
-                f"ERROR: In 'config[genome][{GENOME}][sex_inference][params][autosomes]', the following chromsome names are not recognized: {list(set(autosomes) - set(allChr))}!"
-            )
-            os._exit(1)
-
-        ## for the autosomes transfer python to R format
-        config = update_value(
-            ["genome", GENOME, "sex_inference", "params", "autosomes"],
-            'c("' + '","'.join(autosomes) + '")',
-        )
-
-    # check if chromosomes for which DoC was requested exist
-    depth_chromosomes = recursive_get(["genome", GENOME, "depth_chromosomes"], "")
-    chromosomes = depth_chromosomes.split(",") if len(depth_chromosomes) else []
-    if list(set(chromosomes) - set(allChr)):
-        LOGGER.error(
-            f"In 'config[genome][{GENOME}][depth_chromosomes]', the following chromsome names are not recognized: {list(set(chromosomes) - set(allChr))}!"
-        )
-        os._exit(1)
-    if Logging and depth_chromosomes:
-        LOGGER.info(f"    - Computing depth of chromosomes {depth_chromosomes}.")
+        return get_bam_4_realign(wc)
 
 
-## convert string to boolean
-def str2bool(v):
-    return str(v).lower() in ("yes", "true", "t", "1")
+## get the final bam files at the sample level
+def get_bam_4_final_bam(wc):
+    if run_compute_md:
+        return f"{wc.folder}/03_sample/02_md_flag/01_md_flag/{wc.SM}.{wc.GENOME}.bam"
+    else:
+        return get_bam_4_samtools_calmd(wc)
 
 
-## get incremental memory allocation when jobs fail
-## 'startStr' is the first memory allocation in GB
-## input is in GB; output in MB; default is 2GB, but can be changed by a rule
-
-## get incremental memory allocation when jobs fail
-## 'start' is the first memory allocation in GB (default 4GB)
-## input is in GB; output is in MB;
-## global variable memory_increment_ratio defines by how much (ratio) the memory is increased if not defined specifically
-def get_memory_alloc(module, attempt, default=2):
-    moduleList = module
-    if type(moduleList) is not list:
-        moduleList = [module]
-    mem_start = int(recursive_get(moduleList + ["mem"], default))
-    mem_incre = int(
-        recursive_get(
-            moduleList + ["mem_increment"], memory_increment_ratio * mem_start
-        )
-    )
-    return int(1024 * ((attempt - 1) * mem_incre + mem_start))
+def get_bam_4_final_bam_low_qual(wc):
+    return get_merged_bam_low_qual_SM(wc)
 
 
-## in this second verion the 'mem' is added to the word of the last element
-def get_memory_alloc2(module, attempt, default=2):
-    moduleList = module
-    if type(moduleList) is not list:
-        moduleList = [moduleList]
-    mem_start = int(recursive_get(moduleList[:-1] + [moduleList[-1] + "_mem"], default))
-    mem_incre = int(
-        recursive_get(
-            moduleList[:-1] + [moduleList[-1] + "_mem_increment"],
-            memory_increment_ratio * mem_start,
-        )
-    )
-    return int(1024 * ((attempt - 1) * mem_incre + mem_start))
+##########################################################################################
+##########################################################################################
+##########################################################################################
+## STATS
 
-
-def convert_time(seconds):
-    day = seconds // (24 * 3600)
-    seconds = seconds % (24 * 3600)
-    hour = seconds // 3600
-    seconds %= 3600
-    minutes = seconds // 60
-    seconds %= 60
-    return "%d-%02d:%02d:%02d" % (day, hour, minutes, seconds)
-
-
-## get incremental time allocation when jobs fail
-## 'start' is the first time allocation in hours (default 12h)
-## input is in hours; output is in minutes;
-## global variable runtime_increment_ratio defines by how much (ratio) the time is increased if not defined specifically
-def get_runtime_alloc(module, attempt, default=12):
-    moduleList = module
-    if type(moduleList) is not list:
-        moduleList = [module]
-    time_start = int(recursive_get(moduleList + ["time"], default))
-    time_incre = int(
-        recursive_get(
-            moduleList + ["time_increment"], runtime_increment_ratio * time_start
-        )
-    )
-    return int(60 * ((attempt - 1) * time_incre + time_start))
-
-
-## in this second verion the 'time' is added to the word of the last element
-def get_runtime_alloc2(module, attempt, default=12):
-    moduleList = module
-    if type(moduleList) is not list:
-        moduleList = [module]
-    time_start = int(
-        recursive_get(moduleList[:-1] + [moduleList[-1] + "_time"], default)
-    )
-    time_incre = int(
-        recursive_get(
-            moduleList[:-1] + [moduleList[-1] + "_time_increment"],
-            runtime_increment_ratio * time_start,
-        )
-    )
-    return int(60 * ((attempt - 1) * time_incre + time_start))
-
-
-# return convert_time(60*60 * ((attempt-1) * time_incre + time_start))
-
-
-## get the number of threads of the given parameter
-def get_threads(module, default=1):
-    moduleList = module
-    if type(moduleList) is not list:
-        moduleList = [module]
-    return int(recursive_get(moduleList + ["threads"], default))
-
-
-## in this second verion the 'threads' is added to the word of the last element
-def get_threads2(module, default=1):
-    moduleList = module
-    if type(moduleList) is not list:
-        moduleList = [module]
-    return int(recursive_get(moduleList[:-1] + [moduleList[-1] + "_threads"], default))
-
-
-## define how to quantify the deamination pattern
-def get_damage(run_damage):
+## get all files generated by the deamintion inference
+def get_damage_output(run_damage):
     if run_damage == "bamdamage":
         files = [
             f"{RESULT_DIR}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.{type}.{ext}"
@@ -362,248 +277,80 @@ def get_damage(run_damage):
     return files
 
 
-##########################################################################################
-## check if java is called by a .jar file or by a wrapper
-def get_picard_bin():
-    bin = recursive_get(["software", "picard_jar"], "picard.jar")
-    if bin[-4:] == ".jar":
-        bin = "java -XX:ParallelGCThreads={threads} -XX:+UseParallelGC -XX:-UsePerfData \
-            -Xms{resources.memory}m -Xmx{resources.memory}m -jar bin"
-    return bin
-
-
-def get_gatk_bin():
-    bin = recursive_get(["software", "gatk3_jar"], "GenomeAnalysisTK.jar")
-    if bin[-4:] == ".jar":
-        bin = "java -XX:ParallelGCThreads={threads} -XX:+UseParallelGC -XX:-UsePerfData \
-            -Xms{resources.memory}m -Xmx{resources.memory}m -jar bin"
-    return bin
-
-
-##########################################################################################
-## FASTQ LEVEL
-
-
-def get_fastq_of_ID(wildcards):
-    if "_R1" == wildcards.ID[-3:]:
-        filename = samples[wildcards.SM][wildcards.LB][wildcards.ID[:-3]]["Data1"]
-    elif "_R2" == wildcards.ID[-3:]:
-        filename = samples[wildcards.SM][wildcards.LB][wildcards.ID[:-3]]["Data2"]
-    elif paired_end:
-        # elif paired_end != 0:  ## SE library in a paired-end sample file
-        filename = samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data1"]
-    else:
-        filename = samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data"]
-    return filename
-
-
-def get_fastq_for_mapping(wildcards, run_adapter_removal):
-    if run_adapter_removal:
-        folder = f"{wildcards.folder}/01_fastq/01_trimmed/01_adapter_removal/{wildcards.SM}/{wildcards.LB}"
-        if not paired_end:
-            filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
-        elif collapse:
-            filename = rules.adapter_removal_collapse.output.R
-        else:
-            # if str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) == "nan":
-            data2 = recursive_get(
-                [wildcards.SM, wildcards.LB, wildcards.ID, "Data2"],
-                "nan",
-                my_dict=samples,
-            )
-            if data2 != data2:
-                # single-end files
-                filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
-            else:
-                # paired-end files, not collapsing
-                filename = [
-                    f"{folder}/{wildcards.ID}_R1.fastq.gz",
-                    f"{folder}/{wildcards.ID}_R2.fastq.gz",
-                ]
-    else:
-        folder = f"{wildcards.folder}/01_fastq/00_reads/01_files_orig/{wildcards.SM}/{wildcards.LB}"
-        if not paired_end:
-            filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
-        else:
-            data2 = recursive_get(
-                [wildcards.SM, wildcards.LB, wildcards.ID, "Data2"],
-                "nan",
-                my_dict=samples,
-            )
-            # checking a single-end file
-            if data2 != data2:
-                filename = [f"{folder}/{wildcards.ID}.fastq.gz"]
-            else:
-                filename = [
-                    f"{folder}/{wildcards.ID}_R1.fastq.gz",
-                    f"{folder}/{wildcards.ID}_R2.fastq.gz",
-                ]
-
-    return filename
-
-
-def inputs_fastqc(wildcards):
-    if "trim" in wildcards.folder:
-        return get_fastq_for_mapping(wildcards, True)
-    else:
-        return get_fastq_for_mapping(wildcards, False)
-
-
-def get_bam_for_sorting(wildcards):
-    if mapper == "bwa_aln":
-        if (
-            not collapse
-            # and str(samples[wildcards.SM][wildcards.LB][wildcards.ID]["Data2"]) != "nan"
-            and str(
-                recursive_get(
-                    [wildcards.SM, wildcards.LB, wildcards.ID, "Data2"],
-                    "nan",
-                    my_dict=samples,
-                )
-            )
-            != "nan"
-        ):
-            folder = "02_bwa_sampe"
-        else:
-            folder = "02_bwa_samse"
-    elif mapper == "bwa_mem":
-        folder = "02_bwa_mem"
-    elif mapper == "bowtie2":
-        folder = "02_bowtie2"
+## get all individual stat table files to concatenate
+def path_stats_by_level(wc):
+    if wc.level == "FASTQ":
+        paths = [
+            f"{wc.folder}/04_stats/02_separate_tables/{wc.GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv"
+            for SM in samples
+            for LB in samples[SM]
+            for ID in samples[SM][LB]
+        ]
+    elif wc.level == "LB":
+        paths = [
+            f"{wc.folder}/04_stats/02_separate_tables/{wc.GENOME}/{SM}/{LB}/library_stats.csv"
+            for SM in samples
+            for LB in samples[SM]
+        ]
+    elif wc.level == "SM":
+        paths = [
+            f"{wc.folder}/04_stats/02_separate_tables/{wc.GENOME}/{SM}/sample_stats.csv"
+            for SM in samples
+        ]
     else:
         LOGGER.error(
-            f"ERROR: The parameter mapper is not correctly specified: {mapper} is unknown!"
+            f"ERROR: def path_stats_by_level({wc.level}): should never happen!"
         )
         os._exit(1)
-    return f"{wildcards.folder}/01_fastq/02_mapped/{folder}/{wildcards.SM}/{wildcards.LB}/{wildcards.ID}.{wildcards.GENOME}.bam"
+    return paths
 
 
-## get the final bam (fastq level) file
-def get_final_bam_fastq(folder, SM, LB, ID, GENOME, type="01_bam", ext="bam"):
-    if type == "01_bam":
-        ffolder = FINAL_BAM_FOLDER_FASTQ
-    else:  ## 01_bam_low_qual
-        ffolder = f"{folder}/01_fastq/03_filtered/01_bam_filter_low_qual"
-    return f"{ffolder}/{SM}/{LB}/{ID}.{GENOME}.{ext}"
-
-
-##########################################################################################
-##########################################################################################
-## LIBRARY LEVEL
-
-## get the final bam (library level) file
-def get_final_bam_library(folder, SM, LB, GENOME, type="01_bam", ext="bam"):
-    if type == "01_bam":
-        ffolder = FINAL_BAM_FOLDER_LIBRARY
-    else:  ## 01_bam_low_qual
-        ffolder = f"{folder}/02_library/00_merged_fastq/01_bam_low_qual"
-    return f"{ffolder}/{SM}/{LB}.{GENOME}.{ext}"
-
-
-
-
-
-##########################################################################################
 ## get the corresponding bam file (generic, across all levels):
 ##  - if final bam file: get the corresponding final bam file at the different levels
 ##  - otherwise retake the path
-def get_bam_file(wildcards):
-    paths = list(pathlib.Path(wildcards.file).parts)
+def get_bam_file(wc):
+    paths = list(pathlib.Path(wc.file).parts)
     if paths[1] == "04_final_fastq":  ## fastq
-        return get_final_bam_fastq(
-            wildcards.folder, paths[3], paths[4], paths[5], wildcards.GENOME
+        file = get_final_bam_FASTQ(
+            Wildcards(
+                fromdict={
+                    "folder": wc.folder,
+                    "SM": paths[3],
+                    "LB": paths[4],
+                    "ID": paths[5],
+                    "GENOME": wc.GENOME,
+                }
+            )
         )
     elif paths[1] == "03_final_library":  ## library
-        return get_final_bam_library(
-            wildcards.folder, paths[3], paths[4], wildcards.GENOME
+        file = get_final_bam_LB(
+            Wildcards(
+                fromdict={
+                    "folder": wc.folder,
+                    "SM": paths[3],
+                    "LB": paths[4],
+                    "GENOME": wc.GENOME,
+                }
+            )
         )
-    else:  ## the path is the right one
-        return f"{wildcards.folder}/{wildcards.file}.{wildcards.GENOME}.bam"
+    else:  ## the path is the right one (symlink)
+        file = f"{wc.folder}/{wc.file}.{wc.GENOME}.bam"
+    # print(f"get_bam_file: {file}")
+    return file
 
 
-## get the corresponding bai file:
-def get_bai_file(wildcards):
-    bam = get_bam_file(wildcards)
-    return f"{bam[:len(bam) - 4]}.bai"
-
-
-##########################################################################################
-
-
-##########################################################################################
-## SAMPLE LEVEL
-
-
-def get_final_bam(wildcards):
-    if run_compute_md:
-        bam = f"{wildcards.folder}/03_sample/02_md_flag/01_md_flag/{wildcards.SM}.{wildcards.GENOME}.bam"
-    elif run_realign:
-        bam = f"{wildcards.folder}/03_sample/01_realigned/01_realign/{wildcards.SM}.{wildcards.GENOME}.bam"
-    else:
-        bam = f"{wildcards.folder}/03_sample/00_merged_library/01_bam/{wildcards.SM}.{wildcards.GENOME}.bam"
-    return bam
-
-
-def get_md_flag_bam(wildcards):
-    if run_realign:
-        bam = f"{wildcards.folder}/03_sample/01_realigned/01_realign/{wildcards.SM}.{wildcards.GENOME}.bam"
-    else:
-        bam = f"{wildcards.folder}/03_sample/00_merged_library/01_bam/{wildcards.SM}.{wildcards.GENOME}.bam"
-    return bam
-
-
-def symlink_rev(input, output):
-    shell("ln -srf {input} {output}")
-
-
-def get_sex_file(wildcards, level):
+## sex may be infered at teh sample or/and library level
+def get_sex_file(wc, level):
     if level == "SM":
-        folder = f"{wildcards.folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{wildcards.SM}.{wildcards.GENOME}"
+        folder = f"{wc.folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{wc.SM}.{wc.GENOME}"
     else:
-        folder = f"{wildcards.folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{wildcards.SM}/{wildcards.LB}.{wildcards.GENOME}"
+        folder = f"{wc.folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{wc.SM}/{wc.LB}.{wc.GENOME}"
 
     if str2bool(
         recursive_get_and_test(
-            ["genome", wildcards.GENOME, "sex_inference", "run"], ["False", "True"]
+            ["genome", wc.GENOME, "sex_inference", "run"], ["False", "True"]
         )
     ):
         return f"{folder}_sex.txt"
     else:
         return f"{folder}_nosex.txt"
-
-
-##########################################################################################
-##########################################################################################
-
-##########################################################################################
-## all functions for the stats
-
-
-def path_stats_by_level(wildcards):
-    if wildcards.level == "FASTQ":
-        paths = [
-            f"{wildcards.folder}/04_stats/02_separate_tables/{wildcards.GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv"
-            # for GENOME in genome
-            for SM in samples
-            for LB in samples[SM]
-            for ID in samples[SM][LB]
-        ]
-    elif wildcards.level == "LB":
-        paths = [
-            f"{wildcards.folder}/04_stats/02_separate_tables/{wildcards.GENOME}/{SM}/{LB}/library_stats.csv"
-            # for GENOME in genome
-            for SM in samples
-            for LB in samples[SM]
-        ]
-    elif wildcards.level == "SM":
-        paths = [
-            f"{wildcards.folder}/04_stats/02_separate_tables/{wildcards.GENOME}/{SM}/sample_stats.csv"
-            # for GENOME in genome
-            for SM in samples
-        ]
-    else:
-        LOGGER.error(
-            f"ERROR: def path_stats_by_level({wildcards.level}): should never happen!"
-        )
-        os._exit(1)
-    return paths
