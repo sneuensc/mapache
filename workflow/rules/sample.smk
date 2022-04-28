@@ -142,10 +142,10 @@ rule get_final_bam_low_qual:
     input:
         get_bam_4_final_bam_low_qual,
     output:
-        "{folder}/03_final_sample/01_bam_low_qual/{SM}.{GENOME}.bam",
+        "{folder}/03_sample/03_final_sample/01_bam_low_qual/{SM}.{GENOME}.bam",
     threads: 1
     log:
-        "{folder}/03_final_sample/01_bam_low_qual/{SM}.{GENOME}.bam.log",
+        "{folder}/03_sample/03_final_sample/01_bam_low_qual/{SM}.{GENOME}.bam.log",
     message:
         "--- SIMLINKK FINAL LOW_QUAL BAM {output}"
     run:

@@ -215,6 +215,7 @@ def get_merged_bam_SM(wc):
 
 
 def get_merged_bam_low_qual_SM(wc):
+    # print(f"get_merged_bam_low_qual_SM: {wc}")
     bam = get_bam_4_merge_bam_low_qual_library2sample(wc)
     if (
         len(bam) > 1
