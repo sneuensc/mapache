@@ -2,6 +2,5 @@ SM	LB	ID	Data	MAPQ	PL
 ind1	lib1_lb	lib1_R1_001_fq	test_data/lib1_R1_001.fastq.gz	30	ILLUMINA
 ind1	lib1_lb	lib1_R1_002_fq	test_data/lib1_R1_002.fastq.gz	30	ILLUMINA
 ind1	lib2_lb	lib2_R1_001_fq	test_data/lib2_R1_001.fastq.gz	30	ILLUMINA
-ind1	lib2_lb	lib2_R1_002_fq	test_data/lib2_R1_002.fastq.gz	30	ILLUMINA
 ind2	lib3_lb	lib3_R1_001_fq	test_data/lib3_R1_001.fastq.gz	30	ILLUMINA
 ind2	lib3_lb	lib3_R1_002_fq	test_data/lib3_R1_002.fastq.gz	30	ILLUMINA
