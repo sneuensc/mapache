@@ -25,9 +25,10 @@ rule merge_bam_library2sample:
         module_samtools,
     message:
         "--- SAMTOOLS MERGE merge_bam_library2sample {output}"
-    script:
-        "../scripts/merge_bam.py"
-
+    shell:
+        """
+        samtools merge -f --threads {threads} {output} {input} 2> {log};
+        """
 
 rule merge_bam_low_qual_library2sample:
     """
@@ -49,8 +50,10 @@ rule merge_bam_low_qual_library2sample:
         module_samtools,
     message:
         "--- SAMTOOLS MERGE merge_bam_library2sample {output}"
-    script:
-        "../scripts/merge_bam.py"
+    shell:
+        """
+        samtools merge -f --threads {threads} {output} {input} 2> {log};
+        """
 
 
 rule realign:

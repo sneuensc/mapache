@@ -24,8 +24,10 @@ rule merge_bam_fastq2library:
         module_samtools,
     message:
         "--- SAMTOOLS MERGE {output}"
-    script:
-        "../scripts/merge_bam.py"
+    shell:
+        """
+        samtools merge -f --threads {threads} {output} {input} 2> {log};
+        """
 
 
 rule merge_bam_low_qual_fastq2library:
@@ -50,8 +52,10 @@ rule merge_bam_low_qual_fastq2library:
         module_samtools,
     message:
         "--- SAMTOOLS MERGE {output}"
-    script:
-        "../scripts/merge_bam.py"
+    shell:
+        """
+        samtools merge -f --threads {threads} {output} {input} 2> {log};
+        """
 
 
 rule markduplicates:
