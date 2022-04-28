@@ -362,7 +362,3 @@ def get_gatk_bin():
             -Xms{resources.memory}m -Xmx{resources.memory}m -jar bin"
     return bin
 
-
-def symlink_rev(input, output):
-    shell("cp {input} {output}")
-# shell("ln -srf {input} {output}")

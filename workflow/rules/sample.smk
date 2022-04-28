@@ -134,8 +134,10 @@ rule get_final_bam:
         "{folder}/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.bam.log",
     message:
         "--- SIMLINKK FINAL BAM {output}"
-    run:
-        symlink_rev(input, output)
+    shell:
+        """
+        cp {input} {output}
+        """
 
 
 rule get_final_bam_low_qual:
@@ -151,8 +153,10 @@ rule get_final_bam_low_qual:
         "{folder}/03_sample/03_final_sample/01_bam_low_qual/{SM}.{GENOME}.bam.log",
     message:
         "--- SIMLINKK FINAL LOW_QUAL BAM {output}"
-    run:
-        symlink_rev(input, output)
+    shell:
+        """
+        cp {input} {output}
+        """
 
 
 ##########################################################################################
