@@ -1,7 +1,6 @@
 ##########################################################################################
 ## all rules for libraries
 ##########################################################################################
-# ruleorder: merge_bam_low_qual_fastq2library > merge_bam_fastq2library
 
 
 rule merge_bam_fastq2library:

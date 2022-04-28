@@ -1,4 +1,6 @@
-## functions to generate indexes.
+##########################################################################################
+## all rules to generate indexes
+##########################################################################################
 ## Rules to index the reference check first if the indexes are next to the original reference
 ## file (input.orig). If present the file are just symlinked and no index is generated.
 

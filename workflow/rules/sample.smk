@@ -30,6 +30,7 @@ rule merge_bam_library2sample:
         samtools merge -f --threads {threads} {output} {input} 2> {log};
         """
 
+
 rule merge_bam_low_qual_library2sample:
     """
     Merge the bam files of the library step

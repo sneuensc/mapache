@@ -361,4 +361,3 @@ def get_gatk_bin():
         bin = "java -XX:ParallelGCThreads={threads} -XX:+UseParallelGC -XX:-UsePerfData \
             -Xms{resources.memory}m -Xmx{resources.memory}m -jar bin"
     return bin
-
