@@ -14,14 +14,14 @@ rule genome_index_bwa:
         fasta="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
         orig=lambda wildcards: recursive_get(["genome", wildcards.GENOME, "fasta"], ""),
     output:
-        multiext(
+        temp(multiext(
             "{folder}/00_reference/{GENOME}/{GENOME}.fasta",
             ".sa",
             ".amb",
             ".ann",
             ".bwt",
             ".pac",
-        ),
+        )),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
@@ -49,7 +49,7 @@ rule genome_index_bowtie2:
         fasta="{folder}/{GENOME}.fasta",
         orig=lambda wildcards: recursive_get(["genome", wildcards.GENOME, "fasta"], ""),
     output:
-        multiext(
+        temp(multiext(
             "{folder}/{GENOME}.fasta",
             ".1.bt2",
             ".2.bt2",
@@ -57,7 +57,7 @@ rule genome_index_bowtie2:
             ".4.bt2",
             ".rev.1.bt2",
             ".rev.2.bt2",
-        ),
+        )),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
@@ -85,7 +85,7 @@ rule samtools_index_fasta:
         fasta="{folder}/{GENOME}.fasta",
         orig=lambda wildcards: recursive_get(["genome", wildcards.GENOME, "fasta"], ""),
     output:
-        "{folder}/{GENOME}.fasta.fai",
+        temp("{folder}/{GENOME}.fasta.fai"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
@@ -113,7 +113,7 @@ rule genome_index_picard:
         fasta="{folder}/{GENOME}.fasta",
         orig=lambda wildcards: recursive_get(["genome", wildcards.GENOME, "fasta"], ""),
     output:
-        "{folder}/{GENOME}.dict",
+        temp("{folder}/{GENOME}.dict"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),

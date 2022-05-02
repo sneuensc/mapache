@@ -43,7 +43,7 @@ rule get_fasta:
     input:
         lambda wildcards: recursive_get(["genome", wildcards.GENOME, "fasta"], ""),
     output:
-        "{folder}/00_reference/{GENOME}/{GENOME}.fasta",
+        temp("{folder}/00_reference/{GENOME}/{GENOME}.fasta"),
     threads: 1
     message:
         "--- GET REFERENCE  {input}"
