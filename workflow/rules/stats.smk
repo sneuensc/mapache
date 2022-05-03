@@ -559,7 +559,7 @@ rule bamdamage:
     shell:
         """
         ## get the subsampling interval
-        nb=$(awk '{{sum += $3}} END {{print sum}}' {input.bai}); 
+        nb=$(awk '{{sum += $3}} END {{print sum}}' <( samtools idxstats {input.bai} ) ); 
         nth_line=1; 
 
         # this part is to take a fraction of the total reads
