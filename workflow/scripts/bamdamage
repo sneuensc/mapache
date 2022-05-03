@@ -21,7 +21,7 @@ use strict;
 use Getopt::Long;
 
 $Global::progname = "bamdamage";
-$Global::version = "20140602_extended_bySam_20211025";
+$Global::version = "20140602_extended_bySam_20211025_faster_byDiana_20220502";
 
 Getopt::Long::Configure("bundling");
 my @retval = GetOptions
@@ -86,7 +86,8 @@ my @out;
 
 
 if($file and -r $file) {
-  open(IN,"-|","samtools","view","-h",$file) or error("Cannot read $file\n");
+  #open(IN,"-|","samtools","view","-h",$file) or error("Cannot read $file\n");
+  open(IN,"-|","samtools view -h $file | sed -n '1~$nth_read p' ") or error("Cannot read $file\n");
   if($opt::debug) {
     open(OUT,">",$file.".stat") or error("Cannot write ${file}.stat\n");
   } else {
@@ -139,10 +140,11 @@ while ($line=<IN>) {
   }
   
   ## take only every xth line (Sam 20.11.2019)
-  if ($linecount % $nth_read != 0) {
-    $linecount++;
-    next;
-  }
+# commented by Diana (03.05.2022)
+#  if ($linecount % $nth_read != 0) {
+#    $linecount++;
+#    next;
+#  }
   
   #===== Extract Info =======#
   if($line =~ /^\S+\t(\S+)\t\S+\t\S+\t(\S+)\t(\S+)\t\S+\t\S+\t\S+\t(\S+)\t(\S+)\t/) {
