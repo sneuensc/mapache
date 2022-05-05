@@ -86,6 +86,7 @@ make_barplot <- function(
   geom_bar(stat = "identity", position = position_dodge()) +
   labs(title = title) +
   theme(legend.position = legend.position) +
+  #theme(legend.position = "none") +
   theme(axis.text.x=element_text(angle = 90, vjust = 0.5))
 
 
@@ -192,6 +193,7 @@ my_plot <- ggplot(
 ) +
     labs(title = "Mapped unique and duplicated reads") +
     theme(legend.position = "top") +
+    #theme(legend.position = "none") +
     theme(axis.text.x=element_text(angle = 90, vjust = 0.5)) +
     scale_alpha_manual(values = c(0.5, 1)) +
     geom_bar(stat = "identity", position = position_dodge()) +
@@ -264,7 +266,6 @@ if(split_plot){
 ggsave(out_5_AvgReadDepth, my_plot, width = 11, height = 7)
 ############################################################################
 
-if(1==2){
 sex_path            = get_args(argsL, "sex_path", "sex.out")
 sex_thresholds      = get_args(
                         argsL, 
@@ -410,7 +411,3 @@ if(nrow(sex)){
 
 ggsave(out_6_Sex, my_plot, width = 11, height = 7)
 # ############################################################################
-
-}
-
-ggsave(out_6_Sex, my_plot, width = 11, height = 7)
