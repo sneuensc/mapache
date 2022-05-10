@@ -98,11 +98,27 @@ if("--help" %in% args) {
 }
 
 ## Parse arguments (we expect the form --arg=value)
-parseArgs <- function(x) strsplit(sub("^--", "", x), "=")
+parseArgs <- function(all_args){
+  lapply(
+    all_args, 
+    function(str) {
+      # removing -- from the name; this will go to the first column of argsDF
+      new_str = sub("^--", "", str)
+      # split string --x=y into x and y, on the first = sign
+      # this works also for expressions like
+      # --thresholds='list( "XX"=c(0.8, 1.3), "XY"=c(0, 0.6) )'
+      # returning
+      # thresholds
+      # 'list( "XX"=c(0.8, 1.3), "XY"=c(0, 0.6) )'     which can be parsed later
+      regmatches(new_str, regexpr("=", new_str), invert = TRUE)[[1]]
+    }
+    )
+} 
+
 argsDF <- as.data.frame(do.call("rbind", parseArgs(args)))
 argsL <- as.list(as.character(argsDF$V2))
 names(argsL) <- argsDF$V1
-#print(argsL)
+
 
 get_args <- function(argsL, name, default){
   if(name %in% names(argsL)){
@@ -120,6 +136,10 @@ system                  = get_args(argsL, "system", "XY")
 sex_chr                 = get_args(argsL, "sex_chr", sex_system[[system]]$sex_chr)
 autosomes_expression    = get_args(argsL, "autosomes", "1:22")
 thresholds              = get_args(argsL, "thresholds", sex_system[[system]]$thresholds)
+if("thresholds" %in% argsDF[,1]){
+
+          thresholds =                       eval(parse(text=gsub("\\\\", "", thresholds)))
+} 
 signif                  = as.numeric(get_args(argsL, "signif", 0.95))
 
 output_file             = get_args(argsL, "out", "sex.out")
