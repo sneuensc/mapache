@@ -514,7 +514,7 @@ rule bamdamage:
     input:
         ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
         bam=get_final_bam_LB,
-        bai=lambda wildcards: bam2bai(get_final_bam_LB(wildcards)),
+        idxstats="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_idxstats.txt"
     output:
         damage_pdf="{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.dam.pdf",
         length_pdf="{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.length.pdf",
@@ -559,7 +559,7 @@ rule bamdamage:
     shell:
         """
         ## get the subsampling interval
-        nb=$(awk '{{sum += $3}} END {{print sum}}' <( samtools idxstats {input.bam} ) ); 
+        nb=$(awk '{{sum += $3}} END {{print sum}}' {input.idxstats}); 
         nth_line=1; 
 
         # this part is to take a fraction of the total reads
