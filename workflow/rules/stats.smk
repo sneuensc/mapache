@@ -244,8 +244,8 @@ rule assign_no_sex:
         "--- NO SEX ASSIGNEMENT"
     shell:
         """
-        echo "Sex" > {output}
-        echo "NaN" >> {output}
+        echo "Sex,Rx,CI,signif_set,reads_autosomes,reads_X" > {output}
+        echo "NaN,NaN,NaN,NaN,NaN,NaN" >> {output}
         """
 
 
@@ -674,8 +674,8 @@ rule plot_summary_statistics:
             subcategory="Plots",
         ),
         plot_6_Sex=report(
-            "{folder}/04_stats/04_plots/7_Sex.svg",
-            caption="../report/7_Sex.rst",
+            "{folder}/04_stats/04_plots/6_Sex.svg",
+            caption="../report/6_Sex.rst",
             category="Mapping statistics",
             subcategory="Plots",
         ),
@@ -688,13 +688,12 @@ rule plot_summary_statistics:
     message:
         "--- PLOT SUMMARY STATISTICS"
     params:
-        x_axis=recursive_get(["stats", "plots", "x_axis"], "sample"),
-        split_plot=recursive_get(["stats", "plots", "split_plot"], "F"),
-        n_col=recursive_get(["stats", "plots", "n_col"], 1),
-        n_row=recursive_get(["stats", "plots", "n_row"], 1),
         script=workflow.source_path("../scripts/plot_stats.R"),
-        sex_path="results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/SM.GENOME",
-        sex_ribbons=recursive_get(["stats", "plots", "sex_ribbons"], "c('XX','XY')"),
+        x_axis=recursive_get(["stats", "plots", "x_axis"], "auto"),
+        n_col=recursive_get(["stats", "plots", "n_col"], 1),
+        width=recursive_get(["stats", "plots", "width"], 11),
+        height=recursive_get(["stats", "plots", "height"], 7),
+        sex_ribbons=recursive_get(["stats", "plots", "sex_ribbons"], 'c("XX"="red","XY"="blue")').replace("=", "?"),
         sex_thresholds=get_sex_threshold_plotting(),
     shell:
         """
@@ -707,12 +706,11 @@ rule plot_summary_statistics:
             --out_5_AvgReadDepth={output.plot_5_AvgReadDepth} \
             --out_6_Sex={output.plot_6_Sex} \
             --x_axis={params.x_axis} \
-            --split_plot={params.split_plot} \
             --n_col={params.n_col} \
-            --n_row={params.n_row} \
-            --sex_path={params.sex_path} \
             --thresholds='{params.sex_thresholds}' \
-            --sex_ribbons='{params.sex_ribbons}'
+            --sex_ribbons='{params.sex_ribbons}' \
+            --width={params.width} \
+            --height={params.height}
         """
 
 

@@ -96,7 +96,7 @@ chrs_selected = get_args(argsL, "chrs_selected", NULL)
 ##   "Note that current implementations of R use 32-bit integers for integer vectors, so the range
 ##   of representable integers is restricted to about +/-2*10^9: doubles can hold much larger integers exactly.""
 stats_lb = do.call(rbind, lapply(strsplit(path_list_stats_lb, ",")[[1]], read.csv, 
-        colClasses = c(rep("character", 3), rep("numeric",13), "character", "numeric")))
+        colClasses = c(rep("character", 3), rep("numeric",14), "character", rep("numeric",2))))
 # mapped_raw   = sum(stats_fastq$mapped_raw) # should give the same
 mapped_unique = as.double(strsplit(readLines(path_flagstat_unique)[1], " ")[[1]][1])
 length_unique_table = read.table(path_length_unique, header = T, sep = "\t", colClasses = c("numeric", "numeric"))
@@ -128,7 +128,8 @@ calc_DoC_idxstats <- function(idxstats, read_length, chr){
 reads_raw = sum(stats_lb$reads_raw)
 
 reads_trim = sum(stats_lb$reads_trim)
-trim_prop =       reads_trim / reads_raw 
+
+trim_prop = reads_trim / reads_raw 
 
 mapped_raw = sum(stats_lb$mapped_raw)
 
@@ -146,8 +147,6 @@ length_mapped_unique = calc_avg_len(length_unique_table)
 
 read_depth = calc_DoC_idxstats(idxstats = idxstats, read_length = length_mapped_unique, chr = idxstats$chr)
 
-Sex = sex_unique$Sex
-
 my_stats = data.frame(
     genome = genome, SM = SM, 
     reads_raw = reads_raw,
@@ -163,8 +162,10 @@ my_stats = data.frame(
     length_mapped_unique,
     endogenous_raw = endogenous_raw,
     endogenous_unique = endogenous_unique,
-    Sex = Sex,
-    read_depth = read_depth
+    read_depth = read_depth,
+    Sex = sex_unique$Sex,
+    Sex_Rx = sex_unique$Rx,
+    Sex_CI = sex_unique$CI
 )
 
 if(!is.null(chrs_selected)){

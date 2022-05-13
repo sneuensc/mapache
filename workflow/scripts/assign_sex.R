@@ -167,8 +167,7 @@ if(sum(idxstats$reads == 0)){
 
   Sex <- "Not assigned - chromosomes without reads"
   Rx <- NA
-  CI1 <- NA
-  CI2 <- NA
+  confinterval <- NA
   signif <- NA
   reads_autosomes <- NA
   reads_sex_chr <- NA 
@@ -219,8 +218,7 @@ sex_data <- data.frame(
   "ID" = ID,
   "Sex" = Sex,
   "Rx" = Rx,
-  "CI1" = CI1,
-  "CI2" = CI2,
+  "CI" = confinterval,
   "signif_set" = signif,
   "reads_autosomes" = reads_autosomes,
   "reads_sex_chr" = reads_sex_chr

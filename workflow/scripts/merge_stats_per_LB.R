@@ -109,6 +109,7 @@ idxstats = read.table(
     col.names=c("chr", "length", "mapped", "unmapped")
     )
 sex_unique = read.csv(path_sex_unique)
+
 #-----------------------------------------------------------------------------#
 calc_avg_len <- function(l){ sum(l$n_reads * l$length) / sum(l$n_reads) }
 calc_DoC <- function(genomecov, chr){
@@ -144,8 +145,6 @@ length_mapped_unique = calc_avg_len(length_unique_table)
 
 read_depth = calc_DoC_idxstats(idxstats = idxstats, read_length = length_mapped_unique, chr = idxstats$chr)
 
-Sex = sex_unique$Sex
-
 my_stats = data.frame(
     genome = genome, SM = SM, LB = LB, 
     reads_raw = reads_raw,
@@ -161,8 +160,10 @@ my_stats = data.frame(
     length_mapped_unique = length_mapped_unique,
     endogenous_raw = endogenous_raw,
     endogenous_unique = endogenous_unique,
-    Sex = Sex,
-    read_depth = read_depth
+    read_depth = read_depth,
+    Sex = sex_unique$Sex,
+    Sex_Rx = sex_unique$Rx,
+    Sex_CI = sex_unique$CI
 )
 
 if(!is.na(chrs_selected)){

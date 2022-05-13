@@ -180,20 +180,17 @@ stats:
     
 # specific to Mapping statistics plot in the report
     plots:
-        # x_axis: either "sample" or "genome"
-        # if n_samples > n_genomes, we recommend to set this option to "sample"
-        # if n_genomes > n_samples, we recommend to set this option to "genome"
-        # default: sample
-        x_axis: genome
-        split_plot: T # possible values: FALSE, F, TRUE, T
-        # set maximum number of bars (columns) on the x-axis across n_row rows. 
-        # We recommend
-        # a large n_col (around 20) and/or a small n_row (1 to 3)
-        n_col: 11
-        n_row: 3
+        # x_axis: either "auto" (default), "sample" or "genome"
+        # if set to "auto":
+        #    n_samples > n_genomes: "sample"
+        #    n_genomes > n_samples: "genome"
+        x_axis: auto
+        n_col: 1 # number of figures per row if multiple samples and genomes are used
+        width: 18
+        hight: 12
         # This is to draw rectangles for the thresholds of the sex assignment;
         # Adjust according to the thresholds/labels previously defined
-        sex_ribbons: 'c("XX", "XY")'
+        sex_ribbons: 'c("XX"="red", "XY"="blue")'
 
 ##########################################################################################
 # Imputation with  GLIMPSE
