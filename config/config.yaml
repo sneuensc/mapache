@@ -190,8 +190,8 @@ stats:
         hight: 12
         # This is to draw rectangles for the thresholds of the sex assignment;
         # Adjust according to the thresholds/labels previously defined
-        sex_ribbons: 'c("XX"="red", "XY"="blue")'
-        color: "darkgreen"
+        sex_ribbons: 'c("XX"="#7e3075", "XY"="#003e83")'
+        color: "#f2ad78"
 
 ##########################################################################################
 # Imputation with  GLIMPSE
