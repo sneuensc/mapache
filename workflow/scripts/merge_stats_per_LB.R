@@ -72,7 +72,7 @@ output_file = get_args(argsL, "output_file")
 
 path_list_stats_fastq = get_args(argsL, "path_list_stats_fastq")
 #path_flagstat_raw = get_args(argsL, "path_flagstat_raw")
-path_flagstat_unique = get_args(argsL, "path_flagstat_unique")
+path_stats_unique = get_args(argsL, "path_stats_unique")
 path_length_unique = get_args(argsL, "path_length_unique")
 #path_genomecov_unique = get_args(argsL, "path_genomecov_unique")
 path_idxstats_unique = get_args(argsL, "path_idxstats_unique")
@@ -84,8 +84,8 @@ chrs_selected = get_args(argsL, "chrs_selected", NA)
 # genome = "hg19"
 # output_file = "lib.stats"
 # path_list_stats_fastq   = "results/04_stats/TABLES/hg19/ind1/lib1_lb/lib1_R1_001_fq/stats.csv,results/04_stats/TABLES/hg19/ind1/lib1_lb/lib1_R1_002_fq/stats.csv"
-# path_flagstat_raw       = "results/04_stats/02_library/00_merged_fastq/01_bam/ind1/lib1_lb.hg19_flagstat.txt"
-# path_flagstat_unique    = "results/04_stats/02_library/03_final_library/01_bam/ind1/lib1_lb.hg19_flagstat.txt"  
+## path_flagstat_raw       = "results/04_stats/02_library/00_merged_fastq/01_bam/ind1/lib1_lb.hg19_flagstat.txt"
+# path_stats_unique       = "results/04_stats/02_library/03_final_library/01_bam/ind1/lib1_lb.hg19_stats.txt"  
 # path_length_unique      = "results/04_stats/02_library/03_final_library/01_bam/ind1/lib1_lb.hg19.length"
 # path_genomecov_unique   = "results/04_stats/02_library/03_final_library/01_bam/ind1/lib1_lb.hg19_genomecov"    
 # path_sex_unique         = "results/04_stats/02_library/03_final_library/01_bam/ind1/lib1_lb.hg19_sex"
@@ -99,7 +99,13 @@ chrs_selected = get_args(argsL, "chrs_selected", NA)
 stats_fastq = do.call(rbind, lapply(strsplit(path_list_stats_fastq, ",")[[1]], read.csv , colClasses = c(rep("character", 4), rep("numeric",8))))
 #mapped_raw = as.double(strsplit(readLines(path_flagstat_raw)[1], " ")[[1]][1])
 mapped_raw   = sum(stats_fastq$mapped_raw)
-mapped_unique = as.double(strsplit(readLines(path_flagstat_unique)[1], " ")[[1]][1])
+
+## get uniquely mapped reads
+file <- readLines(path_stats_unique)
+mapped_unique = as.double(strsplit(grep("reads mapped:", file, value = T), "\t")[[1]][3])
+is_paired = as.logical(as.double(strsplit(grep("reads paired:", file, value = T), "\t")[[1]][3]))
+if(is_paired) mapped_unique = round(mapped_unique / 2)
+
 length_unique_table = read.table(path_length_unique, header = T, sep = "\t", colClasses = c("numeric", "numeric"))
 #genomecov_unique = read.table(path_genomecov_unique, header = F, sep = "\t")
 #colnames(genomecov_unique) =  c("chr", "depth", "counts", "length", "frac")

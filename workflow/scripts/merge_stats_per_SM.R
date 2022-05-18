@@ -73,7 +73,6 @@ genome = get_args(argsL, "genome")
 output_file = get_args(argsL, "output_file")
 
 path_list_stats_lb = get_args(argsL, "path_list_stats_lb")
-path_flagstat_unique = get_args(argsL, "path_flagstat_unique")
 path_length_unique = get_args(argsL, "path_length_unique")
 #path_genomecov_unique = get_args(argsL, "path_genomecov_unique")
 path_idxstats_unique = get_args(argsL, "path_idxstats_unique")
@@ -85,7 +84,7 @@ chrs_selected = get_args(argsL, "chrs_selected", NULL)
 # genome                  = "GRCh38"
 # output_file             = "results/04_stats/02_separate_tables/GRCh38/ind2/stats.csv"
 # path_list_stats_lb      = "results/04_stats/02_separate_tables/GRCh38/ind2/lib3_lb/stats.csv"
-# path_flagstat_unique    = "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/ind2.GRCh38_flagstat.txt"  
+## path_flagstat_unique    = "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/ind2.GRCh38_flagstat.txt"  
 # path_length_unique      = "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/ind2.GRCh38.length"
 # path_genomecov_unique   = "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/ind2.GRCh38_genomecov"    
 # path_sex_unique         = "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/ind2.GRCh38_sex"
@@ -97,8 +96,8 @@ chrs_selected = get_args(argsL, "chrs_selected", NULL)
 ##   of representable integers is restricted to about +/-2*10^9: doubles can hold much larger integers exactly.""
 stats_lb = do.call(rbind, lapply(strsplit(path_list_stats_lb, ",")[[1]], read.csv, 
         colClasses = c(rep("character", 3), rep("numeric",14), "character", rep("numeric",2))))
-# mapped_raw   = sum(stats_fastq$mapped_raw) # should give the same
-mapped_unique = as.double(strsplit(readLines(path_flagstat_unique)[1], " ")[[1]][1])
+mapped_unique = sum(stats_lb$mapped_unique) # should give the same
+#mapped_unique = as.double(strsplit(readLines(path_flagstat_unique)[1], " ")[[1]][1])
 length_unique_table = read.table(path_length_unique, header = T, sep = "\t", colClasses = c("numeric", "numeric"))
 #genomecov_unique = read.table(path_genomecov_unique, header = F, sep = "\t")
 #colnames(genomecov_unique) =  c("chr", "depth", "counts", "length", "frac")

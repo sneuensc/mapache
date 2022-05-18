@@ -259,7 +259,7 @@ rule merge_stats_per_fastq:
         else "{folder}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_fastqc.zip",
         ## as the orig file
         # raw trimmed reads
-        flagstat_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}_flagstat.txt",  # mapped and high-qual reads
+        stats_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}_stats.txt",  # mapped and high-qual reads
         length_fastq_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}_length.txt",
     output:
         "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv",
@@ -285,7 +285,7 @@ rule merge_stats_per_fastq:
             --output_file={output} \
             --path_fastqc_orig={input.fastqc_orig} \
             --path_fastqc_trim={input.fastqc_trim} \
-            --path_flagstat_mapped_highQ={input.flagstat_mapped_highQ} \
+            --path_stats_mapped_highQ={input.stats_mapped_highQ} \
             --path_length_mapped_highQ={input.length_fastq_mapped_highQ} \
             --script_parse_fastqc={params.script_parse_fastqc}
         """
@@ -298,8 +298,7 @@ rule merge_stats_per_lb:
             ID=samples[wildcards.SM][wildcards.LB],
             allow_missing=True,
         ),
-        #flagstat_raw="{folder}/04_stats/01_sparse_stats/02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}_flagstat.txt",
-        flagstat_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_flagstat.txt",
+        stats_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_stats.txt",
         length_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_length.txt",
         #genomecov_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_genomecov.txt",
         idxstats_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_idxstats.txt",
@@ -336,7 +335,7 @@ rule merge_stats_per_lb:
             --genome={wildcards.GENOME} \
             --output_file={output} \
             --path_list_stats_fastq=${{list_fastq_stats}} \
-            --path_flagstat_unique={input.flagstat_unique} \
+            --path_stats_unique={input.stats_unique} \
             --path_length_unique={input.length_unique} \
             --path_idxstats_unique={input.idxstats_unique} \
             --path_sex_unique={input.sex_unique} \
@@ -351,7 +350,6 @@ rule merge_stats_per_sm:
             LB=samples[wildcards.SM],
             allow_missing=True,
         ),
-        flagstat_unique="{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_flagstat.txt",
         length_unique="{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_length.txt",
         idxstats_unique="{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_idxstats.txt",
         sex_unique=lambda wildcards: get_sex_file(wildcards, "SM"),
@@ -386,7 +384,6 @@ rule merge_stats_per_sm:
             --genome={wildcards.GENOME} \
             --output_file={output} \
             --path_list_stats_lb=$list_lb_stats \
-            --path_flagstat_unique={input.flagstat_unique} \
             --path_length_unique={input.length_unique} \
             --path_idxstats_unique={input.idxstats_unique} \
             --path_sex_unique={input.sex_unique} \
@@ -693,6 +690,7 @@ rule plot_summary_statistics:
         n_col=recursive_get(["stats", "plots", "n_col"], 1),
         width=recursive_get(["stats", "plots", "width"], 11),
         height=recursive_get(["stats", "plots", "height"], 7),
+        color=recursive_get(["stats", "plots", "color"], "blue"),
         sex_ribbons=recursive_get(["stats", "plots", "sex_ribbons"], 'c("XX"="red","XY"="blue")').replace("=", "?"),
         sex_thresholds=get_sex_threshold_plotting(),
     shell:
@@ -707,6 +705,7 @@ rule plot_summary_statistics:
             --out_6_Sex={output.plot_6_Sex} \
             --x_axis={params.x_axis} \
             --n_col={params.n_col} \
+            --color={params.color} \
             --thresholds='{params.sex_thresholds}' \
             --sex_ribbons='{params.sex_ribbons}' \
             --width={params.width} \

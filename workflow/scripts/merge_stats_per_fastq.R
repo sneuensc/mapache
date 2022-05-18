@@ -76,7 +76,7 @@ get_args <- function(argsL, name){
 # output_file = "out.fq.stats"
 # path_fastqc_orig = "results/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/ind1/lib1_lb/lib1_R1_002_fq_fastqc.zip"  # raw sequenced reads
 # path_fastqc_trim = "results/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_files_trim/ind1/lib1_lb/lib1_R1_002_fq_fastqc.zip" # raw trimmed reads
-# path_flagstat_mapped_highQ = "results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/ind1/lib1_lb/lib1_R1_002_fq.hg19_flagstat.txt"       # mapped and high-qual reads
+# path_stats_mapped_highQ = "results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/ind1/lib1_lb/lib1_R1_002_fq.hg19_stats.txt"       # mapped and high-qual reads
 # path_length_mapped_highQ = "results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/ind1/lib1_lb/lib1_R1_002_fq.hg19.length"
 
 ID = get_args(argsL, "ID")
@@ -89,7 +89,7 @@ output_file = get_args(argsL, "output_file")
 #path_adapterremoval = get_args(argsL, "path_adapterremoval")
 path_fastqc_orig = get_args(argsL, "path_fastqc_orig")
 path_fastqc_trim = get_args(argsL, "path_fastqc_trim")
-path_flagstat_mapped_highQ = get_args(argsL, "path_flagstat_mapped_highQ")
+path_stats_mapped_highQ = get_args(argsL, "path_stats_mapped_highQ")
 path_length_mapped_highQ = get_args(argsL, "path_length_mapped_highQ")
 script_parse_fastqc = get_args(argsL, "script_parse_fastqc")
 
@@ -101,8 +101,13 @@ calc_avg_len <- function(l){ sum(l$Count * l$Length) / sum(l$Count) }
 length_mapped_highQ = read.table(path_length_mapped_highQ, sep = "\t", header = T, 
         col.names = c("Count", "Length"), 
         colClasses = c("numeric", "numeric"))
-mapped_raw = as.double(strsplit(readLines(path_flagstat_mapped_highQ)[1], " ")[[1]][1])
-        
+
+## get mapped reads
+file <- readLines(path_stats_mapped_highQ)
+mapped_raw = as.double(strsplit(grep("reads mapped:", file, value = T), "\t")[[1]][3])
+is_paired = as.logical(as.double(strsplit(grep("reads paired:", file, value = T), "\t")[[1]][3]))
+if(is_paired) mapped_raw = round(mapped_raw / 2)
+
 #-----------------------------------------------------------------------------#
 ## original fastqc
 #options(readr.show_col_types = FALSE)

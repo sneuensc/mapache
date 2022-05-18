@@ -33,6 +33,7 @@ if("--help" %in% args) {
         --n_col=1                                    - number of figures per row if multiple samples and genomes are used
         --width=11                                   - width of the plot
         --height=7                                   - height of the plot
+        --color=blue                                 - color of the plot
         --thresholds=list('XX'=c(0.8, 1), 'XY'=c(0, 0.6), \
                           'consistent with XX but not XY'=c(0.6, 1), \
                           'consistent with XY but not XX'=c(0, 0.8))  - sex determination thresholds
@@ -44,7 +45,6 @@ if("--help" %in% args) {
  
   q(save="no")
 }
- 
 ## Parse arguments (we expect the form --arg=value)
 parseArgs <- function(x) strsplit(sub("^--", "", x), "=")
 
@@ -73,10 +73,12 @@ out_3_endogenous    = get_args(argsL, "out_3_endogenous", "plot_3_endogenous.png
 out_4_duplication   = get_args(argsL, "out_4_duplication", "plot_4_duplication.png")
 out_5_AvgReadDepth  = get_args(argsL, "out_5_AvgReadDepth", "plot_5_AvgReadDepth.png")
 out_6_Sex           = get_args(argsL, "out_6_Sex", "plot_6_Sex.png")
-x_axis              = get_args(argsL, "x_axis", "sample")
+x_axis              = get_args(argsL, "x_axis", "auto")
 n_col               = as.numeric( get_args(argsL, "n_col", 1 ) )
 width               = as.numeric( get_args(argsL, "width", 11 ) )
 height              = as.numeric( get_args(argsL, "height", 7 ) )
+color               = get_args(argsL, "color", "blue")
+
 
 sex_thresholds      = get_args(
                         argsL, 
@@ -88,7 +90,7 @@ sex_ribbons         = get_args(argsL, "sex_ribbons", 'c("XX"="red", "XY"="blue")
 
 ############################################################################
 #--------------------------------------------------------------------------#
-# make barplots for some of the statistics
+# read the file
 sample_stats <- read.csv(sm)
 
 sample_stats$SM <- factor(
@@ -132,11 +134,9 @@ if(x_axis == "sample"){
 #--------------------------------------------------------------------------#
 # generic barplot with ggplot2
 
-make_barplot <- function(
-  data, x, y, group, n_figures, cols, title = ""
-){
+make_barplot <- function(data, x, y, group, n_figures, cols, color="blue", title = ""){
   my_plot <- ggplot(data, aes_string(x = x, y = y)) +
-    geom_bar(stat = "identity", position = position_dodge()) +
+    geom_bar(stat = "identity", position = position_dodge(), fill=color) +
     labs(title = title) +
     theme(axis.text.x=element_text(angle = 90, vjust = 0.5),
           legend.position = "none")
@@ -154,7 +154,7 @@ make_barplot <- function(
 # "Total number of reads"
 my_plot <- make_barplot(data = sample_stats, x = x, y = "reads_raw", 
                         group = group, n_figures = n_figures, cols=n_col,
-                        title = "Total number of raw reads")
+                        color=color, title = "Total number of raw reads")
 
 ggsave(out_1_reads, my_plot, width = width, height = height)
 
@@ -174,7 +174,7 @@ my_plot <- ggplot(mapped_reads, aes_string(x = x, y = "number_reads",
   theme(legend.position = "top") +
   theme(axis.text.x=element_text(angle = 90, vjust = 0.5)) +
   scale_alpha_manual(values = c(0.5, 1)) +
-  geom_bar(stat = "identity", position = position_dodge()) +
+  geom_bar(stat = "identity", position = position_dodge(), fill=color) +
   guides(fill="none", color="none")
 
 ## split figure if multidimensional
@@ -188,7 +188,7 @@ ggsave(out_2_mapped, my_plot, width = width, height = height)
 # "Endogenous content"
 my_plot <- make_barplot(data = sample_stats, x = x, y = "endogenous_unique", 
                         group = group, n_figures = n_figures, cols=n_col,
-                        title = "Endogenous content (unique reads)") + 
+                        color=color, title = "Endogenous content (unique reads)") + 
   scale_y_continuous(labels = percent)
 
 ggsave(out_3_endogenous, my_plot, width = width, height = height)
@@ -197,7 +197,7 @@ ggsave(out_3_endogenous, my_plot, width = width, height = height)
 # "Duplication level"
 my_plot <- make_barplot(data = sample_stats, x = x, y = "duplicates_prop", 
                         group = group, n_figures = n_figures, cols=n_col,
-                        title = "Duplicates per sample (percentage)") + 
+                        color=color, title = "Duplicates per sample (percentage)") + 
   scale_y_continuous(labels = percent)
 
 ggsave(out_4_duplication, my_plot, width = width, height = height)
@@ -206,7 +206,7 @@ ggsave(out_4_duplication, my_plot, width = width, height = height)
 # "Average read depth"
 my_plot <- make_barplot(data = sample_stats, x = x, y = "read_depth", 
                         group = group, n_figures = n_figures, cols=n_col,
-                        title = "Average read depth")
+                        color=color, title = "Average read depth")
   
 ggsave(out_5_AvgReadDepth, my_plot, width = width, height = height)
 
