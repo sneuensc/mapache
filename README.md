@@ -14,7 +14,11 @@ The usage of this workflow is described in the [Snakemake Workflow Catalog](http
 
 
 # Quick start
-To install mapache, you need to clone the repository, prepare a plain text file with the descriptions of the FASTQ files to be mapped, and adapt the configuration of the pipeline.
+To install mapache, you need to clone the repository and create a conda environment following the instructions below. This will automatically install the software needed to map FASTQ files to a reference genome and create a report with the mapping statistics.
+
+To execute mapache, you can move to the cloned directory (`mapache`) or symlink its content (the directories `config/`,  `results/`, `workflow/`, and `test_data/` if you want to run the test) to your working directory.
+
+You will mostly interact with mapache through its configuration file (`config/config.yaml`), where you can tweak the parameteres of the pipeline, and the samples file (`config/samples.tsv`), in which you can list all the input FASTQ files.
 
 
 ## Install
@@ -81,23 +85,6 @@ The columns of the sample file are:
 - **MAPQ:** Fastq-file specific mapping quality filtering threshold.
 - **PL:** Sequencing platform or any other text (single word) to annotate in the read group line `@RG` in the the bam file.
 
-
-
-## Dry run
-We highly recommend to make use of dry runs to get an idea of the jobs that will be executed.
-```
-# print jobs to be executed
-snakemake -n
-# Visualization of the pipeline in a directed acyclic graph (DAG).
-snakemake dag --dag | dot -Tsvg > dag.svg               
-```
-
-This command below will produce a figure with the rules that will be run. 
-```
-snakemake --rulegraph |dot -Tpng > rulegraph.png
-```
-
-
 ## Adapt config file
 By default, mapache is configured to map ancient data to a human reference genome. You need to specify the path to the reference genome in FASTA format in the configuration file (`config/config.yaml`) provided by mapache.
 
@@ -117,10 +104,40 @@ for each sample:
     6. re-computation of the md flag with samtools (optional; run by default)
 ```
 
+### Specify reference genome
+
+
+
+## Dry run
+We highly recommend to make use of dry runs to get an idea of the jobs that will be executed.
+```
+# print jobs to be executed
+snakemake -n
+# Visualization of the pipeline in a directed acyclic graph (DAG).
+snakemake dag --dag | dot -Tsvg > dag.svg               
+```
+
+This command below will produce a figure with the rules that will be run. 
+```
+snakemake --rulegraph |dot -Tpng > rulegraph.png
+```
+
+
 ## Run mapping pipeline 
 
+mapache can be run locally by indicating the number of cores available or with a high-performance computing system, by configuring a profile.
+
+Example of execution using only one CPU:
 ```
-snakemake 
+snakemake --cores 1
+```
+
+If you work on an HPC system managed by slurm, you can use the slurm profile in the repository (`mapache/slurm/`) by symlinking it to your working directory. We recommend to start a screen session prior to the job submission.
+
+Example of a submission of 999 jobs (simoultaneously) with the slurm profile:
+
+```
+snakemake --jobs 999 --profile slurm
 ```
 
 ## Create report with mapping statistics
