@@ -739,7 +739,6 @@ rule qualimap:
         module_qualimap,
     shell:
         """
-        echo {threads}
         qualimap bamqc -c -bam {input} -outdir {output} -nt {threads} --java-mem-size={resources.memory}M > {log}
         """
 
