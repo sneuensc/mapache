@@ -147,6 +147,7 @@ def get_chromosome_nams_of_genome(GENOME):
         os._exit(1)
     return allChr
 
+
 ## return a list of the chromsome names which do not match
 def valid_chromsome_names(GENOME, names):
     allChr = get_chromosome_nams_of_genome(GENOME)
@@ -253,6 +254,7 @@ def check_chromosome_names(GENOME, Logging=True):
 ## convert string to boolean
 def str2bool(v):
     return str(v).lower() in ("yes", "true", "t", "1")
+
 
 ## convert any argument to a list of string(s)
 def str2list(v):

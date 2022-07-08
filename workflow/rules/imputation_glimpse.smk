@@ -2,7 +2,7 @@
 
 
 # -----------------------------------------------------------------------------#
-#if run_imputation:
+# if run_imputation:
 # Getting some values specified in the config file
 # ref_genome = recursive_get(["stats", "imputation", "ref_genome"], "")
 ref_genome = recursive_get(["genome", genome[0], "fasta"], "")
@@ -16,9 +16,7 @@ if not os.path.isfile(ref_genome):
 # something like "path/to/my/panel_chr{chr}.vcf.gz"
 path_panel = recursive_get(["stats", "imputation", "path_panel"], "")
 if path_panel == "":
-    LOGGER.error(
-        f"ERROR: Parameter 'stats/imputation/path_panel' is not specified!"
-    )
+    LOGGER.error(f"ERROR: Parameter 'stats/imputation/path_panel' is not specified!")
     sys.exit(1)
 
 # Each GLIMPSE_phase step runs in about 1 minute (human genome and defaults at least).
@@ -36,16 +34,16 @@ gp = recursive_get(["stats", "imputation", "gp_filter"], "0")
 
 # Imputation will be run by default on all chromosomes. The paramter below allow to select a subset of chromosomes.
 chromosomes = list(
-            map(
-                str,
-                eval_to_list(
-                    recursive_get(
-                        ["stats", "imputation", "chromosomes"],
-                        [],
-                    )
-                ),
+    map(
+        str,
+        eval_to_list(
+            recursive_get(
+                ["stats", "imputation", "chromosomes"],
+                [],
             )
-        )
+        ),
+    )
+)
 if not chromosomes:
     chromosomes = get_chromosome_nams_of_genome(genome[0])
 else:
@@ -54,7 +52,6 @@ else:
             f"ERROR: In 'config[stats][imputation][chromosomes]', the following chromsome names are not recognized: {valid_chromsome_names(GENOME, chromosomes)}!"
         )
         os._exit(1)
-
 
 
 # -----------------------------------------------------------------------------#
@@ -126,7 +123,7 @@ checkpoint split_genome:
         window_size=int(recursive_get(["stats", "imputation", "window_size"], 1000000)),
         buffer_size=int(recursive_get(["stats", "imputation", "buffer_size"], 200000)),
     message:
-         "--- IMPUTATION: split genome (chr {wildcards.chr})"    
+        "--- IMPUTATION: split genome (chr {wildcards.chr})"
     log:
         "{folder}/03_sample/04_imputed/log/02_chunks/chunks.chr{chr}..log",
     resources:
@@ -157,7 +154,7 @@ rule symlink_panel:
         panel_vcf=temp("{folder}/03_sample/04_imputed/01_panel/chr{chr}.vcf.gz"),
         panel_vcf_csi=temp("{folder}/03_sample/04_imputed/01_panel/chr{chr}.vcf.gz.csi"),
     message:
-         "--- IMPUTATION: symlink panel (chr {wildcards.chr})"    
+        "--- IMPUTATION: symlink panel (chr {wildcards.chr})"
     shell:
         """
         ln -srf {input} {output.panel_vcf};
@@ -176,7 +173,7 @@ rule extract_positions:
         csi=temp("{folder}/03_sample/04_imputed/03_sites/{chr}.sites.vcf.gz.csi"),
         tbi=temp("{folder}/03_sample/04_imputed/03_sites/{chr}.sites.tsv.gz.tbi"),
     message:
-         "--- IMPUTATION: extract positions (chr {wildcards.chr})"    
+        "--- IMPUTATION: extract positions (chr {wildcards.chr})"
     log:
         "{folder}/03_sample/04_imputed/log/03_sites/{chr}.sites.log",
     resources:
@@ -226,7 +223,7 @@ rule bcftools_mpileup:
     log:
         "{folder}/03_sample/04_imputed/log/04_vcf/{sm}_{chr}.log",
     message:
-         "--- IMPUTATION: bcftools mpileup (sample {wildcards.sm}; chr {wildcards.chr})"    
+        "--- IMPUTATION: bcftools mpileup (sample {wildcards.sm}; chr {wildcards.chr})"
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
             ["stats", "imputation", "bcftools_mpileup"], attempt, 4
@@ -267,7 +264,7 @@ rule impute_phase:
             "{folder}/03_sample/04_imputed/05_GLIMPSE_imputed/done_{sm}_chr{chr}_group{g}.txt"
         ),
     message:
-         "--- IMPUTATION: impute phase (sample {wildcards.sm}; chr {wildcards.chr})"    
+        "--- IMPUTATION: impute phase (sample {wildcards.sm}; chr {wildcards.chr})"
     params:
         imputed_bcf=lambda wildcards: f"{wildcards.folder}/03_sample/04_imputed/05_GLIMPSE_imputed/{wildcards.sm}_chr{wildcards.chr}.${{n}}.bcf",
         start_end=lambda wildcards: group_chunks(
@@ -330,7 +327,7 @@ rule ligate_chunks:
             "{folder}/03_sample/04_imputed/06_GLIMPSE_ligated/list_{sm}_chr{chr}.txt"
         ),
     message:
-         "--- IMPUTATION: ligate chunks (sample {wildcards.sm}; chr {wildcards.chr})"    
+        "--- IMPUTATION: ligate chunks (sample {wildcards.sm}; chr {wildcards.chr})"
     log:
         "{folder}/03_sample/04_imputed/log/06_GLIMPSE_ligated/{sm}_chr{chr}.log",
     params:
@@ -383,7 +380,7 @@ rule concat:
         bcf=temp("{folder}/03_sample/04_imputed/06_GLIMPSE_ligated/{sm}.bcf"),
         csi=temp("{folder}/03_sample/04_imputed/06_GLIMPSE_ligated/{sm}.bcf.csi"),
     message:
-         "--- IMPUTATION: concatenate (sample {wildcards.sm})"    
+        "--- IMPUTATION: concatenate (sample {wildcards.sm})"
     log:
         "{folder}/03_sample/04_imputed/log/06_GLIMPSE_ligated/{sm}.log",
     conda:
@@ -406,7 +403,7 @@ rule filter_gp_split_sm:
         bcf=temp("{folder}/03_sample/04_imputed/07_unphased/{sm}.GP{gp}.bcf"),
         csi=temp("{folder}/03_sample/04_imputed/07_unphased/{sm}.GP{gp}.bcf.csi"),
     message:
-         "--- IMPUTATION: GP filtering (sample {wildcards.sm}; GP {wildcards.gp})"    
+        "--- IMPUTATION: GP filtering (sample {wildcards.sm}; GP {wildcards.gp})"
     log:
         "{folder}/03_sample/04_imputed/log/07_unphased/{sm}_GP{gp}.log",
     conda:
@@ -426,13 +423,13 @@ rule get_gp:
         index="{folder}/03_sample/04_imputed/06_GLIMPSE_ligated/{sm}.bcf.csi",
     output:
         table=report(
-                "{folder}/03_sample/04_imputed/06_GLIMPSE_ligated/{sm}_gp.txt",
-                caption="../report/imputation_gp_table.rst",
-                category="Imputation",
-                subcategory="Tables",
-            ),
+            "{folder}/03_sample/04_imputed/06_GLIMPSE_ligated/{sm}_gp.txt",
+            caption="../report/imputation_gp_table.rst",
+            category="Imputation",
+            subcategory="Tables",
+        ),
     message:
-        "--- IMPUTATION: get GP values (sample {wildcards.sm})"    
+        "--- IMPUTATION: get GP values (sample {wildcards.sm})"
     log:
         "{folder}/03_sample/04_imputed/log/06_GLIMPSE_ligated/{sm}_GP_values.log",
     conda:
@@ -448,21 +445,28 @@ rule get_gp:
 rule plot_gp:
     input:
         "{folder}/03_sample/04_imputed/06_GLIMPSE_ligated/{sm}_gp.txt",
-        to_trigger_rerun=[f"{{folder}}/03_sample/04_imputed/07_unphased/{{sm}}.GP{gp}.bcf" for gp in str2list(recursive_get(["stats", "imputation", "gp_filter"], [0.8]))]
+        to_trigger_rerun=[
+            f"{{folder}}/03_sample/04_imputed/07_unphased/{{sm}}.GP{gp}.bcf"
+            for gp in str2list(
+                recursive_get(["stats", "imputation", "gp_filter"], [0.8])
+            )
+        ],
     output:
         report(
-                "{folder}/03_sample/04_imputed/06_GLIMPSE_ligated/{sm}_gp.svg",
-                caption="../report/imputation_gp_plot.rst",
-                category="Imputation",
-                subcategory="Plots",
-            ),
+            "{folder}/03_sample/04_imputed/06_GLIMPSE_ligated/{sm}_gp.svg",
+            caption="../report/imputation_gp_plot.rst",
+            category="Imputation",
+            subcategory="Plots",
+        ),
     message:
-        "--- IMPUTATION: plot GP values (sample {wildcards.sm})"    
+        "--- IMPUTATION: plot GP values (sample {wildcards.sm})"
     params:
         script=workflow.source_path("../scripts/plot_imputation_gp.R"),
         width=recursive_get(["stats", "plots", "width"], 11),
         height=recursive_get(["stats", "plots", "height"], 7),
-        gp=','.join(str2list(recursive_get(["stats", "imputation", "gp_filter"], [0.8]))),
+        gp=",".join(
+            str2list(recursive_get(["stats", "imputation", "gp_filter"], [0.8]))
+        ),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
             ["stats", "imputation", "plot_gp"], attempt, 4
@@ -488,7 +492,6 @@ rule plot_gp:
         """
 
 
-
 # #  # 7. Sample haplotypes
 rule sample_haplotypes:
     input:
@@ -498,7 +501,7 @@ rule sample_haplotypes:
         phased_bcf="{folder}/03_sample/04_imputed/{sm}.GP{gp}.phased.bcf",
         phased_csi="{folder}/03_sample/04_imputed/{sm}.GP{gp}.phased.bcf.csi",
     message:
-         "--- IMPUTATION: sample haplotypes (sample {wildcards.sm}; GP {wildcards.gp})"    
+        "--- IMPUTATION: sample haplotypes (sample {wildcards.sm}; GP {wildcards.gp})"
     log:
         "{folder}/03_sample/04_imputed/log/{sm}.GP{gp}.log",
     conda:

@@ -227,7 +227,8 @@ stats:
         # Imputation will be run on the chromosomes present in the panel
         # The version of the panel and chromosome names should match those of
         # the reference genome to which individual samples were mapped.
-        chromosomes: '[str(x) for x in range(1,23)]+["X","Y"]'
+        #chromosomes: '[str(x) for x in range(1,23)]+["X","Y"]'
+        chromosomes: 20
 
         # Input BAM files can be listed individually under the "paths" keyword
         # Alternatively, you can pass a plain text file (bam_list)

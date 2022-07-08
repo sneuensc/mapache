@@ -575,6 +575,7 @@ rule mapping:
 
 # -----------------------------------------------------------------------------#
 
+
 # samples_stats = get_samples_stats()
 rule stats:
     input:

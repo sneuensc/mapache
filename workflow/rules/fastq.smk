@@ -74,7 +74,7 @@ else:
 
 
 rule adapter_removal_collapse:
-    """
+"""
     Remove adapter and low quality bases at the edges and collapse paired-end reads
     """
     input:
@@ -131,7 +131,7 @@ rule adapter_removal_collapse:
 
 
 rule adapter_removal_pe:
-    """
+"""
     Remove adapter and low quality bases at the edges
     """
     input:
@@ -180,7 +180,7 @@ rule adapter_removal_pe:
 
 
 rule adapter_removal_se:
-    """
+"""
     Remove adapter and low quality bases at the edges
     """
     input:
@@ -223,6 +223,7 @@ rule adapter_removal_se:
                 --output1 {output.fastq} 2> {log};
         """
 ##########################################################################################
+
 
 
 ## mapping
@@ -506,7 +507,7 @@ rule samtools_sort:
 if save_low_qual:
 
     rule samtools_filter:
-        """
+"""
         Filter mappings following quality and keeping the low quality mappings
         """
         input:
@@ -546,7 +547,7 @@ if save_low_qual:
 else:
 
     rule samtools_filter:
-        """
+"""
         Filter mappings following quality and discard low quality mappings
         """
         input:

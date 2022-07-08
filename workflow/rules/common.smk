@@ -552,8 +552,13 @@ def get_imputation_files(samples_):
         for GP in recursive_get(["stats", "imputation", "gp_filter"], "0")
         for ext in ["bcf", "bcf.csi"]
         if run_imputation
-    ] + [f"{RESULT_DIR}/03_sample/04_imputed/06_GLIMPSE_ligated/{SM}_gp.txt" for SM in samples_]
+    ] + [
+        f"{RESULT_DIR}/03_sample/04_imputed/06_GLIMPSE_ligated/{SM}_gp.txt"
+        for SM in samples_
+        if run_imputation
+    ]
     return files
+
 
 def get_imputation_plots(samples_):
     files = [
