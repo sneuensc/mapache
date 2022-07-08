@@ -1,0 +1,7 @@
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - glimpse-bio = 1.1.1
+  - bcftools = 1.15
+  
