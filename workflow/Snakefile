@@ -53,6 +53,8 @@ module_seqtk = recursive_get(["envmodules", "seqtk"], "")
 module_qualimap = recursive_get(["envmodules", "qualimap"], "")
 module_multiqc = recursive_get(["envmodules", "multiqc"], "")
 module_dedup = recursive_get(["envmodules", "dedup"], "")
+module_glimpse = recursive_get(["envmodules", "glimpse"], "")
+module_bcftools = recursive_get(["envmodules", "bcftools"], "")
 
 
 ##########################################################################################
@@ -140,10 +142,10 @@ else:
 
 
 ## test if SM, LB and ID names are valid
-#invalid_char = string.punctuation.replace("_", "").replace("-", "")
-#if bool(re.match("^[a-zA-Z0-9]*$", string)) == True:
+# invalid_char = string.punctuation.replace("_", "").replace("-", "")
+# if bool(re.match("^[a-zA-Z0-9]*$", string)) == True:
 #    print("String does not contain any special characters.")
-#else:
+# else:
 #    print("The string contains special characters.")
 
 
@@ -334,13 +336,27 @@ if VERBOSE:
 ##########################################################################################
 ##  STATISTICS
 ##########################################################################################
+## By default he stats are computed on the mapped bam files. However, one can pass pre-computed bam files to use the stats feature of
+## mapache using the paramter 'bam_list'. In this later case only on the specified bam fiels the stats are comouted.
+run_only_stats = str2bool(
+    recursive_get_and_test(["stats", "only_stats"], ["False", "True"])
+)
+
+if run_only_stats:
+    samples_stats = get_samples_stats()
+else:
+    samples_stats = [SM for SM in samples]
+
+
 ## damage
 run_damage = recursive_get_and_test(
     ["stats", "run_damage"], ["False", "bamdamage", "mapDamage"]
 )
 
-run_sex_inference = recursive_get_and_test(
-    ["genome", GENOME, "sex_inference", "run"], ["False", "True"]
+run_sex_inference = str2bool(
+    recursive_get_and_test(
+        ["genome", GENOME, "sex_inference", "run"], ["False", "True"]
+    )
 )
 
 run_qualimap = str2bool(
@@ -349,6 +365,11 @@ run_qualimap = str2bool(
 
 run_multiqc = str2bool(recursive_get_and_test(["stats", "multiqc"], ["False", "True"]))
 
+## imputation (is assumed to be run ONLY on the first specified reference genome!!!)
+run_imputation = str2bool(
+    recursive_get_and_test(["stats", "imputation", "run"], ["False", "True"])
+)
+
 
 ##########################################################################################
 include: "rules/index.smk"
@@ -356,6 +377,7 @@ include: "rules/stats.smk"
 include: "rules/fastq.smk"
 include: "rules/library.smk"
 include: "rules/sample.smk"
+include: "rules/imputation_glimpse.smk"
 
 
 report: "report/workflow.rst"
@@ -371,142 +393,40 @@ localrules:
 
 # -----------------------------------------------------------------------------#
 ## get all final bam files
-final_bam = [
-    f"{RESULT_DIR}/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.bam"
-    for SM in samples
-    for GENOME in genome
-]
+final_bam = get_final_bam_files()
+final_bam_low_qual = get_final_bam_low_qual_files()
+
 
 # -----------------------------------------------------------------------------#
-## get all final bam files
-final_bam_low_qual = [
-    f"{RESULT_DIR}/03_sample/03_final_sample/01_bam_low_qual/{SM}.{GENOME}.bam"
-    for SM in samples
-    for GENOME in genome
-    if save_low_qual
-]
+## get all final stat files
+qualimap_files = get_qualimap_files(samples)
+multiqc_files = get_multiqc_files()
+sex_files = get_sex_files(samples)
+stat_csv = get_stat_csv_files()
+stat_plot = get_stat_plot_files()
+
 
 # -----------------------------------------------------------------------------#
-## stats that need to be computed for the mapping checkpoint
-stat_csv = [
-    f"{RESULT_DIR}/04_stats/03_summary/{level}_stats.csv"
-    for level in ["SM", "LB", "FASTQ"]
-]
-
-fastqc = [
-    f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_fastqc.zip"
-    for SM in samples
-    for LB in samples[SM]
-    for ID in samples[SM][LB]
-] + [
-    f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}_fastqc.zip"
-    for SM in samples
-    for LB in samples[SM]
-    for ID in samples[SM][LB]
-    if run_adapter_removal
-]
-
-# flagstats = [
-#    f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}_flagstat.txt"
-#    for GENOME in genome
-#    for SM in samples
-#    for LB in samples[SM]
-#    for ID in samples[SM][LB]
-#    for file in [
-#        f"01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}",
-#        #f"02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}",
-#        f"02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}",
-#        f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}",
-##    ]
-# ]
-# flagstats = list(set(flagstats))  ## remove duplicates
-
-samtools_stats = [
-    f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}_stats.txt"
-    for GENOME in genome
-    for SM in samples
-    for LB in samples[SM]
-    for ID in samples[SM][LB]
-    for file in [
-        f"01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}",
-        # f"02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}",
-        f"02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}",
-        f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}",
-    ]
-]
-samtools_stats = list(set(samtools_stats))  ## remove duplicates
-
-lengths = [
-    f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}_length.txt"
-    for GENOME in genome
-    for SM in samples
-    for LB in samples[SM]
-    for ID in samples[SM][LB]
-    for file in [
-        f"01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}",
-        f"02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}",
-        f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}",
-    ]
-]
-lengths = list(set(lengths))  ## remove duplicates
-
-idxstats = [
-    f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}_idxstats.txt"
-    for GENOME in genome
-    for SM in samples
-    for LB in samples[SM]
-    for file in [
-        f"02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}",
-        f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}",
-    ]
-]
-idxstats = list(set(idxstats))  ## remove duplicates
-
-sex_files = []
-for GENOME in genome:
-    ext = (
-        "sex"
-        if str2bool(recursive_get(["genome", GENOME, "sex_inference", "run"], False))
-        else "nosex"
-    )
-
-    sex_files += [
-        f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}_{ext}.txt"
-        for SM in samples
-        for LB in samples[SM]
-        for file in [
-            f"02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}",
-            f"03_sample/03_final_sample/01_bam/{SM}.{GENOME}",
-        ]
-    ]
-sex_files = list(set(sex_files))  ## remove duplicates
-
-qualimap_files = [
-    f"{RESULT_DIR}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_qualimap"
-    for GENOME in genome
-    for SM in samples
-    if run_qualimap
-]
-
-multiqc_files = [
-    f"{RESULT_DIR}/04_stats/02_separate_tables/{GENOME}/multiqc_fastqc.html"
-    for GENOME in genome
-    if run_multiqc
-]
-
-stats_mapping_checkpoint = [
-    fastqc,
-    #flagstats,
-    samtools_stats,
-    lengths,
-    idxstats,
-    sex_files,
-    get_damage_output(run_damage),
-]
+## get all stat files which have to be computed during mapping
+fastqc = get_fastqc_files()
+samtools_stats = get_samtools_stats_files()
+lengths = get_length_files()
+idxstats = get_idxstats_files()
+damage_files = get_damage_output()
 
 
 # -----------------------------------------------------------------------------#
 ## get the minimal final summary stats
+stats_mapping_checkpoint = [
+    fastqc,
+    samtools_stats,
+    lengths,
+    idxstats,
+    sex_files,
+    damage_files,
+]
+
+
 final_stats = [
     stat_csv,
     qualimap_files,
@@ -514,19 +434,7 @@ final_stats = [
 ]
 # -----------------------------------------------------------------------------#
 
-final_stat_figures = [
-    get_damage_output(run_damage),
-    expand(
-        f"{RESULT_DIR}/04_stats/04_plots/{{plot_type}}.svg",
-        plot_type=[
-            "1_nb_reads",
-            "2_mapped",
-            "3_endogenous",
-            "4_duplication",
-            "5_AvgReadDepth",
-        ],
-    ),
-]
+final_stat_figures = [damage_files, stat_plot]
 
 
 ## --------------------------------------------------------------------------------------------------
@@ -581,6 +489,14 @@ if VERBOSE:
                 f"  - Inferring damage and read length with bamdamge on {fraction} alignments"
             )
 
+        if run_imputation:
+            if len(genome) > 1:
+                LOGGER.info(
+                    f"  - Imputation on genome '{genome[0]}' (first one in list)"
+                )
+            else:
+                LOGGER.info(f"  - Imputation")
+
     LOGGER.info(f"  - Mapping statistics tables:")
     for i, file in enumerate(stat_csv):
         LOGGER.info(f"    - {file}")
@@ -616,8 +532,6 @@ if VERBOSE:
 
 ##########################################################################################
 ## rules all
-
-
 rule all:
     """
     Computes all
@@ -629,6 +543,8 @@ rule all:
         final_stats,
         samtools_stats,
         stats_mapping_checkpoint,
+        get_imputation_files(samples_stats),
+        get_imputation_plots(samples_stats),
     message:
         "--- RUNNING ALL"
 
@@ -636,7 +552,7 @@ rule all:
 ## rules dag (just pipeline)
 rule dag:
     """
-    Computes just the mapping (used to get a nice DAG)
+    Computes just the mapping (used to get a DAG with the relevant steps)
     """
     input:
         final_bam,
@@ -646,16 +562,34 @@ rule dag:
 
 rule mapping:
     """
-    Computes just what is needed to get the final mapping (without any stats)
+    Perfomrs the mapping and computes all stats which are not anymore able to be comouted later (if temporal fiels are used)
     """
     input:
         final_bam,
         final_bam_low_qual,
         stats_mapping_checkpoint,
+        get_imputation_files(samples_stats),
     message:
         "--- RUNNING MAPPING"
 
 
+# -----------------------------------------------------------------------------#
+
+# samples_stats = get_samples_stats()
+rule stats:
+    input:
+        get_qualimap_files(samples_stats),
+        get_sex_files(samples_stats),
+        get_imputation_files(samples_stats),
+
+
+## imputation
+rule imputation:
+    input:
+        get_imputation_files(samples_stats),
+
+
+##########################################################################################
 onsuccess:
     LOGGER.info("Wow, 'mapache' finished successfully!")
     LOGGER.info(

@@ -1,0 +1,1 @@
+The plot shows the distribution of the most (black), intermediate (gray), and least (light gray) probable genotype of all sites with at least one imputed non-reference allele. The blue vertical bar(s) show the applied genotype probability (GP) threshold.

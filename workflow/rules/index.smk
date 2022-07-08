@@ -14,14 +14,16 @@ rule genome_index_bwa:
         fasta="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
         orig=lambda wildcards: recursive_get(["genome", wildcards.GENOME, "fasta"], ""),
     output:
-        temp(multiext(
-            "{folder}/00_reference/{GENOME}/{GENOME}.fasta",
-            ".sa",
-            ".amb",
-            ".ann",
-            ".bwt",
-            ".pac",
-        )),
+        temp(
+            multiext(
+                "{folder}/00_reference/{GENOME}/{GENOME}.fasta",
+                ".sa",
+                ".amb",
+                ".ann",
+                ".bwt",
+                ".pac",
+            )
+        ),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
@@ -49,15 +51,17 @@ rule genome_index_bowtie2:
         fasta="{folder}/{GENOME}.fasta",
         orig=lambda wildcards: recursive_get(["genome", wildcards.GENOME, "fasta"], ""),
     output:
-        temp(multiext(
-            "{folder}/{GENOME}.fasta",
-            ".1.bt2",
-            ".2.bt2",
-            ".3.bt2",
-            ".4.bt2",
-            ".rev.1.bt2",
-            ".rev.2.bt2",
-        )),
+        temp(
+            multiext(
+                "{folder}/{GENOME}.fasta",
+                ".1.bt2",
+                ".2.bt2",
+                ".3.bt2",
+                ".4.bt2",
+                ".rev.1.bt2",
+                ".rev.2.bt2",
+            )
+        ),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
@@ -72,7 +76,7 @@ rule genome_index_bowtie2:
     envmodules:
         module_bowtie2,
     message:
-        "--- BOWTIE2-BUILD {input.fasta}"
+        "--- BOWTIE2-BUILD {input.fasta} {input.fasta}"
     script:
         "../scripts/fasta_indexing.py"
 

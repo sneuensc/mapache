@@ -511,7 +511,7 @@ rule bamdamage:
     input:
         ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
         bam=get_final_bam_LB,
-        idxstats="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_idxstats.txt"
+        idxstats="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_idxstats.txt",
     output:
         damage_pdf="{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.dam.pdf",
         length_pdf="{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.length.pdf",
@@ -691,7 +691,9 @@ rule plot_summary_statistics:
         width=recursive_get(["stats", "plots", "width"], 11),
         height=recursive_get(["stats", "plots", "height"], 7),
         color=recursive_get(["stats", "plots", "color"], "blue"),
-        sex_ribbons=recursive_get(["stats", "plots", "sex_ribbons"], 'c("XX"="red","XY"="blue")').replace("=", "?"),
+        sex_ribbons=recursive_get(
+            ["stats", "plots", "sex_ribbons"], 'c("XX"="red","XY"="blue")'
+        ).replace("=", "?"),
         sex_thresholds=get_sex_threshold_plotting(),
     shell:
         """

@@ -8,3 +8,4 @@ dependencies:
   - r-reshape2
   - r-svglite
   - r-gridextra
+  - r-data.table

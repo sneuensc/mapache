@@ -16,9 +16,12 @@ dependencies:
   - dedup = 0.12.8
   - qualimap = 2.2.2d
   - multiqc = 1.11
+  - glimpse-bio = 1.1.1
+  - bcftools = 1.15
   - R = 4.0
   - r-ggplot2
   - r-rcolorbrewer
   - r-reshape2
   - r-svglite
   - r-gridextra
+  - r-data.table

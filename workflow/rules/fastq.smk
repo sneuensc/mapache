@@ -222,9 +222,9 @@ rule adapter_removal_se:
                 --basename ${{out%%.fastq.gz}} --gzip \
                 --output1 {output.fastq} 2> {log};
         """
-
-
 ##########################################################################################
+
+
 ## mapping
 ruleorder: mapping_bwa_aln_pe > mapping_bwa_aln_se
 
