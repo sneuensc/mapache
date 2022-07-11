@@ -204,12 +204,15 @@ compute_md:
 
 
 ##########################################################################################
-## stats on the final bam file
-stats:
-    only_stats: False
-    bam_list: None
+## Statistics for final bam files
+# This section corresponds to the statistics reported by mapache.
+# By default, it is run together with the mapping pipeline for all the combinations of
+# input FASTQ files and genomes.
+# Some statistics (like depth of coverage) can be computed for BAM files that were obtained
+# by other means (e.g., downloaded from public repositories). Note that in that case, mapache
+# assumes that the data were mapped to the first reference genome listed in the cofig file.
     ## by default (None) the stats are computed on the final bam files from the mapping pipeline. 
-    ## To use the post-processing steps of mapache (i.e., computation of statistics) on any pre-computed bam file,
+    ## To use on other pre-computed bam files,
     ## one can pass a list of bam files either in an external file (in this case the parameter 'bam_list' should contain the file name) in the format:
     ##   SM    Data
     ##   ind1  path_to_bam1.bam
@@ -218,37 +221,48 @@ stats:
     ## or directly in the config file in the yaml format as:
     ##   stats:
     ##      bam_list:
-    ##        inq1: path_to_bam1.bam
+    ##        ind1:  path_to_bam1.bam
     ##        ind2:  path_to_bam2.bam
     ##        ...
     #bam_list: config/samples_stats.tsv
     #bam_list: 
     #    iind1: yes.bam
     #    iind2: no.bam
-
+stats:
+    only_stats: False
+    bam_list: None 
+    # Default: run it for samples in samples file.
+    # If intended to compute stats on BAMs downloaded or mapped with other tools, see instructions above
     fastqc_time: 4
-
-
-
     
-## deamination (has to be added to the library and final bam file)
-    run_damage: 'bamdamage'        #("False", "bamdamage", "mapDamage")
+    ## damage statistics (read length, deamination rates)
+    run_damage: 'bamdamage'        # Options: ("False", "bamdamage", "mapDamage")
     bamdamage_fraction: 5000
+    # This step can take a lot of time. We recommend to run it on a small subset of the mapped
+    # reads in order to get an estimate of the damage. The value can be an integer (number of reads)
+    # or a float (fraction of mapped reads)
     bamdamage_params: ' --rlength 100 --plot_length 30'
+    # This parameter indicates that the estimation will be done with the first 100 bp of each read
+    # and the plots will include the first and last 30 bp.
 
-
+    # Output qualimap and multiqc reports?
     qualimap: True
-
     multiqc: True
     
-# specific to Mapping statistics plot in the report
+    # specific to plots in the html report
     plots:
-        # x_axis: either "auto" (default), "sample" or "genome"
-        # if set to "auto":
-        #    n_samples > n_genomes: "sample"
-        #    n_genomes > n_samples: "genome"
-        x_axis: auto
-        n_col: 1 # number of figures per row if multiple samples and genomes are used
+        # x_axis: Which value should be included as the variable on the x-axis? 
+        # E.g.,
+        # sample vs DoC (and bars colored by sample name)
+        # genome vs DoC (and bars colored by genome name)
+        # We recommend:
+        #    "sample" if n_samples > n_genomes 
+        #    "genome" if n_genomes > n_samples
+        # if set to "auto", mapache will follow the above recommendation
+        
+        x_axis: auto        # either "auto" (default), "sample" or "genome"
+        n_col: 1 # number of panels per row if multiple samples and genomes are used
+        # Width and height of plots, in inches
         width: 18
         height: 12
         # This is to draw rectangles for the thresholds of the sex assignment;
