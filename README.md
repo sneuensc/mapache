@@ -1,27 +1,23 @@
-***!!! UNDER CONSTRUCTION !!!***
+***Mapache*** is a lightweight mapping pipeline for ancient DNA using the workflow manager *snakemake*
 
-The pipeline is under development.
+You are welcome to try out mapache. Please beware that the pipeline is under development, and we are happy to get any feedback/propositions.
 
-You are welcome to try it out. On the [Wiki](https://github.com/sneuensc/mapache/wiki), there is already a short manual describing how to get started. Happy to get any feedback/propositions.
+You can see an extensive documentation on how to use mapache in the [Wiki](https://github.com/sneuensc/mapache/wiki). 
+If you already have some experience with DNA mapping and/or Snakemake, you can follow the quick guide below.
 
-***mapache*** is a lightweighted mapping pipeline for ancient DNA using the workflow manager *snakemake*
-
-SUMMARY:
-
-Ancient DNA is degraded and contaminated. Most standard bioinformatics tools to align sequenced reads have been designed for modern data and cannot be used “out of the box” to accommodate the features typical of ancient DNA. In this work, we propose a robust pipeline to align ancient DNA data and to have a first rough idea of the authenticity of the data. The implemented modules consist of the steps needed to go from a simple ‘fastq' file to a final ‘bam' file. The steps include quality control, mapping, filtering, duplicate removal, damage pattern inference, realignment, statistics to assess authenticity and inference of the sex of the organism. A final graphical report summarizes the statistics of the different modules allowing a quick overview of the data. The pipeline is implemented in the workflow manager snakemake providing the flexibility to run the pipeline on a workstation, a high memory server or a cluster. The installation of the pipeline and the underlying programs is made easy using conda. The pipeline may be used out of the box, or may be adapted with little knowledge of python and snakemake.
 
 The usage of this workflow is described in the [Snakemake Workflow Catalog](https://snakemake.github.io/snakemake-workflow-catalog/?usage=sneuensc/mapache).
 
 
-# Quick start
+# Quick guide
 To install mapache, you need to clone the repository and create a conda environment following the instructions below. This will automatically install the software needed to map FASTQ files to a reference genome and create a report with the mapping statistics.
 
 To execute mapache, you can move to the cloned directory (`mapache`) or symlink its content (the directories `config/`,  `results/`, `workflow/`, and `test_data/` if you want to run the test) to your working directory.
 
-You will mostly interact with mapache through its configuration file (`config/config.yaml`), where you can tweak the parameteres of the pipeline, and the samples file (`config/samples.tsv`), in which you can list all the input FASTQ files.
+You will mostly interact with mapache through its **configuration file** (`config/config.yaml`), where you can tweak the parameteres of the pipeline, and the **samples file** (`config/samples.tsv`), in which you can list all the input FASTQ files.
 
 
-## Install
+## Installation
 
 ```
 #--------------------------------------------------------------#
@@ -50,25 +46,25 @@ A samples file for the test dataset is provided (`config/samples.tsv`). If you w
 Example of a sample file for single-end libraries:
 
 ```
-SM          LB        ID           Data                        MAPQ  PL
-ind1        a_L2      a_L2_R1_001  reads/a_L2_R1_001.fastq.gz  30    ILLUMINA
-ind1        a_L2      a_L2_R1_002  reads/a_L2_R1_002.fastq.gz  30    ILLUMINA
-ind1        b_L2      b_L2_R1_001  reads/b_L2_R1_001.fastq.gz  30    ILLUMINA
-ind1        b_L2      b_L2_R1_002  reads/b_L2_R1_002.fastq.gz  30    ILLUMINA
+SM      LB    ID       Data                            MAPQ   PL
+ind1    L1    L1_1     reads/ind1.L1_R1_001.fastq.gz   30     ILLUMINA
+ind1    L1    L1_2     reads/ind1.L1_R1_002.fastq.gz   30     ILLUMINA
+ind1    L2    L2_1     reads/ind1.L2_R1_001.fastq.gz   30     ILLUMINA
+ind1    L2    L2_2     reads/ind1.L2_R1_002.fastq.gz   30     ILLUMINA
 ```
 
 Example of a sample file for paired-end and single-end libraries:
 
 ```
-SM          LB        ID           Data1                       Data2                       MAPQ  PL
-ind1        a_L2      a_L2_R1_001  reads/a_L2_R1_001.fastq.gz  reads/a_L2_R2_001.fastq.gz  30    ILLUMINA
-ind1        a_L2      a_L2_R1_002  reads/a_L2_R1_002.fastq.gz  reads/a_L2_R2_001.fastq.gz  30    ILLUMINA
-ind1        b_L2      b_L2_R1_002  reads/b_L2_R1_002.fastq.gz  NULL                        30    ILLUMINA
+SM      LB    ID       Data1                            Data2                           MAPQ   PL
+ind2    L1    L1_1     reads/ind2.L1_R1_001.fastq.gz    reads/ind2.L1_R2_001.fastq.gz   30     ILLUMINA
+ind2    L1    L1_2     reads/ind2.L1_R1_002.fastq.gz    reads/ind2.L1_R2_001.fastq.gz   30     ILLUMINA
+ind2    L2    L2_1     reads/ind2.L2_R1_002.fastq.gz    NULL                            30     ILLUMINA
 ```
 
-In the first example, four fastq files will be mapped. They were generated from two different libraries (here, labelled as `a_L2` and `b_L2`) from a single sample (`ind1`). The reads will be mapped and retained if the mapping quality is above 30 (`MAPQ` column).
+In the first example, four fastq files will be mapped. They were generated from two different libraries (here, labelled as `L1` and `L2`) from a single sample (`ind1`). The reads will be mapped and retained if the mapping quality is above 30 (`MAPQ` column).
 
-In the second example, there is still only one sample (`ind1`), and two libraries, sequenced in paired-end (`a_L2`) and single-end (`b_L2`) mode.
+In the second example, there is still only one sample (`ind2`), and two libraries, sequenced in paired-end (`L1`) and single-end (`L2`) mode.
 
 The columns `SM`, `LB`, `ID` and `PL` will be used to annotate the header of the BAM files produced (SM, LB, RG and PL tags, respectively). 
 
@@ -88,7 +84,38 @@ The columns of the sample file are:
 ## Adapt config file
 By default, mapache is configured to map ancient data to a human reference genome. You need to specify the path to the reference genome in FASTA format in the configuration file (`config/config.yaml`) provided by mapache.
 
-If you need to further modify the pipeline (for instance, to ommit one step), see this link.
+### Specify reference genome
+
+Mapache will map the input FASTQ files to the reference genome(s) indicated in the config file under the keyword `genome`.
+The path to the genome in FASTA format should be indicated with the keyword `fasta`.
+
+In the example below, all the samples will be mapped to two versions of the human genome. The final BAM files will be named with the format `{sample_ID}.{genome_name}.bam` (e.g., ind1.hg19.bam, ind1.GRCh38.bam).
+
+```
+genome: 
+    hg19: 
+        fasta: /path/to/hg19/genome/hs.build37.1/hs.build37.1.fa
+    GRCh38:
+        fasta: /path/to/GRCh38/genome/GCA_000001405.15_GRCh38.fa
+```
+
+### Enable/disable steps and specify memory and runtime
+Mapache will perform different steps (see below) in order to produce a BAM file. Most of the steps are optional, but run by default.
+
+The config file contains entries corresponding to each of the steps that can be run and customized. For example, the entry with the options for AdapterRemoval2 looks like this:
+
+```
+# adapter_removal (optional)
+adapterremoval:
+    run: True
+    threads: 4 
+    mem: 4 ## in GB
+    time: 2
+    params: '--minlength 30 --trimns --trimqualities'
+
+```
+
+If you need to modify the pipeline (for instance, to ommit one step), you can set its option to `run: True` or `run: False` in the config file. Additionally, if you intend to run mapache on an HPC system, you can specify the number of `threads`, memory (`mem` in GB), and runtime (`time` in hours) to be allocated to each step. Finally, you can pass additional parameters to the tool to be executed (e.g. `--minlength 30` to AdapterRemoval2) with the keyword `params`.
 
 The following main steps are included in ***mapache***:
 
@@ -104,7 +131,6 @@ for each sample:
     6. re-computation of the md flag with samtools (optional; run by default)
 ```
 
-### Specify reference genome
 
 
 
