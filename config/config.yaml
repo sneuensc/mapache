@@ -1,7 +1,17 @@
+##########################################################################################
+# Software
+##########################################################################################
 software:
     picard_jar: 'picard'
     gatk3_jar: 'GenomeAnalysisTK'
 
+# By default, mapache uses the software installed with the conda environment. Thus, no need
+# to modify this section. 
+
+# If you want to use a different version of a software (for instance, one that can
+# be loaded with module load module_name on your server), you can add the 
+# name and version of it in this section.
+# For this to take effect, you need to invoke the pipeline with the option --use-envmodules
 envmodules:
     samtools:       "gcc samtools/1.12"
     bowtie2:        "gcc bowtie2/2.4.2"
@@ -17,46 +27,77 @@ envmodules:
     qualimap:       ""
     multiqc:        ""
     glimpse:        
+ 
+##########################################################################################
+# Job resubmission
+##########################################################################################
+# On an HPC system, a job might be cancelled/unfinished sue to insufficient resources
+# (time or memory) allocated to it.
+# global variables to define about resource increments after job failure
+# 0: no change between failures
+# 1: doubling after each failure
+memory_increment_ratio: 0.5
+runtime_increment_ratio: 0.5
 
 ##########################################################################################
+# Samples file and output directory
 ##########################################################################################
-
-#workdir: 
+# Example samples file. Modify to map to your own samples.
 sample_file: config/samples.tsv
 
+# By default, all outputs will be stored in a folder named "results"
+result_dir: 'results'
+#workdir: 
+
+##########################################################################################
+# One or multiple reference genomes
+##########################################################################################
+
+# Lis the genome(s) to which each sample will be mappped.
 genome: 
+    # Include meaningful names for each genome. Final BAM(s) file will be named after it 
+    # (e.g., ind1.hg19.bam)
     hg19: 
         fasta: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/hs.build37.1/hs.build37.1.fa
-        #fasta: ref/hs.build37.1.fa
-        # If you want the DoC to be reported for some chromosomes in the main stats table, list them below. 
-        depth_chromosomes: "X,Y,MT,4"
-
+        # Mapache outputs the depth of coverage (DoC) for each of the genomes. 
+        # If you also want the DoC to be reported for some chromosomes in the main stats table, list them below. 
+        # Their names have to match their IDs in the FASTA file specified above.
+        depth_chromosomes: "X,Y,MT"
         # parameters specific to sex inference
         sex_inference:
             run: True
             # uncomment options below if you need to change any value
             params:
-                # you can paste any python expression here, in single quotes ('):
-                    # '[f"chr{x}" for x in range(1,23)]' # chr1,chr2,chr3,etc.
-                    # [x for x in range(1,23)] # 1,2,3,etc.
+                # List with the autosomes names. You can paste any python expression here, in single quotes ('), for example:
+                    # '[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]'
+                    # '[f"chr{x}" for x in range(1,23)]'  # chr1,chr2,chr3,...,chr22.
+                    # '[x for x in range(1,23)]'          # 1,2,3,...,22.
+                    # the outcome should be a python list
                 autosomes: '[x for x in range(1,23)]'
                 sex_chr: X
-                system: XY
+                # Possible options: XY, ZW, XO, ZO
+                system: XY 
                 signif: 0.9
-                thresholds:  list( "XX"=c(0.8, 1), "XY"=c(0, 0.6), "consistent with XX but not XY"=c(0.6, 1), "consistent with XY but not XX"=c(0, 0.8) )
+                # These are the thresholds used to assign molecular sex, in R syntax.
+                # For humans, we expect a ratio of DoC(X)/DoC(genome) = 1 for females and DoC(X)/DoC(genome) = 0.5 for males.
+                # Note that sex will be assigned by considering the confidence intervals around the estimate for such ratio,
+                # which can be a bit lower or higher than 1 or 0.5.
+                # This option can be commented as the sex script comes with default values for different sex systems.
+                # thresholds:  list( "XX"=c(0.8, 1.2), "XY"=c(0, 0.6), "consistent with XX but not XY"=c(0.6, 1.2), "consistent with XY but not XX"=c(0, 0.8) )
+    
+    # Include meaningful names for each genome. Final BAM(s) file will be named after it 
+    # (e.g., ind1.GRCh38.bam)
     GRCh38:
         fasta: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/GCA_000001405.15_GRCh38.p13_onlyChrom/GCA_000001405.15_GRCh38.fa
-    
+        # You can as well add the options specified for hg19 here and adapt them to GRCh38 (for example, chrX instead of X)
 
-result_dir: 'results'
 
-## global variables to define about resource increments after job failure
-## 0: no change between failures
-## 1: doubling after each failure
-memory_increment_ratio: 0.5
-runtime_increment_ratio: 0.5
+##########################################################################################
+# Parameters for the mapping pipeline
+##########################################################################################
 
-# ## indexing
+# ## genome/FASTA indexing
+# This step will be run once per reference genome
 indexing:
     mem: 16
     threads: 1
@@ -66,8 +107,10 @@ indexing:
     samtools_params: ''
     picard_params: ''
 
-##########################################################################################
+#-----------------------------------------------------------------------------------------
 ## FASTQ level
+# To consider when assigning runtime and memory:
+# These steps will be run once per FASTQ file specified in the "samples" file.
 
 ## subsampling (optional)
 subsampling:
@@ -83,9 +126,9 @@ adapterremoval:
     mem: 4 ## in GB
     time: 2
 
-# ## mapping (bwa_aln, bwa_mem, bowtie2)
+# mapping (compulsory)
 mapping:
-    mapper: 'bwa_mem'
+    mapper: 'bwa_mem' # options: bwa_aln, bwa_mem, bowtie2
     bwa_aln_params: '-l 1024'   
     bwa_samse_params: '-n 3'
     bwa_sampe_params: ''
@@ -94,8 +137,6 @@ mapping:
     threads: 4
     mem: 16
     time: 30
-
-
 
 ## samtools_sort
 sorting:
@@ -110,20 +151,20 @@ filtering:
     threads: 4
     mem: 16
     time: 2
+    # Save low-quality and unmapped reads to an extra BAM file?
     save_low_qual: True
 
-##########################################################################################
+#-----------------------------------------------------------------------------------------
 ## library level
 
-# merge_bam_fastq2library
-# merge_bam_library2sample
+# The configuration for the merging step applies to both
+# merging mapped files per library and per sample
 merging:
     threads: 4
     mem: 16
     time: 2
 
 # ## extract_duplicates (optional)
-# ## in this case parameter 'rmdup_params' has NOT to be set to '--REMOVE_DUPLICATES true'
 remove_duplicates:
     run: markduplicates  # (False, markduplicates, dedup)
     params_markduplicates: '--REMOVE_DUPLICATES true'
@@ -133,7 +174,10 @@ remove_duplicates:
     time: 2
 
 
-## mapDamage (optional, by default not run: see below)
+# mapDamage2 (optional, not run by default)
+# Do you wish to rescale base qualities in the mapped BAMs with mapDamage2?
+# To compute only damage statistics (read length, deamination rates), 
+# without rescaling qualities, see the entry below under "stats"
 damage_rescale:
     run: False
     params: ''
@@ -141,19 +185,17 @@ damage_rescale:
     threads: 1 ## hardcoded at 1
     mem: 8
 
-
-
-##########################################################################################
+#-----------------------------------------------------------------------------------------
 ## sample level
 
-# ## realign and samtools_index (optional)
+# realign around indels with GATK 
 realign:
     run: True
     threads: 4
     mem: 16
     time: 4
 
-## samtools_calmd (optional)
+# samtools_calmd (optional)
 compute_md:
     run: True
     threads: 4
