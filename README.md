@@ -40,6 +40,11 @@ mamba env create -n mapache --file config/mapache-env.yaml
 conda activate mapache
 
 ```
+<p align="center">
+
+<img src="https://github.com/sneuensc/mapache/wiki/images/mapache_install_giff.gif" width="600" height="400"/>
+
+</p>
 
 ## Prepare samples file
 
