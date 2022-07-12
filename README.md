@@ -140,17 +140,45 @@ for each sample:
 
 
 
+# Running mapache
+
+To run mapache on your working directory, you will need to copy or create symbolic links to the following directories:
+- workflow (mandatory)
+- config (mandatory)
+- test_data (optional, only if you want to run the tutorial)
+- slurm (optional, useful to submit jobs in HPC systems with slurm as cluster manager)
+
+Assuming that you are in the mapache directory, you can use the next lines to create an alias to copy or symlink those directories. You can adjust it by including only the directories that you want to copy/symlink.
+
+```
+# alias to cp directories
+ echo 'alias copy_mapache="cp -r $(pwd -P)/{config,workflow,test_data,slurm} ." ' >> ~/.bash_profile
+# alias to symlink directories
+ echo 'alias symlink_mapache="ln -s $(pwd -P)/{config,workflow,test_data,slurm} ." ' >> ~/.bash_profile
+
+source ~/.bash_profile
+
+```
+
+Make sure that the paths to 
+- the reference genome(s) in the config files
+- the file listing the FASTQ files (samples.tsv)
+
+as well as the paths listed in samples.tsv  are properly specified
+
 
 ## Dry run
+
 We highly recommend to make use of dry runs to get an idea of the jobs that will be executed.
 ```
 # print jobs to be executed
-snakemake -n
+snakemake -pn
 # Visualization of the pipeline in a directed acyclic graph (DAG).
-snakemake dag --dag | dot -Tsvg > dag.svg               
+snakemake dag --dag | dot -Tpng > dag.png               
 ```
 
-This command below will produce a figure with the rules that will be run. 
+The command below will produce a figure with the rules that will be run. 
+
 ```
 snakemake --rulegraph |dot -Tpng > rulegraph.png
 ```
@@ -158,9 +186,11 @@ snakemake --rulegraph |dot -Tpng > rulegraph.png
 
 ## Run mapping pipeline 
 
+
 mapache can be run locally by indicating the number of cores available or with a high-performance computing system, by configuring a profile.
 
 Example of execution using only one CPU:
+
 ```
 snakemake --cores 1
 ```
