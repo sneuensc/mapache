@@ -26,6 +26,7 @@ conda create -n base-mamba -c conda-forge mamba
 
 ## activate mamba environment
 conda activate base-mamba
+
 #--------------------------------------------------------------#
 ## clone mapache repository
 git clone https://github.com/sneuensc/mapache.git
@@ -33,6 +34,7 @@ cd mapache
 
 ## create conda environment for mapache
 mamba env create -n mapache --file config/mapache-env.yaml
+
 #--------------------------------------------------------------#
 ## now you can activate the mapache environment
 conda activate mapache
