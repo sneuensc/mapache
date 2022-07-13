@@ -1,3 +1,5 @@
+# MAPACHE
+
 ***Mapache*** is a lightweight mapping pipeline for ancient DNA using the workflow manager *snakemake*
 
 You are welcome to try out mapache. Please beware that the pipeline is under development, and we are happy to get any feedback/propositions.
@@ -248,3 +250,9 @@ snakemake -p -n                            Print out the commands
 -t                                        Reset the timestamp that the output is not re-computed.
 -p                                        Print out the shell commands that will be executed. 
 ```
+
+# Citing mapache
+We are preparing a manuscript describing mapache. In the meantime, if you use mapache for your study, please refer to mapache's repository on github (https://github.com/sneuensc/mapache) and cite the tools that you used within mapache. See the table below for a list of tools used at each step.
+
+
+
