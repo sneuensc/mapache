@@ -162,6 +162,13 @@ source ~/.bash_profile
 
 ```
 
+<p align="center">
+
+<img src="https://github.com/sneuensc/mapache/wiki/images/symlink_mapache_loop.gif" width="600" height="400"/>
+
+</p>
+
+
 Make sure that the paths to 
 - the reference genome(s) in the config files
 - the file listing the FASTQ files (samples.tsv)
