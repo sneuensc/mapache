@@ -4,7 +4,7 @@
 # -----------------------------------------------------------------------------#
 # if run_imputation:
 # Getting some values specified in the config file
-# ref_genome = recursive_get(["stats", "imputation", "ref_genome"], "")
+# ref_genome = recursive_get(["imputation", "ref_genome"], "")
 ref_genome = recursive_get(["genome", genome[0], "fasta"], "")
 if not os.path.isfile(ref_genome):
     LOGGER.error(
@@ -14,7 +14,7 @@ if not os.path.isfile(ref_genome):
 
 # This string contains a wildcard where we will place the name of the chromosome
 # something like "path/to/my/panel_chr{chr}.vcf.gz"
-path_panel = recursive_get(["stats", "imputation", "path_panel"], "")
+path_panel = recursive_get(["imputation", "path_panel"], "")
 if path_panel == "":
     LOGGER.error(f"ERROR: Parameter 'stats/imputation/path_panel' is not specified!")
     sys.exit(1)
@@ -27,10 +27,10 @@ if path_panel == "":
 #   Unfortunately, snakemake might take a long time to infer the DAG with so many jobs.
 #   2000 jobs is still fine for 1 individual, but if imputating more individuals it might be worth
 #   to group a few GLIMPSE_phase commands in a single job, as they are usually fast (1-2 minutes each)
-num_imputations = int(recursive_get(["stats", "imputation", "num_imputations"], 1))
+num_imputations = int(recursive_get(["imputation", "num_imputations"], 1))
 
 # gp = 1 means that all imputed genotypes are kept; otherwise genotypes with a genotype probability < gp will be filtered out
-gp = recursive_get(["stats", "imputation", "gp_filter"], "0")
+gp = recursive_get(["imputation", "gp_filter"], "0")
 
 # Imputation will be run by default on all chromosomes. The paramter below allow to select a subset of chromosomes.
 chromosomes = list(
@@ -38,7 +38,7 @@ chromosomes = list(
         str,
         eval_to_list(
             recursive_get(
-                ["stats", "imputation", "chromosomes"],
+                [""imputation", "chromosomes"],
                 [],
             )
         ),
@@ -49,7 +49,7 @@ if not chromosomes:
 else:
     if valid_chromsome_names(genome[0], chromosomes):
         LOGGER.error(
-            f"ERROR: In 'config[stats][imputation][chromosomes]', the following chromsome names are not recognized: {valid_chromsome_names(GENOME, chromosomes)}!"
+            f"ERROR: In 'config[imputation][chromosomes]', the following chromsome names are not recognized: {valid_chromsome_names(GENOME, chromosomes)}!"
         )
         os._exit(1)
 
@@ -120,18 +120,18 @@ checkpoint split_genome:
     output:
         chunks=temp("{folder}/03_sample/04_imputed/02_chunks/chunks.chr{chr}.txt"),
     params:
-        window_size=int(recursive_get(["stats", "imputation", "window_size"], 1000000)),
-        buffer_size=int(recursive_get(["stats", "imputation", "buffer_size"], 200000)),
+        window_size=int(recursive_get(["imputation", "window_size"], 1000000)),
+        buffer_size=int(recursive_get(["imputation", "buffer_size"], 200000)),
     message:
         "--- IMPUTATION: split genome (chr {wildcards.chr})"
     log:
         "{folder}/03_sample/04_imputed/log/02_chunks/chunks.chr{chr}..log",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
-            ["stats", "imputation", "split_genome"], attempt, 2
+            ["imputation", "split_genome"], attempt, 2
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
-            ["stats", "imputation", "split_genome"], attempt, 4
+            ["imputation", "split_genome"], attempt, 4
         ),
     conda:
         "../envs/glimpse.yaml"
@@ -178,10 +178,10 @@ rule extract_positions:
         "{folder}/03_sample/04_imputed/log/03_sites/{chr}.sites.log",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
-            ["stats", "imputation", "extract_positions"], attempt, 4
+            ["imputation", "extract_positions"], attempt, 4
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
-            ["stats", "imputation", "extract_positions"], attempt, 6
+            ["imputation", "extract_positions"], attempt, 6
         ),
     conda:
         "../envs/bcftools.yaml"
@@ -219,17 +219,17 @@ rule bcftools_mpileup:
         temp_vcf=temp("{folder}/03_sample/04_imputed/04_vcf/{sm}_chr{chr}.temp.vcf.gz"),
         final_vcf=temp("{folder}/03_sample/04_imputed/04_vcf/{sm}_chr{chr}.vcf.gz"),
         final_csi=temp("{folder}/03_sample/04_imputed/04_vcf/{sm}_chr{chr}.vcf.gz.csi"),
-    threads: get_threads2(["stats", "imputation", "bcftools_mpileup"], 1)
+    threads: get_threads2(["imputation", "bcftools_mpileup"], 1)
     log:
         "{folder}/03_sample/04_imputed/log/04_vcf/{sm}_{chr}.log",
     message:
         "--- IMPUTATION: bcftools mpileup (sample {wildcards.sm}; chr {wildcards.chr})"
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
-            ["stats", "imputation", "bcftools_mpileup"], attempt, 4
+            ["imputation", "bcftools_mpileup"], attempt, 4
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
-            ["stats", "imputation", "bcftools_mpileup"], attempt, 6
+            ["imputation", "bcftools_mpileup"], attempt, 6
         ),
     conda:
         "../envs/bcftools.yaml"
@@ -258,7 +258,7 @@ rule impute_phase:
         csi_sample="{folder}/03_sample/04_imputed/04_vcf/{sm}_chr{chr}.vcf.gz.csi",
         vcf_ref="{folder}/03_sample/04_imputed/01_panel/chr{chr}.vcf.gz",
         csi_ref="{folder}/03_sample/04_imputed/01_panel/chr{chr}.vcf.gz.csi",
-        map=recursive_get(["stats", "imputation", "path_map"], ""),
+        map=recursive_get(["imputation", "path_map"], ""),
     output:
         txt=temp(
             "{folder}/03_sample/04_imputed/05_GLIMPSE_imputed/done_{sm}_chr{chr}_group{g}.txt"
@@ -272,13 +272,13 @@ rule impute_phase:
         ),
     log:
         "{folder}/03_sample/04_imputed/log/05_GLIMPSE_imputed/{sm}_chr{chr}_group{g}.log",
-    threads: get_threads2(["stats", "imputation", "impute_phase"], 1)
+    threads: get_threads2(["imputation", "impute_phase"], 1)
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
-            ["stats", "imputation", "impute_phase"], attempt, 2
+            ["imputation", "impute_phase"], attempt, 2
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
-            ["stats", "imputation", "impute_phase"], attempt, 2
+            ["imputation", "impute_phase"], attempt, 2
         ),
     conda:
         "../envs/glimpse.yaml"
@@ -341,10 +341,10 @@ rule ligate_chunks:
         ],
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
-            ["stats", "imputation", "ligate_chunks"], attempt, 4
+            ["imputation", "ligate_chunks"], attempt, 4
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
-            ["stats", "imputation", "ligate_chunks"], attempt, 6
+            ["imputation", "ligate_chunks"], attempt, 6
         ),
     conda:
         "../envs/glimpse.yaml"
@@ -448,7 +448,7 @@ rule plot_gp:
         to_trigger_rerun=[
             f"{{folder}}/03_sample/04_imputed/07_unphased/{{sm}}.GP{gp}.bcf"
             for gp in str2list(
-                recursive_get(["stats", "imputation", "gp_filter"], [0.8])
+                recursive_get(["imputation", "gp_filter"], [0.8])
             )
         ],
     output:
@@ -462,17 +462,17 @@ rule plot_gp:
         "--- IMPUTATION: plot GP values (sample {wildcards.sm})"
     params:
         script=workflow.source_path("../scripts/plot_imputation_gp.R"),
-        width=recursive_get(["stats", "plots", "width"], 11),
-        height=recursive_get(["stats", "plots", "height"], 7),
+        width=recursive_get(["plots", "width"], 11),
+        height=recursive_get(["plots", "height"], 7),
         gp=",".join(
-            str2list(recursive_get(["stats", "imputation", "gp_filter"], [0.8]))
+            str2list(recursive_get(["imputation", "gp_filter"], [0.8]))
         ),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
-            ["stats", "imputation", "plot_gp"], attempt, 4
+            ["imputation", "plot_gp"], attempt, 4
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
-            ["stats", "imputation", "plot_gp"], attempt, 1
+            ["imputation", "plot_gp"], attempt, 1
         ),
     log:
         "{folder}/03_sample/04_imputed/log/06_GLIMPSE_ligated/{sm}_GP_values.log",

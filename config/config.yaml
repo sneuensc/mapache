@@ -270,40 +270,41 @@ stats:
         sex_ribbons: 'c("XX"="#7e3075", "XY"="#003e83")'
         color: "#f2ad78"
 
-    ##########################################################################################  
-    # Imputation with  GLIMPSE
-    imputation:
-        run: True
-        #ref_genome: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/hs.build37.1/hs.build37.1.fa
-        ## The imputation is done using the first named reference genome 'genome/{name}/fasta'
-        gp_filter: [0.6, 0.7, 0.8]
-        path_map: "/work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/genetic_maps_b37/chr{chr}.b37.gmap.gz"
-        path_panel: "/work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/1000Genomes/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"
 
-        # Imputation will be run on the chromosomes present in the panel
-        # The version of the panel and chromosome names should match those of
-        # the reference genome to which individual samples were mapped.
-        #chromosomes: '[str(x) for x in range(1,23)]+["X","Y"]'
-        chromosomes: 20
+##########################################################################################  
+# Imputation with  GLIMPSE
+imputation:
+    run: True
+    #ref_genome: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/hs.build37.1/hs.build37.1.fa
+    ## The imputation is done using the first named reference genome 'genome/{name}/fasta'
+    gp_filter: [0.6, 0.7, 0.8]
+    path_map: "/work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/genetic_maps_b37/chr{chr}.b37.gmap.gz"
+    path_panel: "/work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/1000Genomes/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"
 
-        # Input BAM files can be listed individually under the "paths" keyword
-        # Alternatively, you can pass a plain text file (bam_list)
-        # with the paths in it
-        #bam_list: None
-        #paths:
-        #    ind1: results/03_sample/03_final_sample/01_bam/ind1.hg19.bam
-        #    ind2: results/03_sample/03_final_sample/01_bam/ind2.hg19.bam
+    # Imputation will be run on the chromosomes present in the panel
+    # The version of the panel and chromosome names should match those of
+    # the reference genome to which individual samples were mapped.
+    #chromosomes: '[str(x) for x in range(1,23)]+["X","Y"]'
+    chromosomes: 20
 
-        bcftools_mpileup_threads: 1
-        bcftools_mpileup_mem: 4
-        bcftools_mpileup_time: 6
+    # Input BAM files can be listed individually under the "paths" keyword
+    # Alternatively, you can pass a plain text file (bam_list)
+    # with the paths in it
+    #bam_list: None
+    #paths:
+    #    ind1: results/03_sample/03_final_sample/01_bam/ind1.hg19.bam
+    #    ind2: results/03_sample/03_final_sample/01_bam/ind2.hg19.bam
 
-        split_genome_mem: 2
-        split_genome_time: 4
+    bcftools_mpileup_threads: 1
+    bcftools_mpileup_mem: 4
+    bcftools_mpileup_time: 6
 
-        extract_positions_mem: 4
-        extract_positions_time: 6
+    split_genome_mem: 2
+    split_genome_time: 4
 
-        impute_phase_threads: 1
-        impute_phase_mem: 2
-        impute_phase_time: 2
+    extract_positions_mem: 4
+    extract_positions_time: 6
+
+    impute_phase_threads: 1
+    impute_phase_mem: 2
+    impute_phase_time: 2

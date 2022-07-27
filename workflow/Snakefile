@@ -367,7 +367,7 @@ run_multiqc = str2bool(recursive_get_and_test(["stats", "multiqc"], ["False", "T
 
 ## imputation (is assumed to be run ONLY on the first specified reference genome!!!)
 run_imputation = str2bool(
-    recursive_get_and_test(["stats", "imputation", "run"], ["False", "True"])
+    recursive_get_and_test(["imputation", "run"], ["False", "True"])
 )
 
 

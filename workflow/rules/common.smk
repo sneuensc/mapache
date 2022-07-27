@@ -549,7 +549,7 @@ def get_imputation_files(samples_):
     files = [
         f"{RESULT_DIR}/03_sample/04_imputed/{SM}.GP{GP}.phased.{ext}"
         for SM in samples_
-        for GP in str2list(recursive_get(["stats", "imputation", "gp_filter"], "[0.8]"))
+        for GP in str2list(recursive_get(["imputation", "gp_filter"], "[0.8]"))
         for ext in ["bcf", "bcf.csi"]
         if run_imputation
     ] + [
