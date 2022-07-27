@@ -271,7 +271,7 @@ rule impute_phase:
             wildcards, num_imputations=num_imputations, start_end=True
         ),
     log:
-        "log{folder}/03_sample/04_imputed/log/05_GLIMPSE_imputed/{sm}_chr{chr}_group{g}.log",
+        "{folder}/03_sample/04_imputed/log/05_GLIMPSE_imputed/{sm}_chr{chr}_group{g}.log",
     threads: get_threads2(["stats", "imputation", "impute_phase"], 1)
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
