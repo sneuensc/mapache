@@ -261,7 +261,7 @@ def str2list(v):
     if type(v) is list:
         return [str(x) for x in v]
     else:
-        return [str(x)]
+        return [str(v)]
 
 
 ## get incremental memory allocation when jobs fail
