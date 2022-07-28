@@ -38,7 +38,7 @@ chromosomes = list(
         str,
         eval_to_list(
             recursive_get(
-                [""imputation", "chromosomes"],
+                ["imputation", "chromosomes"],
                 [],
             )
         ),
