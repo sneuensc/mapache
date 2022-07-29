@@ -4,19 +4,18 @@
 # -----------------------------------------------------------------------------#
 # if run_imputation:
 # Getting some values specified in the config file
-# ref_genome = recursive_get(["imputation", "ref_genome"], "")
-ref_genome = recursive_get(["genome", genome[0], "fasta"], "")
-if not os.path.isfile(ref_genome):
-    LOGGER.error(
-        f"ERROR: Parameter 'genome/{genome[0]}/fasta' has not have a valid fasta file!"
-    )
-    sys.exit(1)
+# ref_genome is the first defined genome (recursive_get(["genome", genome[0], "fasta"], "")
 
 # This string contains a wildcard where we will place the name of the chromosome
 # something like "path/to/my/panel_chr{chr}.vcf.gz"
 path_panel = recursive_get(["imputation", "path_panel"], "")
 if path_panel == "":
-    LOGGER.error(f"ERROR: Parameter 'imputation/path_panel' is not specified!")
+    LOGGER.error(f"ERROR: Parameter config[imputation][path_panel] is not specified!")
+    sys.exit(1)
+
+path_map = recursive_get(["imputation", "path_map"], "")
+if path_map == "":
+    LOGGER.error(f"ERROR: Parameter config[imputation][path_map] is not specified!")
     sys.exit(1)
 
 # Each GLIMPSE_phase step runs in about 1 minute (human genome and defaults at least).
@@ -28,9 +27,6 @@ if path_panel == "":
 #   2000 jobs is still fine for 1 individual, but if imputating more individuals it might be worth
 #   to group a few GLIMPSE_phase commands in a single job, as they are usually fast (1-2 minutes each)
 num_imputations = int(recursive_get(["imputation", "num_imputations"], 1))
-
-# gp = 1 means that all imputed genotypes are kept; otherwise genotypes with a genotype probability < gp will be filtered out
-gp = recursive_get(["imputation", "gp_filter"], "0")
 
 # Imputation will be run by default on all chromosomes. The paramter below allow to select a subset of chromosomes.
 chromosomes = list(
@@ -49,7 +45,7 @@ if not chromosomes:
 else:
     if valid_chromsome_names(genome[0], chromosomes):
         LOGGER.error(
-            f"ERROR: In 'config[imputation][chromosomes]', the following chromsome names are not recognized: {valid_chromsome_names(GENOME, chromosomes)}!"
+            f"ERROR: In config[imputation][chromosomes], the following chromsome names are not recognized: {valid_chromsome_names(GENOME, chromosomes)}!"
         )
         os._exit(1)
 
@@ -119,7 +115,7 @@ checkpoint split_genome:
     Split genome into chunks to be separately imputed
     """   
     input:
-        vcf_ref_panel=path_panel,  # some_phased_haplotypes_chr{chr}.vcf.gz
+        recursive_get(["imputation", "path_panel"], ""),  # some_phased_haplotypes_chr{chr}.vcf.gz
     output:
         chunks=temp("{folder}/03_sample/04_imputed/02_chunks/chunks_chr{chr}.txt"),
     params:
@@ -141,7 +137,7 @@ checkpoint split_genome:
         module_glimpse,
     shell:
         """
-        GLIMPSE_chunk --input {input.vcf_ref_panel} \
+        GLIMPSE_chunk --input {input} \
             {params.params} \
             --output {output.chunks}
         """
@@ -152,7 +148,7 @@ rule symlink_panel:
     Symlink panel and its index (or create index if not present)
     """   
     input:
-        path_panel,
+        recursive_get(["imputation", "path_panel"], "")
     output:
         panel_vcf=temp("{folder}/03_sample/04_imputed/01_panel/chr{chr}.vcf.gz"),
         panel_vcf_csi=temp("{folder}/03_sample/04_imputed/01_panel/chr{chr}.vcf.gz.csi"),
@@ -330,12 +326,14 @@ rule impute_phase:
 
 
 # #  # 6. Ligate multiple chunks together
+## input.chunks is needed for the function get_num_chunks()
 rule ligate_chunks:
     input:
         txt=lambda wildcards: [
             f"{wildcards.folder}/03_sample/04_imputed/05_GLIMPSE_imputed/done_{wildcards.sm}_chr{wildcards.chr}_group{g}.txt"
             for g in range(1, group_chunks(wildcards, num_imputations))
         ],
+        chunks="{folder}/03_sample/04_imputed/02_chunks/chunks_chr{chr}.txt",
     output:
         ligated_bcf=temp(
             "{folder}/03_sample/04_imputed/06_GLIMPSE_ligated/{sm}_chr{chr}.merged.bcf"
@@ -373,9 +371,10 @@ rule ligate_chunks:
         module_glimpse,
     shell:
         """
-        for file in {params.phased} ; do echo $file ; done > {output.list_files};
-        GLIMPSE_ligate --input {output.list_files} --output {output.ligated_bcf};
-        # rm {params.phased} {params.phased_csi};
+        list_files={output.ligated_bcf}.list_files
+        for file in {params.phased} ; do echo $file ; done > ${{list_files}};
+        GLIMPSE_ligate --input ${{list_files}}; --output {output.ligated_bcf};
+        rm {params.phased} {params.phased_csi} ${{list_files}};;
         bcftools index -f {output.ligated_bcf};
         """
 
