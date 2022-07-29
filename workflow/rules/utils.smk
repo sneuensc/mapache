@@ -26,7 +26,7 @@ def recursive_get_and_test(key, available_args, my_dict=config):
     arg = str(recursive_get(key, available_args[0], my_dict))
     if arg not in available_args:
         LOGGER.error(
-            f"ERROR: The parameter '{':'.join(key)}' has no valid argument (currently '{arg}'; available {available_args})!"
+            f"ERROR: The parameter config[{']['.join(key)}] has no valid argument (currently '{arg}'; available {available_args})!"
         )
         sys.exit(1)
     return arg
@@ -119,10 +119,10 @@ def get_chromosome_nams_of_genome(GENOME):
     ## test if fasta is valid
     fasta = recursive_get(["genome", GENOME, "fasta"], "")
     if "fasta" == "":
-        LOGGER.error(f"ERROR: Reference genome '{GENOME}' has no fasta file defined!")
+        LOGGER.error(f"ERROR: Reference genome config[{GENOME}] has no fasta file defined!")
     elif not os.path.isfile(fasta):
         LOGGER.error(
-            f"ERROR: Reference genome '{GENOME}': Fasta file '{fasta}' does not exist!"
+            f"ERROR: Reference genome config[{GENOME}]: Fasta file '{fasta}' does not exist!"
         )
 
     ## get all chromsome names from the reference GENOME
@@ -143,7 +143,7 @@ def get_chromosome_nams_of_genome(GENOME):
             map(str, subprocess.check_output(cmd, shell=True, text=True).split())
         )
     else:
-        LOGGER.error(f"ERROR: Reference genome 'genome:{GENOME}:fasta' does not exist!")
+        LOGGER.error(f"ERROR: Reference genome config[genome][{GENOME}][fasta] does not exist!")
         os._exit(1)
     return allChr
 
@@ -211,7 +211,7 @@ def check_chromosome_names(GENOME, Logging=True):
         )
         if valid_chromsome_names(GENOME, sex_chr):
             LOGGER.error(
-                f"ERROR: Sex chromosome specified in 'config[genome][{GENOME}][sex_inference][params][sex_chr]' ({sex_chr}) does not exist in FASTA reference genome."
+                f"ERROR: Sex chromosome specified in config[genome][{GENOME}][sex_inference][params][sex_chr] ({sex_chr}) does not exist in FASTA reference genome."
             )
             os._exit(1)
 
@@ -229,7 +229,7 @@ def check_chromosome_names(GENOME, Logging=True):
         )
         if valid_chromsome_names(GENOME, autosomes):
             LOGGER.error(
-                f"ERROR: In 'config[genome][{GENOME}][sex_inference][params][autosomes]', the following chromsome names are not recognized: {valid_chromsome_names(GENOME, autosomes)}!"
+                f"ERROR: In config[genome][{GENOME}][sex_inference][params][autosomes], the following chromsome names are not recognized: {valid_chromsome_names(GENOME, autosomes)}!"
             )
             os._exit(1)
 
@@ -244,7 +244,7 @@ def check_chromosome_names(GENOME, Logging=True):
     chromosomes = depth_chromosomes.split(",") if len(depth_chromosomes) else []
     if valid_chromsome_names(GENOME, chromosomes):
         LOGGER.error(
-            f"In 'config[genome][{GENOME}][depth_chromosomes]', the following chromsome names are not recognized: {valid_chromsome_names(GENOME, chromosomes)}!"
+            f"In config[genome][{GENOME}][depth_chromosomes], the following chromsome names are not recognized: {valid_chromsome_names(GENOME, chromosomes)}!"
         )
         os._exit(1)
     if Logging and depth_chromosomes:

@@ -99,7 +99,7 @@ def get_bam_4_sorting(wc):
         folder = "02_bowtie2"
     else:
         LOGGER.error(
-            f"ERROR: The parameter mapper is not correctly specified: {mapper} is unknown!"
+            f"ERROR: The parameter config[mapping][mapper] is not correctly specified: {mapper} is unknown!"
         )
         os._exit(1)
     return f"{wc.folder}/01_fastq/02_mapped/{folder}/{wc.SM}/{wc.LB}/{wc.ID}.{wc.GENOME}.bam"
