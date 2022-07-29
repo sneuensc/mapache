@@ -16,7 +16,7 @@ if not os.path.isfile(ref_genome):
 # something like "path/to/my/panel_chr{chr}.vcf.gz"
 path_panel = recursive_get(["imputation", "path_panel"], "")
 if path_panel == "":
-    LOGGER.error(f"ERROR: Parameter 'stats/imputation/path_panel' is not specified!")
+    LOGGER.error(f"ERROR: Parameter 'imputation/path_panel' is not specified!")
     sys.exit(1)
 
 # Each GLIMPSE_phase step runs in about 1 minute (human genome and defaults at least).
@@ -115,17 +115,19 @@ if run_imputation:
 
 # Split the genome into chunks
 checkpoint split_genome:
+    """
+    Split genome into chunks to be separately imputed
+    """   
     input:
         vcf_ref_panel=path_panel,  # some_phased_haplotypes_chr{chr}.vcf.gz
     output:
-        chunks=temp("{folder}/03_sample/04_imputed/02_chunks/chunks.chr{chr}.txt"),
+        chunks=temp("{folder}/03_sample/04_imputed/02_chunks/chunks_chr{chr}.txt"),
     params:
-        window_size=int(recursive_get(["imputation", "window_size"], 1000000)),
-        buffer_size=int(recursive_get(["imputation", "buffer_size"], 200000)),
+        params=recursive_get(["imputation", "glimse_chunk_params"], ""),
     message:
         "--- IMPUTATION: split genome (chr {wildcards.chr})"
     log:
-        "{folder}/03_sample/04_imputed/log/02_chunks/chunks.chr{chr}..log",
+        "{folder}/03_sample/04_imputed/log/02_chunks/chunks_chr{chr}.log",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
             ["imputation", "split_genome"], attempt, 2
@@ -140,14 +142,15 @@ checkpoint split_genome:
     shell:
         """
         GLIMPSE_chunk --input {input.vcf_ref_panel} \
-            --region {wildcards.chr} \
-            --window-size {params.window_size} \
-            --buffer-size {params.buffer_size} \
+            {params.params} \
             --output {output.chunks}
         """
 
 
 rule symlink_panel:
+    """
+    Symlink panel and its index (or create index if not present)
+    """   
     input:
         path_panel,
     output:
@@ -155,27 +158,41 @@ rule symlink_panel:
         panel_vcf_csi=temp("{folder}/03_sample/04_imputed/01_panel/chr{chr}.vcf.gz.csi"),
     message:
         "--- IMPUTATION: symlink panel (chr {wildcards.chr})"
+    conda:
+        "../envs/bcftools.yaml"
+    envmodules:
+        module_bcftools,    
     shell:
         """
         ln -srf {input} {output.panel_vcf};
-        ln -srf {input}.csi {output.panel_vcf_csi};
+
+        ## if index does not exist create it
+        if [ -f "{input}.csi" ]; then
+            ln -srf {input}.csi {output.panel_vcf_csi};
+        else
+            bcftools index -f {output.panel_vcf} -o {output.panel_vcf_csi};
+        fi
         """
+
 
 
 # extract variable positions
 rule extract_positions:
+    """
+    Extract variable positions
+    """
     input:
         vcf="{folder}/03_sample/04_imputed/01_panel/chr{chr}.vcf.gz",
         index="{folder}/03_sample/04_imputed/01_panel/chr{chr}.vcf.gz.csi",
     output:
-        sites=temp("{folder}/03_sample/04_imputed/03_sites/{chr}.sites.vcf.gz"),
-        tsv=temp("{folder}/03_sample/04_imputed/03_sites/{chr}.sites.tsv.gz"),
-        csi=temp("{folder}/03_sample/04_imputed/03_sites/{chr}.sites.vcf.gz.csi"),
-        tbi=temp("{folder}/03_sample/04_imputed/03_sites/{chr}.sites.tsv.gz.tbi"),
+        sites=temp("{folder}/03_sample/04_imputed/03_sites/chr{chr}_sites.vcf.gz"),
+        tsv=temp("{folder}/03_sample/04_imputed/03_sites/chr{chr}_sites.tsv.gz"),
+        csi=temp("{folder}/03_sample/04_imputed/03_sites/chr{chr}_sites.vcf.gz.csi"),
+        tbi=temp("{folder}/03_sample/04_imputed/03_sites/chr{chr}_sites.tsv.gz.tbi"),
     message:
         "--- IMPUTATION: extract positions (chr {wildcards.chr})"
     log:
-        "{folder}/03_sample/04_imputed/log/03_sites/{chr}.sites.log",
+        "{folder}/03_sample/04_imputed/log/03_sites/{chr}_sites.log",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
             ["imputation", "extract_positions"], attempt, 4
@@ -209,19 +226,18 @@ rule extract_positions:
 
 rule bcftools_mpileup:
     input:
-        ref_genome=ref_genome,
-        sites="{folder}/03_sample/04_imputed/03_sites/{chr}.sites.vcf.gz",
+        genome=f"{{folder}}/00_reference/{genome[0]}/{genome[0]}.fasta",
         bam=f"{{folder}}/03_sample/03_final_sample/01_bam/{{sm}}.{genome[0]}.bam",
         bai=f"{{folder}}/03_sample/03_final_sample/01_bam/{{sm}}.{genome[0]}.bai",
-        tsv="{folder}/03_sample/04_imputed/03_sites/{chr}.sites.tsv.gz",
+        sites="{folder}/03_sample/04_imputed/03_sites/chr{chr}_sites.vcf.gz",
+        tsv="{folder}/03_sample/04_imputed/03_sites/chr{chr}_sites.tsv.gz",
     output:
-        header=temp("{folder}/03_sample/04_imputed/04_vcf/{sm}_chr{chr}.header"),
-        temp_vcf=temp("{folder}/03_sample/04_imputed/04_vcf/{sm}_chr{chr}.temp.vcf.gz"),
         final_vcf=temp("{folder}/03_sample/04_imputed/04_vcf/{sm}_chr{chr}.vcf.gz"),
         final_csi=temp("{folder}/03_sample/04_imputed/04_vcf/{sm}_chr{chr}.vcf.gz.csi"),
-    threads: get_threads2(["imputation", "bcftools_mpileup"], 1)
+    threads: 
+        get_threads2(["imputation", "bcftools_mpileup"], 1)
     log:
-        "{folder}/03_sample/04_imputed/log/04_vcf/{sm}_{chr}.log",
+        "{folder}/03_sample/04_imputed/log/04_vcf/{sm}_chr{chr}.log",
     message:
         "--- IMPUTATION: bcftools mpileup (sample {wildcards.sm}; chr {wildcards.chr})"
     resources:
@@ -237,15 +253,18 @@ rule bcftools_mpileup:
         module_bcftools,
     shell:
         """
-        bcftools mpileup -f {input.ref_genome} \
+        header={output.final_vcf}.header;
+        vcf_tmp={output.final_vcf}.tmp;
+        bcftools mpileup -f {input.genome} \
             -I -E -a 'FORMAT/DP' \
             -T {input.sites} -r {wildcards.chr} \
             -Ob --threads {threads} \
             --ignore-RG {input.bam}  | \
-            bcftools call -Aim -C alleles -T {input.tsv} -Oz -o {output.temp_vcf};
-        echo {input.bam} {wildcards.sm} > {output.header};
-        bcftools reheader -s {output.header} -o {output.final_vcf} {output.temp_vcf};
+            bcftools call -Aim -C alleles -T {input.tsv} -Oz -o ${{vcf_tmp}};
+        echo {input.bam} {wildcards.sm} > ${{header}};
+        bcftools reheader -s ${{header}} -o {output.final_vcf} ${{vcf_tmp}};
         bcftools index -f {output.final_vcf};
+        rm -f ${{header}} ${{vcf_tmp}};
         """
 
 
@@ -253,7 +272,7 @@ rule bcftools_mpileup:
 # as each job runs for ~1 minute, we can group ~10 jobs and send them as one
 rule impute_phase:
     input:
-        chunks="{folder}/03_sample/04_imputed/02_chunks/chunks.chr{chr}.txt",
+        chunks="{folder}/03_sample/04_imputed/02_chunks/chunks_chr{chr}.txt",
         vcf_sample="{folder}/03_sample/04_imputed/04_vcf/{sm}_chr{chr}.vcf.gz",
         csi_sample="{folder}/03_sample/04_imputed/04_vcf/{sm}_chr{chr}.vcf.gz.csi",
         vcf_ref="{folder}/03_sample/04_imputed/01_panel/chr{chr}.vcf.gz",
@@ -270,6 +289,7 @@ rule impute_phase:
         start_end=lambda wildcards: group_chunks(
             wildcards, num_imputations=num_imputations, start_end=True
         ),
+        params=recursive_get(["imputation", "glimse_phase_params"], ""),
     log:
         "{folder}/03_sample/04_imputed/log/05_GLIMPSE_imputed/{sm}_chr{chr}_group{g}.log",
     threads: get_threads2(["imputation", "impute_phase"], 1)
@@ -293,7 +313,7 @@ rule impute_phase:
             IRG=$(echo $LINE | cut -d" " -f3);
             ORG=$(echo $LINE | cut -d" " -f4);
 
-            GLIMPSE_phase \
+            GLIMPSE_phase {params.params} \
                 --input {input.vcf_sample} \
                 --reference {input.vcf_ref} \
                 --map {input.map} \
@@ -355,7 +375,7 @@ rule ligate_chunks:
         """
         for file in {params.phased} ; do echo $file ; done > {output.list_files};
         GLIMPSE_ligate --input {output.list_files} --output {output.ligated_bcf};
-        rm {params.phased} {params.phased_csi};
+        # rm {params.phased} {params.phased_csi};
         bcftools index -f {output.ligated_bcf};
         """
 
