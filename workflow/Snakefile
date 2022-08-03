@@ -556,6 +556,8 @@ rule dag:
     """
     input:
         final_bam,
+        final_bam_low_qual,
+        get_imputation_files(samples_stats),
     message:
         "--- RUNNING DAG"
 
