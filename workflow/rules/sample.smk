@@ -121,24 +121,42 @@ rule samtools_calmd:
         samtools calmd --threads {threads} {input.bam} {input.ref} 2> {log} | samtools view -bS - > {output}
         """
 
-
-rule get_final_bam:
-    """
-    Get the final bam files 
-    """
-    input:
-        get_bam_4_final_bam,
-    output:
-        "{folder}/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.bam",
-    threads: 1
-    log:
-        "{folder}/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.bam.log",
-    message:
-        "--- SIMLINKK FINAL BAM {output}"
-    shell:
+if str2bool(recursive_get_and_test(["stats", "only_stats"], ["False", "True"])):
+    rule get_final_bam:
         """
-        cp {input} {output}
+        Link the bam files
         """
+        input:
+            get_bam_4_final_bam,
+        output:
+            "{folder}/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.bam",
+        threads: 1
+        log:
+            "{folder}/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.bam.log",
+        message:
+            "--- SIMLINKK FINAL BAM {output}"
+        shell:
+            """
+            cp {input} {output}
+            """
+else:
+    rule get_final_bam:
+        """
+        Get the final bam files 
+        """
+        input:
+            get_bam_4_final_bam,
+        output:
+            "{folder}/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.bam",
+        threads: 1
+        log:
+            "{folder}/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.bam.log",
+        message:
+            "--- SIMLINKK FINAL BAM {output}"
+        shell:
+            """
+            cp {input} {output}
+            """
 
 
 rule get_final_bam_low_qual:

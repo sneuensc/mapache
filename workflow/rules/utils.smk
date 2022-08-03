@@ -119,7 +119,9 @@ def get_chromosome_nams_of_genome(GENOME):
     ## test if fasta is valid
     fasta = recursive_get(["genome", GENOME, "fasta"], "")
     if "fasta" == "":
-        LOGGER.error(f"ERROR: Reference genome config[{GENOME}] has no fasta file defined!")
+        LOGGER.error(
+            f"ERROR: Reference genome config[{GENOME}] has no fasta file defined!"
+        )
     elif not os.path.isfile(fasta):
         LOGGER.error(
             f"ERROR: Reference genome config[{GENOME}]: Fasta file '{fasta}' does not exist!"
@@ -143,7 +145,9 @@ def get_chromosome_nams_of_genome(GENOME):
             map(str, subprocess.check_output(cmd, shell=True, text=True).split())
         )
     else:
-        LOGGER.error(f"ERROR: Reference genome config[genome][{GENOME}][fasta] does not exist!")
+        LOGGER.error(
+            f"ERROR: Reference genome config[genome][{GENOME}][fasta] does not exist!"
+        )
         os._exit(1)
     return allChr
 

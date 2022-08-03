@@ -363,10 +363,12 @@ def get_sex_file(wc, level):
 ## return the sample names for the stats
 def get_samples_stats():
     bam_list = recursive_get(["stats", "bam_list"], "None")
+    if bam_list=="":
+        return {}
+    
     if isinstance(bam_list, dict):
         samples_stats = bam_list
-    # elif bam_list == "None":
-    #    #samples_stats = samples
+
     elif os.path.isfile(bam_list):
         db_stats = pd.read_csv(bam_list, sep=delim, comment="#", dtype=str)
         colnames = ["SM", "Data"]
@@ -547,13 +549,13 @@ def get_multiqc_files():
 
 def get_imputation_files(samples_):
     files = [
-        f"{RESULT_DIR}/03_sample/04_imputed/{SM}.GP{GP}.phased.{ext}"
+        f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/{SM}_gp{GP}.{ext}"
         for SM in samples_
         for GP in str2list(recursive_get(["imputation", "gp_filter"], "[0.8]"))
         for ext in ["bcf", "bcf.csi"]
         if run_imputation
     ] + [
-        f"{RESULT_DIR}/03_sample/04_imputed/06_GLIMPSE_ligated/{SM}_gp.txt"
+        f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/unphased/{SM}_gp.txt"
         for SM in samples_
         if run_imputation
     ]
@@ -562,7 +564,7 @@ def get_imputation_files(samples_):
 
 def get_imputation_plots(samples_):
     files = [
-        f"{RESULT_DIR}/03_sample/04_imputed/06_GLIMPSE_ligated/{SM}_gp.svg"
+        f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/unphased/{SM}_gp.svg"
         for SM in samples_
         if run_imputation
     ]
