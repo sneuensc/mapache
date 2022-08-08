@@ -1,7 +1,7 @@
 """
 Author: Samuel Neuenschwander, Diana Ivette Cruz, Lucas Anchieri, Anna-Sapfo Malaspinas 
 Affiliation: DBC, UNIL
-Aim: Map ancient DNA libraries to a reference genome
+Aim: Map ancient DNA libraries to a reference GENOMES
 Date: 28/10/2019
 """
 
@@ -18,7 +18,7 @@ LOGGER = logging.getLogger("snakemake.logging")
 configfile: "config/config.yaml"
 
 
-include: "rules/utils.smk"
+include: "scripts/utils.py"
 include: "rules/common.smk"
 
 
@@ -60,154 +60,38 @@ module_bcftools = recursive_get(["envmodules", "bcftools"], "")
 ##########################################################################################
 ## REFERENCE GENOME
 ##########################################################################################
-## is at least a reference genome defined
-genome = list(recursive_get(["genome"], ""))
-if len(genome) == 0:
-    LOGGER.error("ERROR: Reference genome is not specified (parameter 'genome')!")
+## is at least a reference GENOMES defined
+GENOMES = list(recursive_get(["genome"], ""))
+if len(GENOMES) == 0:
+    LOGGER.error("ERROR: Reference genome is not specified (parameter config[genome])!")
     os._exit(1)
 
-if VERBOSE:
-    if len(genome) == 1:
-        LOGGER.info(f"REFERENCE GENOME: 1 genome is specified:")
-    elif len(genome) < 4:
-        LOGGER.info(f"REFERENCE GENOME: {len(genome)} genomes are specified:")
-    else:
-        LOGGER.info(f"REFERENCE GENOME: {len(genome)} genomes are specified.")
-
-## test fasta and chomosomne names
-for GENOME in genome:
-    check_chromosome_names(GENOME, (len(genome)) <= 3 and VERBOSE)
+## get all chromosome names and store them in the dict config[chromosomes][genome][all] for later use
+for genome in GENOMES:
+    set_chromosome_names(genome)
 
 
 ##########################################################################################
-## SAMPLE FILE
+## SAMPLES (sample file and external bam files)
 ##########################################################################################
-# sample_file="config/samples.tsv"
-sample_file = recursive_get(["sample_file"], "config/samples.tsv")
-delim = recursive_get(["delim"], "\s+")
-db = pd.read_csv(sample_file, sep=delim, comment="#", dtype=str)
+# sample_file="config/SAMPLES.tsv"
+sample_file = recursive_get(["sample_file"], "config/SAMPLES.tsv")
+SAMPLES, paired_end, collapse = read_sample_file(sample_file)
 
-## check number of columns and column names
-if len(db.columns) == 6:
-    paired_end = False
-    collapse = False
-    colnames = ["ID", "Data", "MAPQ", "LB", "PL", "SM"]
-    if not set(colnames).issubset(db.columns):
-        LOGGER.error(
-            f"ERROR: The column names in the sample file are wrong! Expected are for single-end reads {colnames}!"
-        )
-        sys.exit(1)
+## get SAMPLES (bam files) to compute only stats on them
+EXTERNAL_SAMPLES = get_external_samples()
 
-    ## test if all fastq files exist
-    for fq in db["Data"].tolist():
-        if not os.path.isfile(fq):
-            LOGGER.error(f"ERROR: Fastq file '{fq}' does not exist!")
-            sys.exit(1)
-
-elif len(db.columns) == 7:
-    paired_end = True
-    adaptrem_params = recursive_get(
-        ["adapterremoval", "params"], "--minlength 30 --trimns --trimqualities"
-    )
-    if "--collapse" in adaptrem_params:
-        collapse = True
-    else:
-        collapse = False
-    colnames = ["ID", "Data1", "Data2", "MAPQ", "LB", "PL", "SM"]
-    if not set(colnames).issubset(db.columns):
-        LOGGER.error(
-            f"ERROR: The column names in the sample file are wrong! Expected are for paired-end reads {colnames}!"
-        )
-        sys.exit(1)
-
-    ## test if all fastq files exist
-    for fq in db["Data1"].tolist():
-        if fq != fq:  # test if NaN
-            LOGGER.error(f"ERROR: Fastq file '{fq}' in column Data1 is missing!")
-            sys.exit(1)
-        if not fq and not os.path.isfile(fq):
-            LOGGER.error(f"ERROR: Fastq file '{fq}' does not exist!")
-            sys.exit(1)
-
-    ## test if all fastq files exist or are NaN
-    for fq in db["Data2"].tolist():
-        if fq == fq and not os.path.isfile(fq):
-            LOGGER.error(f"ERROR: Fastq file '{fq}' in column Data2 does not exist!")
-            sys.exit(1)
-else:
+if len(SAMPLES) + len(EXTERNAL_SAMPLES) == 0:
     LOGGER.error(
-        f"ERROR: The number of columns in the sample file is wrong ({len(db.columns)} columns)!"
+        f"ERROR: No samples are specified)!"
     )
     sys.exit(1)
+   
 
-
-## test if SM, LB and ID names are valid
-# invalid_char = string.punctuation.replace("_", "").replace("-", "")
-# if bool(re.match("^[a-zA-Z0-9]*$", string)) == True:
-#    print("String does not contain any special characters.")
-# else:
-#    print("The string contains special characters.")
-
-
-## --------------------------------------------------------------------------------------------------
-## check if all IDs per LB and SM are unique
-all_fastq = db.groupby(["ID", "LB", "SM"])["ID"].agg(["count"]).reset_index()
-if max(all_fastq["count"]) > 1:
-    LOGGER.error(
-        f"ERROR: The ID's {all_fastq['ID']} are not uniq within library and sample!"
-    )
-    sys.exit(1)
-
-
-## --------------------------------------------------------------------------------------------------
-## dataframe to nested dict
-samples = {}
-cols = [e for e in list(db.columns) if e not in ("SM", "LB", "ID")]
-for index, row in db.iterrows():
-    ## if key not present add new dict
-    if row["SM"] not in samples:
-        samples[row["SM"]] = {}
-    if row["LB"] not in samples[row["SM"]]:
-        samples[row["SM"]][row["LB"]] = {}
-    if row["ID"] not in samples[row["SM"]][row["LB"]]:
-        samples[row["SM"]][row["LB"]][row["ID"]] = {}
-
-    ## add all remaining columns to this dict
-    for col in cols:
-        samples[row["SM"]][row["LB"]][row["ID"]][col] = row[col]
-
-
-## --------------------------------------------------------------------------------------------------
-## print a summary of the contents
-if VERBOSE:
-    if paired_end:
-        LOGGER.info(
-            f"SAMPLE FILE: sample file '{sample_file}' is in paired-end format:"
-        )
-        LOGGER.info(f"  - {len(samples)} samples")
-        LOGGER.info(f"  - {len([l for s in samples.values() for l in s])} libraries")
-        tmp = [
-            i["Data2"] for s in samples.values() for l in s.values() for i in l.values()
-        ]
-        LOGGER.info(
-            f"  - {len([x for x in tmp if str(x) != 'nan'])} paired-end fastq files"
-        )
-        nb = len([x for x in tmp if str(x) == "nan"])
-        if nb:
-            LOGGER.info(f"  - {nb} single-end fastq files")
-    else:
-        LOGGER.info(
-            f"SAMPLE FILE: sample file '{sample_file}' is in single-end format:"
-        )
-        LOGGER.info(f"  - {len(samples)} samples")
-        LOGGER.info(f"  - {len([l for s in samples.values() for l in s])} libraries")
-        LOGGER.info(
-            f"  - {len([i for s in samples.values() for l in s.values() for i in l])} single-end fastq files"
-        )
 
 
 ##########################################################################################
-##  PARAMETERS
+##  WORKFLOW
 ##########################################################################################
 ## --------------------------------------------------------------------------------------------------
 ## subsampling
@@ -224,13 +108,11 @@ run_adapter_removal = str2bool(
     recursive_get_and_test(["adapterremoval", "run"], ["True", "False"])
 )
 
-
 ## --------------------------------------------------------------------------------------------------
 ## mapping
 mapper = recursive_get_and_test(
     ["mapping", "mapper"], ["bwa_aln", "bwa_mem", "bowtie2"]
 )
-
 
 ## --------------------------------------------------------------------------------------------------
 ## filtering
@@ -245,7 +127,6 @@ if run_filtering:
 else:
     save_low_qual = False
 
-
 ## --------------------------------------------------------------------------------------------------
 ## removing duplicates
 remove_duplicates = recursive_get_and_test(
@@ -253,8 +134,8 @@ remove_duplicates = recursive_get_and_test(
 )
 
 if remove_duplicates == "dedup" and not paired_end:
-    LOGGER.info(
-        "WARNING: 'DeDup' is not recommended for single-end reads (parameter 'remove_duplicates:run')!"
+    LOGGER.warning(
+        "WARNING: 'DeDup' is not recommended for single-end reads (parameter config[remove_duplicates][run])!"
     )
 
 
@@ -265,10 +146,10 @@ run_damage_rescale = str2bool(
 )
 if (
     run_damage_rescale
-    and recursive_get(["stats", "run_damage"], "False") != "mapDamage"
+    and recursive_get(["damage", "run"], "False") != "mapDamage"
 ):
     LOGGER.error(
-        "ERROR: To use 'damage_rescale:run' the parameter 'stats:run_damage' has to be set to 'mapDamage'!"
+        "ERROR: To use config[damage_rescale][run] the parameter config[damage][run] has to be set to 'mapDamage'!"
     )
     sys.exit(1)
 
@@ -285,52 +166,53 @@ run_compute_md = str2bool(
 )
 
 
-## --------------------------------------------------------------------------------------------------
-# print a summary of the workflow
-if VERBOSE:
-    LOGGER.info("WORKFLOW:")
-    if run_subsampling:
-        if subsampling_number < 1:
-            LOGGER.info(f"  - Subsampling {100 * subsampling_number}% of the reads")
-        else:
-            LOGGER.info(f"  - Subsampling {subsampling_number} reads per fastq file")
 
-    if run_adapter_removal:
-        if collapse:
-            LOGGER.info(
-                f"  - Removing adapters with AdapterRemoval and collapsing paired-end reads"
-            )
-        else:
-            LOGGER.info(f"  - Removing adapters with AdapterRemoval")
+##########################################################################################
+##  ANALYSES
+##########################################################################################
+## damage
+run_damage = recursive_get_and_test(
+    ["damage", "run"], ["False", "bamdamage", "mapDamage"]
+)
 
-    LOGGER.info(f"  - Mapping with {mapper}")
+## sex inference
+run_sex_inference = []
+for genome in GENOMES:
+    if str2bool(recursive_get_and_test(["sex_inference", genome, "run"], ["False", "True"])):
+        run_sex_inference = run_sex_inference + [genome]
+        set_sex_inference(genome)
+    
+        ## test if the specified chromosomes are valid
 
-    LOGGER.info(f"  - Sorting bam file")
 
-    if run_filtering:
-        if save_low_qual:
-            LOGGER.info(
-                f"  - Filtering and keeping seperately low quality/unmapped reads"
-            )
-        else:
-            LOGGER.info(f"  - Filtering and removing low quality/unmapped reads")
 
-    if remove_duplicates != "False":
-        if remove_duplicates == "markduplicates":
-            LOGGER.info(f"  - Removing duplicates with MarkDuplicates")
-        elif remove_duplicates == "dedup":
-            LOGGER.info(f"  - Removing duplicates with DeDup")
-        else:
-            LOGGER.info(f"  - Removing duplicates with {remove_duplicates}")
 
-    if run_damage_rescale:
-        LOGGER.info(f"  - Rescaling damage with MapDamage2")
+## depth
+run_depth = []
+for genome in GENOMES:
+    if str2bool(recursive_get_and_test(["depth", genome, "run"], ["False", "True"])):
+        run_depth = run_depth + [genome]
+        read_depth(genome)
 
-    if run_realign:
-        LOGGER.info(f"  - Realigning indels with GATK v3.8")
 
-    if run_compute_md:
-        LOGGER.info(f"  - Recomputing md flag")
+## imputation (is assumed to be run ONLY on the first specified reference GENOMES!!!)
+run_imputation = str2bool(
+    recursive_get_and_test(["imputation", "run"], ["False", "True"])
+)
+if run_imputation:
+    if len(GENOMES) > 1:
+        LOGGER.warning(
+            f"WARNING: Imputation will only be run on the first specified reference GENOMES ({GENOMES[0]})."
+        )
+
+    if EXTERNAL_SAMPLES and (len(EXTERNAL_SAMPLES) > 1 or list(EXTERNAL_SAMPLES)[0] != GENOMES[0]):
+        LOGGER.error(
+            f"ERROR: Imputation will only be run on the first specified reference GENOMES ({GENOMES[0]}). Parameter config[bam_list] contains also other reference genomes!"
+        )
+        sys.exit(1)
+
+        
+ 
 
 
 ##########################################################################################
@@ -338,37 +220,13 @@ if VERBOSE:
 ##########################################################################################
 ## By default he stats are computed on the mapped bam files. However, one can pass pre-computed bam files to use the stats feature of
 ## mapache using the paramter 'bam_list'. In this later case only on the specified bam fiels the stats are comouted.
-run_only_stats = str2bool(
-    recursive_get_and_test(["stats", "only_stats"], ["False", "True"])
-)
-
-if run_only_stats:
-    samples_stats = get_samples_stats()
-else:
-    samples_stats = [SM for SM in samples]
-
-
-## damage
-run_damage = recursive_get_and_test(
-    ["stats", "run_damage"], ["False", "bamdamage", "mapDamage"]
-)
-
-run_sex_inference = str2bool(
-    recursive_get_and_test(
-        ["genome", GENOME, "sex_inference", "run"], ["False", "True"]
-    )
-)
-
 run_qualimap = str2bool(
     recursive_get_and_test(["stats", "qualimap"], ["False", "True"])
 )
 
 run_multiqc = str2bool(recursive_get_and_test(["stats", "multiqc"], ["False", "True"]))
 
-## imputation (is assumed to be run ONLY on the first specified reference genome!!!)
-run_imputation = str2bool(
-    recursive_get_and_test(["imputation", "run"], ["False", "True"])
-)
+
 
 
 ##########################################################################################
@@ -391,17 +249,21 @@ localrules:
     mapping,  ## executed locally on a cluster
 
 
+##########################################################################################
+## OUTPUT FILES
+##########################################################################################
 # -----------------------------------------------------------------------------#
 ## get all final bam files
 final_bam = get_final_bam_files()
 final_bam_low_qual = get_final_bam_low_qual_files()
+final_external_bam = get_final_external_bam_files()
 
 
 # -----------------------------------------------------------------------------#
 ## get all final stat files
-qualimap_files = get_qualimap_files(samples)
+qualimap_files = get_qualimap_files()
 multiqc_files = get_multiqc_files()
-sex_files = get_sex_files(samples)
+sex_files = get_sex_files()
 stat_csv = get_stat_csv_files()
 stat_plot = get_stat_plot_files()
 
@@ -438,98 +300,15 @@ final_stat_figures = [damage_files, stat_plot]
 
 
 ## --------------------------------------------------------------------------------------------------
-## print location of final bam files
+##########################################################################################
+## VERBOSE LOG
+##########################################################################################
+## print a summary of the contents
 if VERBOSE:
-    LOGGER.info("FINAL BAM FILES:")
-    LOGGER.info(
-        f"  - BAM FILES ({len(final_bam)} files in folder '{os.path.dirname(final_bam[0])}'):"
-    )
-    for i, file in enumerate(final_bam):
-        if i < 4:
-            LOGGER.info(f"    - {file}")
-        elif i == 4:
-            LOGGER.info(f"    - ...")
-        else:
-            break
+    write_log()
 
-    if save_low_qual:
-        LOGGER.info(
-            f"  - LOW QUALITY AND UNMAPPED BAM FILES ({len(final_bam_low_qual)} files in folder '{os.path.dirname(final_bam_low_qual[0])}'):"
-        )
-        for i, file in enumerate(final_bam_low_qual):
-            if i < 4:
-                LOGGER.info(f"    - {file}")
-            elif i == 4:
-                LOGGER.info(f"    - ...")
-            else:
-                break
-
-    # print a summary of the stats
-    LOGGER.info("STATISTICS:")
-    if run_sex_inference:
-        LOGGER.info(f"  - Inferring sex")
-
-    if run_damage != "False":
-        if run_damage == "mapDamage":
-            LOGGER.info(
-                f"  - Inferring damage and read length with MapDamage2 on all alignments"
-            )
-
-        fraction = recursive_get(["stats", "bamdamage_fraction"], 0)
-        if fraction == 0:
-            LOGGER.info(
-                f"  - Inferring damage and read length with bamdamge on all alignments"
-            )
-        elif fraction < 1:
-            LOGGER.info(
-                f"  - Inferring damage and read length with bamdamge on {100 * fraction}% of the alignments"
-            )
-        else:
-            LOGGER.info(
-                f"  - Inferring damage and read length with bamdamge on {fraction} alignments"
-            )
-
-        if run_imputation:
-            if len(genome) > 1:
-                LOGGER.info(
-                    f"  - Imputation on genome '{genome[0]}' (first one in list)"
-                )
-            else:
-                LOGGER.info(f"  - Imputation")
-
-    LOGGER.info(f"  - Mapping statistics tables:")
-    for i, file in enumerate(stat_csv):
-        LOGGER.info(f"    - {file}")
-
-    if run_qualimap:
-        LOGGER.info(
-            f"  - Qualimap report: {len(qualimap_files)} report(s) on final bam files:"
-        )
-        for i, file in enumerate(qualimap_files):
-            if i < 4:
-                LOGGER.info(f"    - {file}")
-            elif i == 4:
-                LOGGER.info(f"    - ...")
-            else:
-                break
-
-    if run_multiqc:
-        LOGGER.info(
-            f"  - Mulitqc report: {len(multiqc_files)} HTML report(s) combining statistics per genome:"
-        )
-        for i, file in enumerate(multiqc_files):
-            if i < 4:
-                LOGGER.info(f"    - {file}")
-            elif i == 4:
-                LOGGER.info(f"    - ...")
-            else:
-                break
-
-    LOGGER.info(
-        f"  => Snakemake report: run 'snakemake --report report.html' after finalisation of the run to get the report"
-    )
-
-
+##########################################################################################
+## STARTING RULES
 ##########################################################################################
 ## rules all
 rule all:
@@ -538,13 +317,14 @@ rule all:
     """
     input:
         final_bam,
+        final_external_bam,
         final_bam_low_qual,
         final_stat_figures,
         final_stats,
         samtools_stats,
         stats_mapping_checkpoint,
-        get_imputation_files(samples_stats),
-        get_imputation_plots(samples_stats),
+        get_imputation_files(),
+        get_imputation_plots(),
     message:
         "--- RUNNING ALL"
 
@@ -556,8 +336,9 @@ rule dag:
     """
     input:
         final_bam,
+        final_external_bam,
         final_bam_low_qual,
-        get_imputation_files(samples_stats),
+        get_imputation_files(),
     message:
         "--- RUNNING DAG"
 
@@ -568,28 +349,32 @@ rule mapping:
     """
     input:
         final_bam,
+        final_external_bam,
         final_bam_low_qual,
         stats_mapping_checkpoint,
-        get_imputation_files(samples_stats),
+        get_imputation_files(),
     message:
         "--- RUNNING MAPPING"
 
 
 # -----------------------------------------------------------------------------#
 
+rule only_stats:
+    input: 
+        get_imputation_files_external(),
 
-# samples_stats = get_samples_stats()
+
 rule stats:
     input:
-        get_qualimap_files(samples_stats),
-        get_sex_files(samples_stats),
-        get_imputation_files(samples_stats),
+        get_qualimap_files(),
+        get_sex_files(),
+        get_imputation_files(),
 
 
 ## imputation
 rule imputation:
     input:
-        get_imputation_files(samples_stats),
+        get_imputation_files(),
 
 
 ##########################################################################################

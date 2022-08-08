@@ -11,12 +11,12 @@ rule genome_index_bwa:
     Indexing the genome for bwa
     """
     input:
-        fasta="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
-        orig=lambda wildcards: recursive_get(["genome", wildcards.GENOME, "fasta"], ""),
+        fasta="{folder}/00_reference/{genome}/{genome}.fasta",
+        orig=lambda wildcards: recursive_get(["genome", wildcards.genome], ""),
     output:
         temp(
             multiext(
-                "{folder}/00_reference/{GENOME}/{GENOME}.fasta",
+                "{folder}/00_reference/{genome}/{genome}.fasta",
                 ".sa",
                 ".amb",
                 ".ann",
@@ -31,7 +31,7 @@ rule genome_index_bwa:
         params=recursive_get(["indexing", "bwa_params"], ""),
         cmd="f'bwa index {snakemake.params[0]} {snakemake.input.fasta} 2> {snakemake.log}'",
     log:
-        "{folder}/00_reference/{GENOME}/{GENOME}_bwa_index.log",
+        "{folder}/00_reference/{genome}/{genome}_bwa_index.log",
     threads: 1
     conda:
         "../envs/bwa.yaml"
@@ -48,12 +48,12 @@ rule genome_index_bowtie2:
     Indexing the genome for bowtie2
     """
     input:
-        fasta="{folder}/{GENOME}.fasta",
-        orig=lambda wildcards: recursive_get(["genome", wildcards.GENOME, "fasta"], ""),
+        fasta="{folder}/{genome}.fasta",
+        orig=lambda wildcards: recursive_get(["genome", wildcards.genome], ""),
     output:
         temp(
             multiext(
-                "{folder}/{GENOME}.fasta",
+                "{folder}/{genome}.fasta",
                 ".1.bt2",
                 ".2.bt2",
                 ".3.bt2",
@@ -69,7 +69,7 @@ rule genome_index_bowtie2:
         recursive_get(["indexing", "bowtie2_params"], ""),
         cmd="f'bowtie2-build {snakemake.params[0]} --threads {snakemake.threads} {snakemake.input.fasta} > {snakemake.log}'",
     log:
-        "{folder}/{GENOME}_bowtie2_build.log",
+        "{folder}/{genome}_bowtie2_build.log",
     threads: 1
     conda:
         "../envs/bowtie2.yaml"
@@ -86,10 +86,10 @@ rule samtools_index_fasta:
     Indexing the genome with samtools faidx
     """
     input:
-        fasta="{folder}/{GENOME}.fasta",
-        orig=lambda wildcards: recursive_get(["genome", wildcards.GENOME, "fasta"], ""),
+        fasta="{folder}/{genome}.fasta",
+        orig=lambda wildcards: recursive_get(["genome", wildcards.genome], ""),
     output:
-        temp("{folder}/{GENOME}.fasta.fai"),
+        temp("{folder}/{genome}.fasta.fai"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
@@ -97,7 +97,7 @@ rule samtools_index_fasta:
         recursive_get(["indexing", "samtools_params"], ""),
         cmd="f'samtools faidx {snakemake.params[0]}  {snakemake.input.fasta} > {snakemake.log}'",
     log:
-        "{folder}/{GENOME}_samtools_faidx.log",
+        "{folder}/{genome}_samtools_faidx.log",
     threads: 1
     conda:
         "../envs/samtools.yaml"
@@ -114,10 +114,10 @@ rule genome_index_picard:
     Indexing the genome with Picard CreateSequenceDictionary
     """
     input:
-        fasta="{folder}/{GENOME}.fasta",
-        orig=lambda wildcards: recursive_get(["genome", wildcards.GENOME, "fasta"], ""),
+        fasta="{folder}/{genome}.fasta",
+        orig=lambda wildcards: recursive_get(["genome", wildcards.genome], ""),
     output:
-        temp("{folder}/{GENOME}.dict"),
+        temp("{folder}/{genome}.dict"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
@@ -126,7 +126,7 @@ rule genome_index_picard:
         cmd="f'{snakemake.params.picard_bin} CreateSequenceDictionary --REFERENCE {snakemake.input.fasta} --OUTPUT {snakemake.output}'",
     #        cmd="f'{get_picard_bin()} CreateSequenceDictionary --REFERENCE {snakemake.input.fasta} --OUTPUT {snakemake.output}'",
     log:
-        "{folder}/{GENOME}_picard_index.log",
+        "{folder}/{genome}_picard_index.log",
     threads: 1
     conda:
         "../envs/picard.yaml"

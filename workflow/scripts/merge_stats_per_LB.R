@@ -76,7 +76,6 @@ path_stats_unique = get_args(argsL, "path_stats_unique")
 path_length_unique = get_args(argsL, "path_length_unique")
 #path_genomecov_unique = get_args(argsL, "path_genomecov_unique")
 path_idxstats_unique = get_args(argsL, "path_idxstats_unique")
-path_sex_unique = get_args(argsL, "path_sex_unique")
 chrs_selected = get_args(argsL, "chrs_selected", NA)
 
 # LB = "lib1_lb"
@@ -88,7 +87,6 @@ chrs_selected = get_args(argsL, "chrs_selected", NA)
 # path_stats_unique       = "results/04_stats/02_library/03_final_library/01_bam/ind1/lib1_lb.hg19_stats.txt"  
 # path_length_unique      = "results/04_stats/02_library/03_final_library/01_bam/ind1/lib1_lb.hg19.length"
 # path_genomecov_unique   = "results/04_stats/02_library/03_final_library/01_bam/ind1/lib1_lb.hg19_genomecov"    
-# path_sex_unique         = "results/04_stats/02_library/03_final_library/01_bam/ind1/lib1_lb.hg19_sex"
 # chrs_selected = c("X","Y", "MT")
 # chrs_selected = unlist(strsplit("X,Y,MT", ","))
 #-----------------------------------------------------------------------------#
@@ -114,7 +112,6 @@ idxstats = read.table(
     header=F,
     col.names=c("chr", "length", "mapped", "unmapped")
     )
-sex_unique = read.csv(path_sex_unique)
 
 #-----------------------------------------------------------------------------#
 calc_avg_len <- function(l){ sum(l$n_reads * l$length) / sum(l$n_reads) }
@@ -166,10 +163,6 @@ my_stats = data.frame(
     length_mapped_unique = length_mapped_unique,
     endogenous_raw = endogenous_raw,
     endogenous_unique = endogenous_unique,
-    read_depth = read_depth,
-    Sex = sex_unique$Sex,
-    Sex_Rx = sex_unique$Rx,
-    Sex_CI = sex_unique$CI
 )
 
 if(!is.na(chrs_selected)){

@@ -4,7 +4,7 @@
 # -----------------------------------------------------------------------------#
 # if run_imputation:
 # Getting some values specified in the config file
-# ref_genome is the first defined genome (recursive_get(["genome", genome[0], "fasta"], "")
+# ref_genome is the first defined GENOMES (recursive_get(["GENOMES", GENOMES[0], "fasta"], "")
 
 # This string contains a wildcard where we will place the name of the chromosome
 # something like "path/to/my/panel_chr{chr}.vcf.gz"
@@ -18,10 +18,10 @@ if path_map == "":
     LOGGER.error(f"ERROR: Parameter config[imputation][path_map] is not specified!")
     sys.exit(1)
 
-# Each GLIMPSE_phase step runs in about 1 minute (human genome and defaults at least).
+# Each GLIMPSE_phase step runs in about 1 minute (human GENOMES and defaults at least).
 # Run at most n = num_imputations commands in one job
 # Reasoning:
-#   The human genome is broken in approx. 2000 chunks.
+#   The human GENOMES is broken in approx. 2000 chunks.
 #   GLIMPSE_phase is run for each block.
 #   Unfortunately, snakemake might take a long time to infer the DAG with so many jobs.
 #   2000 jobs is still fine for 1 individual, but if imputating more individuals it might be worth
@@ -29,25 +29,40 @@ if path_map == "":
 num_imputations = int(recursive_get(["imputation", "num_imputations"], 1))
 
 # Imputation will be run by default on all chromosomes. The paramter below allow to select a subset of chromosomes.
-chromosomes = list(
-    map(
-        str,
-        eval_to_list(
-            recursive_get(
-                ["imputation", "chromosomes"],
-                [],
-            )
-        ),
-    )
-)
+chromosomes = to_list(recursive_get(["imputation", "chromosomes"], []))
 if not chromosomes:
-    chromosomes = get_chromosome_nams_of_genome(genome[0])
+    chromosomes = get_chromosome_nams_of_genome(GENOMES[0])
 else:
-    if valid_chromsome_names(genome[0], chromosomes):
+    if valid_chromosome_names(GENOMES[0], chromosomes):
         LOGGER.error(
-            f"ERROR: In config[imputation][chromosomes], the following chromsome names are not recognized: {valid_chromsome_names(GENOME, chromosomes)}!"
+            f"ERROR: In config[imputation][chromosomes], the following chromsome names are not recognized: {valid_chromosome_names(GENOMES[0], chromosomes)}!"
         )
         os._exit(1)
+
+# This string contains a wildcard where we will place the name of the chromosome
+# something like "path/to/my/panel_chr{chr}.vcf.gz"
+path_panel = recursive_get(["imputation", "path_panel"], "")
+for chr in chromosomes:
+    file = path_panel.format(chr=chr)
+    if not os.path.isfile(file):
+        LOGGER.error(
+            f"ERROR: Panel file config[imputation][path_panel] ({path_panel}) does not exist for 'chr={chr}'!"
+        )
+        sys.exit(1)
+
+
+# This string contains a wildcard where we will place the name of the chromosome
+# something like "path/to/my/panel_chr{chr}.vcf.gz"
+path_map = recursive_get(["imputation", "path_map"], "")
+for chr in chromosomes:
+    file = path_map.format(chr=chr)
+    if not os.path.isfile(file):
+        LOGGER.error(
+            f"ERROR: Map file config[imputation][path_map] ({path_panel}) does not exist for 'chr={chr}'!"
+        )
+        sys.exit(1)
+
+
 
 
 # -----------------------------------------------------------------------------#
@@ -78,17 +93,7 @@ localrules:
 wildcard_constraints:
     #        gp="|".join([str(value) for value in gp]),
     chr="|".join([str(chr) for chr in chromosomes]),
-    sm="|".join([sm for sm in samples]),
-
-
-# rule aLL:
-#    input:
-#        phased_bcf=[
-#            f"GLIMPSE_phased/{sm}.GP{GP}.phased.{ext}"
-#            for sm in samples
-#            for GP in gp
-#            for ext in ["bcf", "bcf.csi"]
-#        ],
+    sm="|".join([sm for sm in SAMPLES]+[sm for gen in EXTERNAL_SAMPLES for sm in EXTERNAL_SAMPLES[gen]]),
 
 
 rule get_panel:
@@ -179,9 +184,9 @@ rule extract_positions:
 
 rule bcftools_mpileup:
     input:
-        genome=f"{{folder}}/00_reference/{genome[0]}/{genome[0]}.fasta",
-        bam=f"{{folder}}/03_sample/03_final_sample/01_bam/{{sm}}.{genome[0]}.bam",
-        bai=f"{{folder}}/03_sample/03_final_sample/01_bam/{{sm}}.{genome[0]}.bai",
+        ref=f"{{folder}}/00_reference/{GENOMES[0]}/{GENOMES[0]}.fasta",
+        bam=f"{{folder}}/03_sample/03_final_sample/01_bam/{{sm}}.{GENOMES[0]}.bam",
+        bai=f"{{folder}}/03_sample/03_final_sample/01_bam/{{sm}}.{GENOMES[0]}.bai",
         sites="{folder}/03_sample/04_imputed/01_panel/02_sites/chr{chr}.vcf.gz",
         tsv="{folder}/03_sample/04_imputed/01_panel/02_sites/chr{chr}.tsv.gz",
     output:
@@ -207,7 +212,7 @@ rule bcftools_mpileup:
         """
         header={output.final_vcf}.header;
         vcf_tmp={output.final_vcf}.tmp;
-        bcftools mpileup -f {input.genome} \
+        bcftools mpileup -f {input.ref} \
             -I -E -a 'FORMAT/DP' \
             -T {input.sites} -r {wildcards.chr} \
             -Ob --threads {threads} \
@@ -220,11 +225,11 @@ rule bcftools_mpileup:
         """
 
 
-# Split the genome into chunks
+# Split the GENOMES into chunks
 ## checkpoint: output may not be temporal!
 checkpoint glimpse_chunk:
     """
-    Split genome into chunks to be separately imputed
+    Split GENOMES into chunks to be separately imputed
     """
     input:
         "{folder}/03_sample/04_imputed/01_panel/01_panel/chr{chr}.vcf.gz",
@@ -233,7 +238,7 @@ checkpoint glimpse_chunk:
     params:
         params=recursive_get(["imputation", "glimse_chunk_params"], ""),
     message:
-        "--- GLIMSE_CHUNK: split genome (chr {wildcards.chr})"
+        "--- GLIMSE_CHUNK: split GENOMES (chr {wildcards.chr})"
     log:
         "{folder}/log/03_sample/04_imputed/04_glimpse_chunked/chunks_chr{chr}.log",
     resources:

@@ -17,7 +17,7 @@ rule get_fastq:
     input:
         get_fastq_of_ID,
     output:
-        temp("{folder}/00_reads/01_files_orig/{SM}/{LB}/{ID}.fastq.gz"),
+        temp("{folder}/00_reads/01_files_orig/{sm}/{lb}/{id}.fastq.gz"),
     threads: 1
     params:
         run=recursive_get(["subsampling", "run"], False),
@@ -30,7 +30,7 @@ rule get_fastq:
     message:
         "--- GET FASTQ FILES  {input}"
     log:
-        "{folder}/00_reads/01_files_orig/{SM}/{LB}/{ID}.fastq.gz.log",
+        "{folder}/00_reads/01_files_orig/{sm}/{lb}/{id}.fastq.gz.log",
     script:
         "../scripts/subsample_fastq.py"
 
@@ -41,14 +41,14 @@ rule get_fasta:
     Symlink and rename the reference (.fasta/.fa) to a new folder.
     """
     input:
-        lambda wildcards: recursive_get(["genome", wildcards.GENOME, "fasta"], ""),
+        lambda wildcards: recursive_get(["genome", wildcards.genome], ""),
     output:
-        temp("{folder}/00_reference/{GENOME}/{GENOME}.fasta"),
+        temp("{folder}/00_reference/{genome}/{genome}.fasta"),
     threads: 1
     message:
         "--- GET REFERENCE  {input}"
     log:
-        "{folder}/00_reference/{GENOME}/{GENOME}.fasta.log",
+        "{folder}/00_reference/{genome}/{genome}.fasta.log",
     shell:
         """
         ln -srf {input} {output}
@@ -78,28 +78,28 @@ rule adapter_removal_collapse:
     Remove adapter and low quality bases at the edges and collapse paired-end reads
     """
     input:
-        R1="{folder}/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_R1.fastq.gz",
-        R2="{folder}/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_R2.fastq.gz",
+        R1="{folder}/01_fastq/00_reads/01_files_orig/{sm}/{lb}/{id}_R1.fastq.gz",
+        R2="{folder}/01_fastq/00_reads/01_files_orig/{sm}/{lb}/{id}_R2.fastq.gz",
     output:
         R=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.fastq.gz"
+            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}.fastq.gz"
         ),
         trunc=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}_truncated.fastq.gz"
+            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}_truncated.fastq.gz"
         ),
         R1=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}_R1.fastq.gz"
+            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}_R1.fastq.gz"
         ),
         R2=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}_R2.fastq.gz"
+            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}_R2.fastq.gz"
         ),
         strunc=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.singleton.truncated.gz"
+            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}.singleton.truncated.gz"
         ),
         disc=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.discarded.gz"
+            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}.discarded.gz"
         ),
-        settings="{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.settings",
+        settings="{folder}/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}.settings",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("adapterremoval", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc(
@@ -111,7 +111,7 @@ rule adapter_removal_collapse:
             "--minlength 30 --trimns --trimqualities",
         ),
     log:
-        "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.log",
+        "{folder}/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}.log",
     threads: get_threads("adapterremoval", 4)
     conda:
         "../envs/adapterremoval.yaml"
@@ -135,22 +135,22 @@ rule adapter_removal_pe:
     Remove adapter and low quality bases at the edges
     """
     input:
-        R1="{folder}/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_R1.fastq.gz",
-        R2="{folder}/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_R2.fastq.gz",
+        R1="{folder}/01_fastq/00_reads/01_files_orig/{sm}/{lb}/{id}_R1.fastq.gz",
+        R2="{folder}/01_fastq/00_reads/01_files_orig/{sm}/{lb}/{id}_R2.fastq.gz",
     output:
         R1=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}_R1.fastq.gz"
+            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}_R1.fastq.gz"
         ),
         R2=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}_R2.fastq.gz"
+            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}_R2.fastq.gz"
         ),
         singleton=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.singleton.truncated.gz"
+            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}.singleton.truncated.gz"
         ),
         discarded=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.discarded.gz"
+            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}.discarded.gz"
         ),
-        settings="{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.settings",
+        settings="{folder}/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}.settings",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("adapterremoval", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc(
@@ -162,7 +162,7 @@ rule adapter_removal_pe:
             "--minlength 30 --trimns --trimqualities",
         ),
     log:
-        "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.log",
+        "{folder}/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}.log",
     threads: get_threads("adapterremoval", 4)
     conda:
         "../envs/adapterremoval.yaml"
@@ -184,15 +184,15 @@ rule adapter_removal_se:
     Remove adapter and low quality bases at the edges
     """
     input:
-        "{folder}/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}.fastq.gz",
+        "{folder}/01_fastq/00_reads/01_files_orig/{sm}/{lb}/{id}.fastq.gz",
     output:
         fastq=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.fastq.gz"
+            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}.fastq.gz"
         ),
         discard=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.discarded.gz"
+            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}.discarded.gz"
         ),
-        settings="{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.settings",
+        settings="{folder}/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}.settings",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("adapterremoval", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc(
@@ -204,8 +204,9 @@ rule adapter_removal_se:
             "--minlength 30 --trimns --trimqualities",
         ),
     log:
-        "{folder}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.log",
-    threads: get_threads("adapterremoval", 4)
+        "{folder}/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}.log",
+    threads: 
+        get_threads("adapterremoval", 4)
     conda:
         "../envs/adapterremoval.yaml"
     envmodules:
@@ -236,24 +237,24 @@ rule mapping_bwa_aln_se:
     """
     input:
         multiext(
-            "{folder}/00_reference/{GENOME}/{GENOME}.fasta",
+            "{folder}/00_reference/{genome}/{genome}.fasta",
             ".sa",
             ".amb",
             ".ann",
             ".bwt",
             ".pac",
         ),
-        ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
+        ref="{folder}/00_reference/{genome}/{genome}.fasta",
         fastq=get_fastq_4_mapping,
     output:
-        temp("{folder}/01_fastq/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}.sai"),
+        temp("{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}.{genome}.sai"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
         recursive_get(["mapping", "bwa_aln_params"], "-l 1024"),
     log:
-        "{folder}/01_fastq/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}.log",
+        "{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}.{genome}.log",
     threads: get_threads("mapping", 4)
     conda:
         "../envs/bwa.yaml"
@@ -273,18 +274,18 @@ rule mapping_bwa_aln_pe:
     """
     input:
         multiext(
-            "{folder}/00_reference/{GENOME}/{GENOME}.fasta",
+            "{folder}/00_reference/{genome}/{genome}.fasta",
             ".sa",
             ".amb",
             ".ann",
             ".bwt",
             ".pac",
         ),
-        ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
+        ref="{folder}/00_reference/{genome}/{genome}.fasta",
         fastq=get_fastq_4_mapping,
     output:
         temp(
-            "{folder}/01_fastq/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}_R{id_read}.sai"
+            "{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}.{genome}_R{id_read}.sai"
         ),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
@@ -292,7 +293,7 @@ rule mapping_bwa_aln_pe:
     params:
         recursive_get(["mapping", "bwa_aln_params"], "-l 1024"),
     log:
-        "{folder}/01_fastq/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}_R{id_read}.log",
+        "{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}.{genome}_R{id_read}.log",
     threads: get_threads("mapping", 4)
     conda:
         "../envs/bwa.yaml"
@@ -312,26 +313,26 @@ rule mapping_bwa_samse:
     """
     input:
         multiext(
-            "{folder}/00_reference/{GENOME}/{GENOME}.fasta",
+            "{folder}/00_reference/{genome}/{genome}.fasta",
             ".sa",
             ".amb",
             ".ann",
             ".bwt",
             ".pac",
         ),
-        ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
+        ref="{folder}/00_reference/{genome}/{genome}.fasta",
         fastq=get_fastq_4_mapping,
-        sai="{folder}/01_fastq/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}.sai",
+        sai="{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}.{genome}.sai",
     output:
-        temp("{folder}/01_fastq/02_mapped/02_bwa_samse/{SM}/{LB}/{ID}.{GENOME}.bam"),
+        temp("{folder}/01_fastq/02_mapped/02_bwa_samse/{sm}/{lb}/{id}.{genome}.bam"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
-        PL=lambda wildcards: samples[wildcards.SM][wildcards.LB][wildcards.ID]["PL"],
+        PL=lambda wildcards: SAMPLES[wildcards.sm][wildcards.lb][wildcards.id]["PL"],
         bwa_samse_params=recursive_get(["mapping", "bwa_samse_params"], "-n 3"),
     log:
-        "{folder}/01_fastq/02_mapped/02_bwa_samse/{SM}/{LB}/{ID}.{GENOME}.log",
+        "{folder}/01_fastq/02_mapped/02_bwa_samse/{sm}/{lb}/{id}.{genome}.log",
     threads: 1
     conda:
         "../envs/bwa.yaml"
@@ -343,7 +344,7 @@ rule mapping_bwa_samse:
     shell:
         """
         (bwa samse {params.bwa_samse_params} \
-         -r \"@RG\\tID:{wildcards.ID}\\tLB:{wildcards.LB}\\tSM:{wildcards.SM}\\tPL:{params.PL}\" \
+         -r \"@RG\\tID:{wildcards.id}\\tLB:{wildcards.lb}\\tSM:{wildcards.sm}\\tPL:{params.PL}\" \
          {input.ref} {input.sai} {input.fastq} | samtools view -Sb > {output}) 2> {log}
         """
 
@@ -354,28 +355,28 @@ rule mapping_bwa_sampe:
     """
     input:
         multiext(
-            "{folder}/00_reference/{GENOME}/{GENOME}.fasta",
+            "{folder}/00_reference/{genome}/{genome}.fasta",
             ".sa",
             ".amb",
             ".ann",
             ".bwt",
             ".pac",
         ),
-        ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
+        ref="{folder}/00_reference/{genome}/{genome}.fasta",
         fastq=get_fastq_4_mapping,
         ## should get both pairs
-        sai1="{folder}/01_fastq/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}_R1.sai",
-        sai2="{folder}/01_fastq/02_mapped/01_bwa_aln/{SM}/{LB}/{ID}.{GENOME}_R2.sai",
+        sai1="{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}.{genome}_R1.sai",
+        sai2="{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}.{genome}_R2.sai",
     output:
-        temp("{folder}/01_fastq/02_mapped/02_bwa_sampe/{SM}/{LB}/{ID}.{GENOME}.bam"),
+        temp("{folder}/01_fastq/02_mapped/02_bwa_sampe/{sm}/{lb}/{id}.{genome}.bam"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
-        PL=lambda wildcards: samples[wildcards.SM][wildcards.LB][wildcards.ID]["PL"],
+        PL=lambda wildcards: SAMPLES[wildcards.sm][wildcards.lb][wildcards.id]["PL"],
         bwa_sampe_params=recursive_get(["mapping", "bwa_sampe_params"], "-n 3"),
     log:
-        "{folder}/01_fastq/02_mapped/02_bwa_sampe/{SM}/{LB}/{ID}.{GENOME}.log",
+        "{folder}/01_fastq/02_mapped/02_bwa_sampe/{sm}/{lb}/{id}.{genome}.log",
     threads: 1
     conda:
         "../envs/bwa.yaml"
@@ -387,7 +388,7 @@ rule mapping_bwa_sampe:
     shell:
         """
         (bwa sampe {params.bwa_sampe_params} \
-             -r \"@RG\\tID:{wildcards.ID}\\tLB:{wildcards.LB}\\tSM:{wildcards.SM}\\tPL:{params.PL}\" \
+             -r \"@RG\\tID:{wildcards.id}\\tLB:{wildcards.lb}\\tSM:{wildcards.sm}\\tPL:{params.PL}\" \
              {input.ref} {input.sai1} {input.sai2} {input.fastq} | \
              samtools view -Sb > {output}) 2> {log}
         """
@@ -395,30 +396,31 @@ rule mapping_bwa_sampe:
 
 rule mapping_bwa_mem:
     """
-    Map reads to genome using bwa mem
+    Map reads to GENOMES using bwa mem
     """
     input:
         multiext(
-            "{folder}/00_reference/{GENOME}/{GENOME}.fasta",
+            "{folder}/00_reference/{genome}/{genome}.fasta",
             ".sa",
             ".amb",
             ".ann",
             ".bwt",
             ".pac",
         ),
-        ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
+        ref="{folder}/00_reference/{genome}/{genome}.fasta",
         fastq=get_fastq_4_mapping,
     output:
-        temp("{folder}/01_fastq/02_mapped/02_bwa_mem/{SM}/{LB}/{ID}.{GENOME}.bam"),
+        temp("{folder}/01_fastq/02_mapped/02_bwa_mem/{sm}/{lb}/{id}.{genome}.bam"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
-        PL=lambda wildcards: samples[wildcards.SM][wildcards.LB][wildcards.ID]["PL"],
+        PL=lambda wildcards: SAMPLES[wildcards.sm][wildcards.lb][wildcards.id]["PL"],
         bwa_mem_params=recursive_get(["mapping", "bwa_mem_params"], ""),
     log:
-        "{folder}/01_fastq/02_mapped/02_bwa_mem/{SM}/{LB}/{ID}.{GENOME}.log",
-    threads: get_threads("mapping", 4)
+        "{folder}/01_fastq/02_mapped/02_bwa_mem/{sm}/{lb}/{id}.{genome}.log",
+    threads: 
+        get_threads("mapping", 4)
     conda:
         "../envs/bwa.yaml"
     envmodules:
@@ -429,18 +431,18 @@ rule mapping_bwa_mem:
     shell:
         """
         bwa mem {params.bwa_mem_params} -t {threads} \
-            -R \"@RG\\tID:{wildcards.ID}\\tLB:{wildcards.LB}\\tSM:{wildcards.SM}\\tPL:{params.PL}\" \
+            -R \"@RG\\tID:{wildcards.id}\\tLB:{wildcards.lb}\\tSM:{wildcards.sm}\\tPL:{params.PL}\" \
             {input.ref} {input.fastq} 2> {log} | samtools view -bS --threads {threads} - > {output};
         """
 
 
 rule mapping_bowtie2:
     """
-    Map reads to genome using bowtie2
+    Map reads to GENOMES using bowtie2
     """
     input:
         multiext(
-            "{folder}/00_reference/{GENOME}/{GENOME}.fasta",
+            "{folder}/00_reference/{genome}/{genome}.fasta",
             ".1.bt2",
             ".2.bt2",
             ".3.bt2",
@@ -448,17 +450,17 @@ rule mapping_bowtie2:
             ".rev.1.bt2",
             ".rev.2.bt2",
         ),
-        ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
+        ref="{folder}/00_reference/{genome}/{genome}.fasta",
         fastq=get_fastq_4_mapping,
     output:
-        temp("{folder}/01_fastq/02_mapped/02_bwa_bowtie2/{SM}/{LB}/{ID}.{GENOME}.bam"),
+        temp("{folder}/01_fastq/02_mapped/02_bwa_bowtie2/{sm}/{lb}/{id}.{genome}.bam"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
         bowtie2_params=recursive_get(["mapping", "bowtie2_params"], ""),
     log:
-        "{folder}/01_fastq/02_mapped/02_bwa_bowtie2/{SM}/{LB}/{ID}.{GENOME}.log",
+        "{folder}/01_fastq/02_mapped/02_bwa_bowtie2/{sm}/{lb}/{id}.{genome}.log",
     threads: get_threads("mapping", 4)
     conda:
         "../envs/bowtie2.yaml"
@@ -482,12 +484,12 @@ rule samtools_sort:
     input:
         get_bam_4_sorting,
     output:
-        temp("{folder}/01_fastq/02_mapped/03_bam_sort/{SM}/{LB}/{ID}.{GENOME}.bam"),
+        temp("{folder}/01_fastq/02_mapped/03_bam_sort/{sm}/{lb}/{id}.{genome}.bam"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("sorting", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("sorting", attempt, 24),
     log:
-        "{folder}/01_fastq/02_mapped/03_bam_sort/{SM}/{LB}/{ID}.{GENOME}.log",
+        "{folder}/01_fastq/02_mapped/03_bam_sort/{sm}/{lb}/{id}.{genome}.log",
     threads: get_threads("sorting", 4)
     conda:
         "../envs/samtools.yaml"
@@ -511,16 +513,16 @@ if save_low_qual:
         Filter mappings following quality and keeping the low quality mappings
         """
         input:
-            "{folder}/01_fastq/02_mapped/03_bam_sort/{SM}/{LB}/{ID}.{GENOME}.bam",
+            "{folder}/01_fastq/02_mapped/03_bam_sort/{sm}/{lb}/{id}.{genome}.bam",
         output:
             mapped=temp(
-                "{folder}/01_fastq/03_filtered/01_bam_filter/{SM}/{LB}/{ID}.{GENOME}.bam"
+                "{folder}/01_fastq/03_filtered/01_bam_filter/{sm}/{lb}/{id}.{genome}.bam"
             ),
             low_qual=temp(
-                "{folder}/01_fastq/03_filtered/01_bam_filter_low_qual/{SM}/{LB}/{ID}.{GENOME}.bam"
+                "{folder}/01_fastq/03_filtered/01_bam_filter_low_qual/{sm}/{lb}/{id}.{genome}.bam"
             ),
         params:
-            q=lambda wildcards: samples[wildcards.SM][wildcards.LB][wildcards.ID][
+            q=lambda wildcards: SAMPLES[wildcards.sm][wildcards.lb][wildcards.id][
                 "MAPQ"
             ],
         resources:
@@ -529,8 +531,9 @@ if save_low_qual:
                 "filtering", attempt, 24
             ),
         log:
-            "{folder}/01_fastq/03_filtered/01_bam_filter/{SM}/{LB}/{ID}.{GENOME}.log",
-        threads: get_threads("filtering", 4)
+            "{folder}/01_fastq/03_filtered/01_bam_filter/{sm}/{lb}/{id}.{genome}.log",
+        threads: 
+            get_threads("filtering", 4)
         conda:
             "../envs/samtools.yaml"
         envmodules:
@@ -551,13 +554,13 @@ else:
         Filter mappings following quality and discard low quality mappings
         """
         input:
-            "{folder}/01_fastq/02_mapped/03_bam_sort/{SM}/{LB}/{ID}.{GENOME}.bam",
+            "{folder}/01_fastq/02_mapped/03_bam_sort/{sm}/{lb}/{id}.{genome}.bam",
         output:
             mapped=temp(
-                "{folder}/01_fastq/03_filtered/01_bam_filter/{SM}/{LB}/{ID}.{GENOME}.bam"
+                "{folder}/01_fastq/03_filtered/01_bam_filter/{sm}/{lb}/{id}.{genome}.bam"
             ),
         params:
-            q=lambda wildcards: samples[wildcards.SM][wildcards.LB][wildcards.ID][
+            q=lambda wildcards: SAMPLES[wildcards.sm][wildcards.lb][wildcards.id][
                 "MAPQ"
             ],
         resources:
@@ -566,7 +569,7 @@ else:
                 "filtering", attempt, 24
             ),
         log:
-            "{folder}/01_fastq/03_filtered/01_bam_filter/{SM}/{LB}/{ID}.{GENOME}.log",
+            "{folder}/01_fastq/03_filtered/01_bam_filter/{sm}/{lb}/{id}.{genome}.log",
         threads: get_threads("filtering", 4)
         conda:
             "../envs/samtools.yaml"

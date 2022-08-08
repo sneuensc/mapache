@@ -40,56 +40,36 @@ memory_increment_ratio: 0.5
 runtime_increment_ratio: 0.5
 
 ##########################################################################################
-# Samples file and output directory
+# Samples 
 ##########################################################################################
 # Example samples file. Modify to map to your own samples.
 sample_file: config/samples.tsv
 
+## external bam files to run the analyses on (without mapping)
+bam_list:
+    hg19:
+        test1: /users/sneuensc/work_sneuensc/mapping_pipeline/mapache_test2/results/03_sample/03_final_sample/01_bam/ind1.hg19.bam
+        test2: /users/sneuensc/work_sneuensc/mapping_pipeline/mapache_test2/results/03_sample/03_final_sample/01_bam/ind2.hg19.bam
+
+#sample_file: ""
+
+##########################################################################################
+# OUTPUT FOLDER 
+##########################################################################################
 # By default, all outputs will be stored in a folder named "results"
-result_dir: 'results'
+result_dir: 'results'#
 #workdir: 
 
 ##########################################################################################
 # One or multiple reference genomes
 ##########################################################################################
 
-# Lis the genome(s) to which each sample will be mappped.
+# Lis the genome(s) to which each sample will be mapped.
+# Include meaningful names for each genome. Final BAM(s) file will be named after it 
+# (e.g., ind1.hg19.bam)
 genome: 
-    # Include meaningful names for each genome. Final BAM(s) file will be named after it 
-    # (e.g., ind1.hg19.bam)
-    hg19: 
-        fasta: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/hs.build37.1/hs.build37.1.fa
-        # Mapache outputs the depth of coverage (DoC) for each of the genomes. 
-        # If you also want the DoC to be reported for some chromosomes in the main stats table, list them below. 
-        # Their names have to match their IDs in the FASTA file specified above.
-        depth_chromosomes: "X,Y,MT"
-        # parameters specific to sex inference
-        sex_inference:
-            run: True
-            # uncomment options below if you need to change any value
-            params:
-                # List with the autosomes names. You can paste any python expression here, in single quotes ('), for example:
-                    # '[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]'
-                    # '[f"chr{x}" for x in range(1,23)]'  # chr1,chr2,chr3,...,chr22.
-                    # '[x for x in range(1,23)]'          # 1,2,3,...,22.
-                    # the outcome should be a python list
-                autosomes: '[x for x in range(1,23)]'
-                sex_chr: X
-                # Possible options: XY, ZW, XO, ZO
-                system: XY 
-                signif: 0.9
-                # These are the thresholds used to assign molecular sex, in R syntax.
-                # For humans, we expect a ratio of DoC(X)/DoC(genome) = 1 for females and DoC(X)/DoC(genome) = 0.5 for males.
-                # Note that sex will be assigned by considering the confidence intervals around the estimate for such ratio,
-                # which can be a bit lower or higher than 1 or 0.5.
-                # This option can be commented as the sex script comes with default values for different sex systems.
-                # thresholds:  list( "XX"=c(0.8, 1.2), "XY"=c(0, 0.6), "consistent with XX but not XY"=c(0.6, 1.2), "consistent with XY but not XX"=c(0, 0.8) )
-    
-    # Include meaningful names for each genome. Final BAM(s) file will be named after it 
-    # (e.g., ind1.GRCh38.bam)
-    GRCh38:
-        fasta: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/GCA_000001405.15_GRCh38.p13_onlyChrom/GCA_000001405.15_GRCh38.fa
-        # You can as well add the options specified for hg19 here and adapt them to GRCh38 (for example, chrX instead of X)
+    hg19: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/hs.build37.1/hs.build37.1.fa
+    GRCh38: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/GCA_000001405.15_GRCh38.p13_onlyChrom/GCA_000001405.15_GRCh38.fa
 
 
 ##########################################################################################
@@ -190,7 +170,7 @@ damage_rescale:
 
 # realign around indels with GATK 
 realign:
-    run: True
+    run: False
     threads: 4
     mem: 16
     time: 4
@@ -229,22 +209,10 @@ compute_md:
     #    iind1: yes.bam
     #    iind2: no.bam
 stats:
-    only_stats: False
-    bam_list: None 
     # Default: run it for samples in samples file.
     # If intended to compute stats on BAMs downloaded or mapped with other tools, see instructions above
     fastqc_time: 4
     
-    ## damage statistics (read length, deamination rates)
-    run_damage: 'bamdamage'        # Options: ("False", "bamdamage", "mapDamage")
-    bamdamage_fraction: 5000
-    # This step can take a lot of time. We recommend to run it on a small subset of the mapped
-    # reads in order to get an estimate of the damage. The value can be an integer (number of reads)
-    # or a float (fraction of mapped reads)
-    bamdamage_params: ' --rlength 100 --plot_length 30'
-    # This parameter indicates that the estimation will be done with the first 100 bp of each read
-    # and the plots will include the first and last 30 bp.
-
     # Output qualimap and multiqc reports?
     qualimap: True
     multiqc: True
@@ -270,13 +238,66 @@ stats:
         sex_ribbons: 'c("XX"="#7e3075", "XY"="#003e83")'
         color: "#f2ad78"
 
+
+
+##########################################################################################  
+## Analyses
+damage:
+    ## damage statistics (read length, deamination rates)
+    run: 'bamdamage'        # Options: ("False", "bamdamage", "mapDamage")
+    bamdamage_fraction: 5000
+    # This step can take a lot of time. We recommend to run it on a small subset of the mapped
+    # reads in order to get an estimate of the damage. The value can be an integer (number of reads)
+    # or a float (fraction of mapped reads)
+    bamdamage_params: ' --rlength 100 --plot_length 30'
+    # This parameter indicates that the estimation will be done with the first 100 bp of each read
+    # and the plots will include the first and last 30 bp.
+
+depth:
+    hg19:
+        run: True
+        # Mapache outputs the depth of coverage (DoC) for each of the genomes. 
+        # If you also want the DoC to be reported for some chromosomes in the main stats table, list them below. 
+        # Their names have to match their IDs in the FASTA file specified above.
+        chromosomes: ["X", "Y", "MT"]
+        # parameters specific to sex inference
+        
+        
+sex_inference:
+    hg19:
+        run: True
+        # uncomment options below if you need to change any value
+        # List with the autosomes names. You can paste any python expression here, in single quotes ('), for example:
+            # '[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]'
+            # '[f"chr{x}" for x in range(1,23)]'  # chr1,chr2,chr3,...,chr22.
+            # '[x for x in range(1,23)]'          # 1,2,3,...,22.
+            # the outcome should be a python list
+        autosomes: '[x for x in range(1,23)]'
+        sex_chr: X
+        # Possible options: XY, ZW, XO, ZO
+        system: XY 
+        signif: 0.9
+        # These are the thresholds used to assign molecular sex, in R syntax.
+        # For humans, we expect a ratio of DoC(X)/DoC(genome) = 1 for females and DoC(X)/DoC(genome) = 0.5 for males.
+        # Note that sex will be assigned by considering the confidence intervals around the estimate for such ratio,
+        # which can be a bit lower or higher than 1 or 0.5.
+        # This option can be commented as the sex script comes with default values for different sex systems.
+        # thresholds:  list( "XX"=c(0.8, 1.2), "XY"=c(0, 0.6), "consistent with XX but not XY"=c(0.6, 1.2), "consistent with XY but not XX"=c(0, 0.8) )
+    
+
 ##########################################################################################  
 # Imputation with  GLIMPSE
 imputation:
     run: True
+
+    num_imputations: 2
+
+
     #ref_genome: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/hs.build37.1/hs.build37.1.fa
     ## The imputation is done using the first named reference genome 'genome/{name}/fasta'
     gp_filter: [0.8]
+
+    ## path_map and path_panel may specify a single file OR may contain the variable '{chr}' to specify it per chromosome 
     path_map: "/work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/genetic_maps_b37/chr{chr}.b37.gmap.gz"
     path_panel: "/work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/1000Genomes/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"
 
@@ -284,10 +305,12 @@ imputation:
     # The version of the panel and chromosome names should match those of
     # the reference genome to which individual samples were mapped.
     #chromosomes: '[str(x) for x in range(1,23)]+["X","Y"]'
-    ## chromosomes: 20
+    
+    chromosomes: 20
 
     glimse_chunk_params: "--region 20"
     glimse_phase_params: ""
+
 
     # Input BAM files can be listed individually under the "paths" keyword
     # Alternatively, you can pass a plain text file (bam_list)

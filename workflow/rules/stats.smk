@@ -29,10 +29,10 @@ rule fastqc:
     input:
         fastq=inputs_fastqc,
     output:
-        html="{folder}/04_stats/01_sparse_stats/01_fastq/{type}/{SM}/{LB}/{ID}_fastqc.html",
-        zip="{folder}/04_stats/01_sparse_stats/01_fastq/{type}/{SM}/{LB}/{ID}_fastqc.zip",
+        html="{folder}/04_stats/01_sparse_stats/01_fastq/{type}/{sm}/{lb}/{id}_fastqc.html",
+        zip="{folder}/04_stats/01_sparse_stats/01_fastq/{type}/{sm}/{lb}/{id}_fastqc.zip",
     log:
-        "{folder}/04_stats/01_sparse_stats/01_fastq/{type}/{SM}/{LB}/{ID}_fastqc.log",
+        "{folder}/04_stats/01_sparse_stats/01_fastq/{type}/{sm}/{lb}/{id}_fastqc.log",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
             ["stats", "fastqc"], attempt, 2
@@ -68,7 +68,7 @@ rule samtools_flagstat:
     input:
         bam=get_bam_file,
     output:
-        "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_flagstat.txt",
+        "{folder}/04_stats/01_sparse_stats/{file}.{genome}_flagstat.txt",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
             ["stats", "samtools_flagstat"], attempt, 2
@@ -77,7 +77,7 @@ rule samtools_flagstat:
             ["stats", "samtools_flagstat"], attempt, 1
         ),
     log:
-        "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_flagstat.log",
+        "{folder}/04_stats/01_sparse_stats/{file}.{genome}_flagstat.log",
     conda:
         "../envs/samtools.yaml"
     envmodules:
@@ -95,7 +95,7 @@ rule samtools_stats:
     input:
         get_bam_file,
     output:
-        "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_stats.txt",
+        "{folder}/04_stats/01_sparse_stats/{file}.{genome}_stats.txt",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
             ["stats", "samtools_stats"], attempt, 2
@@ -104,7 +104,7 @@ rule samtools_stats:
             ["stats", "samtools_stats"], attempt, 1
         ),
     log:
-        "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_stats.log",
+        "{folder}/04_stats/01_sparse_stats/{file}.{genome}_stats.log",
     conda:
         "../envs/samtools.yaml"
     envmodules:
@@ -145,7 +145,7 @@ rule read_length:
     input:
         get_bam_file,
     output:
-        "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_length.txt",
+        "{folder}/04_stats/01_sparse_stats/{file}.{genome}_length.txt",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
             ["stats", "read_length"], attempt, 2
@@ -154,7 +154,7 @@ rule read_length:
             ["stats", "read_length"], attempt, 1
         ),
     log:
-        "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_length.log",
+        "{folder}/04_stats/01_sparse_stats/{file}.{genome}_length.log",
     conda:
         "../envs/samtools.yaml"
     envmodules:
@@ -174,7 +174,7 @@ rule samtools_idxstats:
         bam=get_bam_file,
         bai=lambda wildcards: bam2bai(get_bam_file(wildcards)),
     output:
-        "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_idxstats.txt",
+        "{folder}/04_stats/01_sparse_stats/{file}.{genome}_idxstats.txt",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
             ["stats", "samtools_idxstats"], attempt, 2
@@ -183,7 +183,7 @@ rule samtools_idxstats:
             ["stats", "samtools_idxstats"], attempt, 1
         ),
     log:
-        "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_idxstats.log",
+        "{folder}/04_stats/01_sparse_stats/{file}.{genome}_idxstats.log",
     conda:
         "../envs/samtools.yaml"
     envmodules:
@@ -198,9 +198,9 @@ rule samtools_idxstats:
 
 rule assign_sex:
     input:
-        "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_idxstats.txt",
+        "{folder}/04_stats/01_sparse_stats/{file}.{genome}_idxstats.txt",
     output:
-        "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_sex.txt",
+        "{folder}/04_stats/01_sparse_stats/{file}.{genome}_sex.txt",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
             ["stats", "assign_sex"], attempt, 2
@@ -213,13 +213,13 @@ rule assign_sex:
             [
                 f"--{key}='{value}'"
                 for key, value in recursive_get(
-                    ["genome", wildcards.GENOME, "sex_inference", "params"], {}
+                    ["sex_inference", wildcards.genome, "params"], {}
                 ).items()
             ]
         ),
         script=workflow.source_path("../scripts/assign_sex.R"),
     log:
-        "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_sex.log",
+        "{folder}/04_stats/01_sparse_stats/{file}.{genome}_sex.log",
     conda:
         "../envs/r.yaml"
     envmodules:
@@ -237,9 +237,9 @@ rule assign_sex:
 
 rule assign_no_sex:
     output:
-        "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_nosex.txt",
+        "{folder}/04_stats/01_sparse_stats/{file}.{genome}_nosex.txt",
     log:
-        "{folder}/04_stats/01_sparse_stats/{file}.{GENOME}_sex.log",
+        "{folder}/04_stats/01_sparse_stats/{file}.{genome}_sex.log",
     message:
         "--- NO SEX ASSIGNEMENT"
     shell:
@@ -253,18 +253,18 @@ rule assign_no_sex:
 ## merging individual stats
 rule merge_stats_per_fastq:
     input:
-        fastqc_orig="{folder}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_fastqc.zip",  # raw sequenced reads
-        fastqc_trim="{folder}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}_fastqc.zip"
+        fastqc_orig="{folder}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{sm}/{lb}/{id}_fastqc.zip",  # raw sequenced reads
+        fastqc_trim="{folder}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}_fastqc.zip"
         if run_adapter_removal
-        else "{folder}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_fastqc.zip",
+        else "{folder}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{sm}/{lb}/{id}_fastqc.zip",
         ## as the orig file
         # raw trimmed reads
-        stats_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}_stats.txt",  # mapped and high-qual reads
-        length_fastq_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}_length.txt",
+        stats_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{sm}/{lb}/{id}.{genome}_stats.txt",  # mapped and high-qual reads
+        length_fastq_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{sm}/{lb}/{id}.{genome}_length.txt",
     output:
-        "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv",
+        "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/{id}/fastq_stats.csv",
     log:
-        "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.log",
+        "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/{id}/fastq_stats.log",
     params:
         script=workflow.source_path("../scripts/merge_stats_per_fastq.R"),
         script_parse_fastqc=workflow.source_path("../scripts/parse_fastqc.R"),
@@ -278,10 +278,10 @@ rule merge_stats_per_fastq:
         """
 
         Rscript {params.script} \
-            --ID={wildcards.ID} \
-            --LB={wildcards.LB} \
-            --SM={wildcards.SM} \
-            --genome={wildcards.GENOME} \
+            --id={wildcards.id} \
+            --lb={wildcards.lb} \
+            --sm={wildcards.sm} \
+            --genome={wildcards.genome} \
             --output_file={output} \
             --path_fastqc_orig={input.fastqc_orig} \
             --path_fastqc_trim={input.fastqc_trim} \
@@ -294,24 +294,23 @@ rule merge_stats_per_fastq:
 rule merge_stats_per_lb:
     input:
         fastq_stats=lambda wildcards: expand(
-            "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/{ID}/fastq_stats.csv",
-            ID=samples[wildcards.SM][wildcards.LB],
+            "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/{id}/fastq_stats.csv",
+            id=SAMPLES[wildcards.sm][wildcards.lb],
             allow_missing=True,
         ),
-        stats_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_stats.txt",
-        length_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_length.txt",
-        #genomecov_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_genomecov.txt",
-        idxstats_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_idxstats.txt",
-        sex_unique=lambda wildcards: get_sex_file(wildcards, "LB"),
+        stats_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{sm}/{lb}.{genome}_stats.txt",
+        length_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{sm}/{lb}.{genome}_length.txt",
+        #genomecov_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{sm}/{lb}.{genome}_genomecov.txt",
+        idxstats_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{sm}/{lb}.{genome}_idxstats.txt",
     output:
-        "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/library_stats.csv",
+        "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/library_stats.csv",
     params:
         chrs_selected=lambda wildcards: recursive_get(
-            ["genome", wildcards.GENOME, "depth_chromosomes"], "not_requested"
+            ["depth", wildcards.genome, "chromosomes"], "not_requested"
         ),
         script=workflow.source_path("../scripts/merge_stats_per_LB.R"),
     log:
-        "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/library_stats.log",
+        "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/library_stats.log",
     conda:
         "../envs/r.yaml"
     envmodules:
@@ -330,15 +329,14 @@ rule merge_stats_per_lb:
         fi
 
         Rscript {params.script} \
-            --LB={wildcards.LB} \
-            --SM={wildcards.SM} \
-            --genome={wildcards.GENOME} \
+            --lb={wildcards.lb} \
+            --sm={wildcards.sm} \
+            --genome={wildcards.genome} \
             --output_file={output} \
             --path_list_stats_fastq=${{list_fastq_stats}} \
             --path_stats_unique={input.stats_unique} \
             --path_length_unique={input.length_unique} \
             --path_idxstats_unique={input.idxstats_unique} \
-            --path_sex_unique={input.sex_unique} \
             $chrsSelected
         """
 
@@ -346,28 +344,28 @@ rule merge_stats_per_lb:
 rule merge_stats_per_sm:
     input:
         lb_stats=lambda wildcards: expand(
-            "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/{LB}/library_stats.csv",
-            LB=samples[wildcards.SM],
+            "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/library_stats.csv",
+            lb=SAMPLES[wildcards.sm],
             allow_missing=True,
         ),
-        length_unique="{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_length.txt",
-        idxstats_unique="{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_idxstats.txt",
-        sex_unique=lambda wildcards: get_sex_file(wildcards, "SM"),
+        length_unique="{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{sm}.{genome}_length.txt",
+        idxstats_unique="{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{sm}.{genome}_idxstats.txt",
+        sex_unique=lambda wildcards: get_sex_file(wildcards),
     output:
-        "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/sample_stats.csv",
+        "{folder}/04_stats/02_separate_tables/{genome}/{sm}/sample_stats.csv",
     params:
         chrs_selected=lambda wildcards: recursive_get(
-            ["genome", wildcards.GENOME, "depth_chromosomes"], "not_requested"
+            ["depth", wildcards.genome, "chromosomes"], "not_requested"
         ),
         script=workflow.source_path("../scripts/merge_stats_per_SM.R"),
     log:
-        "{folder}/04_stats/02_separate_tables/{GENOME}/{SM}/sample_stats.log",
+        "{folder}/04_stats/02_separate_tables/{genome}/{sm}/sample_stats.log",
     conda:
         "../envs/r.yaml"
     envmodules:
         module_r,
     message:
-        "--- MERGE SAMPLE LEVEL STATS of {wildcards.SM} / {wildcards.GENOME}"
+        "--- MERGE SAMPLE LEVEL STATS of {wildcards.sm} / {wildcards.genome}"
     shell:
         """
         list_lb_stats=$(echo {input.lb_stats} |sed 's/ /,/g');
@@ -380,8 +378,8 @@ rule merge_stats_per_sm:
         fi
 
         Rscript {params.script} \
-            --SM={wildcards.SM} \
-            --genome={wildcards.GENOME} \
+            --sm={wildcards.sm} \
+            --genome={wildcards.genome} \
             --output_file={output} \
             --path_list_stats_lb=$list_lb_stats \
             --path_length_unique={input.length_unique} \
@@ -395,14 +393,14 @@ rule merge_stats_per_sm:
 # merge all the stats in the same level
 
 
-# Here level can be: SM, LB, FASTQ
+# Here level can be: sm, lb, FASTQ
 rule merge_stats_by_level_and_genome:
     input:
         paths=path_stats_by_level,
     output:
-        "{folder}/04_stats/03_summary/{level}_stats.{GENOME}.csv",
+        "{folder}/04_stats/03_summary/{level}_stats.{genome}.csv",
     log:
-        "{folder}/04_stats/03_summary/{level}_stats.{GENOME}.log",
+        "{folder}/04_stats/03_summary/{level}_stats.{genome}.log",
     message:
         "--- MERGE STATS by {wildcards.level}"
     run:
@@ -413,12 +411,12 @@ rule merge_stats_by_level_and_genome:
         df.to_csv(str(output), index=False)
 
 
-# Here level can be: SM, LB, FASTQ
+# Here level can be: sm, lb, FASTQ
 rule merge_stats_all_genomes:
     input:
         expand(
-            "{folder}/04_stats/03_summary/{level}_stats.{GENOME}.csv",
-            GENOME=genome,
+            "{folder}/04_stats/03_summary/{level}_stats.{genome}.csv",
+            genome=GENOMES,
             allow_missing=True,
         ),
     output:
@@ -453,9 +451,9 @@ rule merge_stats_all_genomes:
 # read depth by chromosome
 rule DoC_chr_SM:
     input:
-        "{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_genomecov",
+        "{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{sm}.{genome}_genomecov",
     output:
-        "{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_DoC_chrs.csv",
+        "{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{sm}.{genome}_DoC_chrs.csv",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
             ["stats", "DoC_chr_SM"], attempt, 2
@@ -466,7 +464,7 @@ rule DoC_chr_SM:
     params:
         script=workflow.source_path("../scripts/depth_by_chr.R"),
     log:
-        "{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_DoC_chrs.log",
+        "{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{sm}.{genome}_DoC_chrs.log",
     conda:
         "../envs/r.yaml"
     envmodules:
@@ -475,7 +473,7 @@ rule DoC_chr_SM:
         """
         Rscript {params.script} \
             --path_genomecov={input} \
-            --SM={wildcards.SM} \
+            --sm={wildcards.sm} \
             --output_file={output}
         """
 
@@ -483,14 +481,14 @@ rule DoC_chr_SM:
 rule merge_DoC_chr:
     input:
         lambda wildcards: expand(
-            "{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_DoC_chrs.csv",
-            SM=samples,
+            "{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{sm}.{genome}_DoC_chrs.csv",
+            sm=SAMPLES,
             allow_missing=True,
         ),
     output:
-        "{folder}/04_stats/03_summary/DoC_by_chrs.{GENOME}.csv",
+        "{folder}/04_stats/03_summary/DoC_by_chrs.{genome}.csv",
     log:
-        "{folder}/04_stats/03_summary/DoC_by_chrs.{GENOME}.log",
+        "{folder}/04_stats/03_summary/DoC_by_chrs.{genome}.log",
     run:
         import pandas as pd
 
@@ -509,45 +507,45 @@ rule bamdamage:
     Run bamdamage to quantify the deamination pattern
     """
     input:
-        ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
+        ref="{folder}/00_reference/{genome}/{genome}.fasta",
         bam=get_final_bam_LB,
-        idxstats="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_idxstats.txt",
+        idxstats="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{sm}/{lb}.{genome}_idxstats.txt",
     output:
-        damage_pdf="{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.dam.pdf",
-        length_pdf="{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.length.pdf",
+        damage_pdf="{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}.dam.pdf",
+        length_pdf="{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}.length.pdf",
         length_table=report(
-            "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.length.csv",
+            "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}.length.csv",
             category="Read length",
             subcategory="Tables",
         ),
         dam_5prime_table=report(
-            "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.dam_5prime.csv",
+            "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}.dam_5prime.csv",
             category="Damage pattern",
             subcategory="Tables",
         ),
         dam_3prime_table=report(
-            "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.dam_3prime.csv",
+            "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}.dam_3prime.csv",
             category="Damage pattern",
             subcategory="Tables",
         ),
     log:
-        "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}_bamdamage.log",
+        "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}_bamdamage.log",
     threads: 1
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc2(
-            ["stats", "bamdamage"], attempt, 4
+        memory=lambda wildcards, attempt: get_memory_alloc(
+            ["bamdamage"], attempt, 4
         ),
-        runtime=lambda wildcards, attempt: get_runtime_alloc2(
-            ["stats", "bamdamage"], attempt, 24
+        runtime=lambda wildcards, attempt: get_runtime_alloc(
+            ["bamdamage"], attempt, 24
         ),
     message:
         "--- RUN BAMDAMAGE {input.bam}"
     params:
-        params=recursive_get(["stats", "bamdamage_params"], ""),
-        fraction=recursive_get(["stats", "bamdamage_fraction"], 0),
+        params=recursive_get(["damage", "bamdamage_params"], ""),
+        fraction=recursive_get(["damage", "bamdamage_fraction"], 0),
         script=workflow.source_path("../scripts/bamdamage"),
     log:
-        "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}_bamdamage.log",
+        "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}_bamdamage.log",
     conda:
         "../envs/bamdamage.yaml"
     envmodules:
@@ -580,17 +578,17 @@ rule plot_bamdamage:
     Run bamdamage to quantify the deamination pattern
     """
     input:
-        length_table="{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.length.csv",
-        dam_5prime_table="{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.dam_5prime.csv",
-        dam_3prime_table="{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.dam_3prime.csv",
+        length_table="{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}.length.csv",
+        dam_5prime_table="{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}.dam_5prime.csv",
+        dam_3prime_table="{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}.dam_3prime.csv",
     output:
         length=report(
-            "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.length.svg",
+            "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}.length.svg",
             category="Read length",
             subcategory="Plots",
         ),
         damage=report(
-            "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}.dam.svg",
+            "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}.dam.svg",
             category="Damage pattern",
             subcategory="Plots",
         ),
@@ -600,7 +598,7 @@ rule plot_bamdamage:
         script=workflow.source_path("../scripts/plot_bamdamage.R"),
         params=recursive_get(["stats", "bamdamage_params"], ""),
     log:
-        "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{SM}/{LB}.{GENOME}_plot.log",
+        "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}_plot.log",
     conda:
         "../envs/r.yaml"
     envmodules:
@@ -615,9 +613,9 @@ rule plot_bamdamage:
             --length={input.length_table} \
             --five_prime={input.dam_5prime_table} \
             --three_prime={input.dam_3prime_table} \
-            --sample={wildcards.SM} \
-            --library={wildcards.LB} \
-            --genome={wildcards.GENOME} \
+            --sample={wildcards.sm} \
+            --library={wildcards.lb} \
+            --genome={wildcards.genome} \
             --length_svg={output.length} \
             --damage_svg={output.damage} \
             $plot_length
@@ -698,7 +696,7 @@ rule plot_summary_statistics:
     shell:
         """
         Rscript {params.script} \
-            --SM={input.sample_stats}  \
+            --sm={input.sample_stats}  \
             --out_1_reads={output.plot_1_nb_reads} \
             --out_2_mapped={output.plot_2_mapped} \
             --out_3_endogenous={output.plot_3_endogenous} \
@@ -751,58 +749,58 @@ rule multiqc:
     """
     input:
         orig=lambda wildcards: [
-            f"{{folder}}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{SM}/{LB}/{ID}_fastqc.zip"
-            for SM in samples
-            for LB in samples[SM]
-            for ID in samples[SM][LB]
+            f"{{folder}}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{sm}/{lb}/{id}_fastqc.zip"
+            for sm in SAMPLES
+            for lb in SAMPLES[sm]
+            for id in SAMPLES[sm][lb]
         ],
         adaptRem=lambda wildcards: [
-            f"{{folder}}/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}.settings"
-            for SM in samples
-            for LB in samples[SM]
-            for ID in samples[SM][LB]
+            f"{{folder}}/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}.settings"
+            for sm in SAMPLES
+            for lb in SAMPLES[sm]
+            for id in SAMPLES[sm][lb]
             if run_adapter_removal
         ],
         trim=lambda wildcards: [
-            f"{{folder}}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_adapter_removal/{SM}/{LB}/{ID}_fastqc.zip"
-            for SM in samples
-            for LB in samples[SM]
-            for ID in samples[SM][LB]
+            f"{{folder}}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}_fastqc.zip"
+            for sm in SAMPLES
+            for lb in SAMPLES[sm]
+            for id in SAMPLES[sm][lb]
             if run_adapter_removal
         ],
         samtools_stats1=lambda wildcards: [
-            f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{SM}/{LB}/{ID}.{GENOME}_stats.txt"
-            for GENOME in genome
-            for SM in samples
-            for LB in samples[SM]
-            for ID in samples[SM][LB]
+            f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{sm}/{lb}/{id}.{genome}_stats.txt"
+            for genome in GENOMES
+            for sm in SAMPLES
+            for lb in SAMPLES[sm]
+            for id in SAMPLES[sm][lb]
         ],
         samtools_stats2=lambda wildcards: [
-            f"{RESULT_DIR}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{SM}/{LB}.{GENOME}_stats.txt"
-            for GENOME in genome
-            for SM in samples
-            for LB in samples[SM]
-            for ID in samples[SM][LB]
+            f"{RESULT_DIR}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{sm}/{lb}.{genome}_stats.txt"
+            for genome in GENOMES
+            for sm in SAMPLES
+            for lb in SAMPLES[sm]
+            for id in SAMPLES[sm][lb]
         ],
         samtools_stats3=lambda wildcards: [
-            f"{RESULT_DIR}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_stats.txt"
-            for GENOME in genome
-            for SM in samples
-            for LB in samples[SM]
-            for ID in samples[SM][LB]
+            f"{RESULT_DIR}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{sm}.{genome}_stats.txt"
+            for genome in GENOMES
+            for sm in SAMPLES
+            for lb in SAMPLES[sm]
+            for id in SAMPLES[sm][lb]
         ],
         qualimap=lambda wildcards: [
-            f"{RESULT_DIR}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{SM}.{GENOME}_qualimap"
-            for GENOME in genome
-            for SM in samples
-            for LB in samples[SM]
-            for ID in samples[SM][LB]
+            f"{RESULT_DIR}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{sm}.{genome}_qualimap"
+            for genome in GENOMES
+            for sm in SAMPLES
+            for lb in SAMPLES[sm]
+            for id in SAMPLES[sm][lb]
             for files in ["genome_results.txt", "raw_data_qualimapReport"]
             if str2bool(recursive_get(["stats", "qualimap"], False))
         ],
     output:
         html=report(
-            "{folder}/04_stats/02_separate_tables/{GENOME}/multiqc_fastqc.html",
+            "{folder}/04_stats/02_separate_tables/{genome}/multiqc_fastqc.html",
             category=" Quality control",
         ),
     resources:
@@ -815,13 +813,13 @@ rule multiqc:
     params:
         config="config/multiqc_config.yaml",
     log:
-        "{folder}/04_stats/02_separate_tables/{GENOME}/multiqc_fastqc.log",
+        "{folder}/04_stats/02_separate_tables/{genome}/multiqc_fastqc.log",
     conda:
         "../envs/multiqc.yaml"
     envmodules:
         module_multiqc,
     message:
-        "--- MULTIQC fastqc of {GENOME}"
+        "--- MULTIQC fastqc of {genome}"
     shell:
         """
         multiqc -c {params.config} -n $(basename {output.html}) -f -d -o $(dirname {output.html}) {input}  2> {log}

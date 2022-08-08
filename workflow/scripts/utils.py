@@ -15,11 +15,11 @@ from snakemake.io import Wildcards
 def write_log():
     ## reference genome
     if len(GENOMES) == 1:
-        LOGGER.info(f"REFERENCE genome: 1 genome is specified:")
+        LOGGER.info(f"REFERENCE GENOME: 1 genome is specified:")
     elif len(GENOMES) < 4:
-        LOGGER.info(f"REFERENCE genome: {len(GENOMES)} genomes are specified:")
+        LOGGER.info(f"REFERENCE GENOME: {len(GENOMES)} genomes are specified:")
     else:
-        LOGGER.info(f"REFERENCE genome: {len(GENOMES)} genomes are specified.")
+        LOGGER.info(f"REFERENCE GENOME: {len(GENOMES)} genomes are specified.")
 
     ## get all chromosome names and store them in the dict config[chromosomes][genome][all] for later use
     for i, genome in enumerate(GENOMES):
@@ -32,14 +32,17 @@ def write_log():
             if name:
                 all_sex_chr = recursive_get(["chromosome", genome, "all_sex_chr"], "")
                 LOGGER.info(
-                    f"    - Detected genome as '{name}': Applying default chromosome names for sex and mt chromosomes {all_sex_chr}"
+                    f"    - Detected genome as '{name}': Applying default chromosome names for sex and mt chromosomes"
                 )
             sex_chr = recursive_get(["chromosome", genome, "sex_chr"], "")
             if sex_chr:
-                LOGGER.info(f"    - Inferring sex")
-            depth = recursive_get(["chromosome", genome, "depth"], "")
-            if depth:
-                LOGGER.info(f"    - Computing depth of chromosomes {depth}")
+                LOGGER.info(f"    - Sex chromosome (X): {to_list(sex_chr)}")
+            autosomes = recursive_get(["chromosome", genome, "autosomes"], "")
+            if autosomes:
+                if(len(autosomes)> 10):
+                    LOGGER.info(f"    - Autosomes: {autosomes[:4] + ['...'] + autosomes[-4:]}")
+                else:
+                    LOGGER.info(f"    - Autosomes: {autosomes}")
         elif i == 4:
             LOGGER.info(f"    - ...")
         else:

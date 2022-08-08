@@ -12,13 +12,13 @@ rule merge_bam_library2sample:
     input:
         get_bam_4_merge_bam_library2sample,
     output:
-        temp("{folder}/03_sample/00_merged_library/01_bam/{SM}.{GENOME}.bam"),
+        temp("{folder}/03_sample/00_merged_library/01_bam/{sm}.{genome}.bam"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24),
     threads: get_threads("merging", 4)
     log:
-        "{folder}/03_sample/00_merged_library/01_bam/{SM}.{GENOME}.log",
+        "{folder}/03_sample/00_merged_library/01_bam/{sm}.{genome}.log",
     conda:
         "../envs/samtools.yaml"
     envmodules:
@@ -38,13 +38,13 @@ rule merge_bam_low_qual_library2sample:
     input:
         get_bam_4_merge_bam_low_qual_library2sample,
     output:
-        temp("{folder}/03_sample/00_merged_library/01_bam_low_qual/{SM}.{GENOME}.bam"),
+        temp("{folder}/03_sample/00_merged_library/01_bam_low_qual/{sm}.{genome}.bam"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24),
     threads: get_threads("merging", 4)
     log:
-        "{folder}/03_sample/00_merged_library/01_bam_low_qual/{SM}.{GENOME}.log",
+        "{folder}/03_sample/00_merged_library/01_bam_low_qual/{sm}.{genome}.log",
     conda:
         "../envs/samtools.yaml"
     envmodules:
@@ -62,17 +62,17 @@ rule realign:
     Realign sequence around indels.
     """
     input:
-        ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
-        fai="{folder}/00_reference/{GENOME}/{GENOME}.fasta.fai",
-        dict="{folder}/00_reference/{GENOME}/{GENOME}.dict",
+        ref="{folder}/00_reference/{genome}/{genome}.fasta",
+        fai="{folder}/00_reference/{genome}/{genome}.fasta.fai",
+        dict="{folder}/00_reference/{genome}/{genome}.dict",
         bam=get_bam_4_realign,
         bai=lambda wildcards: bam2bai(get_bam_4_realign(wildcards)),
     output:
-        bam=temp("{folder}/03_sample/01_realigned/01_realign/{SM}.{GENOME}.bam"),
+        bam=temp("{folder}/03_sample/01_realigned/01_realign/{sm}.{genome}.bam"),
         intervals=temp(
-            "{folder}/03_sample/01_realigned/01_realign/{SM}.{GENOME}.intervals"
+            "{folder}/03_sample/01_realigned/01_realign/{sm}.{genome}.intervals"
         ),
-        bai=temp("{folder}/03_sample/01_realigned/01_realign/{SM}.{GENOME}.bai"),
+        bai=temp("{folder}/03_sample/01_realigned/01_realign/{sm}.{genome}.bai"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("realign", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("realign", attempt, 24),
@@ -80,7 +80,7 @@ rule realign:
     params:
         GATK=get_gatk_bin(),
     log:
-        "{folder}/03_sample/01_realigned/01_realign/{SM}.{GENOME}.log",
+        "{folder}/03_sample/01_realigned/01_realign/{sm}.{genome}.log",
     conda:
         "../envs/gatk3.yaml"
     envmodules:
@@ -100,16 +100,16 @@ rule samtools_calmd:
     Recompute the md flag.
     """
     input:
-        ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
+        ref="{folder}/00_reference/{genome}/{genome}.fasta",
         bam=get_bam_4_samtools_calmd,
     output:
-        temp("{folder}/03_sample/02_md_flag/01_md_flag/{SM}.{GENOME}.bam"),
+        temp("{folder}/03_sample/02_md_flag/01_md_flag/{sm}.{genome}.bam"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("calmd", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("calmd", attempt, 24),
     threads: get_threads("calmd", 4)
     log:
-        "{folder}/03_sample/02_md_flag/01_md_flag/{SM}.{GENOME}.log",
+        "{folder}/03_sample/02_md_flag/01_md_flag/{sm}.{genome}.log",
     conda:
         "../envs/samtools.yaml"
     envmodules:
@@ -121,42 +121,25 @@ rule samtools_calmd:
         samtools calmd --threads {threads} {input.bam} {input.ref} 2> {log} | samtools view -bS - > {output}
         """
 
-if str2bool(recursive_get_and_test(["stats", "only_stats"], ["False", "True"])):
-    rule get_final_bam:
-        """
-        Link the bam files
-        """
-        input:
-            get_bam_4_final_bam,
-        output:
-            "{folder}/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.bam",
-        threads: 1
-        log:
-            "{folder}/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.bam.log",
-        message:
-            "--- SIMLINKK FINAL BAM {output}"
-        shell:
-            """
-            cp {input} {output}
-            """
-else:
-    rule get_final_bam:
-        """
-        Get the final bam files 
-        """
-        input:
-            get_bam_4_final_bam,
-        output:
-            "{folder}/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.bam",
-        threads: 1
-        log:
-            "{folder}/03_sample/03_final_sample/01_bam/{SM}.{GENOME}.bam.log",
-        message:
-            "--- SIMLINKK FINAL BAM {output}"
-        shell:
-            """
-            cp {input} {output}
-            """
+
+rule get_final_bam:
+    """
+    Get the final bam files 
+    """
+    input:
+        get_bam_4_final_bam,
+    output:
+        "{folder}/03_sample/03_final_sample/01_bam/{sm}.{genome}.bam",
+    threads: 1
+    log:
+        "{folder}/03_sample/03_final_sample/01_bam/{sm}.{genome}.bam.log",
+    message:
+        "--- GET FINAL BAM {output}"
+    run:
+        if wildcards.sm in list(EXTERNAL_SAMPLES[wildcards.genome]):
+            shell("ln -srf {input} {output}")
+        else:
+            shell("cp {input} {output}")
 
 
 rule get_final_bam_low_qual:
@@ -166,12 +149,12 @@ rule get_final_bam_low_qual:
     input:
         get_bam_4_final_bam_low_qual,
     output:
-        "{folder}/03_sample/03_final_sample/01_bam_low_qual/{SM}.{GENOME}.bam",
+        "{folder}/03_sample/03_final_sample/01_bam_low_qual/{sm}.{genome}.bam",
     threads: 1
     log:
-        "{folder}/03_sample/03_final_sample/01_bam_low_qual/{SM}.{GENOME}.bam.log",
+        "{folder}/03_sample/03_final_sample/01_bam_low_qual/{sm}.{genome}.bam.log",
     message:
-        "--- SIMLINKK FINAL LOW_QUAL BAM {output}"
+        "--- GET FINAL LOW_QUAL BAM {output}"
     shell:
         """
         cp {input} {output}

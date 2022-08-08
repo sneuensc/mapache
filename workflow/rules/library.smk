@@ -10,13 +10,13 @@ rule merge_bam_fastq2library:
     input:
         get_bam_4_merge_bam_fastq2library,
     output:
-        temp("{folder}/02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}.bam"),
+        temp("{folder}/02_library/00_merged_fastq/01_bam/{sm}/{lb}.{genome}.bam"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24),
     threads: get_threads("merging", 4)
     log:
-        "{folder}/02_library/00_merged_fastq/01_bam/{SM}/{LB}.{GENOME}.log",
+        "{folder}/02_library/00_merged_fastq/01_bam/{sm}/{lb}.{genome}.log",
     conda:
         "../envs/samtools.yaml"
     envmodules:
@@ -37,14 +37,14 @@ rule merge_bam_low_qual_fastq2library:
         get_bam_4_merge_bam_low_qual_fastq2library,
     output:
         temp(
-            "{folder}/02_library/00_merged_fastq/01_bam_low_qual/{SM}/{LB}.{GENOME}.bam"
+            "{folder}/02_library/00_merged_fastq/01_bam_low_qual/{sm}/{lb}.{genome}.bam"
         ),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24),
     threads: get_threads("merging", 4)
     log:
-        "{folder}/02_library/00_merged_fastq/01_bam_low_qual/{SM}/{LB}.{GENOME}.log",
+        "{folder}/02_library/00_merged_fastq/01_bam_low_qual/{sm}/{lb}.{genome}.log",
     conda:
         "../envs/samtools.yaml"
     envmodules:
@@ -65,9 +65,9 @@ rule markduplicates:
         get_bam_4_markduplicates,
     output:
         bam=temp(
-            "{folder}/02_library/01_duplicated/01_markduplicates/{SM}/{LB}.{GENOME}.bam"
+            "{folder}/02_library/01_duplicated/01_markduplicates/{sm}/{lb}.{genome}.bam"
         ),
-        stats="{folder}/02_library/01_duplicated/01_markduplicates/{SM}/{LB}.{GENOME}.stats",
+        stats="{folder}/02_library/01_duplicated/01_markduplicates/{sm}/{lb}.{genome}.stats",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc(
             "remove_duplicates", attempt, 4
@@ -82,7 +82,7 @@ rule markduplicates:
         PICARD=get_picard_bin(),
     threads: get_threads("remove_duplicates", 4)
     log:
-        "{folder}/02_library/01_duplicated/01_markduplicates/{SM}/{LB}.{GENOME}.log",
+        "{folder}/02_library/01_duplicated/01_markduplicates/{sm}/{lb}.{genome}.log",
     conda:
         "../envs/picard.yaml"
     envmodules:
@@ -103,10 +103,10 @@ rule dedup:
     input:
         get_bam_4_markduplicates,
     output:
-        json="{folder}/02_library/01_duplicated/01_dedup/{SM}/{LB}.{GENOME}.dedup.json",
-        hist="{folder}/02_library/01_duplicated/01_dedup/{SM}/{LB}.{GENOME}.hist",
-        log="{folder}/02_library/01_duplicated/01_dedup/{SM}/{LB}.{GENOME}.log",
-        bam=temp("{folder}/02_library/01_duplicated/01_dedup/{SM}/{LB}.{GENOME}.bam"),
+        json="{folder}/02_library/01_duplicated/01_dedup/{sm}/{lb}.{genome}.dedup.json",
+        hist="{folder}/02_library/01_duplicated/01_dedup/{sm}/{lb}.{genome}.hist",
+        log="{folder}/02_library/01_duplicated/01_dedup/{sm}/{lb}.{genome}.log",
+        bam=temp("{folder}/02_library/01_duplicated/01_dedup/{sm}/{lb}.{genome}.bam"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc(
             "remove_duplicates", attempt, 4
@@ -121,13 +121,13 @@ rule dedup:
         not in [
             i["Data2"]
             for i in recursive_get(
-                [wildcards.SM, wildcards.LB, wildcards.ID, "Data2"],
+                [wildcards.sm, wildcards.lb, wildcards.id, "Data2"],
                 [],
                 my_dict=samples,
             ).values()
         ],
     log:
-        "{folder}/02_library/01_duplicated/01_dedup/{SM}/{LB}.{GENOME}.log",
+        "{folder}/02_library/01_duplicated/01_dedup/{sm}/{lb}.{genome}.log",
     conda:
         "../envs/dedup.yaml"
     envmodules:
@@ -154,20 +154,20 @@ rule mapDamage_stats:
     Run mapDamage to quantify the deamination pattern
     """
     input:
-        ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
+        ref="{folder}/00_reference/{genome}/{genome}.fasta",
         bam=get_bam_4_damage,
     output:
-        #directory("{folder}/02_library/02_rescaled/01_mapDamage/{SM}/{LB}.{GENOME}_results_mapDamage"),
+        #directory("{folder}/02_library/02_rescaled/01_mapDamage/{sm}/{lb}.{genome}_results_mapDamage"),
         deamination=report(
-            "{folder}/02_library/02_rescaled/01_mapDamage/{SM}/{LB}.{GENOME}_results_mapDamage/Fragmisincorporation_plot.pdf",
+            "{folder}/02_library/02_rescaled/01_mapDamage/{sm}/{lb}.{genome}_results_mapDamage/Fragmisincorporation_plot.pdf",
             category="Damage pattern",
         ),
         length=report(
-            "{folder}/02_library/02_rescaled/01_mapDamage/{SM}/{LB}.{GENOME}_results_mapDamage/Length_plot.pdf",
+            "{folder}/02_library/02_rescaled/01_mapDamage/{sm}/{lb}.{genome}_results_mapDamage/Length_plot.pdf",
             category="Read length distribution",
         ),
     log:
-        "{folder}/02_library/02_rescaled/01_mapDamage/{SM}/{LB}.{GENOME}_stats.log",
+        "{folder}/02_library/02_rescaled/01_mapDamage/{sm}/{lb}.{genome}_stats.log",
     threads: 1
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("mapdamage", attempt, 4),
@@ -190,16 +190,16 @@ rule mapDamage_rescale:
     Run mapDamage to rescale bam file
     """
     input:
-        ref="{folder}/00_reference/{GENOME}/{GENOME}.fasta",
+        ref="{folder}/00_reference/{genome}/{genome}.fasta",
         bam=get_bam_4_damage,
-        deamination="{folder}/02_library/02_rescaled/01_mapDamage/{SM}/{LB}.{GENOME}_results_mapDamage/Fragmisincorporation_plot.pdf",
+        deamination="{folder}/02_library/02_rescaled/01_mapDamage/{sm}/{lb}.{genome}_results_mapDamage/Fragmisincorporation_plot.pdf",
     output:
-        bam=temp("{folder}/02_library/02_rescaled/01_mapDamage/{SM}/{LB}.{GENOME}.bam"),
+        bam=temp("{folder}/02_library/02_rescaled/01_mapDamage/{sm}/{lb}.{genome}.bam"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("mapdamage", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapdamage", attempt, 24),
     log:
-        "{folder}/02_library/02_rescaled/01_mapDamage/{SM}/{LB}.{GENOME}_rescale.log",
+        "{folder}/02_library/02_rescaled/01_mapDamage/{sm}/{lb}.{genome}_rescale.log",
     threads: 1
     params:
         params=recursive_get(["mapdamage", "params"], ""),
