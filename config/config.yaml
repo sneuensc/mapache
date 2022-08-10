@@ -45,13 +45,28 @@ runtime_increment_ratio: 0.5
 # Example samples file. Modify to map to your own samples.
 sample_file: config/samples.tsv
 
-## external bam files to run the analyses on (without mapping)
-bam_list:
+# Some statistics (like depth of coverage) can be computed for BAM files that were obtained
+# by other means (e.g., downloaded from public repositories). Note that in that case, mapache
+# assumes that the data were mapped to the first reference genome listed in the config file.
+    ## by default ("") the stats are computed on the final bam files from the mapping pipeline. 
+    ## To use on other pre-computed bam files,
+    ## one can pass a list of bam files either in an external file (in this case the parameter 'external_sample' should contain the file name) in the format:
+    ##   SM    Data      Genome 
+    ##   ind1  bam1.bam  hg19
+    ##   ind2  bam2.bam  hg19
+    ##   ...
+    ## or directly in the config file in the yaml format as:
+    ##   stats:
+    ##      bam_list:
+    ##        ind1:  path_to_bam1.bam
+    ##        ind2:  path_to_bam2.bam
+    ##        ...
+
+
+external_sample:
     hg19:
         test1: /users/sneuensc/work_sneuensc/mapping_pipeline/mapache_test2/results/03_sample/03_final_sample/01_bam/ind1.hg19.bam
         test2: /users/sneuensc/work_sneuensc/mapping_pipeline/mapache_test2/results/03_sample/03_final_sample/01_bam/ind2.hg19.bam
-
-#sample_file: ""
 
 ##########################################################################################
 # OUTPUT FOLDER 
@@ -188,26 +203,6 @@ compute_md:
 # This section corresponds to the statistics reported by mapache.
 # By default, it is run together with the mapping pipeline for all the combinations of
 # input FASTQ files and genomes.
-# Some statistics (like depth of coverage) can be computed for BAM files that were obtained
-# by other means (e.g., downloaded from public repositories). Note that in that case, mapache
-# assumes that the data were mapped to the first reference genome listed in the cofig file.
-    ## by default (None) the stats are computed on the final bam files from the mapping pipeline. 
-    ## To use on other pre-computed bam files,
-    ## one can pass a list of bam files either in an external file (in this case the parameter 'bam_list' should contain the file name) in the format:
-    ##   SM    Data
-    ##   ind1  path_to_bam1.bam
-    ##   ind2  path_to_bam2.bam
-    ##   ...
-    ## or directly in the config file in the yaml format as:
-    ##   stats:
-    ##      bam_list:
-    ##        ind1:  path_to_bam1.bam
-    ##        ind2:  path_to_bam2.bam
-    ##        ...
-    #bam_list: config/samples_stats.tsv
-    #bam_list: 
-    #    iind1: yes.bam
-    #    iind2: no.bam
 stats:
     # Default: run it for samples in samples file.
     # If intended to compute stats on BAMs downloaded or mapped with other tools, see instructions above

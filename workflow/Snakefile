@@ -201,7 +201,7 @@ if run_imputation:
         len(EXTERNAL_SAMPLES) > 1 or list(EXTERNAL_SAMPLES)[0] != GENOMES[0]
     ):
         LOGGER.error(
-            f"ERROR: Imputation will only be run on the first specified reference GENOMES ({GENOMES[0]}). Parameter config[bam_list] contains also other reference genomes!"
+            f"ERROR: Imputation will only be run on the first specified reference GENOMES ({GENOMES[0]}). Parameter config[external_sample] contains also other reference genomes!"
         )
         sys.exit(1)
 

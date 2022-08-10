@@ -354,27 +354,27 @@ def get_sex_file(wc):
 ##########################################################################################
 ## stats
 
-## read config[bam_list]
+## read config[external_sample]
 def get_external_samples():
-    bam_list = recursive_get(["bam_list"], "")
-    if bam_list == "":
+    external_sample = recursive_get(["external_sample"], "")
+    if external_sample == "":
         return {}
 
-    if isinstance(bam_list, dict):
-        samples_stats = bam_list
+    if isinstance(external_sample, dict):
+        samples_stats = external_sample
 
-    elif os.path.isfile(bam_list):
-        db_stats = pd.read_csv(bam_list, sep=delim, comment="#", dtype=str)
+    elif os.path.isfile(external_sample):
+        db_stats = pd.read_csv(external_sample, sep=delim, comment="#", dtype=str)
         colnames = ["sm", "Data", "Genome"]
         if not set(colnames).issubset(db_stats.columns):
             LOGGER.error(
-                f"ERROR: The column names in the bam file (given by paramter config[bam_list]) are wrong! Expected are {colnames}!"
+                f"ERROR: The column names in the bam file (given by paramter config[external_sample]) are wrong! Expected are {colnames}!"
             )
             sys.exit(1)
         samples_stats = dict(zip(db_stats.sm, db_stats.Data, db_stats.Genome))
     else:
         LOGGER.error(
-            "ERROR: The argument of parameter config[bam_list] is not valide '{bam_list}'!"
+            "ERROR: The argument of parameter config[external_sample] is not valide '{external_sample}'!"
         )
         sys.exit(1)
 
@@ -383,14 +383,14 @@ def get_external_samples():
         ## does the GENOMES name exist?
         if genome not in GENOMES:
             LOGGER.error(
-                f"ERROR: Genome name config[bam_list] does not exist ({genome})!"
+                f"ERROR: Genome name config[external_sample] does not exist ({genome})!"
             )
             sys.exit(1)
 
         ## test if there are duplicated sample names
         if len(list(samples_stats[genome])) != len(set(list(samples_stats[genome]))):
             LOGGER.error(
-                f"ERROR: Parameter config[bam_list][{genome}] contains duplicated sample names!"
+                f"ERROR: Parameter config[external_sample][{genome}] contains duplicated sample names!"
             )
             sys.exit(1)
 
@@ -398,7 +398,7 @@ def get_external_samples():
         for bam in list(samples_stats[genome].values()):
             if not os.path.isfile(bam):
                 LOGGER.error(
-                    f"ERROR: Bam file config[bam_list][genome][{s}][bam] does not exist ({bam})!"
+                    f"ERROR: Bam file config[external_sample][genome][{s}][bam] does not exist ({bam})!"
                 )
                 sys.exit(1)
 
