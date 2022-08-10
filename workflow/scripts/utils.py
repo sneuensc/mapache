@@ -440,7 +440,7 @@ def to_list(x):
 
    
 def is_external_sample(sample, genome):
-    return ( genome in EXTERNAL_SAMPLES and sample in list(EXTERNAL_SAMPLES[genome]))
+    return (genome in EXTERNAL_SAMPLES and sample in list(EXTERNAL_SAMPLES[genome]))
 
 ## eval a list with potential eval elements
 #def eval_list(x):
