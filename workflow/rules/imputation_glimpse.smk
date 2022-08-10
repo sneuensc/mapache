@@ -238,6 +238,7 @@ checkpoint glimpse_chunk:
     """
     input:
         "{folder}/03_sample/04_imputed/01_panel/01_panel/chr{chr}.vcf.gz",
+        "{folder}/03_sample/04_imputed/01_panel/01_panel/chr{chr}.vcf.gz.csi",
     output:
         chunks="{folder}/03_sample/04_imputed/04_glimpse_chunked/chunks_chr{chr}.txt",
     params:
