@@ -23,6 +23,7 @@
 #-----------------------------------------------------------------------------#
 args <- commandArgs(TRUE)
  
+
 ## Default setting when no arguments passed
 if(length(args) < 1) {
   args <- c("--help")
@@ -34,14 +35,17 @@ if("--help" %in% args) {
       Get stats per fastq file
  
       Arguments:
-      --SM=sample                         - character, sample ID. Default: NA
-      --LB=library                        - character, library ID. Default: NA
-      --ID=id                             - character, FASTQ ID. Default: NA
-      --help                              - print this text
- 
-      Example:
+      --sm=sample                 - character, sample ID. Default: NA
 
-      "
+      --path_list_stats_lb        - e.g., results/04_stats/02_separate_tables/hg19/ind1/lib1_lb/library_stats.csv,results/04_stats/02_separate_tables/hg19/ind1/lib2_lb/library_stats.csv
+      --path_length_unique        - e.g., results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/ind1.hg19_length.txt
+      --path_idxstats_unique      - e.g., results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/ind1.hg19_idxstats.txt
+      --path_sex_unique           - e.g., results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/ind1.hg19_sex.txt
+      --chrs_selected             - e.g., X,Y,MT
+
+      --output_file               - e.g., results/04_stats/02_separate_tables/hg19/ind1/sample_stats.csv
+
+      --help                      - print this text"
       )
  
   q(save="no")
@@ -68,13 +72,12 @@ get_args <- function(argsL, name, default){
 
 
 
-SM = get_args(argsL, "SM")
+SM = get_args(argsL, "sm")
 genome = get_args(argsL, "genome")
 output_file = get_args(argsL, "output_file")
 
 path_list_stats_lb = get_args(argsL, "path_list_stats_lb")
 path_length_unique = get_args(argsL, "path_length_unique")
-#path_genomecov_unique = get_args(argsL, "path_genomecov_unique")
 path_idxstats_unique = get_args(argsL, "path_idxstats_unique")
 path_sex_unique = get_args(argsL, "path_sex_unique")
 chrs_selected = get_args(argsL, "chrs_selected", NULL)
@@ -90,12 +93,17 @@ chrs_selected = get_args(argsL, "chrs_selected", NULL)
 # path_sex_unique         = "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/ind2.GRCh38_sex"
 # chrs_selected           = "chrX,chrY,chrMT"
 #-----------------------------------------------------------------------------#
+## get number of reported chromosome depths
+nb_chrs_depth = 0
+if(!is.null(chrs_selected)){
+    nb_chrs_depth = length(unlist(strsplit(chrs_selected, ",")))
+}
 
 ## double is used instead of integer, as integers are limited in size:
 ##   "Note that current implementations of R use 32-bit integers for integer vectors, so the range
-##   of representable integers is restricted to about +/-2*10^9: doubles can hold much larger integers exactly.""
+##    of representable integers is restricted to about +/-2*10^9: doubles can hold much larger integers exactly.""
 stats_lb = do.call(rbind, lapply(strsplit(path_list_stats_lb, ",")[[1]], read.csv, 
-        colClasses = c(rep("character", 3), rep("numeric",14), "character", rep("numeric",2))))
+        colClasses = c(rep("character", 3), rep("numeric", 13 + nb_chrs_depth))))
 mapped_unique = sum(stats_lb$mapped_unique) # should give the same
 #mapped_unique = as.double(strsplit(readLines(path_flagstat_unique)[1], " ")[[1]][1])
 length_unique_table = read.table(path_length_unique, header = T, sep = "\t", colClasses = c("numeric", "numeric"))
@@ -107,6 +115,7 @@ idxstats = read.table(
     col.names=c("chr", "length", "mapped", "unmapped")
     )
 sex_unique = read.csv(path_sex_unique)
+
 #-----------------------------------------------------------------------------#
 calc_avg_len <- function(l){ sum(l$n_reads * l$length) / sum(l$n_reads) }
 calc_DoC <- function(genomecov, chr){
@@ -146,6 +155,8 @@ length_mapped_unique = calc_avg_len(length_unique_table)
 
 read_depth = calc_DoC_idxstats(idxstats = idxstats, read_length = length_mapped_unique, chr = idxstats$chr)
 
+
+
 my_stats = data.frame(
     genome = genome, SM = SM, 
     reads_raw = reads_raw,
@@ -158,7 +169,7 @@ my_stats = data.frame(
     length_reads_raw = length_reads_raw,
     length_reads_trimmed = length_reads_trimmed,
     length_mapped_raw = length_mapped_raw,
-    length_mapped_unique,
+    length_mapped_uniquem = length_mapped_unique,
     endogenous_raw = endogenous_raw,
     endogenous_unique = endogenous_unique,
     read_depth = read_depth,

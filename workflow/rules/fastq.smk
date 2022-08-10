@@ -205,8 +205,7 @@ rule adapter_removal_se:
         ),
     log:
         "{folder}/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}.log",
-    threads: 
-        get_threads("adapterremoval", 4)
+    threads: get_threads("adapterremoval", 4)
     conda:
         "../envs/adapterremoval.yaml"
     envmodules:
@@ -419,8 +418,7 @@ rule mapping_bwa_mem:
         bwa_mem_params=recursive_get(["mapping", "bwa_mem_params"], ""),
     log:
         "{folder}/01_fastq/02_mapped/02_bwa_mem/{sm}/{lb}/{id}.{genome}.log",
-    threads: 
-        get_threads("mapping", 4)
+    threads: get_threads("mapping", 4)
     conda:
         "../envs/bwa.yaml"
     envmodules:
@@ -532,8 +530,7 @@ if save_low_qual:
             ),
         log:
             "{folder}/01_fastq/03_filtered/01_bam_filter/{sm}/{lb}/{id}.{genome}.log",
-        threads: 
-            get_threads("filtering", 4)
+        threads: get_threads("filtering", 4)
         conda:
             "../envs/samtools.yaml"
         envmodules:

@@ -66,7 +66,7 @@ get_args <- function(argsL, name, default){
 }
 
 # getting arguments
-sm                  = get_args(argsL, "SM", "SM_stats.csv")
+sm                  = get_args(argsL, "sm", "SM_stats.csv")
 out_1_reads         = get_args(argsL, "out_1_reads", "plot_1_nb_reads.png")
 out_2_mapped        = get_args(argsL, "out_2_mapped", "plot_2_mapped.png")
 out_3_endogenous    = get_args(argsL, "out_3_endogenous", "plot_3_endogenous.png")

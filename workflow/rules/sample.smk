@@ -136,7 +136,7 @@ rule get_final_bam:
     message:
         "--- GET FINAL BAM {output}"
     run:
-        if wildcards.sm in list(EXTERNAL_SAMPLES[wildcards.genome]):
+        if is_external_sample(wildcards.sm, wildcards.genome):
             shell("ln -srf {input} {output}")
         else:
             shell("cp {input} {output}")

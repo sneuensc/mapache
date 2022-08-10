@@ -82,12 +82,8 @@ SAMPLES, paired_end, collapse = read_sample_file(sample_file)
 EXTERNAL_SAMPLES = get_external_samples()
 
 if len(SAMPLES) + len(EXTERNAL_SAMPLES) == 0:
-    LOGGER.error(
-        f"ERROR: No samples are specified)!"
-    )
+    LOGGER.error(f"ERROR: No samples are specified)!")
     sys.exit(1)
-   
-
 
 
 ##########################################################################################
@@ -144,10 +140,7 @@ if remove_duplicates == "dedup" and not paired_end:
 run_damage_rescale = str2bool(
     recursive_get_and_test(["damage_rescale", "run"], ["False", "True"])
 )
-if (
-    run_damage_rescale
-    and recursive_get(["damage", "run"], "False") != "mapDamage"
-):
+if run_damage_rescale and recursive_get(["damage", "run"], "False") != "mapDamage":
     LOGGER.error(
         "ERROR: To use config[damage_rescale][run] the parameter config[damage][run] has to be set to 'mapDamage'!"
     )
@@ -166,7 +159,6 @@ run_compute_md = str2bool(
 )
 
 
-
 ##########################################################################################
 ##  ANALYSES
 ##########################################################################################
@@ -178,13 +170,13 @@ run_damage = recursive_get_and_test(
 ## sex inference
 run_sex_inference = []
 for genome in GENOMES:
-    if str2bool(recursive_get_and_test(["sex_inference", genome, "run"], ["False", "True"])):
+    if str2bool(
+        recursive_get_and_test(["sex_inference", genome, "run"], ["False", "True"])
+    ):
         run_sex_inference = run_sex_inference + [genome]
         set_sex_inference(genome)
-    
-        ## test if the specified chromosomes are valid
 
-
+## test if the specified chromosomes are valid
 
 
 ## depth
@@ -200,19 +192,18 @@ run_imputation = str2bool(
     recursive_get_and_test(["imputation", "run"], ["False", "True"])
 )
 if run_imputation:
-    if len(GENOMES) > 1:
-        LOGGER.warning(
-            f"WARNING: Imputation will only be run on the first specified reference GENOMES ({GENOMES[0]})."
-        )
+    #if len(GENOMES) > 1:
+    #    LOGGER.warning(
+    #        f"WARNING: Imputation will only be run on the first specified reference GENOMES ({GENOMES[0]})."
+    #    )
 
-    if EXTERNAL_SAMPLES and (len(EXTERNAL_SAMPLES) > 1 or list(EXTERNAL_SAMPLES)[0] != GENOMES[0]):
+    if EXTERNAL_SAMPLES and (
+        len(EXTERNAL_SAMPLES) > 1 or list(EXTERNAL_SAMPLES)[0] != GENOMES[0]
+    ):
         LOGGER.error(
             f"ERROR: Imputation will only be run on the first specified reference GENOMES ({GENOMES[0]}). Parameter config[bam_list] contains also other reference genomes!"
         )
         sys.exit(1)
-
-        
- 
 
 
 ##########################################################################################
@@ -227,8 +218,6 @@ run_qualimap = str2bool(
 run_multiqc = str2bool(recursive_get_and_test(["stats", "multiqc"], ["False", "True"]))
 
 
-
-
 ##########################################################################################
 include: "rules/index.smk"
 include: "rules/stats.smk"
@@ -239,14 +228,6 @@ include: "rules/imputation_glimpse.smk"
 
 
 report: "report/workflow.rst"
-
-
-##########################################################################################
-##########################################################################################
-localrules:
-    all,
-    dag,
-    mapping,  ## executed locally on a cluster
 
 
 ##########################################################################################
@@ -307,9 +288,16 @@ final_stat_figures = [damage_files, stat_plot]
 if VERBOSE:
     write_log()
 
+
 ##########################################################################################
 ## STARTING RULES
 ##########################################################################################
+localrules:
+    all,
+    dag,
+    mapping,  ## executed locally on a cluster
+
+
 ## rules all
 rule all:
     """
@@ -359,8 +347,9 @@ rule mapping:
 
 # -----------------------------------------------------------------------------#
 
+
 rule only_stats:
-    input: 
+    input:
         get_imputation_files_external(),
 
 

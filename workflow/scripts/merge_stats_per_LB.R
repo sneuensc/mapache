@@ -34,9 +34,17 @@ if("--help" %in% args) {
       Get stats per fastq file
  
       Arguments:
-      --SM=sample                         - character, sample ID. Default: NA
-      --LB=library                        - character, library ID. Default: NA
-      --ID=id                             - character, FASTQ ID. Default: NA
+      --sm=sample                         - character, sample ID. Default: NA
+      --lb=library                        - character, library ID. Default: NA
+      --genome='hg19'                     - character, genome name
+      
+      --path_list_stats_fastq             - e.g., results/04_stats/02_separate_tables/GRCh38/ind1/lib2_lb/lib2_R1_001_fq/fastq_stats.csv
+      --path_stats_unique                 - e.g., results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/ind1/lib2_lb.GRCh38_stats.txt
+      --path_length_unique                - e.g., results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/ind1/lib2_lb.GRCh38_length.txt
+      --path_idxstats_unique              - e.g., results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/ind1/lib2_lb.GRCh38_idxstats.txt
+
+      --output_file                       - e.g., results/04_stats/02_separate_tables/GRCh38/ind1/lib2_lb/library_stats.csv
+    
       --help                              - print this text
  
       Example:
@@ -65,8 +73,8 @@ get_args <- function(argsL, name, default=""){
 
 
 
-LB = get_args(argsL, "LB")
-SM = get_args(argsL, "SM")
+LB = get_args(argsL, "lb")
+SM = get_args(argsL, "sm")
 genome = get_args(argsL, "genome")
 output_file = get_args(argsL, "output_file")
 
@@ -162,7 +170,7 @@ my_stats = data.frame(
     length_mapped_raw = length_mapped_raw,
     length_mapped_unique = length_mapped_unique,
     endogenous_raw = endogenous_raw,
-    endogenous_unique = endogenous_unique,
+    endogenous_unique = endogenous_unique
 )
 
 if(!is.na(chrs_selected)){

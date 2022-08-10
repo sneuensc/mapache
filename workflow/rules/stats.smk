@@ -257,8 +257,6 @@ rule merge_stats_per_fastq:
         fastqc_trim="{folder}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}_fastqc.zip"
         if run_adapter_removal
         else "{folder}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{sm}/{lb}/{id}_fastqc.zip",
-        ## as the orig file
-        # raw trimmed reads
         stats_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{sm}/{lb}/{id}.{genome}_stats.txt",  # mapped and high-qual reads
         length_fastq_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{sm}/{lb}/{id}.{genome}_length.txt",
     output:
@@ -305,9 +303,9 @@ rule merge_stats_per_lb:
     output:
         "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/library_stats.csv",
     params:
-        chrs_selected=lambda wildcards: recursive_get(
+        chrs_selected=lambda wildcards: ",".join(to_list(recursive_get(
             ["depth", wildcards.genome, "chromosomes"], "not_requested"
-        ),
+        ))),
         script=workflow.source_path("../scripts/merge_stats_per_LB.R"),
     log:
         "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/library_stats.log",
@@ -340,6 +338,12 @@ rule merge_stats_per_lb:
             $chrsSelected
         """
 
+def get_chroms(wildcards):
+    chrs_selected=to_list(recursive_get(
+        ["depth", wildcards.genome, "chromosomes"], "not_requested"
+    )),
+    print(chrs_selected)
+    return chrs_selected
 
 rule merge_stats_per_sm:
     input:
@@ -354,9 +358,10 @@ rule merge_stats_per_sm:
     output:
         "{folder}/04_stats/02_separate_tables/{genome}/{sm}/sample_stats.csv",
     params:
-        chrs_selected=lambda wildcards: recursive_get(
+        chrs_selected=lambda wildcards: ",".join(to_list(recursive_get(
             ["depth", wildcards.genome, "chromosomes"], "not_requested"
-        ),
+        ))),
+        #chrs_selected=get_chroms,
         script=workflow.source_path("../scripts/merge_stats_per_SM.R"),
     log:
         "{folder}/04_stats/02_separate_tables/{genome}/{sm}/sample_stats.log",
@@ -532,12 +537,8 @@ rule bamdamage:
         "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}_bamdamage.log",
     threads: 1
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc(
-            ["bamdamage"], attempt, 4
-        ),
-        runtime=lambda wildcards, attempt: get_runtime_alloc(
-            ["bamdamage"], attempt, 24
-        ),
+        memory=lambda wildcards, attempt: get_memory_alloc(["bamdamage"], attempt, 4),
+        runtime=lambda wildcards, attempt: get_runtime_alloc(["bamdamage"], attempt, 24),
     message:
         "--- RUN BAMDAMAGE {input.bam}"
     params:

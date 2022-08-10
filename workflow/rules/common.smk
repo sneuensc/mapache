@@ -240,7 +240,7 @@ def get_bam_4_samtools_calmd(wc):
 
 ## get the final bam files at the sample level
 def get_bam_4_final_bam(wc):
-    if wc.genome in EXTERNAL_SAMPLES and wc.sm in list(EXTERNAL_SAMPLES[wc.genome]):
+    if is_external_sample(wc.sm, wc.genome):
         return EXTERNAL_SAMPLES[wc.genome][wc.sm]
     if run_compute_md:
         return f"{wc.folder}/03_sample/02_md_flag/01_md_flag/{wc.sm}.{wc.genome}.bam"

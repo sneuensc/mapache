@@ -63,8 +63,6 @@ for chr in chromosomes:
         sys.exit(1)
 
 
-
-
 # -----------------------------------------------------------------------------#
 # Some useful functions
 
@@ -93,7 +91,10 @@ localrules:
 wildcard_constraints:
     #        gp="|".join([str(value) for value in gp]),
     chr="|".join([str(chr) for chr in chromosomes]),
-    sm="|".join([sm for sm in SAMPLES]+[sm for gen in EXTERNAL_SAMPLES for sm in EXTERNAL_SAMPLES[gen]]),
+    sm="|".join(
+        [sm for sm in SAMPLES]
+        + [sm for gen in EXTERNAL_SAMPLES for sm in EXTERNAL_SAMPLES[gen]]
+    ),
 
 
 rule get_panel:
@@ -103,8 +104,12 @@ rule get_panel:
     input:
         recursive_get(["imputation", "path_panel"], ""),
     output:
-        panel_vcf=temp("{folder}/03_sample/04_imputed/01_panel/01_panel/chr{chr}.vcf.gz"),
-        panel_vcf_csi=temp("{folder}/03_sample/04_imputed/01_panel/01_panel/chr{chr}.vcf.gz.csi"),
+        panel_vcf=temp(
+            "{folder}/03_sample/04_imputed/01_panel/01_panel/chr{chr}.vcf.gz"
+        ),
+        panel_vcf_csi=temp(
+            "{folder}/03_sample/04_imputed/01_panel/01_panel/chr{chr}.vcf.gz.csi"
+        ),
     message:
         "--- IMPUTATION: symlink the panel (chr {wildcards.chr})"
     conda:

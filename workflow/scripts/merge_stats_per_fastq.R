@@ -40,9 +40,9 @@ if("--help" %in% args) {
       Get stats per fastq file
  
       Arguments:
-      --SM=sample                         - character, sample ID. Default: NA
-      --LB=library                        - character, library ID. Default: NA
-      --ID=id                             - character, FASTQ ID. Default: NA
+      --am=sample                         - character, sample ID. Default: NA
+      --lb=library                        - character, library ID. Default: NA
+      --id=id                             - character, FASTQ ID. Default: NA
       --help                              - print this text
  
       Example:
@@ -79,9 +79,9 @@ get_args <- function(argsL, name){
 # path_stats_mapped_highQ = "results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/ind1/lib1_lb/lib1_R1_002_fq.hg19_stats.txt"       # mapped and high-qual reads
 # path_length_mapped_highQ = "results/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/ind1/lib1_lb/lib1_R1_002_fq.hg19.length"
 
-ID = get_args(argsL, "ID")
-LB = get_args(argsL, "LB")
-SM = get_args(argsL, "SM")
+ID = get_args(argsL, "id")
+LB = get_args(argsL, "lb")
+SM = get_args(argsL, "sm")
 genome = get_args(argsL, "genome")
 output_file = get_args(argsL, "output_file")
 #paired = get_args(argsL, FALSE)

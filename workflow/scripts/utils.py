@@ -434,8 +434,13 @@ def to_str(x):
 
 
 def to_list(x):
+    if type(x) is list:
+        return x    
     return list(to_str(x).split(" "))
+
    
+def is_external_sample(sample, genome):
+    return ( genome in EXTERNAL_SAMPLES and sample in list(EXTERNAL_SAMPLES[genome]))
 
 ## eval a list with potential eval elements
 #def eval_list(x):
@@ -452,7 +457,7 @@ def to_list(x):
 
 
 ## eval single element if needed and return it as a comma separated string
-#def eval_to_csv(x):
+#def to_csv(x):
 #    return ",".join(list(map(str, eval_to_list(x))))
 
 
