@@ -351,59 +351,6 @@ def get_sex_file(wc):
         return f"{wc.folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{wc.sm}.{wc.genome}_nosex.txt"
 
 
-##########################################################################################
-## stats
-
-## read config[external_sample]
-def get_external_samples():
-    external_sample = recursive_get(["external_sample"], "")
-    if external_sample == "":
-        return {}
-
-    if isinstance(external_sample, dict):
-        samples_stats = external_sample
-
-    elif os.path.isfile(external_sample):
-        db_stats = pd.read_csv(external_sample, sep=delim, comment="#", dtype=str)
-        colnames = ["sm", "Data", "Genome"]
-        if not set(colnames).issubset(db_stats.columns):
-            LOGGER.error(
-                f"ERROR: The column names in the bam file (given by paramter config[external_sample]) are wrong! Expected are {colnames}!"
-            )
-            sys.exit(1)
-        samples_stats = dict(zip(db_stats.sm, db_stats.Data, db_stats.Genome))
-    else:
-        LOGGER.error(
-            "ERROR: The argument of parameter config[external_sample] is not valide '{external_sample}'!"
-        )
-        sys.exit(1)
-
-    ## test for each GENOMES separetly
-    for genome in list(samples_stats):
-        ## does the GENOMES name exist?
-        if genome not in GENOMES:
-            LOGGER.error(
-                f"ERROR: Genome name config[external_sample] does not exist ({genome})!"
-            )
-            sys.exit(1)
-
-        ## test if there are duplicated sample names
-        if len(list(samples_stats[genome])) != len(set(list(samples_stats[genome]))):
-            LOGGER.error(
-                f"ERROR: Parameter config[external_sample][{genome}] contains duplicated sample names!"
-            )
-            sys.exit(1)
-
-        ## test each bam file
-        for bam in list(samples_stats[genome].values()):
-            if not os.path.isfile(bam):
-                LOGGER.error(
-                    f"ERROR: Bam file config[external_sample][genome][{s}][bam] does not exist ({bam})!"
-                )
-                sys.exit(1)
-
-    return samples_stats
-
 
 ##########################################################################################
 ## get all final files to run snakemake
