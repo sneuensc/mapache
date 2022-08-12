@@ -48,31 +48,33 @@ sample_file: config/samples.tsv
 # Some statistics (like depth of coverage) can be computed for BAM files that were obtained
 # by other means (e.g., downloaded from public repositories). Note that in that case, mapache
 # assumes that the data were mapped to the first reference genome listed in the config file.
-    ## by default ("") the stats are computed on the final bam files from the mapping pipeline. 
-    ## To use on other pre-computed bam files,
-    ## one can pass a list of bam files either in an external file (in this case the parameter 'external_sample' should contain the file name) in the format:
-    ##   SM    Data      Genome 
-    ##   ind1  bam1.bam  hg19
-    ##   ind2  bam2.bam  hg19
-    ##   ...
-    ## or directly in the config file in the yaml format as:
-    ##   stats:
-    ##      bam_list:
-    ##        ind1:  path_to_bam1.bam
-    ##        ind2:  path_to_bam2.bam
-    ##        ...
+## by default ("") the stats are computed on the final bam files from the mapping pipeline. 
+## To use on other pre-computed bam files,
+## one can pass a list of bam files either in an external file (in this case the parameter 'external_sample' should contain the file name) in the format:
+##   SM    Bam      Genome 
+##   ind1  bam1.bam  hg19
+##   ind2  bam2.bam  hg19
+##   ...
+## or directly in the config file in the yaml format as:
+##   external_sample:
+##      hg19:
+##        ind1:  path_to_bam1.bam
+##        ind2:  path_to_bam2.bam
+##        ...
 
+external_sample: config/samples_stats.tsv
+#    hg19:
+#        test1: /users/sneuensc/work_sneuensc/mapping_pipeline/mapache_test2/results/03_sample/03_final_sample/01_bam/ind1.hg19.bam
+#        test2: /users/sneuensc/work_sneuensc/mapping_pipeline/mapache_test2/results/03_sample/03_final_sample/01_bam/ind2.hg19.bam
 
-external_sample:
-    hg19:
-        test1: /users/sneuensc/work_sneuensc/mapping_pipeline/mapache_test2/results/03_sample/03_final_sample/01_bam/ind1.hg19.bam
-        test2: /users/sneuensc/work_sneuensc/mapping_pipeline/mapache_test2/results/03_sample/03_final_sample/01_bam/ind2.hg19.bam
+## if the deliminator to read the sample file has to be adapted
+#delim: "\s+"
 
 ##########################################################################################
 # OUTPUT FOLDER 
 ##########################################################################################
 # By default, all outputs will be stored in a folder named "results"
-result_dir: 'results'#
+result_dir: 'results'
 #workdir: 
 
 ##########################################################################################
@@ -280,8 +282,6 @@ sex_inference:
         # thresholds:  list( "XX"=c(0.8, 1.2), "XY"=c(0, 0.6), "consistent with XX but not XY"=c(0.6, 1.2), "consistent with XY but not XX"=c(0, 0.8) )
     
 
-##########################################################################################  
-# Imputation with  GLIMPSE
 imputation:
     run: True
 
