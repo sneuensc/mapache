@@ -724,7 +724,7 @@ rule qualimap:
         directory("{folder}/04_stats/01_sparse_stats/{file}_qualimap"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
-            ["stats", "qualimap"], attempt, 2
+            ["stats", "qualimap"], attempt, 4
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
             ["stats", "qualimap"], attempt, 1
