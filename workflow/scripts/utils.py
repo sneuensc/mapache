@@ -53,9 +53,15 @@ def write_log():
     LOGGER.info(f"SAMPLES:"
         )
     if paired_end:
-        LOGGER.info(
-            f"  - Sample file '{sample_file}' in paired-end format:"
-        )
+        if sample_file == "yaml":
+            LOGGER.info(
+                f"  - Samples (YAML input) in paired-end format:"
+            )
+        else:
+            LOGGER.info(
+                f"  - Sample file ('{sample_file}') in paired-end format:"
+            )
+
         LOGGER.info(f"    - {len(SAMPLES)} SAMPLES")
         LOGGER.info(f"    - {len([l for s in SAMPLES.values() for l in s])} libraries")
         tmp = [
@@ -68,9 +74,14 @@ def write_log():
         if nb:
             LOGGER.info(f"    - {nb} single-end fastq files")
     else:
-        LOGGER.info(
-            f"  - Sample file '{sample_file}' in single-end format:"
-        )
+        if sample_file == "yaml":
+            LOGGER.info(
+                f"  - Samples (YAML input) in single-end format:"
+            )
+        else:
+            LOGGER.info(
+                f"  - Sample file ('{sample_file}') in single-end format:"
+            )
         LOGGER.info(f"    - {len(SAMPLES)} SAMPLES")
         LOGGER.info(f"    - {len([l for s in SAMPLES.values() for l in s])} libraries")
         LOGGER.info(
@@ -78,8 +89,15 @@ def write_log():
         )
 
     if len(EXTERNAL_SAMPLES) > 0:
-        LOGGER.info(f"  - External samples (only stats are computed):")
-        
+        if external_sample_file == "yaml":
+            LOGGER.info(
+                f"  - External samples (YAML input; only stats are computed):"
+            )
+        else:
+            LOGGER.info(
+                f"  - External sample file ('{external_sample_file}'; only stats are computed):"
+            )
+
         for i, genome in enumerate(EXTERNAL_SAMPLES):
             if i < 4:
                 LOGGER.info(f"    - {len(EXTERNAL_SAMPLES[genome])} bam files {to_list(genome)}")
@@ -240,226 +258,115 @@ def write_log():
 ##########################################################################################################
 ## read sample file
 def read_sample_file():   
-    sample_file = recursive_get(["sample_file"], "config/SAMPLES.tsv")
-    if sample_file == "":
-        return {}, False, False
+    file = recursive_get(["sample_file"], "config/SAMPLES.tsv")
+    if file == "":
+        return {}, False, False, ""
 
-    if isinstance(sample_file, dict):
-        SAMPLES = sample_file
+    if isinstance(file, dict):  ## yaml input
+        SAMPLES = file
+        input = "yaml"
 
-    ## read the file
-    delim = recursive_get(["delim"], "\s+")
-    db = pd.read_csv(file, sep=delim, comment="#", dtype=str)
+    else:   ## sample file
+        ## read the file
+        delim = recursive_get(["delim"], "\s+")
+        db = pd.read_csv(file, sep=delim, comment="#", dtype=str)
+        input = file
 
-    ## check number of columns and column names
-    if len(db.columns) == 6:
-        paired_end = False
-        collapse = False
-        colnames = ["ID", "Data", "MAPQ", "LB", "PL", "SM"]
-        if not set(colnames).issubset(db.columns):
-            LOGGER.error(
-                f"ERROR: The column names in the sample file are wrong! Expected are for single-end reads {colnames}!"
-            )
-            sys.exit(1)
-
-        ## test if all fastq files exist
-        for fq in db["Data"].tolist():
-            if not os.path.isfile(fq):
-                LOGGER.error(f"ERROR: Fastq file '{fq}' does not exist!")
-                sys.exit(1)
-
-    elif len(db.columns) == 7:
-        paired_end = True
-        adaptrem_params = recursive_get(
-            ["adapterremoval", "params"], "--minlength 30 --trimns --trimqualities"
-        )
-        if "--collapse" in adaptrem_params:
-            collapse = True
-        else:
-            collapse = False
-        colnames = ["ID", "Data1", "Data2", "MAPQ", "LB", "PL", "SM"]
-        if not set(colnames).issubset(db.columns):
-            LOGGER.error(
-                f"ERROR: The column names in the sample file are wrong! Expected are for paired-end reads {colnames}!"
-            )
-            sys.exit(1)
-
-        ## test if all fastq files exist
-        for fq in db["Data1"].tolist():
-            if fq != fq:  # test if NaN
-                LOGGER.error(f"ERROR: Fastq file '{fq}' in column Data1 is missing!")
-                sys.exit(1)
-            if not fq and not os.path.isfile(fq):
-                LOGGER.error(f"ERROR: Fastq file '{fq}' does not exist!")
-                sys.exit(1)
-
-        ## test if all fastq files exist or are NaN
-        for fq in db["Data2"].tolist():
-            if fq == fq and not os.path.isfile(fq):
+        ## check number of columns and column names
+        if len(db.columns) == 6:
+            colnames = ["ID", "Data", "MAPQ", "LB", "PL", "SM"]
+            if not set(colnames).issubset(db.columns):
                 LOGGER.error(
-                    f"ERROR: Fastq file '{fq}' in column Data2 does not exist!"
+                    f"ERROR: The column names in the sample file are wrong! Expected are for single-end reads {colnames}!"
                 )
                 sys.exit(1)
-    else:
-        LOGGER.error(
-            f"ERROR: The number of columns in the sample file is wrong ({len(db.columns)} columns)!"
-        )
-        sys.exit(1)
-    ## test if SM, LB and ID names are valid
-    # invalid_char = string.punctuation.replace("_", "").replace("-", "")
-    # if bool(re.match("^[a-zA-Z0-9]*$", string)) == True:
-    #    print("String does not contain any special characters.")
-    # else:
-    #    print("The string contains special characters.")
 
-    ## --------------------------------------------------------------------------------------------------
-    ## check if all IDs per LB and SM are unique
-    all_fastq = db.groupby(["ID", "LB", "SM"])["ID"].agg(["count"]).reset_index()
-    if max(all_fastq["count"]) > 1:
-        LOGGER.error(
-            f"ERROR: The ID's {all_fastq['ID']} are not uniq within library and sample!"
-        )
-        sys.exit(1)
-
-    ## --------------------------------------------------------------------------------------------------
-    ## dataframe to nested dict
-#    SAMPLES = {}
-#    cols = [e for e in list(db.columns) if e not in ("SM", "LB", "ID")]
-#    for index, row in db.iterrows():
-#        ## if key not present add new dict
-#        if row["SM"] not in SAMPLES:
-#            SAMPLES[row["SM"]] = {}
-#        if row["LB"] not in SAMPLES[row["SM"]]:
-#            SAMPLES[row["SM"]][row["LB"]] = {}
-#        if row["ID"] not in SAMPLES[row["SM"]][row["LB"]]:
-#            SAMPLES[row["SM"]][row["LB"]][row["ID"]] = {}
-
-#        ## add all remaining columns to this dict
-#        for col in cols:
-#            SAMPLES[row["SM"]][row["LB"]][row["ID"]][col] = row[col]
-
-
-
-    ## from dataframe to nested dict
-    from collections import defaultdict
-    d = defaultdict(dict)
-    cols = [e for e in list(db.columns) if e not in ("SM", "LB", "ID")]
-    for row in db.itertuples(index=False):
-        for col in cols:
-            d[row.SM][row.LB][row.ID][col] = row[col]
-
-    SAMPLES = dict(d)
-    print(SAMPLES)
-
-    return SAMPLES, paired_end, collapse
-
-
-##########################################################################################################
-def read_sample_file2():
-    ## if file does not exist or is not specified
-    if not os.path.isfile(file):
-        LOGGER.warning(f"WARNING: No sample file (config[sample_file]) is specified!")
-        return {}, False, False
-
-    sample_file = recursive_get(["sample_file"], "config/SAMPLES.tsv")
-    if sample_file == "":
-        return {}, False, False
-
-    if isinstance(sample_file, dict):
-        samples_stats = sample_file
-
-    ## read the file
-    delim = recursive_get(["delim"], "\s+")
-    db = pd.read_csv(file, sep=delim, comment="#", dtype=str)
-
-    ## check number of columns and column names
-    if len(db.columns) == 6:
-        paired_end = False
-        collapse = False
-        colnames = ["ID", "Data", "MAPQ", "LB", "PL", "SM"]
-        if not set(colnames).issubset(db.columns):
-            LOGGER.error(
-                f"ERROR: The column names in the sample file are wrong! Expected are for single-end reads {colnames}!"
-            )
-            sys.exit(1)
-
-        ## test if all fastq files exist
-        for fq in db["Data"].tolist():
-            if not os.path.isfile(fq):
-                LOGGER.error(f"ERROR: Fastq file '{fq}' does not exist!")
-                sys.exit(1)
-
-    elif len(db.columns) == 7:
-        paired_end = True
-        adaptrem_params = recursive_get(
-            ["adapterremoval", "params"], "--minlength 30 --trimns --trimqualities"
-        )
-        if "--collapse" in adaptrem_params:
-            collapse = True
-        else:
-            collapse = False
-        colnames = ["ID", "Data1", "Data2", "MAPQ", "LB", "PL", "SM"]
-        if not set(colnames).issubset(db.columns):
-            LOGGER.error(
-                f"ERROR: The column names in the sample file are wrong! Expected are for paired-end reads {colnames}!"
-            )
-            sys.exit(1)
-
-        ## test if all fastq files exist
-        for fq in db["Data1"].tolist():
-            if fq != fq:  # test if NaN
-                LOGGER.error(f"ERROR: Fastq file '{fq}' in column Data1 is missing!")
-                sys.exit(1)
-            if not fq and not os.path.isfile(fq):
-                LOGGER.error(f"ERROR: Fastq file '{fq}' does not exist!")
-                sys.exit(1)
-
-        ## test if all fastq files exist or are NaN
-        for fq in db["Data2"].tolist():
-            if fq == fq and not os.path.isfile(fq):
+        elif len(db.columns) == 7:
+            colnames = ["ID", "Data1", "Data2", "MAPQ", "LB", "PL", "SM"]
+            if not set(colnames).issubset(db.columns):
                 LOGGER.error(
-                    f"ERROR: Fastq file '{fq}' in column Data2 does not exist!"
+                    f"ERROR: The column names in the sample file are wrong! Expected are for paired-end reads {colnames}!"
                 )
                 sys.exit(1)
-    else:
-        LOGGER.error(
-            f"ERROR: The number of columns in the sample file is wrong ({len(db.columns)} columns)!"
-        )
-        sys.exit(1)
-    ## test if SM, LB and ID names are valid
-    # invalid_char = string.punctuation.replace("_", "").replace("-", "")
-    # if bool(re.match("^[a-zA-Z0-9]*$", string)) == True:
-    #    print("String does not contain any special characters.")
-    # else:
-    #    print("The string contains special characters.")
 
-    ## --------------------------------------------------------------------------------------------------
-    ## check if all IDs per LB and SM are unique
-    all_fastq = db.groupby(["ID", "LB", "SM"])["ID"].agg(["count"]).reset_index()
-    if max(all_fastq["count"]) > 1:
-        LOGGER.error(
-            f"ERROR: The ID's {all_fastq['ID']} are not uniq within library and sample!"
-        )
-        sys.exit(1)
+        else:
+            LOGGER.error(
+                f"ERROR: The number of columns in the sample file is wrong ({len(db.columns)} columns)!"
+            )
+            sys.exit(1)
 
-    ## --------------------------------------------------------------------------------------------------
-    ## dataframe to nested dict
-    SAMPLES = {}
-    cols = [e for e in list(db.columns) if e not in ("SM", "LB", "ID")]
-    for index, row in db.iterrows():
-        ## if key not present add new dict
-        if row["SM"] not in SAMPLES:
-            SAMPLES[row["SM"]] = {}
-        if row["LB"] not in SAMPLES[row["SM"]]:
-            SAMPLES[row["SM"]][row["LB"]] = {}
-        if row["ID"] not in SAMPLES[row["SM"]][row["LB"]]:
-            SAMPLES[row["SM"]][row["LB"]][row["ID"]] = {}
 
-        ## add all remaining columns to this dict
-        for col in cols:
-            SAMPLES[row["SM"]][row["LB"]][row["ID"]][col] = row[col]
+        ## --------------------------------------------------------------------------------------------------
+        ## check if all IDs per LB and SM are unique
+        all_fastq = db.groupby(["ID", "LB", "SM"])["ID"].agg(["count"]).reset_index()
+        if max(all_fastq["count"]) > 1:
+            LOGGER.error(
+                f"ERROR: The ID's {all_fastq['ID']} are not uniq within library and sample!"
+            )
+            sys.exit(1)
 
-    return SAMPLES, paired_end, collapse
+        ## --------------------------------------------------------------------------------------------------
+        ## dataframe to nested dict
+        SAMPLES = {}
+        cols = [e for e in list(db.columns) if e not in ("SM", "LB", "ID")]
+        for index, row in db.iterrows():
+            ## if key not present add new dict
+            if row["SM"] not in SAMPLES:
+                SAMPLES[row["SM"]] = {}
+            if row["LB"] not in SAMPLES[row["SM"]]:
+                SAMPLES[row["SM"]][row["LB"]] = {}
+            if row["ID"] not in SAMPLES[row["SM"]][row["LB"]]:
+                SAMPLES[row["SM"]][row["LB"]][row["ID"]] = {}
+
+            ## add all remaining columns to this dict
+            for col in cols:
+                SAMPLES[row["SM"]][row["LB"]][row["ID"]][col] = row[col]
+
+
+
+    #    ## from dataframe to nested dict
+    #    from collections import defaultdict
+    #    d = defaultdict(dict)
+    #    cols = [e for e in list(db.columns) if e not in ("SM", "LB", "ID")]
+    #    for row in db.itertuples(index=False):
+    #        for col in cols:
+    #            d[row.SM][row.LB][row.ID][col] = row[col]
+
+    #    SAMPLES = dict(d)
+ 
+
+    ## do we have paired-end data or single-end data
+    paired_end = ('Data1' in [name for sm in SAMPLES.values() for lb in sm.values() for id in lb.values() for name in id])
+    
+    ## test all fastq files
+    if paired_end:
+        ## forward reads
+        for fq in [id['Data1'] for sm in SAMPLES.values() for lb in sm.values() for id in lb.values()]:
+            if not os.path.isfile(fq):
+                LOGGER.error(f"ERROR: Fastq file '{fq}' does not exist!")
+                sys.exit(1)            
+
+        ## reverse reads (may be NaN)
+        for fq in [id['Data2'] for sm in SAMPLES.values() for lb in sm.values() for id in lb.values()]:
+            if  fq == fq and not os.path.isfile(fq):
+                LOGGER.error(f"ERROR: Fastq file '{fq}' does not exist!")
+                sys.exit(1)            
+
+    else:  ## single end
+        for fq in [id['Data'] for sm in SAMPLES.values() for lb in sm.values() for id in lb.values()]:
+            if not os.path.isfile(fq):
+                LOGGER.error(f"ERROR: Fastq file '{fq}' does not exist!")
+                sys.exit(1)   
+
+    
+    ## test if collapsing is correctly set
+    collapse = ("--collapse" in recursive_get(["adapterremoval", "params"], "--minlength 30 --trimns --trimqualities"))
+    if not paired_end and collapse:
+            LOGGER.error(f"ERROR: config[adapterremoval][params] contains the parameter '--collapse', which is not compatible with SE data!")
+            sys.exit(1)   
+
+
+    return SAMPLES, paired_end, collapse, input
 
 
 ##########################################################################################
@@ -467,14 +374,16 @@ def read_sample_file2():
 def get_external_samples():
     external_sample = recursive_get(["external_sample"], "")
     if external_sample == "":
-        return {}
+        return {}, ""
 
     if isinstance(external_sample, dict):
         samples_stats = external_sample
+        external_sample_file = "yaml"
 
     elif os.path.isfile(external_sample):
         delim = recursive_get(["delim"], "\s+")
         db_stats = pd.read_csv(external_sample, sep=delim, comment="#", dtype=str)
+        external_sample_file = external_sample
         colnames = ["SM", "Bam", "Genome"]
         if not set(colnames).issubset(db_stats.columns):
             LOGGER.error(
@@ -488,6 +397,7 @@ def get_external_samples():
         for row in db_stats.itertuples(index=False):
             d[row.Genome][row.SM] = row.Bam
         samples_stats = dict(d)
+
     else:
         LOGGER.error(
             "ERROR: The argument of parameter config[external_sample] is not valide '{external_sample}'!"
@@ -518,7 +428,7 @@ def get_external_samples():
                 )
                 sys.exit(1)
 
-    return samples_stats
+    return samples_stats, external_sample_file
 
 
 ##########################################################################################

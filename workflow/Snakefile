@@ -75,11 +75,10 @@ for genome in GENOMES:
 ## SAMPLES (sample file and external bam files)
 ##########################################################################################
 # sample_file="config/SAMPLES.tsv"
-sample_file = recursive_get(["sample_file"], "config/SAMPLES.tsv")
-SAMPLES, paired_end, collapse = read_sample_file(sample_file)
+SAMPLES, paired_end, collapse, sample_file = read_sample_file()
 
 ## get SAMPLES (bam files) to compute only stats on them
-EXTERNAL_SAMPLES = get_external_samples()
+EXTERNAL_SAMPLES, external_sample_file = get_external_samples()
 
 if len(SAMPLES) + len(EXTERNAL_SAMPLES) == 0:
     LOGGER.error(f"ERROR: No samples are specified)!")
