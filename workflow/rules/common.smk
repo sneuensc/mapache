@@ -68,9 +68,9 @@ def get_fastq_4_mapping(wc, rem_adapt=""):
 
 ## fastqc may be run on the original or trimmed fastq files
 def inputs_fastqc(wc):
-    if "trim" in wc.folder:
+    if "trim" in wc.type:
         return get_fastq_4_mapping(wc, True)
-    else:
+    else:   
         return get_fastq_4_mapping(wc, False)
 
 
