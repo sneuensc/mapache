@@ -204,11 +204,9 @@ def write_log():
                 f"  - Inferring damage and read length with bamdamge on {fraction} alignments"
             )
 
-    if run_imputation:
+    if len(run_imputation) > 0:
         if len(genome) > 1:
-            LOGGER.info(
-                f"  - Imputing on genome {to_list(GENOMES[0])} (first genome in list)"
-            )
+            LOGGER.info(f"  - Imputing {run_imputation}")
         else:
             LOGGER.info(f"  - Imputing")
 
@@ -456,6 +454,7 @@ def recursive_get(keys, def_value, my_dict=config):
     else:
         value = recursive_get(keys[1:], def_value, my_dict=my_dict.get(first, {}))
     return eval_param(value)
+    #return value
 
 
 ## same as above, but the argument is tested if it is present in the 'available_args'
@@ -530,6 +529,7 @@ def eval_param(x):
 
 def to_str(x):
     if type(x) is list:
+        #return [str(i) for i in x]
         return list(map(str, x))
     elif type(x) is int:
         return str(x)
@@ -677,8 +677,7 @@ def set_sex_inference(genome):
         config = update_value(["chromosome", genome, "sex_chr"], sex_chr)
 
     # autosomes
-    autosomes = to_str(
-        recursive_get(
+    autosomes = to_str(recursive_get(
             ["sex_inference", genome, "autosomes"],
             [],
         )

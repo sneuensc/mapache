@@ -489,7 +489,7 @@ def get_sex_files():
     for genome in GENOMES:
         ext = (
             "sex"
-            if str2bool(recursive_get(["sex_inference", genome, "run"], False))
+            if str2bool(recursive_get(["sex_inference", genome, "run"], "False"))
             else "nosex"
         )
 
@@ -510,50 +510,56 @@ def get_multiqc_files():
 
 
 def get_imputation_files():
-    files = [
-        f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/{sm}_gp{GP}.{ext}"
-        for sm in SAMPLES
-        for GP in str2list(recursive_get(["imputation", "gp_filter"], "[0.8]"))
-        for ext in ["bcf", "bcf.csi"]
-        if run_imputation
-    ] + [
-        f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}_gp.txt"
-        for sm in SAMPLES
-        if run_imputation
-    ]
+    files = []
+    for genome in GENOMES:
+        if str2bool(recursive_get_and_test(["imputation", genome, "run"], ["False", "True"])):
+            files = files + [
+                f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/{sm}.{genome}_gp{GP}.{ext}"
+                for sm in SAMPLES
+                for GP in str2list(recursive_get(["imputation", "gp_filter"], "[0.8]"))
+                for ext in ["bcf", "bcf.csi"]
+            ] + [
+                f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}.{genome}_gp.txt"
+                for sm in SAMPLES
+            ]
     return files
 
 
 def get_imputation_files_external():
     samples_ = [sm for gen in EXTERNAL_SAMPLES for sm in EXTERNAL_SAMPLES[gen]]
-    files = [
-        f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/{sm}_gp{GP}.{ext}"
-        for sm in samples_
-        for GP in str2list(recursive_get(["imputation", "gp_filter"], "[0.8]"))
-        for ext in ["bcf", "bcf.csi"]
-        if run_imputation
-    ] + [
-        f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}_gp.txt"
-        for sm in samples_
-        if run_imputation
-    ]
+    files = []
+    for genome in GENOMES:
+        if str2bool(recursive_get_and_test(["imputation", genome, "run"], ["False", "True"])):
+            files = files + [
+                f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/{sm}.{genome}_gp{GP}.{ext}"
+                for sm in samples_
+                for GP in str2list(recursive_get(["imputation", "gp_filter"], "[0.8]"))
+                for ext in ["bcf", "bcf.csi"]
+            ] + [
+                f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}.{genome}_gp.txt"
+                for sm in samples_
+            ]
     return files
 
 
 def get_imputation_plots():
-    files = [
-        f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}_gp.svg"
-        for sm in SAMPLES
-        if run_imputation
-    ]
+    files = []
+    for genome in GENOMES:
+        if str2bool(recursive_get_and_test(["imputation", genome, "run"], ["False", "True"])):
+            files = files + [
+                f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}.{genome}_gp.svg"
+                for sm in SAMPLES
+            ]
     return files
 
 
 def get_imputation_plots_external():
     samples_ = [sm for gen in EXTERNAL_SAMPLES for sm in EXTERNAL_SAMPLES[gen]]
-    files = [
-        f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}_gp.svg"
-        for sm in samples_
-        if run_imputation
+    files = []
+    for genome in GENOMES:
+        if str2bool(recursive_get_and_test(["imputation", genome, "run"], ["False", "True"])):
+            files = files + [
+                f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}.{genome}_gp.svg"
+                for sm in samples_
     ]
     return files
