@@ -39,8 +39,10 @@ def write_log():
                 LOGGER.info(f"    - Sex chromosome (X): {to_list(sex_chr)}")
             autosomes = recursive_get(["chromosome", genome, "autosomes"], "")
             if autosomes:
-                if(len(autosomes)> 10):
-                    LOGGER.info(f"    - Autosomes: {autosomes[:4] + ['...'] + autosomes[-4:]}")
+                if len(autosomes) > 10:
+                    LOGGER.info(
+                        f"    - Autosomes: {autosomes[:4] + ['...'] + autosomes[-4:]}"
+                    )
                 else:
                     LOGGER.info(f"    - Autosomes: {autosomes}")
         elif i == 4:
@@ -50,17 +52,12 @@ def write_log():
 
     # ----------------------------------------------------------------------------------------------------------
     ## sample file
-    LOGGER.info(f"SAMPLES:"
-        )
+    LOGGER.info(f"SAMPLES:")
     if paired_end:
         if sample_file == "yaml":
-            LOGGER.info(
-                f"  - Samples (YAML input) in paired-end format:"
-            )
+            LOGGER.info(f"  - Samples (YAML input) in paired-end format:")
         else:
-            LOGGER.info(
-                f"  - Sample file ('{sample_file}') in paired-end format:"
-            )
+            LOGGER.info(f"  - Sample file ('{sample_file}') in paired-end format:")
 
         LOGGER.info(f"    - {len(SAMPLES)} SAMPLES")
         LOGGER.info(f"    - {len([l for s in SAMPLES.values() for l in s])} libraries")
@@ -75,13 +72,9 @@ def write_log():
             LOGGER.info(f"    - {nb} single-end fastq files")
     else:
         if sample_file == "yaml":
-            LOGGER.info(
-                f"  - Samples (YAML input) in single-end format:"
-            )
+            LOGGER.info(f"  - Samples (YAML input) in single-end format:")
         else:
-            LOGGER.info(
-                f"  - Sample file ('{sample_file}') in single-end format:"
-            )
+            LOGGER.info(f"  - Sample file ('{sample_file}') in single-end format:")
         LOGGER.info(f"    - {len(SAMPLES)} SAMPLES")
         LOGGER.info(f"    - {len([l for s in SAMPLES.values() for l in s])} libraries")
         LOGGER.info(
@@ -90,9 +83,7 @@ def write_log():
 
     if len(EXTERNAL_SAMPLES) > 0:
         if external_sample_file == "yaml":
-            LOGGER.info(
-                f"  - External samples (YAML input; only stats are computed):"
-            )
+            LOGGER.info(f"  - External samples (YAML input; only stats are computed):")
         else:
             LOGGER.info(
                 f"  - External sample file ('{external_sample_file}'; only stats are computed):"
@@ -100,7 +91,9 @@ def write_log():
 
         for i, genome in enumerate(EXTERNAL_SAMPLES):
             if i < 4:
-                LOGGER.info(f"    - {len(EXTERNAL_SAMPLES[genome])} bam files {to_list(genome)}")
+                LOGGER.info(
+                    f"    - {len(EXTERNAL_SAMPLES[genome])} bam files {to_list(genome)}"
+                )
             elif i == 4:
                 LOGGER.info(f"    - ...")
             else:
@@ -187,9 +180,7 @@ def write_log():
 
     if len(run_depth) > 0:
         if len(genome) > 0:
-            LOGGER.info(
-                f"  - Computing depth per given chromosomes {run_depth}"
-            )
+            LOGGER.info(f"  - Computing depth per given chromosomes {run_depth}")
         else:
             LOGGER.info(f"  - Computing depth per given chromosomes ")
 
@@ -215,7 +206,9 @@ def write_log():
 
     if run_imputation:
         if len(genome) > 1:
-            LOGGER.info(f"  - Imputing on genome {to_list(GENOMES[0])} (first genome in list)")
+            LOGGER.info(
+                f"  - Imputing on genome {to_list(GENOMES[0])} (first genome in list)"
+            )
         else:
             LOGGER.info(f"  - Imputing")
 
@@ -257,7 +250,7 @@ def write_log():
 
 ##########################################################################################################
 ## read sample file
-def read_sample_file():   
+def read_sample_file():
     file = recursive_get(["sample_file"], "config/SAMPLES.tsv")
     if file == "":
         return {}, False, False, ""
@@ -266,7 +259,7 @@ def read_sample_file():
         SAMPLES = file
         input = "yaml"
 
-    else:   ## sample file
+    else:  ## sample file
         ## read the file
         delim = recursive_get(["delim"], "\s+")
         db = pd.read_csv(file, sep=delim, comment="#", dtype=str)
@@ -295,7 +288,6 @@ def read_sample_file():
             )
             sys.exit(1)
 
-
         ## --------------------------------------------------------------------------------------------------
         ## check if all IDs per LB and SM are unique
         all_fastq = db.groupby(["ID", "LB", "SM"])["ID"].agg(["count"]).reset_index()
@@ -322,8 +314,6 @@ def read_sample_file():
             for col in cols:
                 SAMPLES[row["SM"]][row["LB"]][row["ID"]][col] = row[col]
 
-
-
     #    ## from dataframe to nested dict
     #    from collections import defaultdict
     #    d = defaultdict(dict)
@@ -333,38 +323,60 @@ def read_sample_file():
     #            d[row.SM][row.LB][row.ID][col] = row[col]
 
     #    SAMPLES = dict(d)
- 
 
     ## do we have paired-end data or single-end data
-    paired_end = ('Data1' in [name for sm in SAMPLES.values() for lb in sm.values() for id in lb.values() for name in id])
-    
+    paired_end = "Data1" in [
+        name
+        for sm in SAMPLES.values()
+        for lb in sm.values()
+        for id in lb.values()
+        for name in id
+    ]
+
     ## test all fastq files
     if paired_end:
         ## forward reads
-        for fq in [id['Data1'] for sm in SAMPLES.values() for lb in sm.values() for id in lb.values()]:
+        for fq in [
+            id["Data1"]
+            for sm in SAMPLES.values()
+            for lb in sm.values()
+            for id in lb.values()
+        ]:
             if not os.path.isfile(fq):
                 LOGGER.error(f"ERROR: Fastq file '{fq}' does not exist!")
-                sys.exit(1)            
+                sys.exit(1)
 
         ## reverse reads (may be NaN)
-        for fq in [id['Data2'] for sm in SAMPLES.values() for lb in sm.values() for id in lb.values()]:
-            if  fq == fq and not os.path.isfile(fq):
+        for fq in [
+            id["Data2"]
+            for sm in SAMPLES.values()
+            for lb in sm.values()
+            for id in lb.values()
+        ]:
+            if fq == fq and not os.path.isfile(fq):
                 LOGGER.error(f"ERROR: Fastq file '{fq}' does not exist!")
-                sys.exit(1)            
+                sys.exit(1)
 
     else:  ## single end
-        for fq in [id['Data'] for sm in SAMPLES.values() for lb in sm.values() for id in lb.values()]:
+        for fq in [
+            id["Data"]
+            for sm in SAMPLES.values()
+            for lb in sm.values()
+            for id in lb.values()
+        ]:
             if not os.path.isfile(fq):
                 LOGGER.error(f"ERROR: Fastq file '{fq}' does not exist!")
-                sys.exit(1)   
+                sys.exit(1)
 
-    
     ## test if collapsing is correctly set
-    collapse = ("--collapse" in recursive_get(["adapterremoval", "params"], "--minlength 30 --trimns --trimqualities"))
+    collapse = "--collapse" in recursive_get(
+        ["adapterremoval", "params"], "--minlength 30 --trimns --trimqualities"
+    )
     if not paired_end and collapse:
-            LOGGER.error(f"ERROR: config[adapterremoval][params] contains the parameter '--collapse', which is not compatible with SE data!")
-            sys.exit(1)   
-
+        LOGGER.error(
+            f"ERROR: config[adapterremoval][params] contains the parameter '--collapse', which is not compatible with SE data!"
+        )
+        sys.exit(1)
 
     return SAMPLES, paired_end, collapse, input
 
@@ -393,6 +405,7 @@ def get_external_samples():
 
         ## from dataframe to nested dict
         from collections import defaultdict
+
         d = defaultdict(dict)
         for row in db_stats.itertuples(index=False):
             d[row.Genome][row.SM] = row.Bam
@@ -442,8 +455,8 @@ def recursive_get(keys, def_value, my_dict=config):
         value = my_dict.get(first, def_value)
     else:
         value = recursive_get(keys[1:], def_value, my_dict=my_dict.get(first, {}))
+    print(f"{value}: {eval_param(value)}: {type(value)}")
     return eval_param(value)
-
 
 
 ## same as above, but the argument is tested if it is present in the 'available_args'
@@ -500,11 +513,12 @@ def get_sex_threshold_plotting():
 def eval_elem(x):
     try:
         if type(x) is str:
-            return eval(x)
+            return eval(x, globals=None, locals=None)
         else:
             return x
     except:
         return x
+
 
 def eval_param(x):
     if type(x) is list:
@@ -519,7 +533,7 @@ def to_str(x):
     if type(x) is list:
         return list(map(str, x))
     elif type(x) is int:
-        return str(x)        
+        return str(x)
     elif type(x) is float:
         return str(x)
     else:
@@ -528,15 +542,16 @@ def to_str(x):
 
 def to_list(x):
     if type(x) is list:
-        return x    
+        return x
     return list(to_str(x).split(" "))
 
-   
+
 def is_external_sample(sample, genome):
-    return (genome in EXTERNAL_SAMPLES and sample in list(EXTERNAL_SAMPLES[genome]))
+    return genome in EXTERNAL_SAMPLES and sample in list(EXTERNAL_SAMPLES[genome])
+
 
 ## eval a list with potential eval elements
-#def eval_list(x):
+# def eval_list(x):
 ##    return list(map(str, eval_to_list(x)))
 
 
@@ -550,12 +565,12 @@ def is_external_sample(sample, genome):
 
 
 ## eval single element if needed and return it as a comma separated string
-#def to_csv(x):
+# def to_csv(x):
 #    return ",".join(list(map(str, eval_to_list(x))))
 
 
 ## transform a list to a comma separated string
-#def list_to_csv(x):
+# def list_to_csv(x):
 #    if isinstance(x, list):
 #        return ",".join(x)
 #    else:
@@ -563,7 +578,7 @@ def is_external_sample(sample, genome):
 
 
 ## replace any element of the list
-#def eval_list(x):
+# def eval_list(x):
 #    if isinstance(x, list):
 #        return list(map(eval_if_possible, x))
 #    else:
@@ -571,7 +586,7 @@ def is_external_sample(sample, genome):
 
 
 ## replace any element of the list
-#def eval_list_to_csv(x):
+# def eval_list_to_csv(x):
 #    return ",".join(eval_list(x))
 
 
@@ -663,11 +678,12 @@ def set_sex_inference(genome):
         config = update_value(["chromosome", genome, "sex_chr"], sex_chr)
 
     # autosomes
-    autosomes = to_str(recursive_get(
-                    ["sex_inference", genome, "autosomes"],
-                    [],
-                )
+    autosomes = to_str(
+        recursive_get(
+            ["sex_inference", genome, "autosomes"],
+            [],
         )
+    )
 
     if len(autosomes):
         if valid_chromosome_names(genome, autosomes):
