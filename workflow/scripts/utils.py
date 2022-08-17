@@ -53,11 +53,11 @@ def write_log():
     # ----------------------------------------------------------------------------------------------------------
     ## sample file
     LOGGER.info(f"SAMPLES:")
-    if paired_end:
-        if sample_file == "yaml":
+    if PAIRED_END:
+        if SAMPLE_FILE == "yaml":
             LOGGER.info(f"  - Samples (YAML input) in paired-end format:")
         else:
-            LOGGER.info(f"  - Sample file ('{sample_file}') in paired-end format:")
+            LOGGER.info(f"  - Sample file ('{SAMPLE_FILE}') in paired-end format:")
 
         LOGGER.info(f"    - {len(SAMPLES)} SAMPLES")
         LOGGER.info(f"    - {len([l for s in SAMPLES.values() for l in s])} libraries")
@@ -71,10 +71,10 @@ def write_log():
         if nb:
             LOGGER.info(f"    - {nb} single-end fastq files")
     else:
-        if sample_file == "yaml":
+        if SAMPLE_FILE == "yaml":
             LOGGER.info(f"  - Samples (YAML input) in single-end format:")
         else:
-            LOGGER.info(f"  - Sample file ('{sample_file}') in single-end format:")
+            LOGGER.info(f"  - Sample file ('{SAMPLE_FILE}') in single-end format:")
         LOGGER.info(f"    - {len(SAMPLES)} SAMPLES")
         LOGGER.info(f"    - {len([l for s in SAMPLES.values() for l in s])} libraries")
         LOGGER.info(
@@ -82,11 +82,11 @@ def write_log():
         )
 
     if len(EXTERNAL_SAMPLES) > 0:
-        if external_sample_file == "yaml":
+        if EXTERNAL_SAMPLE_FILE == "yaml":
             LOGGER.info(f"  - External samples (YAML input; only stats are computed):")
         else:
             LOGGER.info(
-                f"  - External sample file ('{external_sample_file}'; only stats are computed):"
+                f"  - External sample file ('{EXTERNAL_SAMPLE_FILE}'; only stats are computed):"
             )
 
         for i, genome in enumerate(EXTERNAL_SAMPLES):
@@ -109,7 +109,7 @@ def write_log():
             LOGGER.info(f"  - Subsampling {subsampling_number} reads per fastq file")
 
     if run_adapter_removal:
-        if collapse:
+        if COLLAPSE:
             LOGGER.info(
                 f"  - Removing adapters with AdapterRemoval and collapsing paired-end reads"
             )
@@ -325,7 +325,7 @@ def read_sample_file():
     #    SAMPLES = dict(d)
 
     ## do we have paired-end data or single-end data
-    paired_end = "Data1" in [
+    PAIRED_END = "Data1" in [
         name
         for sm in SAMPLES.values()
         for lb in sm.values()
@@ -334,7 +334,7 @@ def read_sample_file():
     ]
 
     ## test all fastq files
-    if paired_end:
+    if PAIRED_END:
         ## forward reads
         for fq in [
             id["Data1"]
@@ -369,16 +369,16 @@ def read_sample_file():
                 sys.exit(1)
 
     ## test if collapsing is correctly set
-    collapse = "--collapse" in recursive_get(
+    COLLAPSE = "--collapse" in recursive_get(
         ["adapterremoval", "params"], "--minlength 30 --trimns --trimqualities"
     )
-    if not paired_end and collapse:
+    if not PAIRED_END and COLLAPSE:
         LOGGER.error(
             f"ERROR: config[adapterremoval][params] contains the parameter '--collapse', which is not compatible with SE data!"
         )
         sys.exit(1)
 
-    return SAMPLES, paired_end, collapse, input
+    return SAMPLES, PAIRED_END, COLLAPSE, input
 
 
 ##########################################################################################
@@ -390,12 +390,12 @@ def get_external_samples():
 
     if isinstance(external_sample, dict):
         samples_stats = external_sample
-        external_sample_file = "yaml"
+        EXTERNAL_SAMPLE_FILE = "yaml"
 
     elif os.path.isfile(external_sample):
         delim = recursive_get(["delim"], "\s+")
         db_stats = pd.read_csv(external_sample, sep=delim, comment="#", dtype=str)
-        external_sample_file = external_sample
+        EXTERNAL_SAMPLE_FILE = external_sample
         colnames = ["SM", "Bam", "Genome"]
         if not set(colnames).issubset(db_stats.columns):
             LOGGER.error(
@@ -441,7 +441,7 @@ def get_external_samples():
                 )
                 sys.exit(1)
 
-    return samples_stats, external_sample_file
+    return samples_stats, EXTERNAL_SAMPLE_FILE
 
 
 ##########################################################################################

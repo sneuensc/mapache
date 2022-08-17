@@ -75,10 +75,10 @@ for genome in GENOMES:
 ## SAMPLES (sample file and external bam files)
 ##########################################################################################
 # sample_file="config/SAMPLES.tsv"
-SAMPLES, paired_end, collapse, sample_file = read_sample_file()
+SAMPLES, PAIRED_END, COLLAPSE, SAMPLE_FILE = read_sample_file()
 
 ## get SAMPLES (bam files) to compute only stats on them
-EXTERNAL_SAMPLES, external_sample_file = get_external_samples()
+EXTERNAL_SAMPLES, EXTERNAL_SAMPLE_FILE = get_external_samples()
 
 if len(SAMPLES) + len(EXTERNAL_SAMPLES) == 0:
     LOGGER.error(f"ERROR: No samples are specified)!")
@@ -128,7 +128,7 @@ remove_duplicates = recursive_get_and_test(
     ["remove_duplicates", "run"], ["markduplicates", "dedup", "False"]
 )
 
-if remove_duplicates == "dedup" and not paired_end:
+if remove_duplicates == "dedup" and not PAIRED_END:
     LOGGER.warning(
         "WARNING: 'DeDup' is not recommended for single-end reads (parameter config[remove_duplicates][run])!"
     )

@@ -8,7 +8,7 @@ def get_fastq_of_ID(wc):
         filename = SAMPLES[wc.sm][wc.lb][wc.id[:-3]]["Data1"]
     elif "_R2" == wc.id[-3:]:
         filename = SAMPLES[wc.sm][wc.lb][wc.id[:-3]]["Data2"]
-    elif paired_end:
+    elif PAIRED_END:
         # elif paired_end != 0:  ## SE library in a paired-end sample file
         filename = SAMPLES[wc.sm][wc.lb][wc.id]["Data1"]
     else:
@@ -24,9 +24,9 @@ def get_fastq_4_mapping(wc, rem_adapt=""):
 
     if rem_adapt:
         folder = f"{wc.folder}/01_fastq/01_trimmed/01_adapter_removal/{wc.sm}/{wc.lb}"
-        if not paired_end:
+        if not PAIRED_END:
             filename = [f"{folder}/{wc.id}.fastq.gz"]
-        elif collapse:
+        elif COLLAPSE:
             filename = rules.adapter_removal_collapse.output.R
         else:
             # if str(SAMPLES[wc.sm][wc.lb][wc.id]["Data2"]) == "nan":
@@ -46,7 +46,7 @@ def get_fastq_4_mapping(wc, rem_adapt=""):
                 ]
     else:
         folder = f"{wc.folder}/01_fastq/00_reads/01_files_orig/{wc.sm}/{wc.lb}"
-        if not paired_end:
+        if not PAIRED_END:
             filename = [f"{folder}/{wc.id}.fastq.gz"]
         else:
             data2 = recursive_get(
@@ -79,7 +79,7 @@ def get_bam_4_sorting(wc):
     # print(f"get_bam_for_sorting: {wc}")
     if mapper == "bwa_aln":
         if (
-            not collapse
+            not COLLAPSE
             # and str(SAMPLES[wc.sm][wc.lb][wc.id]["Data2"]) != "nan"
             and str(
                 recursive_get(

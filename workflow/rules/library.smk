@@ -69,6 +69,7 @@ rule markduplicates:
         ),
         stats="{folder}/02_library/01_duplicated/01_markduplicates/{sm}/{lb}.{genome}.stats",
     resources:
+        ## Java: there is an overhead: so reduce slightly the amount of memory given to the tool comapred to the job
         memory=lambda wildcards, attempt: get_memory_alloc(
             "remove_duplicates", attempt, 4
         ),
@@ -116,14 +117,14 @@ rule dedup:
         ),
     params:
         params=recursive_get(["remove_duplicates", "params_dedup"], "-m"),
-        collapsed=collapse
+        collapsed=COLLAPSE
         and "nan"
         not in [
             i["Data2"]
             for i in recursive_get(
-                [wildcards.sm, wildcards.lb, wildcards.id, "Data2"],
+                [wildcards.sm, wildcards.lb],
                 [],
-                my_dict=samples,
+                my_dict=SAMPLES,
             ).values()
         ],
     log:
