@@ -81,7 +81,7 @@ my_plot <- ggplot(d1) +
   geom_text(data=rr, aes(x=gp+0.01, y=Inf, label=gp, color=factor(gp)), vjust=4, hjust=0) +
   labs(x = "genotype probabilities (GP)", y= "# sites", fill = "Genotype", color="GP filter") +
   geom_vline(xintercept=rr$gp, color = "blue") +
-  ggtitle(paste0("Imputation genotype probabilities of sample '", sample, "' and genome '", genome, '" [", nrow(d1), " (", round(100*nrow(d1)/nrow(d), 1), "%) imputed non-reference sites]")) +
+  ggtitle(paste0("Imputation genotype probabilities of sample '", sample, "' and genome '", genome, "'' [", nrow(d1), " (", round(100*nrow(d1)/nrow(d), 1), "%) imputed non-reference sites]")) +
   scale_fill_manual(values = colors, labels=c('most probable','intermediate probable','least probable')) +
   scale_color_manual(values = rep("blue", nrow(rr)), labels=rr$str,
                      guide = guide_legend(override.aes = list(label = rr$gp))) +
