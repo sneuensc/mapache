@@ -17,6 +17,7 @@ if("--help" %in% args) {
         --input=GP.txt                - file with list of gp values (three columns)
         --output=plot.png             - output file
         --sample='Mota'               - sample name
+        --genome='hg19'               - genome name
         --gp=0.6,0.8                  - GP filter threshold, separated by comma
         --width=11                    - width of the plot
         --height=7                    - height of the plot
@@ -51,6 +52,7 @@ get_args <- function(argsL, name, default){
 input               = get_args(argsL, "input", "")
 output              = get_args(argsL, "output", "")
 sample              = get_args(argsL, "sample", "")
+genome              = get_args(argsL, "genome", "")
 gp                  = as.numeric(unlist(strsplit(get_args(argsL, "gp", "0.8"),',')))
 height              = as.numeric( get_args(argsL, "height", 12 ) )
 width               = as.numeric( get_args(argsL, "width", 18 ) )
@@ -79,7 +81,7 @@ my_plot <- ggplot(d1) +
   geom_text(data=rr, aes(x=gp+0.01, y=Inf, label=gp, color=factor(gp)), vjust=4, hjust=0) +
   labs(x = "genotype probabilities (GP)", y= "# sites", fill = "Genotype", color="GP filter") +
   geom_vline(xintercept=rr$gp, color = "blue") +
-  ggtitle(paste0("Imputation genotype probabilities of sample '", sample, "' [", nrow(d1), " (", round(100*nrow(d1)/nrow(d), 1), "%) imputed non-reference sites]")) +
+  ggtitle(paste0("Imputation genotype probabilities of sample '", sample, "' and genome '", genome, '" [", nrow(d1), " (", round(100*nrow(d1)/nrow(d), 1), "%) imputed non-reference sites]")) +
   scale_fill_manual(values = colors, labels=c('most probable','intermediate probable','least probable')) +
   scale_color_manual(values = rep("blue", nrow(rr)), labels=rr$str,
                      guide = guide_legend(override.aes = list(label = rr$gp))) +

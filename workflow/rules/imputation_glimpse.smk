@@ -167,8 +167,8 @@ rule bcftools_mpileup:
         ref="{folder}/00_reference/{genome}/{genome}.fasta",
         bam="{folder}/03_sample/03_final_sample/01_bam/{sm}.{genome}.bam",
         bai="{folder}/03_sample/03_final_sample/01_bam/{sm}.{genome}.bai",
-        sites="{folder}/03_sample/04_imputed/01_panel/{genome}/02_sites/chr{chr}.vcf.gz",
-        tsv="{folder}/03_sample/04_imputed/01_panel/{genome}/02_sites/chr{chr}.tsv.gz",
+        sites="{folder}/03_sample/04_imputed/01_panel/02_sites/{genome}/chr{chr}.vcf.gz",
+        tsv="{folder}/03_sample/04_imputed/01_panel/02_sites/{genome}/chr{chr}.tsv.gz",
     output:
         final_vcf=temp("{folder}/03_sample/04_imputed/03_vcf/{sm}.{genome}_chr{chr}.vcf.gz"),
         final_csi=temp("{folder}/03_sample/04_imputed/03_vcf/{sm}.{genome}_chr{chr}.vcf.gz.csi"),
@@ -478,7 +478,8 @@ rule plot_gp:
             --width={params.width} \
             --height={params.height} \
             --gp={params.gp} \
-            --sample={wildcards.sm}
+            --sample={wildcards.sm} \
+            --genome={wildcards.genome}
         """
 
 
