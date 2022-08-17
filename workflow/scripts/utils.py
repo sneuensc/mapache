@@ -455,7 +455,6 @@ def recursive_get(keys, def_value, my_dict=config):
         value = my_dict.get(first, def_value)
     else:
         value = recursive_get(keys[1:], def_value, my_dict=my_dict.get(first, {}))
-    print(f"{value}: {eval_param(value)}: {type(value)}")
     return eval_param(value)
 
 
