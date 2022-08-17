@@ -516,7 +516,7 @@ def get_imputation_files():
             files = files + [
                 f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/{sm}.{genome}_gp{GP}.{ext}"
                 for sm in SAMPLES
-                for GP in str2list(recursive_get(["imputation", "gp_filter"], "[0.8]"))
+                for GP in str2list(recursive_get(["imputation", genome, "gp_filter"], "[0.8]"))
                 for ext in ["bcf", "bcf.csi"]
             ] + [
                 f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}.{genome}_gp.txt"
@@ -533,7 +533,7 @@ def get_imputation_files_external():
             files = files + [
                 f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/{sm}.{genome}_gp{GP}.{ext}"
                 for sm in samples_
-                for GP in str2list(recursive_get(["imputation", "gp_filter"], "[0.8]"))
+                for GP in str2list(recursive_get(["imputation", genome, "gp_filter"], "[0.8]"))
                 for ext in ["bcf", "bcf.csi"]
             ] + [
                 f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}.{genome}_gp.txt"

@@ -439,10 +439,10 @@ rule get_gp:
 rule plot_gp:
     input:
         "{folder}/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}.{genome}_gp.txt",
-        to_trigger_rerun=[
-            f"{{folder}}/03_sample/04_imputed/07_glimpse_sampled/unphased/{{sm}}.{{genome}}_gp{gp}.bcf"
-            for gp in str2list(recursive_get(["imputation", "gp_filter"], [0.8]))
-        ],
+        #to_trigger_rerun=lambda wildcards: [
+        #    f"{{folder}}/03_sample/04_imputed/07_glimpse_sampled/unphased/{{sm}}.{{genome}}_gp{gp}.bcf"
+        #    for gp in str2list(recursive_get(["imputation", wildcards.genome, , "gp_filter"], [0.8]))
+        #],
     output:
         report(
             "{folder}/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}.{genome}_gp.svg",
