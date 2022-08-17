@@ -191,7 +191,7 @@ run_imputation = str2bool(
     recursive_get_and_test(["imputation", "run"], ["False", "True"])
 )
 if run_imputation:
-    #if len(GENOMES) > 1:
+    # if len(GENOMES) > 1:
     #    LOGGER.warning(
     #        f"WARNING: Imputation will only be run on the first specified reference GENOMES ({GENOMES[0]})."
     #    )

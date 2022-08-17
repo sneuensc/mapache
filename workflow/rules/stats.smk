@@ -303,9 +303,13 @@ rule merge_stats_per_lb:
     output:
         "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/library_stats.csv",
     params:
-        chrs_selected=lambda wildcards: ",".join(to_list(recursive_get(
-            ["depth", wildcards.genome, "chromosomes"], "not_requested"
-        ))),
+        chrs_selected=lambda wildcards: ",".join(
+            to_list(
+                recursive_get(
+                    ["depth", wildcards.genome, "chromosomes"], "not_requested"
+                )
+            )
+        ),
         script=workflow.source_path("../scripts/merge_stats_per_LB.R"),
     log:
         "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/library_stats.log",
@@ -338,12 +342,16 @@ rule merge_stats_per_lb:
             $chrsSelected
         """
 
+
 def get_chroms(wildcards):
-    chrs_selected=to_list(recursive_get(
-        ["depth", wildcards.genome, "chromosomes"], "not_requested"
-    )),
+    chrs_selected = (
+        to_list(
+            recursive_get(["depth", wildcards.genome, "chromosomes"], "not_requested")
+        ),
+    )
     print(chrs_selected)
     return chrs_selected
+
 
 rule merge_stats_per_sm:
     input:
@@ -358,9 +366,13 @@ rule merge_stats_per_sm:
     output:
         "{folder}/04_stats/02_separate_tables/{genome}/{sm}/sample_stats.csv",
     params:
-        chrs_selected=lambda wildcards: ",".join(to_list(recursive_get(
-            ["depth", wildcards.genome, "chromosomes"], "not_requested"
-        ))),
+        chrs_selected=lambda wildcards: ",".join(
+            to_list(
+                recursive_get(
+                    ["depth", wildcards.genome, "chromosomes"], "not_requested"
+                )
+            )
+        ),
         #chrs_selected=get_chroms,
         script=workflow.source_path("../scripts/merge_stats_per_SM.R"),
     log:

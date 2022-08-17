@@ -35,7 +35,6 @@ if run_imputation:
             )
             sys.exit(1)
 
-
     # This string contains a wildcard where we will place the name of the chromosome
     # something like "path/to/my/panel_chr{chr}.vcf.gz"
     path_map = recursive_get(["imputation", "path_map"], "")
@@ -72,10 +71,9 @@ def get_num_chunks(wildcards, return_str=False):
             [sm for sm in SAMPLES]
             + [sm for gen in EXTERNAL_SAMPLES for sm in EXTERNAL_SAMPLES[gen]]
         ),
-
-
-
 # -----------------------------------------------------------------------------#
+
+
 # rules definitions
 localrules:
     get_panel,

@@ -57,7 +57,7 @@ rule get_fasta:
 
 ##########################################################################################
 ## trimming
-if paired_end:
+if PAIRED_END:
     if COLLAPSE:
 
         ruleorder: adapter_removal_collapse > adapter_removal_pe > adapter_removal_se

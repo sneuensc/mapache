@@ -9,7 +9,7 @@ def get_fastq_of_ID(wc):
     elif "_R2" == wc.id[-3:]:
         filename = SAMPLES[wc.sm][wc.lb][wc.id[:-3]]["Data2"]
     elif PAIRED_END:
-        # elif paired_end != 0:  ## SE library in a paired-end sample file
+        # elif PAIRED_END != 0:  ## SE library in a paired-end sample file
         filename = SAMPLES[wc.sm][wc.lb][wc.id]["Data1"]
     else:
         filename = SAMPLES[wc.sm][wc.lb][wc.id]["Data"]
@@ -70,7 +70,7 @@ def get_fastq_4_mapping(wc, rem_adapt=""):
 def inputs_fastqc(wc):
     if "trim" in wc.type:
         return get_fastq_4_mapping(wc, True)
-    else:   
+    else:
         return get_fastq_4_mapping(wc, False)
 
 
@@ -349,7 +349,6 @@ def get_sex_file(wc):
         return f"{wc.folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{wc.sm}.{wc.genome}_sex.txt"
     else:
         return f"{wc.folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{wc.sm}.{wc.genome}_nosex.txt"
-
 
 
 ##########################################################################################

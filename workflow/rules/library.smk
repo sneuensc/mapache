@@ -117,14 +117,12 @@ rule dedup:
         ),
     params:
         params=recursive_get(["remove_duplicates", "params_dedup"], "-m"),
-        collapsed=COLLAPSE
+        collapsed=lambda wildcards: COLLAPSE
         and "nan"
         not in [
             i["Data2"]
             for i in recursive_get(
-                [wildcards.sm, wildcards.lb],
-                [],
-                my_dict=SAMPLES,
+                [wildcards.sm, wildcards.lb], [], my_dict=SAMPLES
             ).values()
         ],
     log:
