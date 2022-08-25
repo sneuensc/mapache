@@ -16,7 +16,7 @@ def get_fastq_of_ID(wc):
     return filename
 
 
-## get the fastq file(s) used for mapping
+## get the fastq file(s) used for mapping (output is a list)
 def get_fastq_4_mapping(wc, rem_adapt=""):
     # print(f"get_fastq_4_mapping: {wc}")
     if rem_adapt == "":  ## if not set take the global setting
@@ -27,7 +27,7 @@ def get_fastq_4_mapping(wc, rem_adapt=""):
         if not PAIRED_END:
             filename = [f"{folder}/{wc.id}.fastq.gz"]
         elif COLLAPSE:
-            filename = rules.adapter_removal_collapse.output.R
+            filename = [rules.adapter_removal_collapse.output.R]
         else:
             # if str(SAMPLES[wc.sm][wc.lb][wc.id]["Data2"]) == "nan":
             data2 = recursive_get(
@@ -62,7 +62,6 @@ def get_fastq_4_mapping(wc, rem_adapt=""):
                     f"{folder}/{wc.id}_R1.fastq.gz",
                     f"{folder}/{wc.id}_R2.fastq.gz",
                 ]
-
     return filename
 
 
