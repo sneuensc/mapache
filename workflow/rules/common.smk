@@ -27,7 +27,7 @@ def get_fastq_4_mapping(wc, rem_adapt=""):
         if not PAIRED_END:
             filename = [f"{folder}/{wc.id}.fastq.gz"]
         elif COLLAPSE:
-            filename = rules.adapter_removal_collapse.output.R
+            filename = [rules.adapter_removal_collapse.output.R]
         else:
             # if str(SAMPLES[wc.sm][wc.lb][wc.id]["Data2"]) == "nan":
             data2 = recursive_get(
