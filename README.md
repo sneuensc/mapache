@@ -10,6 +10,22 @@ If you already have some experience with DNA mapping and/or Snakemake, you can f
 
 The usage of this workflow is described in the [Snakemake Workflow Catalog](https://snakemake.github.io/snakemake-workflow-catalog/?usage=sneuensc/mapache).
 
+The following main steps are included in ***mapache***:
+
+```
+for each fastq file:
+    - subsampling of a small subset of reads (options, not run by default; useful for quick tests)
+    - adapter removal with AdapterRemoval (optional; run by default)
+    - mapping with bwa aln (default), bwa mem or bowtie2
+for each library:
+    - marking duplicates with MarkDuplicates (optional; duplicates are removed by default)
+    - rescaling of base qualitiy scores with mapDamage (optional, not run by default)
+for each sample:
+    - re-alignment of reads with GATK (optional; run by default)
+    - re-computation of the md flag with samtools (optional; run by default)
+    - imputation of low-coverage genomes with GLIMPSE (optional, not run by default)
+```
+
 
 # Quick guide
 To install mapache, you need to clone the repository and create a conda environment following the instructions below. This will automatically install the software needed to map FASTQ files to a reference genome and create a report with the mapping statistics.
@@ -17,6 +33,7 @@ To install mapache, you need to clone the repository and create a conda environm
 To execute mapache, you can move to the cloned directory (`mapache`) or symlink its content (the directories `config/`,  `results/`, `workflow/`, and `test_data/` if you want to run the test) to your working directory.
 
 You will mostly interact with mapache through its **configuration file** (`config/config.yaml`), where you can tweak the parameteres of the pipeline, and the **samples file** (`config/samples.tsv`), in which you can list all the input FASTQ files.
+
 
 
 ## Installation
@@ -125,20 +142,6 @@ adapterremoval:
 ```
 
 If you need to modify the pipeline (for instance, to ommit one step), you can set its option to `run: True` or `run: False` in the config file. Additionally, if you intend to run mapache on an HPC system, you can specify the number of `threads`, memory (`mem` in GB), and runtime (`time` in hours) to be allocated to each step. Finally, you can pass additional parameters to the tool to be executed (e.g. `--minlength 30` to AdapterRemoval2) with the keyword `params`.
-
-The following main steps are included in ***mapache***:
-
-```
-for each fastq file:
-    1. adapter removal with AdapterRemoval (optional; run by default)
-    2. mapping with bwa aln (default), bwa mem or bowtie2
-for each library:
-    3. marking duplicates with MarkDuplicates (optional; duplicates are removed by default)
-    4. mapDamage is run, but by default not used for the next steps (optional)
-for each sample:
-    5. re-alignment of reads with GATK (optional; run by default)
-    6. re-computation of the md flag with samtools (optional; run by default)
-```
 
 
 
