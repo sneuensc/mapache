@@ -813,7 +813,7 @@ rule multiqc:
         ],
     output:
         html=report(
-            "{folder}/04_stats/02_separate_tables/{genome}/multiqc_fastqc.html",
+            "{folder}/04_stats/02_separate_tables/{genome}/multiqc_mapache.html",
             category=" Quality control",
         ),
     resources:
