@@ -265,7 +265,7 @@ snakemake -p -n                            Print out the commands
 We are preparing a manuscript describing mapache. In the meantime, if you use mapache for your study, please refer to mapache's repository on github (https://github.com/sneuensc/mapache) and cite the tools that you used within mapache. See the table below for a list of tools used at each step.
 
 ## Preprint
-[Neuenschwander_et_al_mapache.pdf](https://github.com/sneuensc/mapache/wiki/images/Neuenschwander_et_al_mapache.pdf)
+Neuenschwander et al. (2022) arXiv.org (https://doi.org/10.48550/arXiv.2208.13283 / [pdf](https://arxiv.org/pdf/2208.13283))
 
 ## Tools included in mapache
 <table class=" lightable-minimal" style="font-family: &quot;Trebuchet MS&quot;, verdana, sans-serif; margin-left: auto; margin-right: auto;">
