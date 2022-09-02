@@ -15,7 +15,7 @@ for genome in GENOMES:
         num_imputations = int(recursive_get(["imputation", genome, "num_imputations"], 1))
 
         # Imputation will be run by default on all chromosomes. The paramter below allow to select a subset of chromosomes.
-        chromosomes = to_list(recursive_get(["imputation", genome, "chromosomes"], []))
+        chromosomes = to_str(to_list(recursive_get(["imputation", genome, "chromosomes"], [])))
         if not chromosomes:
             chromosomes = get_chromosome_names(genome)
         else:

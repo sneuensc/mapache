@@ -411,7 +411,7 @@ def get_external_samples():
 
     else:
         LOGGER.error(
-            "ERROR: The argument of parameter config[external_sample] is not valide '{external_sample}'!"
+            f"ERROR: The argument of parameter config[external_sample] is not valide '{external_sample}'!"
         )
         sys.exit(1)
 
@@ -667,7 +667,7 @@ def set_sex_inference(genome):
 
     # check if the chromosomes specified in sex determination exist
     ## X chromosome
-    sex_chr = recursive_get(["sex_inference", genome, "sex_chr"], [])
+    sex_chr = to_str(recursive_get(["sex_inference", genome, "sex_chr"], []))
     if len(sex_chr):
         if valid_chromosome_names(genome, sex_chr):
             LOGGER.error(
@@ -694,8 +694,7 @@ def set_sex_inference(genome):
 
 def read_depth(genome):
     # check if chromosomes for which DoC was requested exist
-    allChr = recursive_get(["chromosome", genome, "all"], "")
-    depth = recursive_get(["depth", genome, "chromosomes"], "")
+    depth = to_str(recursive_get(["depth", genome, "chromosomes"], ""))
     if valid_chromosome_names(genome, depth):
         LOGGER.error(
             f"ERROR: config[depth][{genome}][chromosomes] contains unrecognized chromosome names ({valid_chromosome_names(genome, depth)})!"
