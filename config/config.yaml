@@ -62,7 +62,7 @@ sample_file: config/samples.tsv
 ##        ind2:  path_to_bam2.bam
 ##        ...
 
-external_sample: config/samples_stats.tsv
+#external_sample: config/samples_stats.tsv
 #    hg19:
 #        test1: /users/sneuensc/work_sneuensc/mapping_pipeline/mapache_test2/results/03_sample/03_final_sample/01_bam/ind1.hg19.bam
 #        test2: /users/sneuensc/work_sneuensc/mapping_pipeline/mapache_test2/results/03_sample/03_final_sample/01_bam/ind2.hg19.bam
@@ -303,7 +303,7 @@ imputation:
         # the reference genome to which individual samples were mapped.
         #chromosomes: '[str(x) for x in range(1,23)]+["X","Y"]'
         
-        chromosomes: 20
+        chromosomes: [20,21]
 
         glimse_chunk_params: ""
         glimse_phase_params: ""
