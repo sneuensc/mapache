@@ -109,7 +109,7 @@ def get_final_bam_FASTQ(wc):
     if run_filtering:
         file = f"{wc.folder}/01_fastq/03_filtered/01_bam_filter/{wc.sm}/{wc.lb}/{wc.id}.{wc.genome}.bam"
     else:
-        file = f"{folder}/01_fastq/02_mapped/03_bam_sort/{wc.sm}/{wc.lb}/{wc.id}.{wc.genome}.bam"
+        file = f"{wc.folder}/01_fastq/02_mapped/03_bam_sort/{wc.sm}/{wc.lb}/{wc.id}.{wc.genome}.bam"
     # print(f"get_bam_4_final_fastq: {file}")
     return file
 
@@ -124,7 +124,7 @@ def get_final_bam_low_qual_FASTQ(wc):
 
 ## get the bam file(s) to be merged
 def get_bam_4_merge_bam_fastq2library(wc):
-    return [
+    return [        
         get_final_bam_FASTQ(Wildcards(wc, {"id": id})) for id in SAMPLES[wc.sm][wc.lb]
     ]
 
