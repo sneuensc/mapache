@@ -501,7 +501,7 @@ def get_sex_files():
 
 def get_multiqc_files():
     multiqc_files = [
-        f"{RESULT_DIR}/04_stats/02_separate_tables/{genome}/multiqc_fastqc.html"
+        f"{RESULT_DIR}/04_stats/02_separate_tables/{genome}/multiqc_mapache.html"
         for genome in GENOMES
         if run_multiqc
     ]

@@ -788,6 +788,13 @@ rule multiqc:
             for lb in SAMPLES[sm]
             for id in SAMPLES[sm][lb]
         ],
+        picard=lambda wildcards: [
+            f"{RESULT_DIR}/02_library/01_duplicated/01_markduplicates/{sm}/{lb}.{genome}.stats"
+            for genome in GENOMES
+            for sm in SAMPLES
+            for lb in SAMPLES[sm]
+            for id in SAMPLES[sm][lb]
+        ],
         samtools_stats2=lambda wildcards: [
             f"{RESULT_DIR}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{sm}/{lb}.{genome}_stats.txt"
             for genome in GENOMES
@@ -811,6 +818,7 @@ rule multiqc:
             for files in ["genome_results.txt", "raw_data_qualimapReport"]
             if str2bool(recursive_get(["stats", "qualimap"], False))
         ],
+        sample_stats=f"{RESULT_DIR}/04_stats/03_summary/SM_stats.csv"
     output:
         html=report(
             "{folder}/04_stats/02_separate_tables/{genome}/multiqc_mapache.html",
@@ -824,9 +832,9 @@ rule multiqc:
             ["stats", "multiqc"], attempt, 1
         ),
     params:
-        config="config/multiqc_config.yaml",
+        config="workflow/report/multiqc_config.yaml",
     log:
-        "{folder}/04_stats/02_separate_tables/{genome}/multiqc_fastqc.log",
+        "{folder}/04_stats/02_separate_tables/{genome}/multiqc_mapache.log",
     conda:
         "../envs/multiqc.yaml"
     envmodules:
@@ -835,5 +843,7 @@ rule multiqc:
         "--- MULTIQC fastqc of {genome}"
     shell:
         """
-        multiqc -c {params.config} -n $(basename {output.html}) -f -d -o $(dirname {output.html}) {input}  2> {log}
+        multiqc -c {params.config} -n $(basename {output.html}) -f -d -o \
+            $(dirname {output.html}) {input}  \
+            --title 'Mapache report (genome {wildcards.genome})' 2> {log}
         """
