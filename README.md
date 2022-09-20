@@ -10,6 +10,22 @@ If you already have some experience with DNA mapping and/or Snakemake, you can f
 
 The usage of this workflow is described in the [Snakemake Workflow Catalog](https://snakemake.github.io/snakemake-workflow-catalog/?usage=sneuensc/mapache).
 
+The following main steps are included in ***mapache***:
+
+```
+for each fastq file:
+    - subsampling of a small subset of reads (options, not run by default; useful for quick tests)
+    - adapter removal with AdapterRemoval (optional; run by default)
+    - mapping with bwa aln (default), bwa mem or bowtie2
+for each library:
+    - marking duplicates with MarkDuplicates (optional; duplicates are removed by default)
+    - rescaling of base qualitiy scores with mapDamage (optional, not run by default)
+for each sample:
+    - re-alignment of reads with GATK (optional; run by default)
+    - re-computation of the md flag with samtools (optional; run by default)
+    - imputation of low-coverage genomes with GLIMPSE (optional, not run by default)
+```
+
 
 # Quick guide
 To install mapache, you need to clone the repository and create a conda environment following the instructions below. This will automatically install the software needed to map FASTQ files to a reference genome and create a report with the mapping statistics.
@@ -17,6 +33,7 @@ To install mapache, you need to clone the repository and create a conda environm
 To execute mapache, you can move to the cloned directory (`mapache`) or symlink its content (the directories `config/`,  `results/`, `workflow/`, and `test_data/` if you want to run the test) to your working directory.
 
 You will mostly interact with mapache through its **configuration file** (`config/config.yaml`), where you can tweak the parameteres of the pipeline, and the **samples file** (`config/samples.tsv`), in which you can list all the input FASTQ files.
+
 
 
 ## Installation
@@ -125,20 +142,6 @@ adapterremoval:
 ```
 
 If you need to modify the pipeline (for instance, to ommit one step), you can set its option to `run: True` or `run: False` in the config file. Additionally, if you intend to run mapache on an HPC system, you can specify the number of `threads`, memory (`mem` in GB), and runtime (`time` in hours) to be allocated to each step. Finally, you can pass additional parameters to the tool to be executed (e.g. `--minlength 30` to AdapterRemoval2) with the keyword `params`.
-
-The following main steps are included in ***mapache***:
-
-```
-for each fastq file:
-    1. adapter removal with AdapterRemoval (optional; run by default)
-    2. mapping with bwa aln (default), bwa mem or bowtie2
-for each library:
-    3. marking duplicates with MarkDuplicates (optional; duplicates are removed by default)
-    4. mapDamage is run, but by default not used for the next steps (optional)
-for each sample:
-    5. re-alignment of reads with GATK (optional; run by default)
-    6. re-computation of the md flag with samtools (optional; run by default)
-```
 
 
 
@@ -258,8 +261,151 @@ snakemake -p -n                            Print out the commands
 -p                                        Print out the shell commands that will be executed. 
 ```
 
-# Citing mapache
+## Citing mapache
 We are preparing a manuscript describing mapache. In the meantime, if you use mapache for your study, please refer to mapache's repository on github (https://github.com/sneuensc/mapache) and cite the tools that you used within mapache. See the table below for a list of tools used at each step.
 
+## Preprint
+Neuenschwander et al. (2022) arXiv.org (https://doi.org/10.48550/arXiv.2208.13283 / [pdf](https://arxiv.org/pdf/2208.13283))
 
-
+## Tools included in mapache
+<table class=" lightable-minimal" style="font-family: &quot;Trebuchet MS&quot;, verdana, sans-serif; margin-left: auto; margin-right: auto;">
+ <thead>
+  <tr>
+   <th style="text-align:left;">  </th>
+   <th style="text-align:left;"> Reference </th>
+   <th style="text-align:left;"> Link </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr grouplength="1"><td colspan="3" style="border-bottom: 1px solid;"><strong>Workflow manager</strong></td></tr>
+<tr>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> Snakemake </td>
+   <td style="text-align:left;"> Mölder, et al. </td>
+   <td style="text-align:left;"> https://github.com/snakemake/snakemake </td>
+  </tr>
+  <tr grouplength="1"><td colspan="3" style="border-bottom: 1px solid;"><strong>Subsample</strong></td></tr>
+<tr>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> seqtk </td>
+   <td style="text-align:left;">  </td>
+   <td style="text-align:left;"> https://github.com/lh3/seqtk </td>
+  </tr>
+  <tr grouplength="1"><td colspan="3" style="border-bottom: 1px solid;"><strong>Clean</strong></td></tr>
+<tr>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> AdapterRemoval2 </td>
+   <td style="text-align:left;"> Schubert, et al. </td>
+   <td style="text-align:left;"> https://github.com/MikkelSchubert/adapterremoval </td>
+  </tr>
+  <tr grouplength="3"><td colspan="3" style="border-bottom: 1px solid;"><strong>Map</strong></td></tr>
+<tr>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> bwa aln </td>
+   <td style="text-align:left;"> Li and Durbin </td>
+   <td style="text-align:left;"> https://github.com/lh3/bwa </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> bwa mem </td>
+   <td style="text-align:left;"> Li and Durbin </td>
+   <td style="text-align:left;"> https://github.com/lh3/bwa </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> bowtie2 </td>
+   <td style="text-align:left;"> Langmead and Salzberg </td>
+   <td style="text-align:left;"> https://github.com/BenLangmead/bowtie2 </td>
+  </tr>
+  <tr grouplength="1"><td colspan="3" style="border-bottom: 1px solid;"><strong>Sort</strong></td></tr>
+<tr>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> samtools </td>
+   <td style="text-align:left;"> Danecek, et al. </td>
+   <td style="text-align:left;"> https://github.com/samtools/samtools </td>
+  </tr>
+  <tr grouplength="1"><td colspan="3" style="border-bottom: 1px solid;"><strong>Filter</strong></td></tr>
+<tr>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> samtools </td>
+   <td style="text-align:left;"> Danecek, et al. </td>
+   <td style="text-align:left;"> https://github.com/samtools/samtools </td>
+  </tr>
+  <tr grouplength="1"><td colspan="3" style="border-bottom: 1px solid;"><strong>Merge lanes</strong></td></tr>
+<tr>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> samtools </td>
+   <td style="text-align:left;"> Danecek, et al. </td>
+   <td style="text-align:left;"> https://github.com/samtools/samtools </td>
+  </tr>
+  <tr grouplength="2"><td colspan="3" style="border-bottom: 1px solid;"><strong>Remove duplicates</strong></td></tr>
+<tr>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> Picard MarkDuplicates </td>
+   <td style="text-align:left;"> Broad Institute </td>
+   <td style="text-align:left;"> http://broadinstitute.github.io/picard </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> dedup </td>
+   <td style="text-align:left;"> Peltzer, et al. </td>
+   <td style="text-align:left;"> https://github.com/apeltzer/DeDup </td>
+  </tr>
+  <tr grouplength="1"><td colspan="3" style="border-bottom: 1px solid;"><strong>Rescale damage</strong></td></tr>
+<tr>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> MapDamage2 </td>
+   <td style="text-align:left;"> Jonsson, et al. </td>
+   <td style="text-align:left;"> https://github.com/ginolhac/mapDamage </td>
+  </tr>
+  <tr grouplength="1"><td colspan="3" style="border-bottom: 1px solid;"><strong>Merge libraries</strong></td></tr>
+<tr>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> samtools </td>
+   <td style="text-align:left;"> Danecek, et al. </td>
+   <td style="text-align:left;"> https://github.com/samtools/samtools </td>
+  </tr>
+  <tr grouplength="1"><td colspan="3" style="border-bottom: 1px solid;"><strong>Realign indels</strong></td></tr>
+<tr>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> GATK IndelRealigner </td>
+   <td style="text-align:left;"> DePristo, et al. </td>
+   <td style="text-align:left;"> https://gatk.broadinstitute.org </td>
+  </tr>
+  <tr grouplength="1"><td colspan="3" style="border-bottom: 1px solid;"><strong>Recompute md flag</strong></td></tr>
+<tr>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> samtools </td>
+   <td style="text-align:left;"> Danecek, et al. </td>
+   <td style="text-align:left;"> https://github.com/samtools/samtools </td>
+  </tr>
+  <tr grouplength="2"><td colspan="3" style="border-bottom: 1px solid;"><strong>Imputation</strong></td></tr>
+<tr>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> GLIMPSE </td>
+   <td style="text-align:left;"> Rubinacci, et al. </td>
+   <td style="text-align:left;"> https://github.com/odelaneau/GLIMPSE </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> bcftools </td>
+   <td style="text-align:left;"> Danecek, et al. </td>
+   <td style="text-align:left;"> https://github.com/samtools/bcftools </td>
+  </tr>
+  <tr grouplength="3"><td colspan="3" style="border-bottom: 1px solid;"><strong>Reports</strong></td></tr>
+<tr>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> fastqc </td>
+   <td style="text-align:left;"> Andrews </td>
+   <td style="text-align:left;"> https://www.bioinformatics.babraham.ac.uk/projects/fastqc/ </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> qualimap </td>
+   <td style="text-align:left;"> Okonechnikov, et al. </td>
+   <td style="text-align:left;"> http://qualimap.conesalab.org/ </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> multiQC </td>
+   <td style="text-align:left;"> Ewels, et al. </td>
+   <td style="text-align:left;"> https://multiqc.info/ </td>
+  </tr>
+  <tr grouplength="3"><td colspan="3" style="border-bottom: 1px solid;"><strong>Statistics</strong></td></tr>
+<tr>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> bedtools </td>
+   <td style="text-align:left;"> Quinlan and Hall </td>
+   <td style="text-align:left;"> https://github.com/arq5x/bedtools2 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> bamdamage </td>
+   <td style="text-align:left;"> Malaspinas, et al. </td>
+   <td style="text-align:left;"> https://savannah.nongnu.org/projects/bammds </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> R </td>
+   <td style="text-align:left;"> R Core Team </td>
+   <td style="text-align:left;"> https://www.r-project.org/ </td>
+  </tr>
+</tbody>
+</table>

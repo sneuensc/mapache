@@ -204,11 +204,9 @@ def write_log():
                 f"  - Inferring damage and read length with bamdamge on {fraction} alignments"
             )
 
-    if run_imputation:
+    if len(run_imputation) > 0:
         if len(genome) > 1:
-            LOGGER.info(
-                f"  - Imputing on genome {to_list(GENOMES[0])} (first genome in list)"
-            )
+            LOGGER.info(f"  - Imputing {run_imputation}")
         else:
             LOGGER.info(f"  - Imputing")
 
@@ -413,7 +411,7 @@ def get_external_samples():
 
     else:
         LOGGER.error(
-            "ERROR: The argument of parameter config[external_sample] is not valide '{external_sample}'!"
+            f"ERROR: The argument of parameter config[external_sample] is not valide '{external_sample}'!"
         )
         sys.exit(1)
 
@@ -456,6 +454,7 @@ def recursive_get(keys, def_value, my_dict=config):
     else:
         value = recursive_get(keys[1:], def_value, my_dict=my_dict.get(first, {}))
     return eval_param(value)
+    #return value
 
 
 ## same as above, but the argument is tested if it is present in the 'available_args'
@@ -530,6 +529,7 @@ def eval_param(x):
 
 def to_str(x):
     if type(x) is list:
+        #return [str(i) for i in x]
         return list(map(str, x))
     elif type(x) is int:
         return str(x)
@@ -667,7 +667,7 @@ def set_sex_inference(genome):
 
     # check if the chromosomes specified in sex determination exist
     ## X chromosome
-    sex_chr = recursive_get(["sex_inference", genome, "sex_chr"], [])
+    sex_chr = to_str(recursive_get(["sex_inference", genome, "sex_chr"], []))
     if len(sex_chr):
         if valid_chromosome_names(genome, sex_chr):
             LOGGER.error(
@@ -677,8 +677,7 @@ def set_sex_inference(genome):
         config = update_value(["chromosome", genome, "sex_chr"], sex_chr)
 
     # autosomes
-    autosomes = to_str(
-        recursive_get(
+    autosomes = to_str(recursive_get(
             ["sex_inference", genome, "autosomes"],
             [],
         )
@@ -695,8 +694,7 @@ def set_sex_inference(genome):
 
 def read_depth(genome):
     # check if chromosomes for which DoC was requested exist
-    allChr = recursive_get(["chromosome", genome, "all"], "")
-    depth = recursive_get(["depth", genome, "chromosomes"], "")
+    depth = to_str(recursive_get(["depth", genome, "chromosomes"], ""))
     if valid_chromosome_names(genome, depth):
         LOGGER.error(
             f"ERROR: config[depth][{genome}][chromosomes] contains unrecognized chromosome names ({valid_chromosome_names(genome, depth)})!"
