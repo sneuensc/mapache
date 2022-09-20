@@ -84,8 +84,11 @@ rule adapter_removal_collapse:
         R=temp(
             "{folder}/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}.fastq.gz"
         ),
-        trunc=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}_truncated.fastq.gz"
+        col_R=temp(
+            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}_collapsed.fastq.gz"
+        ),
+        col_trunc=temp(
+            "{folder}/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}_collapsed_truncated.fastq.gz"
         ),
         R1=temp(
             "{folder}/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}_R1.fastq.gz"
@@ -106,10 +109,14 @@ rule adapter_removal_collapse:
             "adapterremoval", attempt, 24
         ),
     params:
-        recursive_get(
+        params = recursive_get(
             ["adapterremoval", "params"],
             "--minlength 30 --trimns --trimqualities",
         ),
+        collapsed = recursive_get_and_test(
+            ["adapterremoval", "collapse_opt"],
+            ["only_collapse", "collapse_trunc", "all"]
+        ),        
     log:
         "{folder}/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}.log",
     threads: get_threads("adapterremoval", 4)
@@ -122,11 +129,21 @@ rule adapter_removal_collapse:
     shell:
         """
         out={output.R};
-        AdapterRemoval --threads {threads} {params} --file1 {input.R1} \
+        AdapterRemoval --threads {threads} {params.params} --file1 {input.R1} \
                 --file2 {input.R2} --basename ${{out%%.fastq.gz}} --gzip \
                 --output1 {output.R1} --output2 {output.R2} \
-                --outputcollapsed {output.R} \
-                --outputcollapsedtruncated {output.trunc} 2> {log};
+                --outputcollapsed {output.col_R} \
+                --outputcollapsedtruncated {output.col_trunc} 2> {log};
+
+        ## what should be used to continue?
+        options={params.collapsed};
+        if [[ "$options" == "only_collapse" ]]; then
+            ln -s {output.col_R} {output.R};
+        elif [[ "$options" == "collapse_trunc" ]]; then
+            cat {output.col_R} {output.col_trunc} > {output.R};
+        elif [[ "$options" == "all" ]]; then
+            cat {output.col_R} {output.col_trunc} {output.R1} {output.R2} {output.strunc} > {output.R};
+        fi;
         """
 
 
