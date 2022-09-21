@@ -1,6 +1,6 @@
-# MAPACHE
+# Mapache
 
-***Mapache*** is a lightweight mapping pipeline for ancient DNA using the workflow manager *snakemake*
+**Mapache** ([maˈpa.t͡ʃe]) is a lightweight mapping pipeline for ancient DNA using the workflow manager *Snakemake*.
 
 You are welcome to try out mapache. Please beware that the pipeline is under development, and we are happy to get any feedback/propositions.
 
@@ -10,7 +10,7 @@ If you already have some experience with DNA mapping and/or Snakemake, you can f
 
 The usage of this workflow is described in the [Snakemake Workflow Catalog](https://snakemake.github.io/snakemake-workflow-catalog/?usage=sneuensc/mapache).
 
-The following main steps are included in ***mapache***:
+The following main steps are included in **mapache**:
 
 ```
 for each fastq file:
@@ -28,6 +28,13 @@ for each sample:
 
 
 # Quick guide
+<p align="center">
+
+<img src="https://github.com/sneuensc/mapache/wiki/images/how_to_run.001.jpeg" />
+
+</p>
+
+
 To install mapache, you need to clone the repository and create a conda environment following the instructions below. This will automatically install the software needed to map FASTQ files to a reference genome and create a report with the mapping statistics.
 
 To execute mapache, you can move to the cloned directory (`mapache`) or symlink its content (the directories `config/`,  `results/`, `workflow/`, and `test_data/` if you want to run the test) to your working directory.
