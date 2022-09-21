@@ -2,9 +2,8 @@
 
 **Mapache** ([maˈpa.t͡ʃe]) is a lightweight mapping pipeline for ancient DNA using the workflow manager *Snakemake*.
 
-You are welcome to try out mapache. Please beware that the pipeline is under development, and we are happy to get any feedback/propositions.
+Visit the [Wiki](https://github.com/sneuensc/mapache/wiki) for extensive documentation on how to use mapache . 
 
-You can see an extensive documentation on how to use mapache in the [Wiki](https://github.com/sneuensc/mapache/wiki). 
 If you already have some experience with DNA mapping and/or Snakemake, you can follow the quick guide below.
 
 
@@ -26,6 +25,18 @@ for each sample:
     - imputation of low-coverage genomes with GLIMPSE (optional, not run by default)
 ```
 
+
+Moreover, mapache allows you to map large datasets to a single reference genome or to multiple genomes. 
+
+Mapache is designed having in mind that one or multiple DNA libraries are generated per sample, and such libraries are sequenced at least once (e.g., for screening), but usually multiple times (normally prioritizing the highest-quality libraries). This results in several FASTQ files, which have to be mapped several times over the course of a project in order to generate a single BAM file.
+
+The goal of mapache is to make the mapping process as easy and transparent as possible, whether you are mapping to a single or multiple genomes, mapping for the first time, needing to update a BAM file or even impute low-coverage genomes. 
+
+<p align="center">
+
+<img src="https://github.com/sneuensc/mapache/wiki/images/problem.001.jpeg"/>
+
+</p>
 
 # Quick guide
 <p align="center">
@@ -113,6 +124,8 @@ The columns of the sample file are:
 - **Data2** (paired-end format)**:** Path to the reverse fastq file (R2) for paired-end data or `NULL` for single-end data. The file may be gzipped or not. Path may be absolute or relative to the working directory.
 - **MAPQ:** Fastq-file specific mapping quality filtering threshold.
 - **PL:** Sequencing platform or any other text (single word) to annotate in the read group line `@RG` in the the bam file.
+
+👆🏿 Note that you can select any label you want for the columns SM, LB, ID and PL; that is, they do not need to match any substring or the name of your FASTQ files. However, we recommend that you stick to meaningful names (e.g.: Denisova, Mota, UstIshim, Anzick, lib1, lib2, lib3_USER, etc.) and ACII characters.
 
 ## Adapt config file
 By default, mapache is configured to map ancient data to a human reference genome. You need to specify the path to the reference genome in FASTA format in the configuration file (`config/config.yaml`) provided by mapache.
@@ -202,6 +215,14 @@ The command below will produce a figure with the rules that will be run.
 snakemake --rulegraph |dot -Tpng > rulegraph.png
 ```
 
+## Optional: configure a profile to automatically submit jobs to a queue
+
+This is a very handy utility that will allow mapache to automatically schedule jobs for submission to a queuing system. If you work with _a system managed by slurm_, you can *skip this step*, as mapache comes with a slurm profile (`mapache/slurm`). 
+
+
+Other profiles are available at: https://github.com/Snakemake-Profiles
+
+Note however that the exact configuration might vary depending on your system (i.e., some users might have different accounts on a server for billing purposes). We thus highly encourage you to seek for help with your IT team if you are in doubt about the configuration that suits your system the best. Please note that we are not in charge of developing these profiles. 
 
 ## Run mapping pipeline 
 
@@ -229,36 +250,37 @@ snakemake --report report.zip
 ```
 
 
-USAGE:
+## Summary of useful commands
 
 ```
-## recommended workflow on a server
-snakemake dag --dag | dot -Tsvg > dag.svg                Visualization of the pipeline in a directed acyclic graph (DAG).
+#------------------------------------------
+# Get an idea of the jobs that will be executed. Not mandatory but very useful to spot possible mistakes in the configuration or input files
+
+snakemake dag --dag | dot -Tpng > dag.png                Visualization of the pipeline in a directed acyclic graph (DAG).
+snakemake dag --rulegraph | dot -Tpng > rulegraph.svg    Visualization the interplay of the rules.
 snakemake -n                                             Dry run
-snakemake --report report.html                           Create a html report (after execution)
+snakemake -p -n                                          Print out the commands in a dry run
+
+#------------------------------------------
+# recommended workflow on a cluster (e.g. slurm)
+snakemake mapping --jobs 999 --profile slurm             Run all mappings and imputation (note that the profile has to be the last argument)
+
+#------------------------------------------
+# recommended workflow on a single machine without a queuing system
+snakemake mapping --cores 16                            Run all mappings and imputation (assuming that you have 16 CPUs available)
+
+#------------------------------------------
+# Create report (after execution)
+
+snakemake --report report.html                           Create a html report 
 sed -i "s/'runtime': 0.0/'runtime': 0.1/g" report.html   Correct report
+OR
+snakemake --report report.zip                            Create a zip report; useful if you want to download the files by clicking on the HTML report
 
+#------------------------------------------
+# Options to control the execution.
+# Visit https://snakemake.readthedocs.io/en/stable/ for full documentation
 
-## recommended workflow on a cluster (e.g. wally)
-snakemake dag --dag | dot -Tsvg > dag.svg                Visualization of the pipeline in a directed acyclic graph (DAG).
-snakemake -n 		                                 Dry run
-snakemake mapping --profile wally                        Run all mappings (note that the profile has to be the last argument)
-snakemake stats --profile wally                          Run all statistics (and all mapping steps which are required to get them...
-snakemake --report report.html                           Create a html report (after execution)
-sed -i "s/'runtime': 0.0/'runtime': 0.1/g" report.html   Correct report
-
-
-## minimal set of commands to execute the workflow
-snakemake                                                Run all (mappings & stats)
-snakemake --report report.html                           Create a html report (after execution)
-sed -i "s/'runtime': 0.0/'runtime': 0.1/g" report.html   Correct report
-
-## commands to test if the workflow makes sense
-snakemake dag --rulegraph | dot -Tsvg > rulegraph.svg Visualization the interplay of the rules.
-snakemake dag --dag | dot -Tsvg > dag.svg  Visualization of the pipeline in a directed acyclic graph (DAG). 
-snakemake -p -n                            Print out the commands
-
-## helpfull commands to controll the execution
 --profile axiom                           To send it on the cluster (must be the last argument).
 -R RULE_NAME                              Force a start at at least the given rule.
 --until RULE_NAME                         Run until the given rule (included).
@@ -269,10 +291,10 @@ snakemake -p -n                            Print out the commands
 ```
 
 ## Citing mapache
-We are preparing a manuscript describing mapache. In the meantime, if you use mapache for your study, please refer to mapache's repository on github (https://github.com/sneuensc/mapache) and cite the tools that you used within mapache. See the table below for a list of tools used at each step.
+If you use mapache for your study, please refer to mapache's repository on github (https://github.com/sneuensc/mapache), its preprint and the tools that you used within mapache. See the table below for a list of tools used at each step.
 
-## Preprint
-Neuenschwander et al. (2022) arXiv.org (https://doi.org/10.48550/arXiv.2208.13283 / [pdf](https://arxiv.org/pdf/2208.13283))
+Preprint: 
+> Neuenschwander et al. (2022) arXiv.org (https://doi.org/10.48550/arXiv.2208.13283 / [pdf](https://arxiv.org/pdf/2208.13283))
 
 ## Tools included in mapache
 <table class=" lightable-minimal" style="font-family: &quot;Trebuchet MS&quot;, verdana, sans-serif; margin-left: auto; margin-right: auto;">
