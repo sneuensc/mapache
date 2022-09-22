@@ -2,7 +2,7 @@ channels:
   - bioconda
   - conda-forge
 dependencies:
-  - snakemake=6.4.1
+  - snakemake=7.14.0
   - mamba
   - adapterremoval=2.3.2
   - bwa=0.7.17
