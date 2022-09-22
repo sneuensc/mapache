@@ -252,7 +252,7 @@ damage:
 
 depth:
     hg19:
-        run: True
+        run: False
         # Mapache outputs the depth of coverage (DoC) for each of the genomes. 
         # If you also want the DoC to be reported for some chromosomes in the main stats table, list them below. 
         # Their names have to match their IDs in the FASTA file specified above.
@@ -285,7 +285,7 @@ sex_inference:
 
 imputation:
     hg19:
-        run: True
+        run: False
 
         num_imputations: 2
 
