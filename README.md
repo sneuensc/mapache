@@ -221,6 +221,8 @@ snakemake --rulegraph |dot -Tpng > rulegraph.png
 
 </p>
 
+Examples for the DAG and rulegraph can be found [here](https://github.com/sneuensc/mapache/wiki/images/dag.png) and [here](https://github.com/sneuensc/mapache/wiki/images/rulegraph.png), respectively.
+
 
 ## Optional: configure a profile to automatically submit jobs to a queue
 
@@ -282,6 +284,10 @@ snakemake --report report.html
 ```
 
 We recommend creating the zip version of the report, as it contains the html report in it and it allows you to download any of the output tables or plots by clicking on the links of the report, making it easier to share with your colleagues.
+
+Have a look at both reports with Snakemake 6.10.0:
+- [HTML report](https://github.com/sneuensc/mapache/wiki/report/report.html)
+- [Zipped report](https://github.com/sneuensc/mapache/wiki/report/report.zip)
 
 
 ## Summary of useful commands
@@ -360,35 +366,35 @@ Preprint:
   </tr>
   <tr grouplength="3"><td colspan="3" style="border-bottom: 1px solid;"><strong>Map</strong></td></tr>
 <tr>
-   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> bwa aln </td>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> BWA aln </td>
    <td style="text-align:left;"> Li and Durbin </td>
    <td style="text-align:left;"> https://github.com/lh3/bwa </td>
   </tr>
   <tr>
-   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> bwa mem </td>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> BWA mem </td>
    <td style="text-align:left;"> Li and Durbin </td>
    <td style="text-align:left;"> https://github.com/lh3/bwa </td>
   </tr>
   <tr>
-   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> bowtie2 </td>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> Bowtie2 </td>
    <td style="text-align:left;"> Langmead and Salzberg </td>
    <td style="text-align:left;"> https://github.com/BenLangmead/bowtie2 </td>
   </tr>
   <tr grouplength="1"><td colspan="3" style="border-bottom: 1px solid;"><strong>Sort</strong></td></tr>
 <tr>
-   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> samtools </td>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> SAMtools </td>
    <td style="text-align:left;"> Danecek, et al. </td>
    <td style="text-align:left;"> https://github.com/samtools/samtools </td>
   </tr>
   <tr grouplength="1"><td colspan="3" style="border-bottom: 1px solid;"><strong>Filter</strong></td></tr>
 <tr>
-   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> samtools </td>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> SAMtools </td>
    <td style="text-align:left;"> Danecek, et al. </td>
    <td style="text-align:left;"> https://github.com/samtools/samtools </td>
   </tr>
   <tr grouplength="1"><td colspan="3" style="border-bottom: 1px solid;"><strong>Merge lanes</strong></td></tr>
 <tr>
-   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> samtools </td>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> SAMtools </td>
    <td style="text-align:left;"> Danecek, et al. </td>
    <td style="text-align:left;"> https://github.com/samtools/samtools </td>
   </tr>
@@ -405,13 +411,13 @@ Preprint:
   </tr>
   <tr grouplength="1"><td colspan="3" style="border-bottom: 1px solid;"><strong>Rescale damage</strong></td></tr>
 <tr>
-   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> MapDamage2 </td>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> mapDamage2 </td>
    <td style="text-align:left;"> Jonsson, et al. </td>
    <td style="text-align:left;"> https://github.com/ginolhac/mapDamage </td>
   </tr>
   <tr grouplength="1"><td colspan="3" style="border-bottom: 1px solid;"><strong>Merge libraries</strong></td></tr>
 <tr>
-   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> samtools </td>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> SAMtools </td>
    <td style="text-align:left;"> Danecek, et al. </td>
    <td style="text-align:left;"> https://github.com/samtools/samtools </td>
   </tr>
@@ -423,7 +429,7 @@ Preprint:
   </tr>
   <tr grouplength="1"><td colspan="3" style="border-bottom: 1px solid;"><strong>Recompute md flag</strong></td></tr>
 <tr>
-   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> samtools </td>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> SAMtools </td>
    <td style="text-align:left;"> Danecek, et al. </td>
    <td style="text-align:left;"> https://github.com/samtools/samtools </td>
   </tr>
@@ -434,29 +440,29 @@ Preprint:
    <td style="text-align:left;"> https://github.com/odelaneau/GLIMPSE </td>
   </tr>
   <tr>
-   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> bcftools </td>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> BCFtools </td>
    <td style="text-align:left;"> Danecek, et al. </td>
    <td style="text-align:left;"> https://github.com/samtools/bcftools </td>
   </tr>
   <tr grouplength="3"><td colspan="3" style="border-bottom: 1px solid;"><strong>Reports</strong></td></tr>
 <tr>
-   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> fastqc </td>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> FastQC </td>
    <td style="text-align:left;"> Andrews </td>
    <td style="text-align:left;"> https://www.bioinformatics.babraham.ac.uk/projects/fastqc/ </td>
   </tr>
   <tr>
-   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> qualimap </td>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> Qualimap </td>
    <td style="text-align:left;"> Okonechnikov, et al. </td>
    <td style="text-align:left;"> http://qualimap.conesalab.org/ </td>
   </tr>
   <tr>
-   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> multiQC </td>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> MultiQC </td>
    <td style="text-align:left;"> Ewels, et al. </td>
    <td style="text-align:left;"> https://multiqc.info/ </td>
   </tr>
   <tr grouplength="3"><td colspan="3" style="border-bottom: 1px solid;"><strong>Statistics</strong></td></tr>
 <tr>
-   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> bedtools </td>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> BEDTools </td>
    <td style="text-align:left;"> Quinlan and Hall </td>
    <td style="text-align:left;"> https://github.com/arq5x/bedtools2 </td>
   </tr>
