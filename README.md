@@ -286,7 +286,7 @@ snakemake --report report.html
 We recommend creating the zip version of the report, as it contains the html report in it and it allows you to download any of the output tables or plots by clicking on the links of the report, making it easier to share with your colleagues.
 
 Have a look at both reports with Snakemake 6.10.0:
-- [HTML report](https://github.com/sneuensc/mapache/wiki/report/report.html)
+- <a href="https://github.com/sneuensc/mapache/wiki/report/report.html" download="report.html">HTML report</a>
 - [Zipped report](https://github.com/sneuensc/mapache/wiki/report/report.zip)
 
 
