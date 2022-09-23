@@ -215,6 +215,13 @@ The command below will produce a figure with the rules that will be run.
 snakemake --rulegraph |dot -Tpng > rulegraph.png
 ```
 
+<p align="center">
+
+<img src="https://github.com/sneuensc/mapache/wiki/images/dag_rulegraph_loop.gif" width="600" height="400"/>
+
+</p>
+
+
 ## Optional: configure a profile to automatically submit jobs to a queue
 
 This is a very handy utility that will allow mapache to automatically schedule jobs for submission to a queuing system. If you work with _a system managed by slurm_, you can *skip this step*, as mapache comes with a slurm profile (`mapache/slurm`). 
@@ -235,6 +242,14 @@ Example of execution using only one CPU:
 snakemake --cores 1
 ```
 
+
+<p align="center">
+
+<img src="https://github.com/sneuensc/mapache/wiki/images/run_mapache_loop.gif" width="600" height="400"/>
+
+</p>
+
+
 If you work on an HPC system managed by slurm, you can use the slurm profile in the repository (`mapache/slurm/`) by symlinking it to your working directory. We recommend to start a screen session prior to the job submission.
 
 Example of a submission of 999 jobs (simoultaneously) with the slurm profile:
@@ -245,9 +260,28 @@ snakemake --jobs 999 --profile slurm
 
 ## Create report with mapping statistics
 
+The template using to produce the html report will change depending on the version of Snakemake that you are using with `mapache`. Although we try to include one of the most recent distributions of Snakemake, we think that the template used in older versions is more useful to navigate through the results in the report. We thus recommend you to create a new environment with conda or mamba to create such report:
+
+
+```
+mamba create -n snakemake610 snakemake=6.10.0
+
+mamba activate snakemake610
+```
+
+Once you have activated the new environment, creating the report is straightforward:
+
 ```
 snakemake --report report.zip
 ```
+
+or
+
+```
+snakemake --report report.html
+```
+
+We recommend creating the zip version of the report, as it contains the html report in it and it allows you to download any of the output tables or plots by clicking on the links of the report, making it easier to share with your colleagues.
 
 
 ## Summary of useful commands
