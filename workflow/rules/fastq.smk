@@ -138,7 +138,7 @@ rule adapter_removal_collapse:
         ## what should be used to continue?
         options={params.collapsed};
         if [[ "$options" == "only_collapse" ]]; then
-            ln -s {output.col_R} {output.R};
+            ln -srf {output.col_R} {output.R};
         elif [[ "$options" == "collapse_trunc" ]]; then
             cat {output.col_R} {output.col_trunc} > {output.R};
         elif [[ "$options" == "all" ]]; then
