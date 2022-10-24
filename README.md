@@ -294,8 +294,8 @@ Explore the [zipped report](https://github.com/sneuensc/mapache/wiki/report/repo
 #------------------------------------------
 # Get an idea of the jobs that will be executed. Not mandatory but very useful to spot possible mistakes in the configuration or input files
 
-snakemake dag --dag | dot -Tpng > dag.png                Visualization of the pipeline in a directed acyclic graph (DAG).
-snakemake dag --rulegraph | dot -Tpng > rulegraph.svg    Visualization the interplay of the rules.
+snakemake dag --dag | dot -Tsvg > dag.svg                Visualization of the pipeline in a directed acyclic graph (DAG).
+snakemake dag --rulegraph | dot -Tsvg > rulegraph.svg    Visualization the interplay of the rules.
 snakemake -n                                             Dry run
 snakemake -p -n                                          Print out the commands in a dry run
 
