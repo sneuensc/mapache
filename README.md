@@ -177,9 +177,9 @@ Assuming that you are in the mapache directory, you can use the next lines to cr
 
 ```
 # alias to cp directories
- echo 'alias copy_mapache="cp -r $(pwd -P)/{config,workflow,test_data,slurm} ." ' >> ~/.bash_profile
+ echo "alias copy_mapache='cp -r $(pwd -P)/{config,workflow,test_data,slurm} . ' " >> ~/.bash_profile
 # alias to symlink directories
- echo 'alias symlink_mapache="ln -s $(pwd -P)/{config,workflow,test_data,slurm} ." ' >> ~/.bash_profile
+ echo "alias symlink_mapache='ln -s $(pwd -P)/{config,workflow,test_data,slurm} . ' ">> ~/.bash_profile
 
 source ~/.bash_profile
 
