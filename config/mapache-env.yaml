@@ -2,7 +2,7 @@ channels:
   - bioconda
   - conda-forge
 dependencies:
-  - snakemake=7.14.0
+  - snakemake=7.18.2
   - mamba
   - adapterremoval=2.3.2
   - bwa=0.7.17
@@ -17,9 +17,9 @@ dependencies:
   - dedup=0.12.8
   - qualimap=2.2.2d
   - multiqc=1.11
-  - charset-normalizer=2.0.0
   - glimpse-bio=1.1.1
   - bcftools=1.15
+  - charset-normalizer=2.0.0
   - R=4.0
   - r-ggplot2
   - r-rcolorbrewer
