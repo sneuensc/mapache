@@ -485,7 +485,7 @@ Preprint:
    <td style="text-align:left;"> Ewels, et al. (2016) </td>
    <td style="text-align:left;"> https://multiqc.info/ </td>
   </tr>
-  <tr grouplength="3"><td colspan="3" style="border-bottom: 1px solid;"><strong>Statistics</strong></td></tr>
+  <tr grouplength="3"><td colspan="4" style="border-bottom: 1px solid;"><strong>Statistics</strong></td></tr>
 <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> BEDTools </td>
    <td style="text-align:left;"> 2.30.0 </td>
