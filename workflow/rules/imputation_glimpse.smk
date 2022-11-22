@@ -11,11 +11,13 @@
 #   2000 jobs is still fine for 1 individual, but if imputating more individuals it might be worth
 #   to group a few GLIMPSE_phase commands in a single job, as they are usually fast (1-2 minutes each)
 for genome in GENOMES:
-    if str2bool(recursive_get_and_test(["imputation", genome, "run"], ["False", "True"])):
-        num_imputations = int(recursive_get(["imputation", genome, "num_imputations"], 1))
+    if str2bool(get_param(["imputation", genome, "run"], ["False", "True"])):
+        num_imputations = int(get_param(["imputation", genome, "num_imputations"], 1))
 
         # Imputation will be run by default on all chromosomes. The paramter below allow to select a subset of chromosomes.
-        chromosomes = to_str(to_list(recursive_get(["imputation", genome, "chromosomes"], [])))
+        chromosomes = to_str(
+            to_list(get_param(["imputation", genome, "chromosomes"], []))
+        )
         if not chromosomes:
             chromosomes = get_chromosome_names(genome)
         else:
@@ -27,7 +29,7 @@ for genome in GENOMES:
 
         # This string contains a wildcard where we will place the name of the chromosome
         # something like "path/to/my/panel_chr{chr}.vcf.gz"
-        path_panel = recursive_get(["imputation", genome, "path_panel"], "")
+        path_panel = get_param(["imputation", genome, "path_panel"], "")
         for chr in chromosomes:
             file = path_panel.format(chr=chr)
             if not os.path.isfile(file):
@@ -38,7 +40,7 @@ for genome in GENOMES:
 
         # This string contains a wildcard where we will place the name of the chromosome
         # something like "path/to/my/panel_chr{chr}.vcf.gz"
-        path_map = recursive_get(["imputation", genome, "path_map"], "")
+        path_map = get_param(["imputation", genome, "path_map"], "")
         for chr in chromosomes:
             file = path_map.format(chr=chr)
             if not os.path.isfile(file):
@@ -46,7 +48,6 @@ for genome in GENOMES:
                     f"ERROR: Map file config[imputation][{genome}][path_map] ({path_panel}) does not exist for 'chr={chr}'!"
                 )
                 sys.exit(1)
-
 
 
 # -----------------------------------------------------------------------------#
@@ -63,6 +64,7 @@ def get_num_chunks(wildcards, return_str=False):
         n_chunks = str(n_chunks)
     return n_chunks
 
+
 # -----------------------------------------------------------------------------#
 
 
@@ -77,7 +79,7 @@ rule get_panel:
     Symlink panel and its index (or create index if not present)
     """
     input:
-        lambda wildcards: recursive_get(["imputation", wildcards.genome, "path_panel"], ""),
+        lambda wildcards: get_param(["imputation", wildcards.genome, "path_panel"], ""),
     output:
         panel_vcf=temp(
             "{folder}/03_sample/04_imputed/01_panel/01_panel/{genome}/chr{chr}.vcf.gz"
@@ -109,7 +111,7 @@ rule get_map:
     Symlink the map
     """
     input:
-        lambda wildcards: recursive_get(["imputation", wildcards.genome, "path_map"], ""),
+        lambda wildcards: get_param(["imputation", wildcards.genome, "path_map"], ""),
     output:
         temp("{folder}/03_sample/04_imputed/02_map/{genome}/chr{chr}.gz"),
     message:
@@ -130,10 +132,18 @@ rule extract_positions:
         vcf="{folder}/03_sample/04_imputed/01_panel/01_panel/{genome}/chr{chr}.vcf.gz",
         index="{folder}/03_sample/04_imputed/01_panel/01_panel/{genome}/chr{chr}.vcf.gz.csi",
     output:
-        sites=temp("{folder}/03_sample/04_imputed/01_panel/02_sites/{genome}/chr{chr}.vcf.gz"),
-        tsv=temp("{folder}/03_sample/04_imputed/01_panel/02_sites/{genome}/chr{chr}.tsv.gz"),
-        csi=temp("{folder}/03_sample/04_imputed/01_panel/02_sites/{genome}/chr{chr}.vcf.gz.csi"),
-        tbi=temp("{folder}/03_sample/04_imputed/01_panel/02_sites/{genome}/chr{chr}.tsv.gz.tbi"),
+        sites=temp(
+            "{folder}/03_sample/04_imputed/01_panel/02_sites/{genome}/chr{chr}.vcf.gz"
+        ),
+        tsv=temp(
+            "{folder}/03_sample/04_imputed/01_panel/02_sites/{genome}/chr{chr}.tsv.gz"
+        ),
+        csi=temp(
+            "{folder}/03_sample/04_imputed/01_panel/02_sites/{genome}/chr{chr}.vcf.gz.csi"
+        ),
+        tbi=temp(
+            "{folder}/03_sample/04_imputed/01_panel/02_sites/{genome}/chr{chr}.tsv.gz.tbi"
+        ),
     message:
         "--- IMPUTATION: extract positions (genome {wildcards.genome}; chr {wildcards.chr})"
     log:
@@ -170,10 +180,13 @@ rule bcftools_mpileup:
         sites="{folder}/03_sample/04_imputed/01_panel/02_sites/{genome}/chr{chr}.vcf.gz",
         tsv="{folder}/03_sample/04_imputed/01_panel/02_sites/{genome}/chr{chr}.tsv.gz",
     output:
-        final_vcf=temp("{folder}/03_sample/04_imputed/03_vcf/{sm}.{genome}_chr{chr}.vcf.gz"),
-        final_csi=temp("{folder}/03_sample/04_imputed/03_vcf/{sm}.{genome}_chr{chr}.vcf.gz.csi"),
-    threads: 
-        lambda wildcards: get_threads2(["imputation", wildcards.genome, "bcftools_mpileup"], 1)
+        final_vcf=temp(
+            "{folder}/03_sample/04_imputed/03_vcf/{sm}.{genome}_chr{chr}.vcf.gz"
+        ),
+        final_csi=temp(
+            "{folder}/03_sample/04_imputed/03_vcf/{sm}.{genome}_chr{chr}.vcf.gz.csi"
+        ),
+    threads: lambda wildcards: get_threads2(["imputation", wildcards.genome, "bcftools_mpileup"], 1)
     log:
         "{folder}/log/03_sample/04_imputed/03_vcf/{sm}.{genome}_chr{chr}.log",
     message:
@@ -218,7 +231,9 @@ checkpoint glimpse_chunk:
     output:
         chunks="{folder}/03_sample/04_imputed/04_glimpse_chunked/{genome}/chunks_chr{chr}.txt",
     params:
-        params=lambda wildcards: recursive_get(["imputation", wildcards.genome, "glimse_chunk_params"], ""),
+        params=lambda wildcards: get_param(
+            ["imputation", wildcards.genome, "glimse_chunk_params"], ""
+        ),
     message:
         "--- GLIMSE_CHUNK: split GENOMES (genome {wildcards.genome}; chr {wildcards.chr})"
     log:
@@ -263,11 +278,12 @@ rule glimpse_phase:
     message:
         "--- IMPUTATION: impute phase (sample {wildcards.sm}; genome {wildcards.genome}; chr {wildcards.chr}; chunk: {wildcards.n})"
     params:
-        params=lambda wildcards: recursive_get(["imputation", wildcards.genome, "glimse_phase_params"], ""),
+        params=lambda wildcards: get_param(
+            ["imputation", wildcards.genome, "glimse_phase_params"], ""
+        ),
     log:
         "{folder}/log/03_sample/04_imputed/05_glimpse_phased/{sm}.{genome}/chr{chr}/chunk{n}.log",
-    threads: 
-        lambda wildcards: get_threads2(["imputation", wildcards.genome, "impute_phase"], 1)
+    threads: lambda wildcards: get_threads2(["imputation", wildcards.genome, "impute_phase"], 1)
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
             ["imputation", wildcards.genome, "impute_phase"], attempt, 2
@@ -439,10 +455,6 @@ rule get_gp:
 rule plot_gp:
     input:
         "{folder}/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}.{genome}_gp.txt",
-        #to_trigger_rerun=lambda wildcards: [
-        #    f"{{folder}}/03_sample/04_imputed/07_glimpse_sampled/unphased/{{sm}}.{{genome}}_gp{gp}.bcf"
-        #    for gp in str2list(recursive_get(["imputation", wildcards.genome, , "gp_filter"], [0.8]))
-        #],
     output:
         report(
             "{folder}/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}.{genome}_gp.svg",
@@ -454,9 +466,11 @@ rule plot_gp:
         "--- IMPUTATION: plot GP values (sample {wildcards.sm}; genome {wildcards.genome})"
     params:
         script=workflow.source_path("../scripts/plot_imputation_gp.R"),
-        width=recursive_get(["stats", "plots", "width"], 11),
-        height=recursive_get(["stats", "plots", "height"], 7),
-        gp=lambda wildcards: ",".join(str2list(recursive_get(["imputation", wildcards.genome, "gp_filter"], [0.8]))),
+        width=get_param(["stats", "plots", "width"], 11),
+        height=get_param(["stats", "plots", "height"], 7),
+        gp=lambda wildcards: ",".join(
+            str2list(get_param(["imputation", wildcards.genome, "gp_filter"], [0.8]))
+        ),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
             ["imputation", wildcards.genome, "plot_gp"], attempt, 4

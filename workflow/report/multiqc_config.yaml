@@ -2,6 +2,10 @@
 # MultiQC Defaults
 #################################################################
 # This file contains the default configuration options
+#################################################################
+# MultiQC Defaults
+#################################################################
+# This file contains the default configuration options
 # for MultiQC. IT SHOULD NOT BE EDITED. If you want to
 # change any of these config options, create a new file
 # in any of the following locations:
@@ -10,7 +14,7 @@
 #  3. <working directory>/multiqc_config.yaml
 #################################################################
 
-#title: Mapache report
+title: null
 subtitle: null
 intro_text: This is an extended report of the mapping pipeline mapache (https://github.com/sneuensc/mapache). Mapache is a light weighted mapping pipeline for ancient DNA using the workflow manager snakemake. The report allows getting insights into the different processes. 
 report_comment: null
@@ -21,37 +25,41 @@ config_file: null
 custom_logo: 'workflow/report/mapache_logo.png'
 custom_logo_url: null
 custom_logo_title: null
+custom_css_files: []
 simple_output: false
-template: 'default'
-profile_runtime: False
+template: "default"
+profile_runtime: false
 pandoc_template: null
-read_count_multiplier: 0.001
-read_count_prefix: 'K'
-read_count_desc: 'thousands'
+read_count_multiplier: 0.000001
+read_count_prefix: "M"
+read_count_desc: "millions"
 long_read_count_multiplier: 0.001
-long_read_count_prefix: 'K'
-long_read_count_desc: 'thousands'
+long_read_count_prefix: "K"
+long_read_count_desc: "thousands"
 base_count_multiplier: 0.000001
-base_count_prefix: 'Mb'
-base_count_desc: 'millions'
+base_count_prefix: "Mb"
+base_count_desc: "millions"
 output_fn_name: 'multiqc_mapache.html'
 data_dir_name: 'multiqc_mapache_data'
 plots_dir_name: 'multiqc_mapache_plots'
-data_format: 'tsv'
+data_format: "tsv"
 module_tag: []
 force: false
-prepend_dirs: false
+no_ansi: false
+quiet: false
+prepend_dirs: true
 prepend_dirs_depth: 0
-prepend_dirs_sep: ' | '
+prepend_dirs_sep: " | "
 file_list: false
 
 make_data_dir: true
-zip_data_dir: true
+zip_data_dir: false
 data_dump_file: true
 megaqc_url: false
 megaqc_access_token: null
 megaqc_timeout: 30
 export_plots: false
+make_report: true
 plots_force_flat: false
 plots_force_interactive: false
 plots_flat_numseries: 100
@@ -60,213 +68,314 @@ collapse_tables: true
 max_table_rows: 500
 table_columns_visible: {}
 table_columns_placement: {}
+table_columns_name: {}
 table_cond_formatting_colours:
-    - blue: '#337ab7'
-    - lbue: '#5bc0de'
-    - pass: '#5cb85c'
-    - warn: '#f0ad4e'
-    - fail: '#d9534f'
+  - blue: "#337ab7"
+  - lbue: "#5bc0de"
+  - pass: "#5cb85c"
+  - warn: "#f0ad4e"
+  - fail: "#d9534f"
 table_cond_formatting_rules:
-    all_columns:
-        pass:
-            - s_eq: 'pass'
-            - s_eq: 'true'
-        warn:
-            - s_eq: 'warn'
-            - s_eq: 'unknown'
-        fail:
-            - s_eq: 'fail'
-            - s_eq: 'false'
-    # PURPLE module - QC Status column
-    # TODO: Should update the table plotting code so that this can go in pconfig
-    QCStatus:
-        fail:
-            - s_contains: 'fail'
+  all_columns:
+    pass:
+      - s_eq: "pass"
+      - s_eq: "true"
+    warn:
+      - s_eq: "warn"
+      - s_eq: "unknown"
+    fail:
+      - s_eq: "fail"
+      - s_eq: "false"
+  # PURPLE module - QC Status column
+  # TODO: Should update the table plotting code so that this can go in pconfig
+  QCStatus:
+    fail:
+      - s_contains: "fail"
 decimalPoint_format: null
 thousandsSep_format: null
-#remove_sections: 
-#    - fastqc_status_checks
-
+remove_sections: []
 section_comments: {}
-#lint: False
+lint: False
 custom_plot_config: {}
+custom_table_header_config: {}
 
 ignore_symlinks: false
 ignore_images: true
 fn_ignore_dirs:
-    - 'multiqc_data'
-    - 'icarus_viewers'       # quast
-    - 'runs_per_reference'   # quast
-    - 'not_aligned'          # quast
-    - 'contigs_reports'      # quast
+  - "multiqc_data"
+  - ".git"
+  - "icarus_viewers" # quast
+  - "runs_per_reference" # quast
+  - "not_aligned" # quast
+  - "contigs_reports" # quast
 
 fn_ignore_paths:
-    - '*/work/??/??????????????????????????????' # Nextflow work directories - always same hash lengths
-    
-
-
-
-
+  - "*/work/??/??????????????????????????????" # Nextflow work directories - always same hash lengths
+  - "*/.snakemake"
+  - "*/.singularity" # Singularity cache path
+  - "*/__pycache__"
+  - "*/site-packages/multiqc" # MultiQC installation directory
+sample_names_ignore: []
+sample_names_ignore_re: []
+sample_names_rename_buttons: []
+sample_names_replace: {}
+sample_names_replace_regex: False
+sample_names_replace_exact: False
+sample_names_replace_complete: False
+sample_names_rename: []
+show_hide_buttons: []
+show_hide_patterns: []
+show_hide_regex: []
+show_hide_mode: []
+no_version_check: true
+log_filesize_limit: 10000000
+report_readerrors: false
+skip_generalstats: false
 data_format_extensions:
-    tsv: 'txt'
-    json: 'json'
-    yaml: 'yaml'
+  tsv: "txt"
+  json: "json"
+  yaml: "yaml"
 export_plot_formats:
-    - 'png'
-    - 'svg'
-    - 'pdf'
+  - "png"
+  - "svg"
+  - "pdf"
 
 # Custom Config settings
 custom_content:
-    order: []
+  order: []
 
 # Option to disable sample name cleaning if desired
 fn_clean_sample_names: true
 
+# Option to use the filename as the sample name if desired
+# Set to True to apply for all modules. Define a list of search pattern keys to be specific.
+use_filename_as_sample_name: false
+
 # Used for cleaning sample names. Should be strings.
 # NB: These are removed in order!
 fn_clean_exts:
-    - '.gz'
-    - '.fastq'
-    - '.fq'
-    - '.bam'
-    - '.sam'
-    - '.sra'
-    - '.vcf'
-    - '.dat'
-    - '_tophat'
-    - '.log'
-    - '.stderr'
-    - '.out'
-    - '.spp'
-    - '.fa'
-    - '.fasta'
-    - '.png'
-    - '.jpg'
-    - '.jpeg'
-    - '.html'
-    - 'Log.final'
-    - 'ReadsPerGene'
-    - '.flagstat'
-    - '_star_aligned'
-    - '_fastqc'
-    - '.hicup'
-    - '.counts'
-    - '_counts'
-    - '.txt'
-    - '.tsv'
-    - '.csv'
-    - '.aligned'
-    - 'Aligned'
-    - '.merge'
-    - '.deduplicated'
-    - '.dedup'
-    - '.clean'
-    - '.sorted'
-    - '.report'
-    - '| stdin'
-    - '.geneBodyCoverage'
-    - '.inner_distance_freq'
-    - '.junctionSaturation_plot.r'
-    - '.pos.DupRate.xls'
-    - '.GC.xls'
-    - '_slamdunk'
-    - '_bismark'
-    - '.conpair'
-    - '.concordance'
-    - '.contamination'
-    - '.BEST.results'
-    - '_peaks.xls'
-    - '.relatedness'
-    - '.cnt'
-    - '.aqhist'
-    - '.bhist'
-    - '.bincov'
-    - '.bqhist'
-    - '.covhist'
-    - '.covstats'
-    - '.ehist'
-    - '.gchist'
-    - '.idhist'
-    - '.ihist'
-    - '.indelhist'
-    - '.lhist'
-    - '.mhist'
-    - '.qahist'
-    - '.qhist'
-    - '.rpkm'
-    - '.selfSM'
-    - '.extendedFrags'
-    - '_SummaryStatistics'
-    - '.purple.purity'
-    - '.purple.qc'
-    - '.settings'
-    - '_stats'
+  - ".gz"
+  - ".fastq"
+  - ".fq"
+  - ".bam"
+  - ".sam"
+  - ".sra"
+  - ".vcf"
+  - ".dat"
+  - "_tophat"
+  - ".pbmarkdup.log"
+  - ".log"
+  - ".stderr"
+  - ".out"
+  - ".spp"
+  - ".fa"
+  - ".fasta"
+  - ".png"
+  - ".jpg"
+  - ".jpeg"
+  - ".html"
+  - "Log.final"
+  - "ReadsPerGene"
+  - ".flagstat"
+  - "_star_aligned"
+  - "_fastqc"
+  - ".hicup"
+  - ".counts"
+  - "_counts"
+  - ".txt"
+  - ".tsv"
+  - ".csv"
+  - ".aligned"
+  - "Aligned"
+  - ".merge"
+  - ".deduplicated"
+  - ".dedup"
+  - ".clean"
+  - ".sorted"
+  - ".report"
+  - "| stdin"
+  - ".geneBodyCoverage"
+  - ".inner_distance_freq"
+  - ".junctionSaturation_plot.r"
+  - ".pos.DupRate.xls"
+  - ".GC.xls"
+  - "_slamdunk"
+  - "_bismark"
+  - ".conpair"
+  - ".concordance"
+  - ".contamination"
+  - ".BEST.results"
+  - "_peaks.xls"
+  - ".relatedness"
+  - ".cnt"
+  - ".aqhist"
+  - ".bhist"
+  - ".bincov"
+  - ".bqhist"
+  - ".covhist"
+  - ".covstats"
+  - ".ehist"
+  - ".gchist"
+  - ".idhist"
+  - ".ihist"
+  - ".indelhist"
+  - ".lhist"
+  - ".mhist"
+  - ".qahist"
+  - ".qchist"
+  - ".qhist"
+  - ".rpkm"
+  - ".selfSM"
+  - ".extendedFrags"
+  - "_SummaryStatistics"
+  - ".purple.purity"
+  - ".purple.qc"
+  - ".trim"
+  - ".bowtie2"
+  - ".mkD"
+  - ".highfreq"
+  - ".lowfreq"
+  - ".consensus"
+  - ".snpEff"
+  - ".snpeff"
+  - ".scaffolds"
+  - ".contigs"
+  - ".kraken2"
+  - ".ccurve"
+  - ".hisat2"
+  - "_duprate"
+  - ".markdup"
+  - ".read_distribution"
+  - ".junction_annotation"
+  - ".infer_experiment"
+  - ".biotype"
+  - ".ivar"
+  - ".mpileup"
+  - ".primer_trim"
+  - ".mapped"
+  - ".vep"
+  - "_vep"
+  - "ccs"
+  - "_NanoStats"
+  - ".cutadapt"
+  - ".mosdepth"
+
+extra_fn_clean_exts:
+  - type: regex
+    pattern: "_qualimap.*"
+
 
 # These are removed after the above, only if sample names
 # start or end with this string. Again, removed in order.
 fn_clean_trim:
-    - '.'
-    - ':'
-    - '_'
-    - '-'
-    - '.r'
-    - '_val'
-    - '.idxstats'
-    - '_trimmed'
-    - '.trimmed'
-    - '.csv'
-    - '.yaml'
-    - '.yml'
-    - '.json'
-    - '_mqc'
-    - 'short_summary_'
-    - '_summary'
-    - '.summary'
-    - '.align'
-    - '.h5'
-    - '_matrix'
-    - '.stats'
-    - '.hist'
+  - "."
+  - ":"
+  - "_"
+  - "-"
+  - ".r"
+  - "_val"
+  - ".idxstats"
+  - "_trimmed"
+  - ".trimmed"
+  - ".csv"
+  - ".yaml"
+  - ".yml"
+  - ".json"
+  - "_mqc"
+  - "short_summary_"
+  - "_summary"
+  - ".summary"
+  - ".align"
+  - ".h5"
+  - "_matrix"
+  - ".stats"
+  - ".hist"
+  - ".phased"
+
+extra_fn_clean_trim:
+  - " | 01_fastq | 01_trimmed | 01_adapterremoval | "
+  - " | 01_fastq | 01_trimmed | 01_fastp | "
+  - " | 02_library | 01_duplicated | 01_markduplicates | "
+  - " | 04_stats | 01_sparse_stats | 01_fastq | 00_reads | 01_files_orig | "
+  - " | 04_stats | 01_sparse_stats | 01_fastq | 04_final_fastq | 01_bam | "
+  - " | 01_fastq | 01_trimmed | 01_adapterremoval_se | "
+  - " | 01_fastq | 01_trimmed | 01_adapterremoval_pe | "
+  - " | 01_fastq | 01_trimmed | 01_adapterremoval_collapse | "
+  - " | 01_fastq | 01_trimmed | 01_fastp_se | "
+  - " | 01_fastq | 01_trimmed | 01_fastp_pe | "
+  - " | 01_fastq | 01_trimmed | 01_fastp_collapse | "
+  - " | 04_stats | 01_sparse_stats | 02_library | 03_final_library | 01_bam | "
+  - " | 04_stats | 01_sparse_stats | 03_sample | 03_final_sample | 01_bam | "
+  - ".settings"
+  - "_stats"
+
+  
 
 # Files to ignore when indexing files.
 # Grep file match patterns.
 fn_ignore_files:
-    - '.DS_Store'
-    - '*.bam'
-    - '*.bai'
-    - '*.sam'
-    - '*.fq.gz'
-    - '*.fastq.gz'
-    - '*.fq'
-    - '*.fastq'
-    - '*.fa'
-    - '*.gtf'
-    - '*.bed'
-    - '*.vcf'
-    - '*.txt.gz'
-    - '*.pdf'
-    - '*[!_][!m][!q][!c].html'
-    - '*.md5'
+  - ".DS_Store"
+  - ".py[cod]"
+  - "*.bam"
+  - "*.bai"
+  - "*.sam"
+  - "*.fq.gz"
+  - "*.fastq.gz"
+  - "*.fq"
+  - "*.fastq"
+  - "*.fa"
+  - "*.gtf"
+  - "*.bed"
+  - "*.vcf"
+  - "*.tbi"
+  - "*.txt.gz"
+  - "*.pdf"
+  - "*.md5"
+  - "*[!s][!u][!m][!_\\.m][!mva][!qer][!cpy].html" # Allow _mqc.html, _vep.html and summary.html files
+  - multiqc_data.json
 
 # Favourite modules that should appear at the top in preference
 # This is in addition to those below. These appear above _all_ other
 # modules (even those not present in the below list).
 top_modules: []
 
+custom_content:
+  order:
+    - sm_stats
+
+custom_data:
+  sm_stats: 
+    section_name: "test"
+    file_format: 'csv'
+
+sp:
+  sm_stats: 
+    fn: "*/SM_stats.*_mqc2.csv"
+
+run_modules:
+    - adapterRemoval
+    - bowtie2
+    - custom_content
+    - dedup
+    - damageprofiler
+    - fastp
+    - fastqc
+    - gatk
+    - picard
+    - preseq
+    - qualimap
+    - samtools
+    - bcftools
+
+
 # Order that modules should appear in report. Try to list in order of analysis.
 module_order:
     # MultiQC general module for catching output from custom scripts
-    - 'custom_content'
 
-    - sentieon:
-        module_tag:
-            - DNA
-    - sexdeterrmine:
-        module_tag:
-            - DNA
 
-    - 
+    # stat tables
+    - sm_stats
+
     # Pre-alignment QC
     - fastqc:
         name: "FastQC (raw)"
@@ -275,18 +384,11 @@ module_order:
         custom_config: 
         path_filters:
           - "*/01_files_orig/*_fastqc.zip"
-        module_tag:
-            - RNA
-            - DNA
+
     - adapterRemoval:
-        module_tag:
-            - RNA
-            - DNA
-            - ancient
-    - trimmomatic:
-        module_tag:
-            - RNA
-            - DNA
+
+    - fastp:
+
     - fastqc:
         name: "FastQC (trimmed)"
         anchor: "fastqc_trimmed"
@@ -294,9 +396,6 @@ module_order:
         target: ""
         path_filters:
             - "*/01_adapter_removal*/*_fastqc.zip"
-        module_tag:
-            - RNA
-            - DNA
     
     # Alignment tool stats
     - bowtie2:
@@ -310,9 +409,6 @@ module_order:
         target: ""
         path_filters:
             - "*/04_final_fastq/*_stats.txt"
-        module_tag:
-            - DNA
-            - RNA
 
     # Post-alignment QC library level
     - samtools:
@@ -322,24 +418,15 @@ module_order:
         target: ""
         path_filters:
             - "*/03_final_library/*_stats.txt"
-        module_tag:
-            - DNA
-            - RNA
+
     - dedup:
-        module_tag:
-            - DNA
-            - ancient
+
     - damageprofiler:
-        module_tag:
-            - DNA
-            - ancient
+
     - picard:
         name: "PICARD MarkDuplicates"
         path_filters:
             - "*/02_library/01_duplicated/01_markduplicates/*.stats"
-        module_tag:
-            - DNA
-            - RNA
     
     # Post-alignment QC sample level
     - samtools:
@@ -349,12 +436,7 @@ module_order:
         target: ""
         path_filters:
             - "*/03_final_sample/*_stats.txt"
-        module_tag:
-            - DNA
-            - RNA
 
     - qualimap:
-        module_tag:
-            - DNA
-            - RNA
+
 

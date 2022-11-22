@@ -116,9 +116,10 @@ subsampling:
     number: 1000
 
 # adapter_removal (optional)
-adapterremoval:
-    run: True
-    params: '--minlength 30 --trimns --trimqualities'
+cleaning:
+    run: 'adapterremoval'
+    params_adapterremoval: '--minlength 30 --trimns --trimqualities'
+    params_fastp: ''
     threads: 4 
     mem: 4 ## in GB
     time: 2

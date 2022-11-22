@@ -134,25 +134,38 @@ if(x_axis == "sample"){
 #--------------------------------------------------------------------------#
 # generic barplot with ggplot2
 
-make_barplot <- function(data, x, y, group, n_figures, cols, color="blue", title = ""){
+make_barplot <- function(data, x, y, group, n_figures, cols, color="blue", title = "", percent=F){
   my_plot <- ggplot(data, aes_string(x = x, y = y)) +
     geom_bar(stat = "identity", position = position_dodge(), fill=color) +
     labs(title = title) +
     theme(axis.text.x=element_text(angle = 90, vjust = 0.5),
           legend.position = "none")
+    
 
-  ## split figure if multidimensional
-  if(n_figures > 1){
-    my_plot <- my_plot + facet_wrap(as.formula(paste("~", group)), ncol = cols)
+  ## add numbers if there are not too many columns
+  if(nrow(data)<10){
+    if(percent){
+      my_plot <- my_plot + geom_text(aes(label=paste0(format(round(100*data[,y],3), big.mark=","),'%')),
+                                     vjust=-0.25, color="black") +
+        scale_y_continuous(labels = scales::percent)
+    }else{
+      my_plot <- my_plot + geom_text(aes(label=format(round(data[,y], 3), big.mark=",")),
+                                     vjust=-0.25, color="black")
+    }
+
+    ## split figure if multidimensional
+    if(n_figures > 1){
+      my_plot <- my_plot + facet_wrap(as.formula(paste("~", group)), ncol = cols)
+    }
+
+    return(my_plot)
   }
-  
-  return(my_plot)
 }
 
 
 #--------------------------------------------------------------------------#
 # "Total number of reads"
-my_plot <- make_barplot(data = sample_stats, x = x, y = "reads_raw", 
+my_plot <- make_barplot(data = sample_stats, x = x, y = "reads_raw",
                         group = group, n_figures = n_figures, cols=n_col,
                         color=color, title = "Total number of raw reads")
 
@@ -177,6 +190,12 @@ my_plot <- ggplot(mapped_reads, aes_string(x = x, y = "number_reads",
   geom_bar(stat = "identity", position = position_dodge(), fill=color) +
   guides(fill="none", color="none")
 
+## add numbers if there are not too many columns
+if(nrow(mapped_reads)<10){
+  my_plot <- my_plot + geom_text(aes(label=format(mapped_reads[,"number_reads"], big.mark=",")),
+                                 vjust=-0.25, color="black", show.legend = FALSE)
+}
+
 ## split figure if multidimensional
 if(n_figures > 1){
   my_plot <- my_plot + facet_wrap(as.formula(paste("~", group)), ncol = n_col)
@@ -186,28 +205,26 @@ ggsave(out_2_mapped, my_plot, width = width, height = height)
 
 #--------------------------------------------------------------------------#
 # "Endogenous content"
-my_plot <- make_barplot(data = sample_stats, x = x, y = "endogenous_unique", 
+my_plot <- make_barplot(data = sample_stats, x = x, y = "endogenous_unique",
                         group = group, n_figures = n_figures, cols=n_col,
-                        color=color, title = "Endogenous content (unique reads)") + 
-  scale_y_continuous(labels = percent)
+                        color=color, title = "Endogenous content (unique reads)", percent=T) 
 
 ggsave(out_3_endogenous, my_plot, width = width, height = height)
 
 #--------------------------------------------------------------------------#
 # "Duplication level"
-my_plot <- make_barplot(data = sample_stats, x = x, y = "duplicates_prop", 
+my_plot <- make_barplot(data = sample_stats, x = x, y = "duplicates_prop",
                         group = group, n_figures = n_figures, cols=n_col,
-                        color=color, title = "Duplicates per sample (percentage)") + 
-  scale_y_continuous(labels = percent)
+                        color=color, title = "Duplicates per sample (percentage)", percent=T)
 
 ggsave(out_4_duplication, my_plot, width = width, height = height)
 
 #--------------------------------------------------------------------------#
 # "Average read depth"
-my_plot <- make_barplot(data = sample_stats, x = x, y = "read_depth", 
+my_plot <- make_barplot(data = sample_stats, x = x, y = "read_depth",
                         group = group, n_figures = n_figures, cols=n_col,
                         color=color, title = "Average read depth")
-  
+
 ggsave(out_5_AvgReadDepth, my_plot, width = width, height = height)
 
 #--------------------------------------------------------------------------#
@@ -229,14 +246,14 @@ if(sum(!is.na(sample_stats$Sex))){ ## not requested
       tmp$Sex <- row.names(tmp)
       m <- rbind(m, tmp)
     }
-    
+
     ## set all assignments not defined in 'sex_ribbons' to 'other'
     sample_stats$Sex2 <- as.character(sample_stats$Sex)
     sample_stats$Sex2[!sample_stats$Sex2 %in% names(sex_ribbons)] = "other"
     sex_ribbons2 <- c(sex_ribbons, "other"="darkgray")
-    
+
     my_plot <- ggplot() +
-      theme_bw() +  
+      theme_bw() +
       geom_rect(data=m, aes(xmin = -Inf, xmax = Inf, ymin = min, ymax = max, fill = Sex), alpha = 0.2) +
       geom_errorbar(data=sample_stats, aes(x = SM, y = Sex_Rx, ymin = Sex_Rx-Sex_CI, ymax = Sex_Rx+Sex_CI, color = Sex2), width=0.25) +
       geom_point(data=sample_stats, aes(x=SM, y=Sex_Rx, color = Sex2)) +
@@ -245,21 +262,21 @@ if(sum(!is.na(sample_stats$Sex))){ ## not requested
       scale_y_continuous(breaks=seq(0,1,0.25)) +
       theme(legend.position = "top") +
       theme(axis.text.x=element_text(angle = 90, vjust = 0.5))
-    
+
     ## split figure if multidimensional
     if(n_figures > 1){
       my_plot <- my_plot + facet_wrap(as.formula(paste("~", group)), ncol = n_col)
     }
-  
+
   }else{
     my_plot <- ggplot() +
-      geom_text(data = data.frame(x=1,y=1), 
+      geom_text(data = data.frame(x=1,y=1),
                 aes(x = x, y = y, label = "Sex inference not possible")) +
       theme_void()
   }
 }else{
   my_plot <- ggplot() +
-    geom_text(data = data.frame(x=1,y=1), 
+    geom_text(data = data.frame(x=1,y=1),
               aes(x = x, y = y, label = "Sex inference was not requested")) +
     theme_void()
 }

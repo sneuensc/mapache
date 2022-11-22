@@ -12,7 +12,7 @@ rule genome_index_bwa:
     """
     input:
         fasta="{folder}/00_reference/{genome}/{genome}.fasta",
-        orig=lambda wildcards: recursive_get(["genome", wildcards.genome], ""),
+        orig=lambda wildcards: get_param(["genome", wildcards.genome], ""),
     output:
         temp(
             multiext(
@@ -28,7 +28,7 @@ rule genome_index_bwa:
         memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
     params:
-        params=recursive_get(["indexing", "bwa_params"], ""),
+        params=get_param(["indexing", "bwa_params"], ""),
         cmd="f'bwa index {snakemake.params[0]} {snakemake.input.fasta} 2> {snakemake.log}'",
     log:
         "{folder}/00_reference/{genome}/{genome}_bwa_index.log",
@@ -49,7 +49,7 @@ rule genome_index_bowtie2:
     """
     input:
         fasta="{folder}/{genome}.fasta",
-        orig=lambda wildcards: recursive_get(["genome", wildcards.genome], ""),
+        orig=lambda wildcards: get_param(["genome", wildcards.genome], ""),
     output:
         temp(
             multiext(
@@ -66,7 +66,7 @@ rule genome_index_bowtie2:
         memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
     params:
-        recursive_get(["indexing", "bowtie2_params"], ""),
+        get_param(["indexing", "bowtie2_params"], ""),
         cmd="f'bowtie2-build {snakemake.params[0]} --threads {snakemake.threads} {snakemake.input.fasta} > {snakemake.log}'",
     log:
         "{folder}/{genome}_bowtie2_build.log",
@@ -87,14 +87,14 @@ rule samtools_index_fasta:
     """
     input:
         fasta="{folder}/{genome}.fasta",
-        orig=lambda wildcards: recursive_get(["genome", wildcards.genome], ""),
+        orig=lambda wildcards: get_param(["genome", wildcards.genome], ""),
     output:
         temp("{folder}/{genome}.fasta.fai"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
     params:
-        recursive_get(["indexing", "samtools_params"], ""),
+        get_param(["indexing", "samtools_params"], ""),
         cmd="f'samtools faidx {snakemake.params[0]}  {snakemake.input.fasta} > {snakemake.log}'",
     log:
         "{folder}/{genome}_samtools_faidx.log",
@@ -115,7 +115,7 @@ rule genome_index_picard:
     """
     input:
         fasta="{folder}/{genome}.fasta",
-        orig=lambda wildcards: recursive_get(["genome", wildcards.genome], ""),
+        orig=lambda wildcards: get_param(["genome", wildcards.genome], ""),
     output:
         temp("{folder}/{genome}.dict"),
     resources:
@@ -161,3 +161,4 @@ rule samtools_index_bam:
         "--- SAMTOOLS INDEX {input}"
     shell:
         "samtools index {input} {output} 2> {log};"
+

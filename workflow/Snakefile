@@ -12,6 +12,7 @@ import logging
 LOGGER = logging.getLogger("snakemake.logging")
 # logging.basicConfig(filename="example.log", encoding="utf-8", level=logging.DEBUG)
 # logging.basicConfig(format="%(levelname)s %(message)s")
+# logging.basicConfig(filename="hello.log")
 
 
 ## read the config file
@@ -22,46 +23,48 @@ include: "scripts/utils.py"
 include: "rules/common.smk"
 
 
-RESULT_DIR = recursive_get(["result_dir"], "results")
+RESULT_DIR = get_param(["result_dir"], "results")
 
 ## the file is executed for each session: be verbose only in the first one (use a file as flag)
 fileVerbose = pathlib.Path(f"{RESULT_DIR}/verbose.touch")
 if not fileVerbose.is_file():
     fileVerbose.parent.mkdir(parents=True, exist_ok=True)
     fileVerbose.touch()
-    VERBOSE = recursive_get(["VERBOSE"], True)
+    VERBOSE = get_param(["VERBOSE"], True)
 else:
     VERBOSE = False
 
 
 ## retry failed jobs
-memory_increment_ratio = float(recursive_get(["memory_increment_ratio"], 1))
-runtime_increment_ratio = float(recursive_get(["runtime_increment_ratio"], 0))
+memory_increment_ratio = float(get_param(["memory_increment_ratio"], 1))
+runtime_increment_ratio = float(get_param(["runtime_increment_ratio"], 0))
 
 ## software versions
-module_samtools = recursive_get(["envmodules", "samtools"], "")
-module_bowtie2 = recursive_get(["envmodules", "bowtie2"], "")
-module_bwa = recursive_get(["envmodules", "bwa"], "")
-module_picard = recursive_get(["envmodules", "picard"], "")
-module_gatk3 = recursive_get(["envmodules", "gatk3"], "")
-module_fastqc = recursive_get(["envmodules", "fastqc"], "")
-module_r = recursive_get(["envmodules", "r"], "")
-module_adapterremoval = recursive_get(["envmodules", "adapterremoval"], "")
-module_mapdamage = recursive_get(["envmodules", "mapdamage"], "")
-module_bedtools = recursive_get(["envmodules", "bedtools"], "")
-module_seqtk = recursive_get(["envmodules", "seqtk"], "")
-module_qualimap = recursive_get(["envmodules", "qualimap"], "")
-module_multiqc = recursive_get(["envmodules", "multiqc"], "")
-module_dedup = recursive_get(["envmodules", "dedup"], "")
-module_glimpse = recursive_get(["envmodules", "glimpse"], "")
-module_bcftools = recursive_get(["envmodules", "bcftools"], "")
+module_samtools = get_param(["envmodules", "samtools"], "")
+module_bowtie2 = get_param(["envmodules", "bowtie2"], "")
+module_bwa = get_param(["envmodules", "bwa"], "")
+module_picard = get_param(["envmodules", "picard"], "")
+module_gatk3 = get_param(["envmodules", "gatk3"], "")
+module_fastqc = get_param(["envmodules", "fastqc"], "")
+module_r = get_param(["envmodules", "r"], "")
+module_adapterremoval = get_param(["envmodules", "adapterremoval"], "")
+module_mapdamage = get_param(["envmodules", "mapdamage"], "")
+module_bedtools = get_param(["envmodules", "bedtools"], "")
+module_seqtk = get_param(["envmodules", "seqtk"], "")
+module_qualimap = get_param(["envmodules", "qualimap"], "")
+module_multiqc = get_param(["envmodules", "multiqc"], "")
+module_dedup = get_param(["envmodules", "dedup"], "")
+module_glimpse = get_param(["envmodules", "glimpse"], "")
+module_bcftools = get_param(["envmodules", "bcftools"], "")
+module_bamutil = get_param(["envmodules", "bamutil"], "")
+module_fastp = get_param(["envmodules", "fastp"], "")
 
 
 ##########################################################################################
 ## REFERENCE GENOME
 ##########################################################################################
 ## is at least a reference GENOMES defined
-GENOMES = list(recursive_get(["genome"], ""))
+GENOMES = list(get_param(["genome"], ""))
 if len(GENOMES) == 0:
     LOGGER.error("ERROR: Reference genome is not specified (parameter config[genome])!")
     os._exit(1)
@@ -75,7 +78,12 @@ for genome in GENOMES:
 ## SAMPLES (sample file and external bam files)
 ##########################################################################################
 # sample_file="config/SAMPLES.tsv"
-SAMPLES, PAIRED_END, COLLAPSE, SAMPLE_FILE = read_sample_file()
+SAMPLES, SAMPLE_FILE = read_sample_file()
+PAIRED_END, COLLAPSE = test_SAMPLES()
+
+
+# print(SAMPLES)
+
 
 ## get SAMPLES (bam files) to compute only stats on them
 EXTERNAL_SAMPLES, EXTERNAL_SAMPLE_FILE = get_external_samples()
@@ -84,50 +92,89 @@ if len(SAMPLES) + len(EXTERNAL_SAMPLES) == 0:
     LOGGER.error(f"ERROR: No samples are specified)!")
     sys.exit(1)
 
+
 wildcard_constraints:
-    sm = "|".join([sm for sm in SAMPLES] + [sm for gen in EXTERNAL_SAMPLES for sm in EXTERNAL_SAMPLES[gen]]),
-    genome = "|".join([g for g in GENOMES]),
+    sm="|".join(
+        [sm for sm in SAMPLES] + [sm for g in EXTERNAL_SAMPLES.values() for sm in g]
+    ),
+    lb="|".join(
+        [lb for sm in SAMPLES.values() for lb in sm]
+        + [lb for g in EXTERNAL_SAMPLES.values() for sm in g.values() for lb in sm]
+    ),
+    id="|".join(
+        [id for sm in SAMPLES.values() for lb in sm.values() for id in lb]
+        + [
+            id
+            for g in EXTERNAL_SAMPLES.values()
+            for sm in g.values()
+            for lb in sm.values()
+            for id in lb
+        ]
+    ),
+    genome="|".join([g for g in GENOMES]),
+
 
 ##########################################################################################
 ##  WORKFLOW
 ##########################################################################################
 ## --------------------------------------------------------------------------------------------------
-## subsampling
-run_subsampling = str2bool(
-    recursive_get_and_test(["subsampling", "run"], ["False", "True"])
-)
-subsampling_number = float(recursive_get(["subsampling", "number"], 0))
-if subsampling_number == 0:
-    run_subsampling = False
+## subsampling (if run is variable then it is set to true)
+run_subsampling = get_param_bool(["subsampling", "run"], ["False", "True"])
+
+if run_subsampling:
+    subsampling_number = get_param(["subsampling", "number"], 0)
+    if type(subsampling_number) is dict:
+        subsampling_number = "variable"
+    else:
+        subsampling_number = float(subsampling_number)
+        if subsampling_number == 0:
+            run_subsampling = False
 
 ## --------------------------------------------------------------------------------------------------
-## adapterremoval
-run_adapter_removal = str2bool(
-    recursive_get_and_test(["adapterremoval", "run"], ["True", "False"])
-)
+## adapterremoval (if run is variable then it is set to true)
+# run_adapter_removal = get_param_bool(["adapterremoval", "run"], ["True", "False"])
 
 ## --------------------------------------------------------------------------------------------------
 ## mapping
-mapper = recursive_get_and_test(
-    ["mapping", "mapper"], ["bwa_aln", "bwa_mem", "bowtie2"]
-)
+mapper = get_param(["mapping", "mapper"], ["bwa_aln", "bwa_mem", "bowtie2"])
 
 ## --------------------------------------------------------------------------------------------------
 ## filtering
-run_filtering = str2bool(
-    recursive_get_and_test(["filtering", "run"], ["True", "False"])
-)
+run_filtering = str2bool(get_param(["filtering", "run"], ["True", "False"]))
 
 if run_filtering:
     save_low_qual = str2bool(
-        recursive_get_and_test(["filtering", "save_low_qual"], ["True", "False"])
+        get_param(["filtering", "save_low_qual"], ["True", "False"])
     )
+
+    ## only one of the parameters may be specified
+    ## if mapq is set, write the corresponding argument to 'param'
+    params = get_param(["filtering", "params"], "WWWWWWW")
+    mapq = get_param(["filtering", "mapq"], "WWWWWWW")
+    if mapq != "WWWWWWW":  ## param is set
+        if params != "WWWWWWW":
+            LOGGER.error(
+                "ERROR: Parameters config[filtering][params] and config[filtering][mapq] may not be set both!"
+            )
+            sys.exit(1)
+
+        ## mapq is set: extend the command
+        if type(mapq) is dict:
+            for key in mapq:
+                 mapq[key] = f"-F 4 -q {mapq[key]}"
+        else:
+            mapq = f"-F 4 -q {mapq}"
+
+        ## set 'params' accordingly
+        config = update_value(["filtering", "params"], mapq)
+
 else:
     save_low_qual = False
 
+
 ## --------------------------------------------------------------------------------------------------
-## removing duplicates
-remove_duplicates = recursive_get_and_test(
+## removing duplicates (if run is variable then it is set to true)
+remove_duplicates = get_param(
     ["remove_duplicates", "run"], ["markduplicates", "dedup", "False"]
 )
 
@@ -136,13 +183,10 @@ if remove_duplicates == "dedup" and not PAIRED_END:
         "WARNING: 'DeDup' is not recommended for single-end reads (parameter config[remove_duplicates][run])!"
     )
 
-
 ## --------------------------------------------------------------------------------------------------
-## rescaling damage
-run_damage_rescale = str2bool(
-    recursive_get_and_test(["damage_rescale", "run"], ["False", "True"])
-)
-if run_damage_rescale and recursive_get(["damage", "run"], "False") != "mapDamage":
+## rescaling damage (if run is variable then it is set to true)
+run_damage_rescale = get_param_bool(["damage_rescale", "run"], ["False", "True"])
+if run_damage_rescale and get_param(["damage", "run"], "False") != "mapDamage":
     LOGGER.error(
         "ERROR: To use config[damage_rescale][run] the parameter config[damage][run] has to be set to 'mapDamage'!"
     )
@@ -150,31 +194,30 @@ if run_damage_rescale and recursive_get(["damage", "run"], "False") != "mapDamag
 
 
 ## --------------------------------------------------------------------------------------------------
-## realigning
-run_realign = str2bool(recursive_get_and_test(["realign", "run"], ["True", "False"]))
+## bamutil (if run is variable then it is set to true)
+run_bamutil = get_param_bool(["bamutil", "run"], ["False", "True"])
+
+
+## --------------------------------------------------------------------------------------------------
+## realigning (if run is variable then it is set to true)
+run_realign = get_param_bool(["realign", "run"], ["True", "False"])
 
 
 ## --------------------------------------------------------------------------------------------------
 ## recomputing md-flag
-run_compute_md = str2bool(
-    recursive_get_and_test(["compute_md", "run"], ["True", "False"])
-)
+run_compute_md = get_param_bool(["compute_md", "run"], ["True", "False"])
 
 
 ##########################################################################################
 ##  ANALYSES
 ##########################################################################################
 ## damage
-run_damage = recursive_get_and_test(
-    ["damage", "run"], ["False", "bamdamage", "mapDamage"]
-)
+run_damage = get_param(["damage", "run"], ["False", "bamdamage", "mapDamage"])
 
 ## sex inference
 run_sex_inference = []
 for genome in GENOMES:
-    if str2bool(
-        recursive_get_and_test(["sex_inference", genome, "run"], ["False", "True"])
-    ):
+    if str2bool(get_param(["sex_inference", genome, "run"], ["False", "True"])):
         run_sex_inference = run_sex_inference + [genome]
         set_sex_inference(genome)
 
@@ -184,7 +227,7 @@ for genome in GENOMES:
 ## depth
 run_depth = []
 for genome in GENOMES:
-    if str2bool(recursive_get_and_test(["depth", genome, "run"], ["False", "True"])):
+    if str2bool(get_param(["depth", genome, "run"], ["False", "True"])):
         run_depth = run_depth + [genome]
         read_depth(genome)
 
@@ -192,9 +235,8 @@ for genome in GENOMES:
 ## imputation (is assumed to be run ONLY on the first specified reference GENOMES!!!)
 run_imputation = []
 for genome in GENOMES:
-    if str2bool(recursive_get_and_test(["imputation", "run"], ["False", "True"])):
+    if str2bool(get_param(["imputation", "run"], ["False", "True"])):
         run_imputation = run_imputation + [genome]
-
 
 
 ##########################################################################################
@@ -202,11 +244,9 @@ for genome in GENOMES:
 ##########################################################################################
 ## By default he stats are computed on the mapped bam files. However, one can pass pre-computed bam files to use the stats feature of
 ## mapache using the paramter 'bam_list'. In this later case only on the specified bam fiels the stats are comouted.
-run_qualimap = str2bool(
-    recursive_get_and_test(["stats", "qualimap"], ["False", "True"])
-)
+run_qualimap = str2bool(get_param(["stats", "qualimap"], ["False", "True"]))
 
-run_multiqc = str2bool(recursive_get_and_test(["stats", "multiqc"], ["False", "True"]))
+run_multiqc = str2bool(get_param(["stats", "multiqc"], ["False", "True"]))
 
 
 ##########################################################################################
@@ -216,6 +256,7 @@ include: "rules/fastq.smk"
 include: "rules/library.smk"
 include: "rules/sample.smk"
 include: "rules/imputation_glimpse.smk"
+include: "rules/software_version.smk"
 
 
 report: "report/workflow.rst"
@@ -280,7 +321,6 @@ if VERBOSE:
     write_log()
 
 
-
 ##########################################################################################
 ## STARTING RULES
 ##########################################################################################
@@ -305,6 +345,10 @@ rule all:
         stats_mapping_checkpoint,
         get_imputation_files(),
         get_imputation_plots(),
+        report(
+            f"{RESULT_DIR}/04_stats/03_summary/software_versions.txt",
+            category="Software",
+        ),
     message:
         "--- RUNNING ALL"
 
@@ -325,7 +369,7 @@ rule dag:
 
 rule mapping:
     """
-    Perfomrs the mapping and computes all stats which are not anymore able to be comouted later (if temporal fiels are used)
+    Performs the mapping and computes all stats which are not anymore able to be comouted later (if temporal fiels are used)
     """
     input:
         final_bam,
@@ -335,6 +379,23 @@ rule mapping:
         get_imputation_files(),
     message:
         "--- RUNNING MAPPING"
+
+
+rule version:
+    """
+    Get the versions of the underlying tools
+    """
+    input:
+        get_version_file_of_tools()
+    output:
+        report(
+            f"{RESULT_DIR}/04_stats/03_summary/software_versions.txt",
+            category="Software",
+        ),
+    shell:
+        """
+        cat {input} > {output}
+        """
 
 
 # -----------------------------------------------------------------------------#
@@ -365,7 +426,7 @@ onsuccess:
         "=> To generate the Snakemake report: run 'snakemake --report report.html'."
     )
     shell("cat {log} > snakemake.run.log")
-    email = recursive_get(["email"], "")
+    email = get_param(["email"], "")
     if os.path.exists(f"{RESULT_DIR}/verbose.touch"):
         os.remove(f"{RESULT_DIR}/verbose.touch")
     if email != "":
@@ -376,7 +437,7 @@ onsuccess:
 onerror:
     LOGGER.error("'Mapache' finished with error(s), log stored in 'snakemake.run.log'")
     shell("cat {log} > snakemake.run.log")
-    email = recursive_get(["email"], "")
+    email = get_param(["email"], "")
     if os.path.exists(f"{RESULT_DIR}/verbose.touch"):
         os.remove(f"{RESULT_DIR}/verbose.touch")
     if email != "":

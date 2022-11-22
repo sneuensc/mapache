@@ -24,20 +24,20 @@ def write_log():
     ## get all chromosome names and store them in the dict config[chromosomes][genome][all] for later use
     for i, genome in enumerate(GENOMES):
         if i < 4:
-            if len(recursive_get(["chromosome", genome], [])) > 1:
+            if len(get_param(["chromosome", genome], [])) > 1:
                 LOGGER.info(f"  - {genome}:")
             else:
                 LOGGER.info(f"  - {genome}")
-            name = recursive_get(["chromosome", genome, "name"], "")
+            name = get_param(["chromosome", genome, "name"], "")
             if name:
-                all_sex_chr = recursive_get(["chromosome", genome, "all_sex_chr"], "")
+                all_sex_chr = get_param(["chromosome", genome, "all_sex_chr"], "")
                 LOGGER.info(
                     f"    - Detected genome as '{name}': Applying default chromosome names for sex and mt chromosomes"
                 )
-            sex_chr = recursive_get(["chromosome", genome, "sex_chr"], "")
+            sex_chr = get_param(["chromosome", genome, "sex_chr"], "")
             if sex_chr:
                 LOGGER.info(f"    - Sex chromosome (X): {to_list(sex_chr)}")
-            autosomes = recursive_get(["chromosome", genome, "autosomes"], "")
+            autosomes = get_param(["chromosome", genome, "autosomes"], "")
             if autosomes:
                 if len(autosomes) > 10:
                     LOGGER.info(
@@ -103,16 +103,22 @@ def write_log():
     # print a summary of the workflow
     LOGGER.info("MAPPING WORKFLOW:")
     if run_subsampling:
-        if subsampling_number < 1:
+        if type(subsampling_number) is str:
+            LOGGER.info(f"  - Subsampling with group specific settings")
+        elif subsampling_number < 1:
             LOGGER.info(f"  - Subsampling {100 * subsampling_number}% of the reads")
         else:
             LOGGER.info(f"  - Subsampling {subsampling_number} reads per fastq file")
 
-    if run_adapter_removal:
+    run_adapter_removal = get_param(["adapterremoval", "run"], "True") ## get param 'simple'
+    if type(run_adapter_removal) is dict:
         if COLLAPSE:
-            LOGGER.info(
-                f"  - Removing adapters with AdapterRemoval and collapsing paired-end reads"
-            )
+            LOGGER.info(f"  - Removing adapters (variable) with AdapterRemoval and collapsing paired-end reads")
+        else:
+            LOGGER.info(f"  - Removing adapters (variable) with AdapterRemoval")
+    elif str2bool(run_adapter_removal):
+        if COLLAPSE:
+            LOGGER.info(f"  - Removing adapters with AdapterRemoval and collapsing paired-end reads")
         else:
             LOGGER.info(f"  - Removing adapters with AdapterRemoval")
 
@@ -126,15 +132,14 @@ def write_log():
                 f"  - Filtering and keeping separately low quality/unmapped reads"
             )
         else:
-            LOGGER.info(f"  - Filtering and removing low quality/unmapped reads")
+            LOGGER.info(f"  - Filtering and discarding low quality/unmapped reads")
 
-    if remove_duplicates != "False":
-        if remove_duplicates == "markduplicates":
-            LOGGER.info(f"  - Removing duplicates with MarkDuplicates")
-        elif remove_duplicates == "dedup":
-            LOGGER.info(f"  - Removing duplicates with DeDup")
-        else:
-            LOGGER.info(f"  - Removing duplicates with {remove_duplicates}")
+    rmduplicates = get_param(["remove_duplicates", "run"], "markduplicates") ## get param 'simple'
+    if rmduplicates == "markduplicates":
+        LOGGER.info(f"  - Removing duplicates with MarkDuplicates")
+    elif rmduplicates == "dedup":
+        LOGGER.info(f"  - Removing duplicates with DeDup")
+        
 
     if run_damage_rescale:
         LOGGER.info(f"  - Rescaling damage with MapDamage2")
@@ -190,7 +195,7 @@ def write_log():
                 f"  - Inferring damage and read length with MapDamage2 on all alignments"
             )
 
-        fraction = recursive_get(["damage", "bamdamage_fraction"], 0)
+        fraction = get_param(["damage", "bamdamage_fraction"], 0)
         if fraction == 0:
             LOGGER.info(
                 f"  - Inferring damage and read length with bamdamge on all alignments"
@@ -247,42 +252,118 @@ def write_log():
 
 
 ##########################################################################################################
+## helper function to deal with the SAMPLES nested dict
+
+## get all values of the given key/column (multiple if it is at the lb or sm level)
+def get_sample_column(col, wc=None):
+    if wc is None:
+        grp = [id[col] for sm in SAMPLES.values() for lb in sm.values() for id in lb.values() if col in id]
+    elif 'id' in wc.keys():
+        grp = [val for keys, val in SAMPLES[wc.sm][wc.lb][wc.id].items() if col in keys]
+    elif 'lb' in wc.keys():
+        grp = [val[col] for val in SAMPLES[wc.sm][wc.lb].values() if col in val]
+    elif 'sm' in wc.keys():
+        grp = [id[col] for lb in SAMPLES[wc.sm].values() for id in lb.values() if col in id]
+    return grp
+
+## get the number of fastq files of the given sample path
+def get_sample_count(wc=None):
+    if wc is None:
+        grpNb = len([id for sm in SAMPLES.values() for lb in sm.values() for id in lb.values()])
+    elif 'id' in wc.keys():
+        grpNb = 1
+    elif 'lb' in wc.keys():
+        grpNb = len([val for val in SAMPLES[wc.sm][wc.lb].values()])
+    elif 'sm' in wc.keys():
+        grpNb = len([id for lb in SAMPLES[wc.sm].values() for id in lb.values()])
+    return grpNb
+
+## get the path, e.g., 'SAMPLES[sm][lb][id]'
+def get_sample_path(wc=None):
+    if wc is None:
+        return "SAMPLES"
+    if 'id' in wc.keys():
+        return f"SAMPLES[{wc.sm}][{wc.lb}][{wc.id}]"
+    if 'lb' in wc.keys():
+        return f"SAMPLES[{wc.sm}][{wc.lb}]"
+    if 'sm' in wc.keys():
+        return f"SAMPLES[{wc.sm}]"
+
+## return true if the data is paired-end and throw an error if it is a mixture
+def is_paired_end(wc):
+    ## get all Data2 elements
+    data2 = get_sample_column('Data2', wc)
+
+    ## if not present it is SE
+    if len(data2) == 0:
+        return False
+
+    ## if it is not homogenous across the group, return an error
+    nbItems= get_sample_count(wc)
+    if len(data2) != nbItems:
+        LOGGER.error(
+            f"ERROR: {get_sample_path(wc)} does not contain key 'Data2' in all rows ({len(data2)} of {nbItems} present)!"
+        )
+        sys.exit(1)
+
+    ## entry may be empty (SE): either all or none
+    nbEmpty = data2.count("nan")
+    if nbEmpty == 0:
+        return True 
+
+    if nbEmpty == nbItems:
+        return False    ## all are empty
+
+    LOGGER.error(
+        f"ERROR: {get_sample_path(wc)} has a mixture of single-end ({nbEmpty}) and paired-end ({nbItems-nbEmpty}) fastq files!"
+    )
+    sys.exit(1)
+
+
+## return true if the data is collapsed paired-end data and throw an error if it is a mixture
+def is_collapse(wc):
+    ## do we have paired reads at the start?
+    paired = is_paired_end(wc)
+    if not paired:
+        return False
+
+    ## does the cleaning collapses the paired reads?: check if collapse is mentioned in the param
+    run_cleaning = get_paramGrp(["cleaning", "run"], ["adapterremoval", "fastp", "False"], wc)
+    if run_cleaning == "adapterremoval":
+        params = get_paramGrp(["cleaning", "params_adapterremoval"], "--minlength 30 --trimns --trimqualities", wc)
+        return any(ext in params for ext in ["--collapse", "--collapse-deterministic", "--collapse-conservatively"])
+    elif run_cleaning == "fastp":
+        params = get_paramGrp(["cleaning", "params_fastp"], "--minlength 30 --trimns --trimqualities", wc)
+        return any(ext in params for ext in ["--merge", "-m"])
+    else:
+        return False
+
+
+
+#######################################################################################################################
 ## read sample file
 def read_sample_file():
-    file = recursive_get(["sample_file"], "config/SAMPLES.tsv")
+    file = get_param(["sample_file"], "config/SAMPLES.tsv")
+    #print(file)
     if file == "":
         return {}, False, False, ""
 
-    if isinstance(file, dict):  ## yaml input
+    if type(file) is dict:  ## yaml input
         SAMPLES = file
         input = "yaml"
 
     else:  ## sample file
         ## read the file
-        delim = recursive_get(["delim"], "\s+")
+        delim = get_param(["delim"], "\s+")
         db = pd.read_csv(file, sep=delim, comment="#", dtype=str)
         input = file
 
         ## check number of columns and column names
-        if len(db.columns) == 6:
-            colnames = ["ID", "Data", "MAPQ", "LB", "PL", "SM"]
-            if not set(colnames).issubset(db.columns):
-                LOGGER.error(
-                    f"ERROR: The column names in the sample file are wrong! Expected are for single-end reads {colnames}!"
-                )
-                sys.exit(1)
-
-        elif len(db.columns) == 7:
-            colnames = ["ID", "Data1", "Data2", "MAPQ", "LB", "PL", "SM"]
-            if not set(colnames).issubset(db.columns):
-                LOGGER.error(
-                    f"ERROR: The column names in the sample file are wrong! Expected are for paired-end reads {colnames}!"
-                )
-                sys.exit(1)
-
-        else:
+        colsSE = ["SM", "LB", "ID", "Data"]
+        colsPE = ["SM", "LB", "ID", "Data1", "Data2"]
+        if not set(colsSE).issubset(db.columns) and not set(colsPE).issubset(db.columns):
             LOGGER.error(
-                f"ERROR: The number of columns in the sample file is wrong ({len(db.columns)} columns)!"
+                f"ERROR: The column names in the sample file are wrong: single-end: {colsSE}; paired-end: {colsPE}"
             )
             sys.exit(1)
 
@@ -312,77 +393,69 @@ def read_sample_file():
             for col in cols:
                 SAMPLES[row["SM"]][row["LB"]][row["ID"]][col] = row[col]
 
-    #    ## from dataframe to nested dict
-    #    from collections import defaultdict
-    #    d = defaultdict(dict)
-    #    cols = [e for e in list(db.columns) if e not in ("SM", "LB", "ID")]
-    #    for row in db.itertuples(index=False):
-    #        for col in cols:
-    #            d[row.SM][row.LB][row.ID][col] = row[col]
+        #    ## from dataframe to nested dict
+        #    from collections import defaultdict
+        #    d = defaultdict(dict)
+        #    cols = [e for e in list(db.columns) if e not in ("SM", "LB", "ID")]
+        #    for row in db.itertuples(index=False):
+        #        for col in cols:
+        #            d[row.SM][row.LB][row.ID][col] = row[col]
 
-    #    SAMPLES = dict(d)
+        #    SAMPLES = dict(d)
 
+    return SAMPLES, input
+
+
+def test_SAMPLES():
     ## do we have paired-end data or single-end data
-    PAIRED_END = "Data1" in [
-        name
-        for sm in SAMPLES.values()
-        for lb in sm.values()
-        for id in lb.values()
-        for name in id
-    ]
+    PAIRED_END = len(get_sample_column("Data1")) > 0
 
     ## test all fastq files
     if PAIRED_END:
         ## forward reads
-        for fq in [
-            id["Data1"]
-            for sm in SAMPLES.values()
-            for lb in sm.values()
-            for id in lb.values()
-        ]:
+        #print(get_sample_column("Data1"))
+        for fq in get_sample_column("Data1"):
             if not os.path.isfile(fq):
                 LOGGER.error(f"ERROR: Fastq file '{fq}' does not exist!")
                 sys.exit(1)
 
         ## reverse reads (may be NaN)
-        for fq in [
-            id["Data2"]
-            for sm in SAMPLES.values()
-            for lb in sm.values()
-            for id in lb.values()
-        ]:
+        for fq in get_sample_column("Data2"):
             if fq == fq and not os.path.isfile(fq):
                 LOGGER.error(f"ERROR: Fastq file '{fq}' does not exist!")
                 sys.exit(1)
 
     else:  ## single end
-        for fq in [
-            id["Data"]
-            for sm in SAMPLES.values()
-            for lb in sm.values()
-            for id in lb.values()
-        ]:
+        for fq in get_sample_column("Data"):
             if not os.path.isfile(fq):
                 LOGGER.error(f"ERROR: Fastq file '{fq}' does not exist!")
                 sys.exit(1)
-
+    
     ## test if collapsing is correctly set
-    COLLAPSE = "--collapse" in recursive_get(
-        ["adapterremoval", "params"], "--minlength 30 --trimns --trimqualities"
-    )
-    if not PAIRED_END and COLLAPSE:
-        LOGGER.error(
-            f"ERROR: config[adapterremoval][params] contains the parameter '--collapse', which is not compatible with SE data!"
-        )
-        sys.exit(1)
+    COLLAPSE = "--collapse" in get_param(
+        ["adapterremoval", "params"], "--minlength 30 --trimns --trimqualities")
 
-    return SAMPLES, PAIRED_END, COLLAPSE, input
+    ## do we have Group settings? test if 'default' is absent
+    col = 'Group'
+    groups = get_sample_column(col)
+    if len(groups) != 0:
+        ## the word 'default' is reserved and may not be used as keyword
+        grpList = [ii.split(',') for ii in groups]
+        if [x.count('default') for x in grpList].count(0) != len(grpList):
+            LOGGER.error(
+                f"ERROR: Sample file column 'Group' contains the word 'default' which is not an allowed keyword!"
+            )
+            sys.exit(1)
+
+    return PAIRED_END, COLLAPSE
+
+
 
 
 ##########################################################################################
 ## read config[external_sample]
 def get_external_samples():
-    external_sample = recursive_get(["external_sample"], "")
+    external_sample = get_param(["external_sample"], "")
     if external_sample == "":
         return {}, ""
 
@@ -391,7 +464,7 @@ def get_external_samples():
         EXTERNAL_SAMPLE_FILE = "yaml"
 
     elif os.path.isfile(external_sample):
-        delim = recursive_get(["delim"], "\s+")
+        delim = get_param(["delim"], "\s+")
         db_stats = pd.read_csv(external_sample, sep=delim, comment="#", dtype=str)
         EXTERNAL_SAMPLE_FILE = external_sample
         colnames = ["SM", "Bam", "Genome"]
@@ -415,7 +488,7 @@ def get_external_samples():
         )
         sys.exit(1)
 
-    ## test for each GENOMES separetly
+    ## test for each GENOMES separately
     for genome in list(samples_stats):
         ## does the GENOMES name exist?
         if genome not in GENOMES:
@@ -445,28 +518,151 @@ def get_external_samples():
 ##########################################################################################
 ## all functions for main snakemake file
 
-## get recursively the argument of the given keys in a nested dict (run eval())
-def recursive_get(keys, def_value, my_dict=config):
+## get the argument of the keys (recursively acorss teh keays)
+## keys: list of keys
+## def_value: 
+##     - the default value if the parameter is not specified
+##     - if a list: possible arguments (throw error if different), first element is default value
+def get_param(keys, def_value, my_dict=config):
     assert type(keys) is list
-    first = keys[0]
-    if len(keys) == 1:
-        value = my_dict.get(first, def_value)
+
+    ## check if only a default value is passed or a list of possible values (first one is default arg)
+    if type(def_value) is list and len(def_value) > 1:
+        def_valueI = def_value[0]
     else:
-        value = recursive_get(keys[1:], def_value, my_dict=my_dict.get(first, {}))
-    return eval_param(value)
-    #return value
+        def_valueI = def_value
+
+    ## run recursively
+    if len(keys) == 1:
+        arg = my_dict.get(keys[0], def_valueI)
+    else:
+        arg = get_param(keys[1:], def_valueI, my_dict=my_dict.get(keys[0], {}))
+    
+    arg = eval_param(arg)
+
+    ## check if the arg is within the list of possible values 
+    if type(def_value) is list and len(def_value) > 1:
+        if str(arg) not in def_value:
+            LOGGER.error(
+                f"ERROR: The parameter config[{']['.join(keys)}] has no valid argument (currently '{arg}'; available {def_value})!"
+            )
+            sys.exit(1)
+
+    return arg
 
 
-## same as above, but the argument is tested if it is present in the 'available_args'
-## first argument of 'available_args' is the default
-def recursive_get_and_test(key, available_args, my_dict=config):
-    arg = str(recursive_get(key, available_args[0], my_dict))
-    if arg not in available_args:
+## same as get_param(), but arguments may be a dict with group specific settings
+## group names may be specified in the sample file and may be any word, 
+##   except 'default', which allows to define a default argument
+def get_paramGrp(keys, def_value, wc, my_dict=config):
+    if type(def_value) is list and len(def_value) > 1:
+        arg = get_param(keys, def_value[0], my_dict)
+    else:
+        arg = get_param(keys, def_value, my_dict)
+
+    ## if it is not a dict: return value and stop here
+    if type(arg) is not dict:
+        ## check if the arg is within the list of possible values 
+        if type(def_value) is list and len(def_value) > 1:
+            if str(arg) not in def_value:
+                LOGGER.error(
+                    f"ERROR: The parameter config[{']['.join(keys)}] has no valid argument (currently '{arg}'; available {def_value})!"
+                )
+                sys.exit(1)
+        param = arg
+
+    else:
+        ## get all 'Group' keywords (of the sample file of the given rank (sm, lb or id)
+        col = 'Group'
+        if 'id' in wc.keys():
+            grp = [val for keys, val in SAMPLES[wc.sm][wc.lb][wc.id].items() if col in keys]
+            grpName = f"SAMPLES[{wc.sm}][{wc.lb}][{wc.id}]"
+        elif 'lb' in wc.keys():
+            grp = [val[col] for val in SAMPLES[wc.sm][wc.lb].values() if col in val]
+            grpName = f"SAMPLES[{wc.sm}][{wc.lb}]"
+        elif 'sm' in wc.keys():
+            grp = [id[col] for lb in SAMPLES[wc.sm].values() for id in lb.values() if col in id]
+            grpName = f"SAMPLES[{wc.sm}]"
+        grpList = [ii.split(',') for ii in grp]
+        if len(grpList) == 0:
+            LOGGER.error(
+                f"ERROR: The parameter config[{']['.join(keys)}] has group specific settings, but no keywords are available. Is the column '{col}' missing in the sample file!"
+            )
+            sys.exit(1)
+
+
+        ## go through all keywords and get the correct argument
+        if type(def_value) is list and len(def_value) > 1:
+            param = def_value[0] ## system default argument
+        else:
+            param = def_value   ## system default argument
+
+        for keyword in arg.keys():
+            ## if a default is defined take it, but continue searching
+            if keyword == "default":
+                param = arg[keyword]
+                continue
+            
+            ## get the number of occurrences of the given group keyword
+            argCount = [x.count(keyword) for x in grpList].count(0)
+
+            ## if not present continue
+            if argCount == len(grpList):
+                continue
+            
+            ## if present in all rows, take it
+            if argCount == 0:
+                param = arg[keyword]
+                break
+
+            ## if not present in all rows throw an error
+            LOGGER.error(
+                f"ERROR: The parameter config[{']['.join(keys)}] has group specific settings, but the keyword '{keyword}' is not omnipresent in '{grpName}' (only {argCount} of {len(grpList)})!"
+            )
+            sys.exit(1)
+
+        ## check if the arg is within the list of possible values 
+        if type(def_value) is list and len(def_value) > 1:
+            if str(param) not in def_value:
+                LOGGER.error(
+                    f"ERROR: The parameter config[{']['.join(keys)}] has no valid argument (currently '{param}'; available {def_value})!"
+                )
+                sys.exit(1)
+
+        #print(f"{param} <= {keys}  of  {grpList} | {grpName}")
+    #print(f"{param} <= {keys}")
+    return param
+
+
+## same as above, but a boolean is returned
+## if it has a dict (group specific setting) a True is returned
+## used at teh beginning to get a global view what is used
+def get_param_bool(key, def_value, my_dict=config):
+    arg = get_param(key, def_value[0], my_dict) ## search without predefined list (could be a dict...)
+    if type(arg) is dict:
+        return True
+    if str(arg) not in def_value:
         LOGGER.error(
-            f"ERROR: The parameter config[{']['.join(key)}] has no valid argument (currently '{arg}'; available {available_args})!"
+            f"ERROR: The parameter config[{']['.join(key)}] has no valid argument (currently '{arg}'; available {def_value})!"
         )
         sys.exit(1)
-    return arg
+    return str2bool(arg)
+
+
+def get_sex_threshold_plotting():
+    thresholds = {
+        genome: get_param(
+            keys=["sex_inference", genome, "thresholds"],
+            def_value='list( "XX"=c(0.8, 1), "XY"=c(0, 0.6), "consistent with XX but not XY"=c(0.6, 1), "consistent with XY but not XX"=c(0, 0.8) )',
+        )
+        for genome in GENOMES
+    }
+
+    sex_thresholds = "list({pair})".format(
+        pair=",     ".join([f'"{genome}"={thresholds[genome]}' for genome in GENOMES])
+    )
+    sex_thresholds = sex_thresholds.replace("=", "?")
+    return sex_thresholds
 
 
 ## update the argument in a nested dict (and create leaves if needed)
@@ -486,22 +682,6 @@ def update_value(keys, value, my_dict=config):
             new_dict = update_value(keys[1:], value, my_dict[key])
             my_dict[key].update(new_dict)
             return my_dict
-
-
-def get_sex_threshold_plotting():
-    thresholds = {
-        genome: recursive_get(
-            keys=["sex_inference", genome, "thresholds"],
-            def_value='list( "XX"=c(0.8, 1), "XY"=c(0, 0.6), "consistent with XX but not XY"=c(0.6, 1), "consistent with XY but not XX"=c(0, 0.8) )',
-        )
-        for genome in GENOMES
-    }
-
-    sex_thresholds = "list({pair})".format(
-        pair=",     ".join([f'"{genome}"={thresholds[genome]}' for genome in GENOMES])
-    )
-    sex_thresholds = sex_thresholds.replace("=", "?")
-    return sex_thresholds
 
 
 ##########################################################################################
@@ -549,46 +729,6 @@ def is_external_sample(sample, genome):
     return genome in EXTERNAL_SAMPLES and sample in list(EXTERNAL_SAMPLES[genome])
 
 
-## eval a list with potential eval elements
-# def eval_list(x):
-##    return list(map(str, eval_to_list(x)))
-
-
-## eval single element if needed and return it as a list
-##def eval_to_list(x):
-#    a = eval_if_possible(x)
-#    if isinstance(a, list):
-#        return a
-#    else:
-#        return [a]
-
-
-## eval single element if needed and return it as a comma separated string
-# def to_csv(x):
-#    return ",".join(list(map(str, eval_to_list(x))))
-
-
-## transform a list to a comma separated string
-# def list_to_csv(x):
-#    if isinstance(x, list):
-#        return ",".join(x)
-#    else:
-#        return x
-
-
-## replace any element of the list
-# def eval_list(x):
-#    if isinstance(x, list):
-#        return list(map(eval_if_possible, x))
-#    else:
-#        return [eval_if_possible(x)]
-
-
-## replace any element of the list
-# def eval_list_to_csv(x):
-#    return ",".join(eval_list(x))
-
-
 ## convert python list to R vector
 def list_to_r_vector(x):
     return 'c("' + '","'.join(x) + '")'
@@ -597,13 +737,13 @@ def list_to_r_vector(x):
 ##########################################################################################
 ## get all chromosome names of the given reference genome
 def get_chromosome_names(genome):
-    return to_str(recursive_get(["chromosome", genome, "all"], ""))
+    return to_str(get_param(["chromosome", genome, "all"], ""))
 
 
 ## set the chromosome names from fasta and store them in config
 def set_chromosome_names(genome):
     ## test if fasta is valid
-    fasta = recursive_get(["genome", genome], "")
+    fasta = get_param(["genome", genome], "")
     if not os.path.isfile(fasta):
         LOGGER.error(
             f"ERROR: Reference genome config[{genome}] does not exist ({fasta})!"
@@ -631,7 +771,7 @@ def set_chromosome_names(genome):
 
 ## return a list of the chromosome names which do not match
 def valid_chromosome_names(genome, names):
-    allChr = to_str(recursive_get(["chromosome", genome, "all"], []))
+    allChr = to_str(get_param(["chromosome", genome, "all"], []))
     if list(set(names) - set(allChr)):
         return list(set(names) - set(allChr))
     else:
@@ -667,7 +807,7 @@ def set_sex_inference(genome):
 
     # check if the chromosomes specified in sex determination exist
     ## X chromosome
-    sex_chr = to_str(recursive_get(["sex_inference", genome, "sex_chr"], []))
+    sex_chr = to_str(get_param(["sex_inference", genome, "sex_chr"], []))
     if len(sex_chr):
         if valid_chromosome_names(genome, sex_chr):
             LOGGER.error(
@@ -677,7 +817,7 @@ def set_sex_inference(genome):
         config = update_value(["chromosome", genome, "sex_chr"], sex_chr)
 
     # autosomes
-    autosomes = to_str(recursive_get(
+    autosomes = to_str(get_param(
             ["sex_inference", genome, "autosomes"],
             [],
         )
@@ -694,7 +834,7 @@ def set_sex_inference(genome):
 
 def read_depth(genome):
     # check if chromosomes for which DoC was requested exist
-    depth = to_str(recursive_get(["depth", genome, "chromosomes"], ""))
+    depth = to_str(get_param(["depth", genome, "chromosomes"], ""))
     if valid_chromosome_names(genome, depth):
         LOGGER.error(
             f"ERROR: config[depth][{genome}][chromosomes] contains unrecognized chromosome names ({valid_chromosome_names(genome, depth)})!"
@@ -728,9 +868,9 @@ def get_memory_alloc(module, attempt, default=2):
     moduleList = module
     if type(moduleList) is not list:
         moduleList = [module]
-    mem_start = int(recursive_get(moduleList + ["mem"], default))
+    mem_start = int(get_param(moduleList + ["mem"], default))
     mem_incre = int(
-        recursive_get(
+        get_param(
             moduleList + ["mem_increment"], memory_increment_ratio * mem_start
         )
     )
@@ -742,9 +882,9 @@ def get_memory_alloc2(module, attempt, default=2):
     moduleList = module
     if type(moduleList) is not list:
         moduleList = [moduleList]
-    mem_start = int(recursive_get(moduleList[:-1] + [moduleList[-1] + "_mem"], default))
+    mem_start = int(get_param(moduleList[:-1] + [moduleList[-1] + "_mem"], default))
     mem_incre = int(
-        recursive_get(
+        get_param(
             moduleList[:-1] + [moduleList[-1] + "_mem_increment"],
             memory_increment_ratio * mem_start,
         )
@@ -770,9 +910,9 @@ def get_runtime_alloc(module, attempt, default=12):
     moduleList = module
     if type(moduleList) is not list:
         moduleList = [module]
-    time_start = int(recursive_get(moduleList + ["time"], default))
+    time_start = int(get_param(moduleList + ["time"], default))
     time_incre = int(
-        recursive_get(
+        get_param(
             moduleList + ["time_increment"], runtime_increment_ratio * time_start
         )
     )
@@ -785,10 +925,10 @@ def get_runtime_alloc2(module, attempt, default=12):
     if type(moduleList) is not list:
         moduleList = [module]
     time_start = int(
-        recursive_get(moduleList[:-1] + [moduleList[-1] + "_time"], default)
+        get_param(moduleList[:-1] + [moduleList[-1] + "_time"], default)
     )
     time_incre = int(
-        recursive_get(
+        get_param(
             moduleList[:-1] + [moduleList[-1] + "_time_increment"],
             runtime_increment_ratio * time_start,
         )
@@ -801,7 +941,7 @@ def get_threads(module, default=1):
     moduleList = module
     if type(moduleList) is not list:
         moduleList = [module]
-    return int(recursive_get(moduleList + ["threads"], default))
+    return int(get_param(moduleList + ["threads"], default))
 
 
 ## in this second version the 'threads' is added to the word of the last element
@@ -809,7 +949,7 @@ def get_threads2(module, default=1):
     moduleList = module
     if type(moduleList) is not list:
         moduleList = [module]
-    return int(recursive_get(moduleList[:-1] + [moduleList[-1] + "_threads"], default))
+    return int(get_param(moduleList[:-1] + [moduleList[-1] + "_threads"], default))
 
 
 def bam2bai(bam):
@@ -820,7 +960,7 @@ def bam2bai(bam):
 ##########################################################################################
 ## check if java is called by a .jar file or by a wrapper
 def get_picard_bin():
-    bin = recursive_get(["software", "picard_jar"], "picard.jar")
+    bin = get_param(["software", "picard_jar"], "picard.jar")
     if bin[-4:] == ".jar":
         bin = "java -XX:ParallelGCThreads={threads} -XX:+UseParallelGC -XX:-UsePerfData \
             -Xms{resources.memory}m -Xmx{resources.memory}m -jar bin"
@@ -828,7 +968,7 @@ def get_picard_bin():
 
 
 def get_gatk_bin():
-    bin = recursive_get(["software", "gatk3_jar"], "GenomeAnalysisTK.jar")
+    bin = get_param(["software", "gatk3_jar"], "GenomeAnalysisTK.jar")
     if bin[-4:] == ".jar":
         bin = "java -XX:ParallelGCThreads={threads} -XX:+UseParallelGC -XX:-UsePerfData \
             -Xms{resources.memory}m -Xmx{resources.memory}m -jar bin"
