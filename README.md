@@ -2,7 +2,7 @@
 
 **Mapache** ([maˈpa.t͡ʃe]) is a lightweight mapping pipeline for ancient DNA using the workflow manager *Snakemake*.
 
-Visit the [Wiki](https://github.com/sneuensc/mapache/wiki) for extensive documentation on how to use mapache . 
+Visit the [Wiki](https://github.com/sneuensc/mapache/wiki) for extensive documentation on how to use mapache and follow the [tutorial](https://github.com/sneuensc/mapache/wiki/4.-Tutorial:-Running-mapache) to map and impute the test dataset. 
 
 If you already have some experience with DNA mapping and/or Snakemake, you can follow the quick guide below.
 
