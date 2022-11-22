@@ -355,7 +355,7 @@ Preprint:
   <tr grouplength="1"><td colspan="4" style="border-bottom: 1px solid;"><strong>Subsample</strong></td></tr>
 <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> seqtk </td>
-   <td style="text-align:left;">  </td>
+   <td style="text-align:left;"> 1.3 </td>
    <td style="text-align:left;">  </td>
    <td style="text-align:left;"> https://github.com/lh3/seqtk </td>
   </tr>
