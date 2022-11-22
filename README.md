@@ -339,144 +339,169 @@ Preprint:
  <thead>
   <tr>
    <th style="text-align:left;">  </th>
+   <th style="text-align:left;"> Version </th>
    <th style="text-align:left;"> Reference </th>
    <th style="text-align:left;"> Link </th>
   </tr>
  </thead>
 <tbody>
-  <tr grouplength="1"><td colspan="3" style="border-bottom: 1px solid;"><strong>Workflow manager</strong></td></tr>
+  <tr grouplength="1"><td colspan="4" style="border-bottom: 1px solid;"><strong>Workflow manager</strong></td></tr>
 <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> Snakemake </td>
-   <td style="text-align:left;"> Mölder, et al. (2021)</td>
+   <td style="text-align:left;"> 7.18.2 </td>
+   <td style="text-align:left;"> Mölder, et al. (2021) </td>
    <td style="text-align:left;"> https://github.com/snakemake/snakemake </td>
   </tr>
-  <tr grouplength="1"><td colspan="3" style="border-bottom: 1px solid;"><strong>Subsample</strong></td></tr>
+  <tr grouplength="1"><td colspan="4" style="border-bottom: 1px solid;"><strong>Subsample</strong></td></tr>
 <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> seqtk </td>
    <td style="text-align:left;">  </td>
+   <td style="text-align:left;">  </td>
    <td style="text-align:left;"> https://github.com/lh3/seqtk </td>
   </tr>
-  <tr grouplength="1"><td colspan="3" style="border-bottom: 1px solid;"><strong>Clean</strong></td></tr>
+  <tr grouplength="1"><td colspan="4" style="border-bottom: 1px solid;"><strong>Clean</strong></td></tr>
 <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> AdapterRemoval2 </td>
-   <td style="text-align:left;"> Schubert, et al. (2016)</td>
+   <td style="text-align:left;"> 2.3.2 </td>
+   <td style="text-align:left;"> Schubert, et al. (2016) </td>
    <td style="text-align:left;"> https://github.com/MikkelSchubert/adapterremoval </td>
   </tr>
 <tr>
   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> fastp </td>
-  <td style="text-align:left;"> Chen, et al. (2018)</td>
+  <td style="text-align:left;"> 0.23.2 </td>
+  <td style="text-align:left;"> Chen, et al. (2018) </td>
   <td style="text-align:left;"> https://github.com/OpenGene/fastp </td>
  </tr>
   <tr grouplength="3"><td colspan="3" style="border-bottom: 1px solid;"><strong>Map</strong></td></tr>
 <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> BWA aln </td>
-   <td style="text-align:left;"> Li and Durbin (2009)</td>
+   <td style="text-align:left;"> 0.7.17 </td>
+   <td style="text-align:left;"> Li and Durbin (2009) </td>
    <td style="text-align:left;"> https://github.com/lh3/bwa </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> BWA mem </td>
-   <td style="text-align:left;"> Li and Durbin (2009)</td>
+   <td style="text-align:left;"> 0.7.17 </td>
+   <td style="text-align:left;"> Li and Durbin (2009) </td>
    <td style="text-align:left;"> https://github.com/lh3/bwa </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> Bowtie2 </td>
-   <td style="text-align:left;"> Langmead and Salzberg (2012)</td>
+   <td style="text-align:left;"> 2.4.4 </td>
+   <td style="text-align:left;"> Langmead and Salzberg (2012) </td>
    <td style="text-align:left;"> https://github.com/BenLangmead/bowtie2 </td>
   </tr>
-  <tr grouplength="1"><td colspan="3" style="border-bottom: 1px solid;"><strong>Sort</strong></td></tr>
+  <tr grouplength="1"><td colspan="4" style="border-bottom: 1px solid;"><strong>Sort</strong></td></tr>
 <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> SAMtools </td>
-   <td style="text-align:left;"> Danecek, et al. (2021)</td>
+   <td style="text-align:left;"> 1.14 </td>
+   <td style="text-align:left;"> Danecek, et al. (2021) </td>
    <td style="text-align:left;"> https://github.com/samtools/samtools </td>
   </tr>
-  <tr grouplength="1"><td colspan="3" style="border-bottom: 1px solid;"><strong>Filter</strong></td></tr>
+  <tr grouplength="1"><td colspan="4" style="border-bottom: 1px solid;"><strong>Filter</strong></td></tr>
 <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> SAMtools </td>
-   <td style="text-align:left;"> Danecek, et al. (2021)</td>
+   <td style="text-align:left;"> 1.14 </td>
+   <td style="text-align:left;"> Danecek, et al. (2021) </td>
    <td style="text-align:left;"> https://github.com/samtools/samtools </td>
   </tr>
-  <tr grouplength="1"><td colspan="3" style="border-bottom: 1px solid;"><strong>Merge lanes</strong></td></tr>
+  <tr grouplength="1"><td colspan="4" style="border-bottom: 1px solid;"><strong>Merge lanes</strong></td></tr>
 <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> SAMtools </td>
-   <td style="text-align:left;"> Danecek, et al. (2021)</td>
+   <td style="text-align:left;"> 1.14 </td>
+   <td style="text-align:left;"> Danecek, et al. (2021) </td>
    <td style="text-align:left;"> https://github.com/samtools/samtools </td>
   </tr>
-  <tr grouplength="2"><td colspan="3" style="border-bottom: 1px solid;"><strong>Remove duplicates</strong></td></tr>
+  <tr grouplength="2"><td colspan="4" style="border-bottom: 1px solid;"><strong>Remove duplicates</strong></td></tr>
 <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> Picard MarkDuplicates </td>
-   <td style="text-align:left;"> Broad Institute (2019)</td>
+   <td style="text-align:left;"> 2.25.5 </td>
+   <td style="text-align:left;"> Broad Institute (2019) </td>
    <td style="text-align:left;"> http://broadinstitute.github.io/picard </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> dedup </td>
+   <td style="text-align:left;"> 0.12.8 </td>
    <td style="text-align:left;"> Peltzer, et al.(2016) </td>
    <td style="text-align:left;"> https://github.com/apeltzer/DeDup </td>
   </tr>
-  <tr grouplength="1"><td colspan="3" style="border-bottom: 1px solid;"><strong>Rescale damage</strong></td></tr>
+  <tr grouplength="1"><td colspan="4" style="border-bottom: 1px solid;"><strong>Rescale damage</strong></td></tr>
 <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> mapDamage2 </td>
-   <td style="text-align:left;"> Jonsson, et al. (2013)</td>
+   <td style="text-align:left;"> 2.2.1 </td>
+   <td style="text-align:left;"> Jonsson, et al. (2013) </td>
    <td style="text-align:left;"> https://github.com/ginolhac/mapDamage </td>
   </tr>
-  <tr grouplength="1"><td colspan="3" style="border-bottom: 1px solid;"><strong>Merge libraries</strong></td></tr>
+  <tr grouplength="1"><td colspan="4" style="border-bottom: 1px solid;"><strong>Merge libraries</strong></td></tr>
 <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> SAMtools </td>
-   <td style="text-align:left;"> Danecek, et al. (2021)</td>
+   <td style="text-align:left;"> 1.14 </td>
+   <td style="text-align:left;"> Danecek, et al. (2021) </td>
    <td style="text-align:left;"> https://github.com/samtools/samtools </td>
   </tr>
-  <tr grouplength="1"><td colspan="3" style="border-bottom: 1px solid;"><strong>Realign indels</strong></td></tr>
+  <tr grouplength="1"><td colspan="4" style="border-bottom: 1px solid;"><strong>Realign indels</strong></td></tr>
 <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> GATK IndelRealigner </td>
-   <td style="text-align:left;"> DePristo, et al. (2011)</td>
+   <td style="text-align:left;"> 3.8 </td>
+   <td style="text-align:left;"> DePristo, et al. (2011) </td>
    <td style="text-align:left;"> https://gatk.broadinstitute.org </td>
   </tr>
-  <tr grouplength="1"><td colspan="3" style="border-bottom: 1px solid;"><strong>Recompute md flag</strong></td></tr>
+  <tr grouplength="1"><td colspan="4" style="border-bottom: 1px solid;"><strong>Recompute md flag</strong></td></tr>
 <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> SAMtools </td>
-   <td style="text-align:left;"> Danecek, et al. (2021)</td>
+   <td style="text-align:left;"> 1.14 </td>
+   <td style="text-align:left;"> Danecek, et al. (2021) </td>
    <td style="text-align:left;"> https://github.com/samtools/samtools </td>
   </tr>
-  <tr grouplength="2"><td colspan="3" style="border-bottom: 1px solid;"><strong>Imputation</strong></td></tr>
+  <tr grouplength="2"><td colspan="4" style="border-bottom: 1px solid;"><strong>Imputation</strong></td></tr>
 <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> GLIMPSE </td>
-   <td style="text-align:left;"> Rubinacci, et al. (2021)</td>
+   <td style="text-align:left;"> 1.1.1 </td>
+   <td style="text-align:left;"> Rubinacci, et al. (2021) </td>
    <td style="text-align:left;"> https://github.com/odelaneau/GLIMPSE </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> BCFtools </td>
-   <td style="text-align:left;"> Danecek, et al. (2021)</td>
+   <td style="text-align:left;"> 1.15 </td>
+   <td style="text-align:left;"> Danecek, et al. (2021) </td>
    <td style="text-align:left;"> https://github.com/samtools/bcftools </td>
   </tr>
-  <tr grouplength="3"><td colspan="3" style="border-bottom: 1px solid;"><strong>Reports</strong></td></tr>
+  <tr grouplength="3"><td colspan="4" style="border-bottom: 1px solid;"><strong>Reports</strong></td></tr>
 <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> FastQC </td>
-   <td style="text-align:left;"> Andrews (2010)</td>
+   <td style="text-align:left;"> 0.11.9 </td>
+   <td style="text-align:left;"> Andrews (2010) </td>
    <td style="text-align:left;"> https://www.bioinformatics.babraham.ac.uk/projects/fastqc/ </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> Qualimap </td>
-   <td style="text-align:left;"> Okonechnikov, et al. (2016)</td>
+   <td style="text-align:left;"> 2.2.2d </td>
+   <td style="text-align:left;"> Okonechnikov, et al. (2016) </td>
    <td style="text-align:left;"> http://qualimap.conesalab.org/ </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> MultiQC </td>
-   <td style="text-align:left;"> Ewels, et al. (2016)</td>
+   <td style="text-align:left;"> 1.13 </td>
+   <td style="text-align:left;"> Ewels, et al. (2016) </td>
    <td style="text-align:left;"> https://multiqc.info/ </td>
   </tr>
   <tr grouplength="3"><td colspan="3" style="border-bottom: 1px solid;"><strong>Statistics</strong></td></tr>
 <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> BEDTools </td>
-   <td style="text-align:left;"> Quinlan and Hall (2010)</td>
+   <td style="text-align:left;"> 2.30.0 </td>
+   <td style="text-align:left;"> Quinlan and Hall (2010) </td>
    <td style="text-align:left;"> https://github.com/arq5x/bedtools2 </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> bamdamage </td>
-   <td style="text-align:left;"> Malaspinas, et al. (2014)</td>
+   <td style="text-align:left;"> modified </td>
+   <td style="text-align:left;"> Malaspinas, et al. (2014) </td>
    <td style="text-align:left;"> https://savannah.nongnu.org/projects/bammds </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> R </td>
-   <td style="text-align:left;"> R Core Team (2022)</td>
+   <td style="text-align:left;"> 4.0 </td>
+   <td style="text-align:left;"> R Core Team (2022) </td>
    <td style="text-align:left;"> https://www.r-project.org/ </td>
   </tr>
 </tbody>
