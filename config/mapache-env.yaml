@@ -16,7 +16,7 @@ dependencies:
   - seqtk=1.3
   - dedup=0.12.8
   - qualimap=2.2.2d
-  - multiqc=1.11
+  - multiqc=1.13
   - glimpse-bio=1.1.1
   - bcftools=1.15
   - charset-normalizer=2.0.0
