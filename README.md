@@ -362,6 +362,11 @@ Preprint:
    <td style="text-align:left;"> Schubert, et al. </td>
    <td style="text-align:left;"> https://github.com/MikkelSchubert/adapterremoval </td>
   </tr>
+<tr>
+  <td style="text-align:left;padding-left: 2em;" indentlevel="1"> fastp </td>
+  <td style="text-align:left;"> Chen, et al. </td>
+  <td style="text-align:left;"> https://github.com/OpenGene/fastp </td>
+ </tr>
   <tr grouplength="3"><td colspan="3" style="border-bottom: 1px solid;"><strong>Map</strong></td></tr>
 <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> BWA aln </td>
