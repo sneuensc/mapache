@@ -372,7 +372,7 @@ Preprint:
   <td style="text-align:left;"> Chen, et al. (2018) </td>
   <td style="text-align:left;"> https://github.com/OpenGene/fastp </td>
  </tr>
-  <tr grouplength="3"><td colspan="3" style="border-bottom: 1px solid;"><strong>Map</strong></td></tr>
+  <tr grouplength="1"><td colspan="4" style="border-bottom: 1px solid;"><strong>Map</strong></td></tr>
 <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> BWA aln </td>
    <td style="text-align:left;"> 0.7.17 </td>
@@ -412,7 +412,7 @@ Preprint:
    <td style="text-align:left;"> Danecek, et al. (2021) </td>
    <td style="text-align:left;"> https://github.com/samtools/samtools </td>
   </tr>
-  <tr grouplength="2"><td colspan="4" style="border-bottom: 1px solid;"><strong>Remove duplicates</strong></td></tr>
+  <tr grouplength="1"><td colspan="4" style="border-bottom: 1px solid;"><strong>Remove duplicates</strong></td></tr>
 <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> Picard MarkDuplicates </td>
    <td style="text-align:left;"> 2.25.5 </td>
@@ -453,7 +453,7 @@ Preprint:
    <td style="text-align:left;"> Danecek, et al. (2021) </td>
    <td style="text-align:left;"> https://github.com/samtools/samtools </td>
   </tr>
-  <tr grouplength="2"><td colspan="4" style="border-bottom: 1px solid;"><strong>Imputation</strong></td></tr>
+  <tr grouplength="1"><td colspan="4" style="border-bottom: 1px solid;"><strong>Imputation</strong></td></tr>
 <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> GLIMPSE </td>
    <td style="text-align:left;"> 1.1.1 </td>
@@ -466,7 +466,7 @@ Preprint:
    <td style="text-align:left;"> Danecek, et al. (2021) </td>
    <td style="text-align:left;"> https://github.com/samtools/bcftools </td>
   </tr>
-  <tr grouplength="3"><td colspan="4" style="border-bottom: 1px solid;"><strong>Reports</strong></td></tr>
+  <tr grouplength="1"><td colspan="4" style="border-bottom: 1px solid;"><strong>Reports</strong></td></tr>
 <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> FastQC </td>
    <td style="text-align:left;"> 0.11.9 </td>
@@ -485,7 +485,7 @@ Preprint:
    <td style="text-align:left;"> Ewels, et al. (2016) </td>
    <td style="text-align:left;"> https://multiqc.info/ </td>
   </tr>
-  <tr grouplength="3"><td colspan="4" style="border-bottom: 1px solid;"><strong>Statistics</strong></td></tr>
+  <tr grouplength="1"><td colspan="4" style="border-bottom: 1px solid;"><strong>Statistics</strong></td></tr>
 <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> BEDTools </td>
    <td style="text-align:left;"> 2.30.0 </td>
