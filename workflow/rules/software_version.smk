@@ -100,7 +100,7 @@ rule version_samtools:
     envmodules: module_samtools
     shell:
         """
-        samtools --version | grep samtools | sed 's/samtools/samtools version/g' > {output} || echo samtools not available > {output}
+        samtools version | head -n1| sed 's/samtools/samtools version/g' > {output} || echo samtools not available > {output}
         """
 
 rule version_bcftools:
@@ -144,7 +144,7 @@ rule version_seqtk:
     shell:
         """
         set +e;
-        txt=$(seqtk 2>&1 | grep Version | sed 's/Version:/seqt version/g')
+        txt=$(seqtk 2>&1 | grep Version | sed 's/Version:/seqtk version/g')
         if [[ "$txt" == *"seqtk"* ]]; then
             echo $txt > {output};
         else
@@ -159,7 +159,14 @@ rule version_dedup:
     envmodules: module_dedup
     shell:
         """
-        dedup --version &> >(head -n1 | sed 's/v/version /g') > {output} || echo DeDup not available > {output}
+        set +e;
+        txt=$(dedup --version 2>&1 | head -n1 | sed 's/v/version /g')
+        if [[ "$txt" == *"DeDup"* ]]; then
+            echo $txt > {output};
+        else
+            echo DeDup not available > {output};
+        fi
+        exit 0;
         """
 
 rule version_qualimap:
