@@ -471,19 +471,19 @@ Preprint:
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> FastQC </td>
    <td style="text-align:left;"> 0.11.9 </td>
    <td style="text-align:left;"> Andrews (2010) </td>
-   <td style="text-align:left;"> https://www.bioinformatics.babraham.ac.uk/projects/fastqc/ </td>
+   <td style="text-align:left;"> https://www.bioinformatics.babraham.ac.uk/projects/fastqc </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> Qualimap </td>
    <td style="text-align:left;"> 2.2.2d </td>
    <td style="text-align:left;"> Okonechnikov, et al. (2016) </td>
-   <td style="text-align:left;"> http://qualimap.conesalab.org/ </td>
+   <td style="text-align:left;"> http://qualimap.conesalab.org </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> MultiQC </td>
    <td style="text-align:left;"> 1.13 </td>
    <td style="text-align:left;"> Ewels, et al. (2016) </td>
-   <td style="text-align:left;"> https://multiqc.info/ </td>
+   <td style="text-align:left;"> https://multiqc.info </td>
   </tr>
   <tr grouplength="1"><td colspan="4" style="border-bottom: 1px solid;"><strong>Statistics</strong></td></tr>
 <tr>
@@ -502,7 +502,7 @@ Preprint:
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> R </td>
    <td style="text-align:left;"> 4.0 </td>
    <td style="text-align:left;"> R Core Team (2022) </td>
-   <td style="text-align:left;"> https://www.r-project.org/ </td>
+   <td style="text-align:left;"> https://www.r-project.org </td>
   </tr>
 </tbody>
 </table>
