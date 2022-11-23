@@ -137,9 +137,10 @@ rule genome_index_picard:
     script:
         "../scripts/fasta_indexing.py"
 
+ruleorder: samtools_index_bam > samtools_index_bam_temp
 
 ## indexing bam
-rule samtools_index_bam:
+rule samtools_index_bam_temp:
     """
     Index bam file with samtools
     """
@@ -162,3 +163,27 @@ rule samtools_index_bam:
     shell:
         "samtools index {input} {output} 2> {log};"
 
+
+## same es the previous one, but output is not temp
+rule samtools_index_bam:
+    """
+    Index last bam file with samtools (should remain)
+    """
+    input:
+        "{folder}/03_sample/03_final_sample/{type}/{sm}.{genome}.bam",
+    output:
+        "{folder}/03_sample/03_final_sample/{type}/{sm}.{genome}.bai",
+    resources:
+        memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 24),
+    threads: 1
+    log:
+        "{folder}/03_sample/03_final_sample/{type}/{sm}.{genome}_samtools_index.log",
+    conda:
+        "../envs/samtools.yaml"
+    envmodules:
+        module_samtools,
+    message:
+        "--- SAMTOOLS INDEX {input}"
+    shell:
+        "samtools index {input} {output} 2> {log};"
