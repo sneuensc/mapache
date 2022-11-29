@@ -266,10 +266,15 @@ report: "report/workflow.rst"
 ## OUTPUT FILES
 ##########################################################################################
 # -----------------------------------------------------------------------------#
-## get all final bam files
+## get all final bam and bai files
 final_bam = get_final_bam_files()
+final_bam.extend([bam2bai(w) for w in final_bam])
+
 final_bam_low_qual = get_final_bam_low_qual_files()
+final_bam_low_qual.extend([bam2bai(w) for w in final_bam_low_qual])
+
 final_external_bam = get_final_external_bam_files()
+final_external_bam.extend([bam2bai(w) for w in final_external_bam])
 
 
 # -----------------------------------------------------------------------------#
@@ -292,24 +297,11 @@ damage_files = get_damage_output()
 
 # -----------------------------------------------------------------------------#
 ## get the minimal final summary stats
-stats_mapping_checkpoint = [
-    fastqc,
-    samtools_stats,
-    lengths,
-    idxstats,
-    sex_files,
-    damage_files,
-]
+stats_mapping_checkpoint = fastqc + samtools_stats + lengths + idxstats + sex_files + damage_files,
 
+final_stats = stat_csv + qualimap_files + multiqc_files,
 
-final_stats = [
-    stat_csv,
-    qualimap_files,
-    multiqc_files,
-]
-# -----------------------------------------------------------------------------#
-
-final_stat_figures = [damage_files, stat_plot]
+final_stat_figures = damage_files + stat_plot,
 
 
 ## --------------------------------------------------------------------------------------------------
@@ -411,7 +403,6 @@ rule stats:
         get_qualimap_files(),
         get_sex_files(),
         get_imputation_files(),
-
 
 ## imputation
 rule imputation:
