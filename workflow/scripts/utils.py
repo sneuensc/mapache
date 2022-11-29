@@ -470,7 +470,7 @@ def get_external_samples():
         colnames = ["SM", "Bam", "Genome"]
         if not set(colnames).issubset(db_stats.columns):
             LOGGER.error(
-                f"ERROR: The column names in the bam file (given by paramter config[external_sample]) are wrong! Expected are {colnames}!"
+                f"ERROR: The column names in the bam file (given by parameter config[external_sample]) are wrong! Expected are {colnames}!"
             )
             sys.exit(1)
 
@@ -794,7 +794,7 @@ def set_sex_inference(genome):
     autosomes = to_str(get_param(["sex_inference", genome, "autosomes"],[]))
 
     ## if the sex and autosome chromosome names are set, check if they make sense
-    if (sex_chr != '' and len(autosomes) > 0:
+    if sex_chr != '' and len(autosomes) > 0:
         # check if the chromosomes specified in sex determination exist
         ## X chromosome
         if len(sex_chr):

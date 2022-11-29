@@ -137,7 +137,9 @@ rule genome_index_picard:
     script:
         "../scripts/fasta_indexing.py"
 
+
 ruleorder: samtools_index_bam > samtools_index_bam_temp
+
 
 ## indexing bam
 rule samtools_index_bam_temp:

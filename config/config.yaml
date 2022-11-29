@@ -55,8 +55,8 @@ result_dir: 'results'
 # Include meaningful names for each genome. Final BAM(s) file will be named after it 
 # (e.g., ind1.hg19.bam)
 genome: 
-    hg19: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/hs.build37.1/hs.build37.1.fa
-    GRCh38: /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/reference_human/GCA_000001405.15_GRCh38.p13_onlyChrom/GCA_000001405.15_GRCh38.fa
+    hg19: /work/FAC/FBM/DBC/amalaspi/popgen/shared_resources/reference_human/hs.build37.1/hs.build37.1.fa
+    #GRCh38: /work/FAC/FBM/DBC/amalaspi/popgen/shared_resources/reference_human/GCA_000001405.15_GRCh38.p13_onlyChrom/GCA_000001405.15_GRCh38.fa
 
 
 ##########################################################################################
@@ -157,7 +157,7 @@ damage_rescale:
 
 # realign around indels with GATK 
 realign:
-    run: False
+    run: True
     threads: 4
     mem: 16
     time: 4
@@ -256,7 +256,7 @@ sex_inference:
 
 imputation:
     hg19:
-        run: True
+        run: False
 
         num_imputations: 2
 

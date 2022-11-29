@@ -161,7 +161,7 @@ if run_filtering:
         ## mapq is set: extend the command
         if type(mapq) is dict:
             for key in mapq:
-                 mapq[key] = f"-F 4 -q {mapq[key]}"
+                mapq[key] = f"-F 4 -q {mapq[key]}"
         else:
             mapq = f"-F 4 -q {mapq}"
 
@@ -297,11 +297,13 @@ damage_files = get_damage_output()
 
 # -----------------------------------------------------------------------------#
 ## get the minimal final summary stats
-stats_mapping_checkpoint = fastqc + samtools_stats + lengths + idxstats + sex_files + damage_files,
+stats_mapping_checkpoint = (
+    fastqc + samtools_stats + lengths + idxstats + sex_files + damage_files,
+)
 
-final_stats = stat_csv + qualimap_files + multiqc_files,
+final_stats = (stat_csv + qualimap_files + multiqc_files,)
 
-final_stat_figures = damage_files + stat_plot,
+final_stat_figures = (damage_files + stat_plot,)
 
 
 ## --------------------------------------------------------------------------------------------------
@@ -378,7 +380,7 @@ rule version:
     Get the versions of the underlying tools
     """
     input:
-        get_version_file_of_tools()
+        get_version_file_of_tools(),
     output:
         report(
             f"{RESULT_DIR}/04_stats/03_summary/software_versions.txt",
@@ -403,6 +405,7 @@ rule stats:
         get_qualimap_files(),
         get_sex_files(),
         get_imputation_files(),
+
 
 ## imputation
 rule imputation:

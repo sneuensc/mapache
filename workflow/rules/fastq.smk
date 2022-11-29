@@ -62,12 +62,13 @@ rule get_fasta:
 ##########################################################################################
 ## trimming
 
+
 rule adapter_removal_collapse:
     """
     Remove adapter and low quality bases at the edges and collapse paired-end reads
     """
     input:
-        get_fastq_4_cleaning
+        get_fastq_4_cleaning,
     output:
         R=temp(
             "{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}.fastq.gz"
@@ -93,9 +94,7 @@ rule adapter_removal_collapse:
         settings="{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}.settings",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("cleaning", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc(
-            "cleaning", attempt, 24
-        ),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("cleaning", attempt, 24),
     params:
         params=lambda wildcards: get_paramGrp(
             ["cleaning", "params_adapterremoval"],
@@ -142,7 +141,7 @@ rule adapter_removal_pe:
     Remove adapter and low quality bases at the edges
     """
     input:
-        get_fastq_4_cleaning
+        get_fastq_4_cleaning,
     output:
         R1=temp(
             "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}_R1.fastq.gz"
@@ -159,9 +158,7 @@ rule adapter_removal_pe:
         settings="{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}.settings",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("cleaning", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc(
-            "cleaning", attempt, 24
-        ),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("cleaning", attempt, 24),
     params:
         lambda wildcards: get_paramGrp(
             ["cleaning", "params_adapterremoval"],
@@ -191,7 +188,7 @@ rule adapter_removal_se:
     Remove adapter and low quality bases at the edges
     """
     input:
-        get_fastq_4_cleaning
+        get_fastq_4_cleaning,
     output:
         R=temp(
             "{folder}/01_fastq/01_trimmed/01_adapterremoval_se/{sm}/{lb}/{id}.fastq.gz"
@@ -202,9 +199,7 @@ rule adapter_removal_se:
         settings="{folder}/01_fastq/01_trimmed/01_adapterremoval_se/{sm}/{lb}/{id}.settings",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("cleaning", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc(
-            "cleaning", attempt, 24
-        ),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("cleaning", attempt, 24),
     params:
         lambda wildcards: get_paramGrp(
             ["cleaning", "params_dapterremoval"],
@@ -231,32 +226,25 @@ rule adapter_removal_se:
                 --output1 {output.R} 2> {log};
         """
 
+
 rule fastp_collapse:
     """
     Clean fastq files with fastp (collapse paired-end)
     """
     input:
-        get_fastq_4_cleaning
+        get_fastq_4_cleaning,
     output:
-        R=temp(
-            "{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}.fastq.gz"
-        ),
+        R=temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}.fastq.gz"),
         R_merged=temp(
             "{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_merged.fastq.gz"
         ),
-        R1=temp(
-            "{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_R1.fastq.gz"
-        ),
-        R2=temp(
-            "{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_R2.fastq.gz"
-        ),
+        R1=temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_R1.fastq.gz"),
+        R2=temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_R2.fastq.gz"),
         json="{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}.json",
         html="{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}.html",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("cleaning", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc(
-            "cleaning", attempt, 24
-        ),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("cleaning", attempt, 24),
     params:
         lambda wildcards: get_paramGrp(
             ["cleaning", "params_fastp"],
@@ -296,21 +284,15 @@ rule fastp_pe:
     Clean fastq files with fastp (paired-end)
     """
     input:
-        get_fastq_4_cleaning
+        get_fastq_4_cleaning,
     output:
-        R1=temp(
-            "{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_R1.fastq.gz"
-        ),
-        R2=temp(
-            "{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_R2.fastq.gz"
-        ),
+        R1=temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_R1.fastq.gz"),
+        R2=temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_R2.fastq.gz"),
         json="{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}.json",
         html="{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}.html",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("cleaning", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc(
-            "cleaning", attempt, 24
-        ),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("cleaning", attempt, 24),
     params:
         lambda wildcards: get_paramGrp(
             ["cleaning", "params_fastp"],
@@ -339,18 +321,14 @@ rule fastp_se:
     Clean fastq files with fastp (single-end)
     """
     input:
-        get_fastq_4_cleaning
+        get_fastq_4_cleaning,
     output:
-        R=temp(
-            "{folder}/01_fastq/01_trimmed/01_fastp_se/{sm}/{lb}/{id}.fastq.gz"
-        ),
+        R=temp("{folder}/01_fastq/01_trimmed/01_fastp_se/{sm}/{lb}/{id}.fastq.gz"),
         json="{folder}/01_fastq/01_trimmed/01_fastp_se/{sm}/{lb}/{id}.json",
         html="{folder}/01_fastq/01_trimmed/01_fastp_se/{sm}/{lb}/{id}.html",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("cleaning", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc(
-            "cleaning", attempt, 24
-        ),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("cleaning", attempt, 24),
     params:
         lambda wildcards: get_paramGrp(
             ["cleaning", "params_fastp"],

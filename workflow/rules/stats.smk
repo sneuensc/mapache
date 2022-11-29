@@ -754,10 +754,10 @@ rule multiqc:
     Running multiqc
     """
     input:
-        SM = "{folder}/04_stats/03_summary/SM_stats.{genome}.csv", 
-        LB = "{folder}/04_stats/03_summary/LB_stats.{genome}.csv", 
-        FASTQ ="{folder}/04_stats/03_summary/FASTQ_stats.{genome}.csv",
-        files = get_files_4_multiqc
+        SM="{folder}/04_stats/03_summary/SM_stats.{genome}.csv",
+        LB="{folder}/04_stats/03_summary/LB_stats.{genome}.csv",
+        FASTQ="{folder}/04_stats/03_summary/FASTQ_stats.{genome}.csv",
+        files=get_files_4_multiqc,
     output:
         html=report(
             "{folder}/04_stats/02_separate_tables/{genome}/multiqc_mapache.html",
@@ -806,4 +806,3 @@ rule multiqc:
         ## delete the temp files
         rm -f $SM2 $LB2 $FASTQ2;
         """
-

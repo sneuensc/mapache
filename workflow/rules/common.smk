@@ -591,62 +591,75 @@ def get_imputation_plots_external():
     return files
 
 
-
 #################################################################################################################
 ## multiqc input files
 def get_files_4_multiqc(wc):
     files = []
 
     ## fastqc original
-    files += [f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{sm}/{lb}/{id}_fastqc.zip"
+    files += [
+        f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{sm}/{lb}/{id}_fastqc.zip"
         for sm, smVals in SAMPLES.items()
         for lb, lbVals in smVals.items()
         for id in lbVals
     ]
 
     ## adapterremoval
-    files += [f"{RESULT_DIR}/01_fastq/01_trimmed/01_adapterremoval_{get_cleaning_folder_extension(Wildcards(fromdict={'id': id, 'lb': lb, 'sm': sm}))}/{sm}/{lb}/{id}.settings"
+    files += [
+        f"{RESULT_DIR}/01_fastq/01_trimmed/01_adapterremoval_{get_cleaning_folder_extension(Wildcards(fromdict={'id': id, 'lb': lb, 'sm': sm}))}/{sm}/{lb}/{id}.settings"
         for sm, smVals in SAMPLES.items()
         for lb, lbVals in smVals.items()
         for id in lbVals
         if get_paramGrp(
             ["cleaning", "run"],
             ["adapterremoval", "fastp", "False"],
-            Wildcards(fromdict={"id": id, "lb": lb, "sm": sm})) == "adapterremoval"
+            Wildcards(fromdict={"id": id, "lb": lb, "sm": sm}),
+        )
+        == "adapterremoval"
     ]
 
     ## fastp
-    files += [f"{RESULT_DIR}/01_fastq/01_trimmed/01_fastp_{get_cleaning_folder_extension(Wildcards(fromdict={'id': id, 'lb': lb, 'sm': sm}))}/{sm}/{lb}/{id}.json"
+    files += [
+        f"{RESULT_DIR}/01_fastq/01_trimmed/01_fastp_{get_cleaning_folder_extension(Wildcards(fromdict={'id': id, 'lb': lb, 'sm': sm}))}/{sm}/{lb}/{id}.json"
         for sm, smVals in SAMPLES.items()
         for lb, lbVals in smVals.items()
         for id in lbVals
         if get_paramGrp(
             ["cleaning", "run"],
             ["adapterremoval", "fastp", "False"],
-            Wildcards(fromdict={"id": id, "lb": lb, "sm": sm})) == "fastp"
+            Wildcards(fromdict={"id": id, "lb": lb, "sm": sm}),
+        )
+        == "fastp"
     ]
-    
+
     ## fastqc trim
-    files += [f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_adapterremoval_{get_cleaning_folder_extension(Wildcards(fromdict={'id': id, 'lb': lb, 'sm': sm}))}/{sm}/{lb}/{id}_fastqc.zip"
+    files += [
+        f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_adapterremoval_{get_cleaning_folder_extension(Wildcards(fromdict={'id': id, 'lb': lb, 'sm': sm}))}/{sm}/{lb}/{id}_fastqc.zip"
         for sm, smVals in SAMPLES.items()
         for lb, lbVals in smVals.items()
         for id in lbVals
         if get_paramGrp(
             ["cleaning", "run"],
             ["adapterremoval", "fastp", "False"],
-            Wildcards(fromdict={"id": id, "lb": lb, "sm": sm})) == "adapterremoval"
-    ] + [f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_fastp_{get_cleaning_folder_extension(Wildcards(fromdict={'id': id, 'lb': lb, 'sm': sm}))}/{sm}/{lb}/{id}_fastqc.zip"
+            Wildcards(fromdict={"id": id, "lb": lb, "sm": sm}),
+        )
+        == "adapterremoval"
+    ] + [
+        f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_fastp_{get_cleaning_folder_extension(Wildcards(fromdict={'id': id, 'lb': lb, 'sm': sm}))}/{sm}/{lb}/{id}_fastqc.zip"
         for sm, smVals in SAMPLES.items()
         for lb, lbVals in smVals.items()
         for id in lbVals
         if get_paramGrp(
             ["cleaning", "run"],
             ["adapterremoval", "fastp", "False"],
-            Wildcards(fromdict={"id": id, "lb": lb, "sm": sm})) == "fastp"
+            Wildcards(fromdict={"id": id, "lb": lb, "sm": sm}),
+        )
+        == "fastp"
     ]
 
     ## samtools_stats at final fastq bam
-    files += [f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{sm}/{lb}/{id}.{wc.genome}_stats.txt"
+    files += [
+        f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{sm}/{lb}/{id}.{wc.genome}_stats.txt"
         for sm, smVals in SAMPLES.items()
         for lb, lbVals in smVals.items()
         for id in lbVals
@@ -693,17 +706,25 @@ def get_files_4_multiqc(wc):
 def get_version_file_of_tools():
     ## extract tools form the conda environment file
     filename = "config/mapache-env.yaml"
-    tools=[]
+    tools = []
     with open(filename) as file:
         for line in file:
-            if 'dependencies' in line:
+            if "dependencies" in line:
                 for line in file:
-                    if 'r-' not in line and 'charset-normalizer' not in line and 'mamba' not in line:
-                        tools.append(line.strip().replace('- ','').replace('-bio','').split('=')[0])
-    
-    files = [f"{RESULT_DIR}/04_stats/02_separate_tables/software/{tool}.txt" for tool in tools]
+                    if (
+                        "r-" not in line
+                        and "charset-normalizer" not in line
+                        and "mamba" not in line
+                    ):
+                        tools.append(
+                            line.strip()
+                            .replace("- ", "")
+                            .replace("-bio", "")
+                            .split("=")[0]
+                        )
+
+    files = [
+        f"{RESULT_DIR}/04_stats/02_separate_tables/software/{tool}.txt"
+        for tool in tools
+    ]
     return files
-
-
-
-
