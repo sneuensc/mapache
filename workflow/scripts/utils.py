@@ -770,68 +770,87 @@ def set_chromosome_names(genome):
 
 
 ## return a list of the chromosome names which do not match
+## empty list means that all matched
 def valid_chromosome_names(genome, names):
-    allChr = to_str(get_param(["chromosome", genome, "all"], []))
+    allChr = get_chromosome_names(genome)
+    print(f"{names} in {allChr}")
+
+    if type(names) is string and names not in allChr:
+            return [names]
+    
     if list(set(names) - set(allChr)):
         return list(set(names) - set(allChr))
-    else:
-        return []
+    
+    return []
 
 
-## check the chromosome names if they are valid
+## check the chromosome names if they are valid (sex inference for this genome is set to true)
 def set_sex_inference(genome):
     ## get the chromosome names of the given genome
     allChr = get_chromosome_names(genome)
 
-    ## try to recognize if it is the human hg19 or GRCh38 genome. If so apply default chromosome names
-    hg19 = list(map(str, list(range(1, 23)) + ["X", "Y", "MT"]))
-    GRCh38 = [f"str{x}" for x in list(range(1, 23)) + ["X", "Y", "M"]]
-    if sorted(allChr) == sorted(hg19):
-        name = "hg19"
-        detectedSexChrom = ["X", "Y", "MT"]
-        detectedAutosomes = list(set(allChr) - set(detectedSexChrom))
-    elif sorted(allChr) == sorted(GRCh38):
-        name = "GRCh38"
-        detectedSexChrom = ["chrX", "chrY", "chrM"]
-        detectedAutosomes = list(set(allChr) - set(detectedSexChrom))
-    else:
-        name = ""
-        detectedSexChrom = []
-        detectedAutosomes = []
+    ## get the specified sex and autosome chromosome names
+    sex_chr = to_str(get_param(["sex_inference", genome, "sex_chr"], ''))
+    autosomes = to_str(get_param(["sex_inference", genome, "autosomes"],[]))
 
-    ## write the sex and autosome names
-    config = update_value(["chromosome", genome, "name"], name)
-    config = update_value(["chromosome", genome, "all_sex_chr"], detectedSexChrom)
-    config = update_value(["chromosome", genome, "sex_chr"], detectedSexChrom[0])
-    config = update_value(["chromosome", genome, "autosomes"], detectedAutosomes)
-
-    # check if the chromosomes specified in sex determination exist
-    ## X chromosome
-    sex_chr = to_str(get_param(["sex_inference", genome, "sex_chr"], []))
-    if len(sex_chr):
-        if valid_chromosome_names(genome, sex_chr):
+    ## if the sex and autosome chromosome names are set, check if they make sense
+    if (sex_chr != '' and len(autosomes) > 0:
+        # check if the chromosomes specified in sex determination exist
+        ## X chromosome
+        if len(sex_chr):
+            print(sex_chr)
+            if valid_chromosome_names(genome, sex_chr):
+                LOGGER.error(
+                    f"ERROR: Sex chromosome specified in config[sex_inference][{genome}][sex_chr] ({sex_chr}) does not exist in the reference genome."
+                )
+                os._exit(1)
+            config = update_value(["chromosome", genome, "sex_chr"], sex_chr)
+        else:
             LOGGER.error(
-                f"ERROR: Sex chromosome specified in config[sex_inference][{genome}][sex_chr] ({sex_chr}) does not exist in the reference genome."
+                f"ERROR: No sex chromosome specified in config[sex_inference][{genome}][sex_chr]!"
             )
             os._exit(1)
-        config = update_value(["chromosome", genome, "sex_chr"], sex_chr)
-
-    # autosomes
-    autosomes = to_str(get_param(
-            ["sex_inference", genome, "autosomes"],
-            [],
-        )
-    )
-
-    if len(autosomes):
-        if valid_chromosome_names(genome, autosomes):
+        
+        # autosomes
+        if len(autosomes):
+            if valid_chromosome_names(genome, autosomes):
+                LOGGER.error(
+                    f"ERROR: In config[sex_inference][{genome}][autosomes], the following chromosome names are not recognized: {valid_chromosome_names(genome, autosomes)}!"
+                )
+                os._exit(1)
+            config = update_value(["chromosome", genome, "autosomes"], autosomes)
+        else:
             LOGGER.error(
-                f"ERROR: In config[sex_inference][{genome}][autosomes], the following chromosome names are not recognized: {valid_chromosome_names(genome, autosomes)}!"
+                f"ERROR: No autosomes specified in config[sex_inference][{genome}][autosomes]!"
             )
             os._exit(1)
-        config = update_value(["chromosome", genome, "autosomes"], autosomes)
+    else:       ## if they are not set, try to infer the genome (hg19 or GRCh38)
+        hg19 = list(map(str, list(range(1, 23)) + ["X", "Y", "MT"]))
+        GRCh38 = [f"str{x}" for x in list(range(1, 23)) + ["X", "Y", "M"]]
+        if sorted(allChr) == sorted(hg19):
+        #if set(hg19).issubset(set(allChr)):
+            name = "hg19"
+            detectedSexChrom = ["X", "Y", "MT"]
+            detectedAutosomes = list(set(allChr) - set(detectedSexChrom))
+        #elif sorted(allChr) == sorted(GRCh38):
+        elif set(GRCh38).issubset(set(allChr)):
+            name = "GRCh38"
+            detectedSexChrom = ["chrX", "chrY", "chrM"]
+            detectedAutosomes = list(set(allChr) - set(detectedSexChrom))
+        else:
+            LOGGER.error(
+                f"ERROR: For sex inference the parameters config[sex_inference][{genome}][sex_chr] and config[sex_inference][{genome}][autosomes] are required!"
+            )
+            os._exit(1)
+
+        ## write the sex and autosome names
+        config = update_value(["chromosome", genome, "name"], name)
+        config = update_value(["chromosome", genome, "all_sex_chr"], detectedSexChrom)
+        config = update_value(["chromosome", genome, "sex_chr"], detectedSexChrom[0])
+        config = update_value(["chromosome", genome, "autosomes"], detectedAutosomes)
 
 
+## check if the specified chromosomes to compute the depth on are available
 def read_depth(genome):
     # check if chromosomes for which DoC was requested exist
     depth = to_str(get_param(["depth", genome, "chromosomes"], ""))
