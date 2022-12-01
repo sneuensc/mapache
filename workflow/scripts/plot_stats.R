@@ -152,14 +152,14 @@ make_barplot <- function(data, x, y, group, n_figures, cols, color="blue", title
       my_plot <- my_plot + geom_text(aes(label=format(round(data[,y], 3), big.mark=",")),
                                      vjust=-0.25, color="black")
     }
-
-    ## split figure if multidimensional
-    if(n_figures > 1){
-      my_plot <- my_plot + facet_wrap(as.formula(paste("~", group)), ncol = cols)
-    }
-
-    return(my_plot)
   }
+
+  ## split figure if multidimensional
+  if(n_figures > 1){
+    my_plot <- my_plot + facet_wrap(as.formula(paste("~", group)), ncol = cols)
+  }
+
+  return(my_plot)
 }
 
 
