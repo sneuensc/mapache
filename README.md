@@ -135,10 +135,8 @@ In the example below, all the samples will be mapped to two versions of the huma
 
 ```
 genome: 
-    hg19: 
-        fasta: /path/to/hg19/genome/hs37d5/hs37d5.fa
-    GRCh38:
-        fasta: /path/to/GRCh38/genome/GCA_000001405.15_GRCh38.fa
+    GRCh37: path_to_reference/GRCh37.fasta
+    # GRCh38: path_to_reference/GCA_000001405.15_GRCh38.fa
 ```
 
 ### Enable/disable steps and specify memory and runtime
