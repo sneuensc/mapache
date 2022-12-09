@@ -271,8 +271,6 @@ rule fastp_collapse:
         options={params.collapsed};
         if [[ "$options" == "only_collapse" ]]; then
             ln -srf {output.R_merged} {output.R};
-        #elif [[ "$options" == "collapse_trunc" ]]; then
-        #    cat {output.R_merged} {output.col_trunc} > {output.R};
         elif [[ "$options" == "all" ]]; then
             cat {output.R_merged} {output.R1} {output.R2} > {output.R};
         fi;
