@@ -5,6 +5,7 @@ dependencies:
   - snakemake=7.18.2
   - mamba
   - adapterremoval=2.3.2
+  - fastp=0.23.2
   - bwa=0.7.17
   - bowtie2=2.4.4
   - fastqc=0.11.9

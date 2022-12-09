@@ -77,8 +77,10 @@ rule markduplicates:
             "remove_duplicates", attempt, 24
         ),
     params:
-        params=recursive_get(
-            ["remove_duplicates", "params_markduplicates"], "--REMOVE_DUPLICATES true"
+        params=lambda wildcards: get_paramGrp(
+            ["remove_duplicates", "params_markduplicates"],
+            "--REMOVE_DUPLICATES true",
+            wildcards,
         ),
         PICARD=get_picard_bin(),
     threads: get_threads("remove_duplicates", 4)
@@ -116,15 +118,9 @@ rule dedup:
             "remove_duplicates", attempt, 24
         ),
     params:
-        params=recursive_get(["remove_duplicates", "params_dedup"], "-m"),
-        collapsed=lambda wildcards: COLLAPSE
-        and "nan"
-        not in [
-            i["Data2"]
-            for i in recursive_get(
-                [wildcards.sm, wildcards.lb], [], my_dict=SAMPLES
-            ).values()
-        ],
+        params=lambda wildcards: get_paramGrp(
+            ["remove_duplicates", "params_dedup"], "-m", wildcards
+        ),
     log:
         "{folder}/02_library/01_duplicated/01_dedup/{sm}/{lb}.{genome}.log",
     conda:
@@ -135,13 +131,6 @@ rule dedup:
         "--- DEDUP {output.bam}"
     shell:
         """
-        ## remove -m or --merged from $params (needed for SE or not collapsed PE reads)
-        if [ {params.collapsed} ]; then
-            params={params.params}
-        else
-            params=$(echo {params.params} | sed  's/ -m/ /g' | sed  's/ --merged/ /g')
-        fi
-
         bam={output.bam}
         dedup -i {input} $params  -o $(dirname $bam);
         mv ${{bam%%.bam}}_rmdup.bam $bam
@@ -154,7 +143,7 @@ rule mapDamage_stats:
     """
     input:
         ref="{folder}/00_reference/{genome}/{genome}.fasta",
-        bam=get_bam_4_damage,
+        bam=get_bam_4_damage_rescale,
     output:
         #directory("{folder}/02_library/02_rescaled/01_mapDamage/{sm}/{lb}.{genome}_results_mapDamage"),
         deamination=report(
@@ -172,9 +161,11 @@ rule mapDamage_stats:
         memory=lambda wildcards, attempt: get_memory_alloc("mapdamage", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapdamage", attempt, 24),
     params:
-        params=recursive_get(["mapdamage", "params"], ""),
+        params=lambda wildcards: get_paramGrp(["mapdamage", "params"], "", wildcards),
     conda:
         "../envs/mapdamage.yaml"
+    envmodules:
+        module_mapdamage,
     message:
         "--- MAPDAMAGE {input.bam}"
     shell:
@@ -190,7 +181,7 @@ rule mapDamage_rescale:
     """
     input:
         ref="{folder}/00_reference/{genome}/{genome}.fasta",
-        bam=get_bam_4_damage,
+        bam=get_bam_4_damage_rescale,
         deamination="{folder}/02_library/02_rescaled/01_mapDamage/{sm}/{lb}.{genome}_results_mapDamage/Fragmisincorporation_plot.pdf",
     output:
         bam=temp("{folder}/02_library/02_rescaled/01_mapDamage/{sm}/{lb}.{genome}.bam"),
@@ -201,13 +192,43 @@ rule mapDamage_rescale:
         "{folder}/02_library/02_rescaled/01_mapDamage/{sm}/{lb}.{genome}_rescale.log",
     threads: 1
     params:
-        params=recursive_get(["mapdamage", "params"], ""),
+        params=lambda wildcards: get_paramGrp(["mapdamage", "params"], "", wildcards),
     conda:
         "../envs/mapdamage.yaml"
+    envmodules:
+        module_mapdamage,
     message:
         "--- MAPDAMAGE RESCALE {output.bam}"
     shell:
         """
         mapDamage -i {input.bam} -r {input.ref} -d $(dirname {input.deamination}) \
         {params.params} --merge-reference-sequences --rescale-only --rescale-out {output} 2>> {log};
+        """
+
+
+## params cannot be empty
+rule bamutil:
+    "Run BamUtil to trim the end of reads in the BAM file"
+    input:
+        bam=get_bam_4_bamutil,
+    output:
+        bam=temp("{folder}/02_library/03_trim/01_bamutil/{sm}/{lb}.{genome}.bam"),
+    resources:
+        memory=lambda wildcards, attempt: get_memory_alloc("bamutil", attempt, 4),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("bamutil", attempt, 24),
+    log:
+        "{folder}/02_library/03_trim/01_bamutil/{sm}/{lb}.{genome}.log",
+    threads: 1
+    params:
+        lambda wildcards: get_paramGrp(["bamutil", "params"], "", wildcards),
+    conda:
+        "../envs/bamutil.yaml"
+    envmodules:
+        module_samtools,
+        module_bamutil,
+    message:
+        "--- TRIM BAM {output.bam}"
+    shell:
+        """
+        bam trimBam {input} {output} {params} 2>> {log};
         """

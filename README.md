@@ -90,29 +90,27 @@ A samples file for the test dataset is provided (`config/samples.tsv`). If you w
 Example of a sample file for single-end libraries:
 
 ```
-SM      LB    ID       Data                            MAPQ   PL
-ind1    L1    L1_1     reads/ind1.L1_R1_001.fastq.gz   30     ILLUMINA
-ind1    L1    L1_2     reads/ind1.L1_R1_002.fastq.gz   30     ILLUMINA
-ind1    L2    L2_1     reads/ind1.L2_R1_001.fastq.gz   30     ILLUMINA
-ind1    L2    L2_2     reads/ind1.L2_R1_002.fastq.gz   30     ILLUMINA
+SM      LB    ID       Data
+ind1    L1    L1_1     reads/ind1.L1_R1_001.fastq.gz
+ind1    L1    L1_2     reads/ind1.L1_R1_002.fastq.gz
+ind1    L2    L2_1     reads/ind1.L2_R1_001.fastq.gz
+ind1    L2    L2_2     reads/ind1.L2_R1_002.fastq.gz
 ```
 
 Example of a sample file for paired-end and single-end libraries:
 
 ```
-SM      LB    ID       Data1                            Data2                           MAPQ   PL
-ind2    L1    L1_1     reads/ind2.L1_R1_001.fastq.gz    reads/ind2.L1_R2_001.fastq.gz   30     ILLUMINA
-ind2    L1    L1_2     reads/ind2.L1_R1_002.fastq.gz    reads/ind2.L1_R2_001.fastq.gz   30     ILLUMINA
-ind2    L2    L2_1     reads/ind2.L2_R1_002.fastq.gz    NULL                            30     ILLUMINA
+SM      LB    ID       Data1                            Data2
+ind2    L1    L1_1     reads/ind2.L1_R1_001.fastq.gz    reads/ind2.L1_R2_001.fastq.gz
+ind2    L1    L1_2     reads/ind2.L1_R1_002.fastq.gz    reads/ind2.L1_R2_001.fastq.gz
+ind2    L2    L2_1     reads/ind2.L2_R1_002.fastq.gz    NULL
 ```
 
-In the first example, four fastq files will be mapped. They were generated from two different libraries (here, labelled as `L1` and `L2`) from a single sample (`ind1`). The reads will be mapped and retained if the mapping quality is above 30 (`MAPQ` column).
+In the first example, four fastq files will be mapped. They were generated from two different libraries (here, labelled as `L1` and `L2`) from a single sample (`ind1`).
 
 In the second example, there is still only one sample (`ind2`), and two libraries, sequenced in paired-end (`L1`) and single-end (`L2`) mode.
 
-The columns `SM`, `LB`, `ID` and `PL` will be used to annotate the header of the BAM files produced (SM, LB, RG and PL tags, respectively). 
-
-You can add more samples/libraries/fastq files in the input dataset by adding a new row including the 6 or 7 fields indicated above.
+You can add more samples/libraries/fastq files in the input dataset by adding a new row including the 4 or 5 fields indicated above.
 
 
 The columns of the sample file are:
@@ -122,10 +120,8 @@ The columns of the sample file are:
 - **Data** (single-end format)**:** Path to the fastq file. The file may be gzipped or not. Path may be absolute or relative to the working directory.
 - **Data1** (paired-end format)**:** Path to the forward fastq file (R1) for paired-end data or the fastq file for single-end data. The file may be gzipped or not. Path may be absolute or relative to the working directory.
 - **Data2** (paired-end format)**:** Path to the reverse fastq file (R2) for paired-end data or `NULL` for single-end data. The file may be gzipped or not. Path may be absolute or relative to the working directory.
-- **MAPQ:** Fastq-file specific mapping quality filtering threshold.
-- **PL:** Sequencing platform or any other text (single word) to annotate in the read group line `@RG` in the the bam file.
 
-👆🏿 Note that you can select any label you want for the columns SM, LB, ID and PL; that is, they do not need to match any substring or the name of your FASTQ files. However, we recommend that you stick to meaningful names (e.g.: Denisova, Mota, UstIshim, Anzick, lib1, lib2, lib3_USER, etc.) and ACII characters.
+👆🏿 Note that you can select any label you want for the columns SM, LB, and ID, but they may not contain points '.'. That is, they do not need to match any substring or the name of your FASTQ files (FASTQ file names may in contrast contain points). However, we recommend that you stick to meaningful names (e.g.: Denisova, Mota, UstIshim, Anzick, lib1, lib2, lib3_USER, etc.) and ACII characters.
 
 ## Adapt config file
 By default, mapache is configured to map ancient data to a human reference genome. You need to specify the path to the reference genome in FASTA format in the configuration file (`config/config.yaml`) provided by mapache.
@@ -139,29 +135,27 @@ In the example below, all the samples will be mapped to two versions of the huma
 
 ```
 genome: 
-    hg19: 
-        fasta: /path/to/hg19/genome/hs.build37.1/hs.build37.1.fa
-    GRCh38:
-        fasta: /path/to/GRCh38/genome/GCA_000001405.15_GRCh38.fa
+    GRCh37: path_to_reference/GRCh37.fasta
+    # GRCh38: path_to_reference/GCA_000001405.15_GRCh38.fa
 ```
 
 ### Enable/disable steps and specify memory and runtime
 Mapache will perform different steps (see below) in order to produce a BAM file. Most of the steps are optional, but run by default.
 
-The config file contains entries corresponding to each of the steps that can be run and customized. For example, the entry with the options for AdapterRemoval2 looks like this:
+The config file contains entries corresponding to each of the steps that can be run and customized. For example, the entry with the options to clean the fastq files looks like this:
 
 ```
-# adapter_removal (optional)
-adapterremoval:
-    run: True
+# fastq cleaning (optional)
+cleaning:
+    run: 'adapterremoval'   # options: adapterremoval (default), fastp, False
+    params_adapterremoval: '--minlength 30 --trimns --trimqualities'
+    params_fastp: ''
     threads: 4 
     mem: 4 ## in GB
     time: 2
-    params: '--minlength 30 --trimns --trimqualities'
-
 ```
 
-If you need to modify the pipeline (for instance, to ommit one step), you can set its option to `run: True` or `run: False` in the config file. Additionally, if you intend to run mapache on an HPC system, you can specify the number of `threads`, memory (`mem` in GB), and runtime (`time` in hours) to be allocated to each step. Finally, you can pass additional parameters to the tool to be executed (e.g. `--minlength 30` to AdapterRemoval2) with the keyword `params`.
+If you need to modify the pipeline, for instance to ommit the step step, you can set in the config file its option to `run: False`, or `run: 'adapterremovel'` and `run: 'fastp'` to run `AdapterRemoval2` and `fastp`, respectively. Additionally, if you intend to run mapache on an HPC system, you can specify the number of `threads`, memory (`mem` in GB), and runtime (`time` in hours) to be allocated to each step. Finally, you can pass additional parameters to the tool to be executed (e.g. `--minlength 30` to AdapterRemoval2) with the keyword `params_adapterremoval`.
 
 
 
@@ -301,31 +295,32 @@ snakemake -p -n                                          Print out the commands 
 
 #------------------------------------------
 # recommended workflow on a cluster (e.g. slurm)
-snakemake mapping --jobs 999 --profile slurm             Run all mappings and imputation (note that the profile has to be the last argument)
+snakemake --jobs 999 --profile slurm                     Run all mappings and imputation (note that the profile has to be the last argument)
 
 #------------------------------------------
 # recommended workflow on a single machine without a queuing system
-snakemake mapping --cores 16                            Run all mappings and imputation (assuming that you have 16 CPUs available)
+snakemake --cores 16                                     Run all mappings and imputation (assuming that you have 16 CPUs available)
 
 #------------------------------------------
 # Create report (after execution)
 
 snakemake --report report.html                           Create a html report 
-sed -i "s/'runtime': 0.0/'runtime': 0.1/g" report.html   Correct report
-OR
 snakemake --report report.zip                            Create a zip report; useful if you want to download the files by clicking on the HTML report
 
 #------------------------------------------
 # Options to control the execution.
 # Visit https://snakemake.readthedocs.io/en/stable/ for full documentation
 
---profile axiom                           To send it on the cluster (must be the last argument).
--R RULE_NAME                              Force a start at at least the given rule.
+--profile slurm                           To send it on the cluster (must be the last argument).
+-R RULE_NAME                              Force a start at least at the given rule.
 --until RULE_NAME                         Run until the given rule (included).
 --rerun-incomplete                        Re-run all jobs the output of which is recognized as incomplete.
---configfile FILE                         Define the config file (default config.yaml, this should one of the first arguments).
+--configfile FILE                         Define the config file (default config/config.yaml).
 -t                                        Reset the timestamp that the output is not re-computed.
--p                                        Print out the shell commands that will be executed. 
+-p                                        Print out the shell commands that will be executed.
+--rerun-triggers mtime                    for a rerun, consider only the time stamp (previously the default 
+                                          setting, now any change (code, config,..) lead to a rerun of 
+                                          the rule)
 ```
 
 ## Citing mapache

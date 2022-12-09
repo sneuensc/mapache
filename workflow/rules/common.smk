@@ -4,91 +4,87 @@
 ## get the path to the fastq file given sm, lb and id
 def get_fastq_of_ID(wc):
     # print(f"get_fastq_of_ID: {wc}")
-    if "_R1" == wc.id[-3:]:
-        filename = SAMPLES[wc.sm][wc.lb][wc.id[:-3]]["Data1"]
-    elif "_R2" == wc.id[-3:]:
-        filename = SAMPLES[wc.sm][wc.lb][wc.id[:-3]]["Data2"]
+    if "_R1" == wc.idd[-3:]:
+        filename = SAMPLES[wc.sm][wc.lb][wc.idd[:-3]]["Data1"]
+    elif "_R2" == wc.idd[-3:]:
+        filename = SAMPLES[wc.sm][wc.lb][wc.idd[:-3]]["Data2"]
     elif PAIRED_END:
         # elif PAIRED_END != 0:  ## SE library in a paired-end sample file
-        filename = SAMPLES[wc.sm][wc.lb][wc.id]["Data1"]
+        filename = SAMPLES[wc.sm][wc.lb][wc.idd]["Data1"]
     else:
-        filename = SAMPLES[wc.sm][wc.lb][wc.id]["Data"]
+        filename = SAMPLES[wc.sm][wc.lb][wc.idd]["Data"]
     return filename
 
 
-## get the fastq file(s) used for mapping (output is a list)
-def get_fastq_4_mapping(wc, rem_adapt=""):
-    # print(f"get_fastq_4_mapping: {wc}")
-    if rem_adapt == "":  ## if not set take the global setting
-        rem_adapt = run_adapter_removal
-
-    if rem_adapt:
-        folder = f"{wc.folder}/01_fastq/01_trimmed/01_adapter_removal/{wc.sm}/{wc.lb}"
-        if not PAIRED_END:
-            filename = [f"{folder}/{wc.id}.fastq.gz"]
-        elif COLLAPSE:
-            filename = [rules.adapter_removal_collapse.output.R]
-        else:
-            # if str(SAMPLES[wc.sm][wc.lb][wc.id]["Data2"]) == "nan":
-            data2 = recursive_get(
-                [wc.sm, wc.lb, wc.id, "Data2"],
-                "nan",
-                my_dict=SAMPLES,
-            )
-            if data2 != data2:
-                # single-end files
-                filename = [f"{folder}/{wc.id}.fastq.gz"]
-            else:
-                # paired-end files, not collapsing
-                filename = [
-                    f"{folder}/{wc.id}_R1.fastq.gz",
-                    f"{folder}/{wc.id}_R2.fastq.gz",
-                ]
+def get_fastq_4_cleaning(wc):
+    folder = f"{wc.folder}/01_fastq/00_reads/01_files_orig/{wc.sm}/{wc.lb}"
+    if is_paired_end(wc):
+        filename = [
+            f"{folder}/{wc.id}_R1.fastq.gz",
+            f"{folder}/{wc.id}_R2.fastq.gz",
+        ]
     else:
-        folder = f"{wc.folder}/01_fastq/00_reads/01_files_orig/{wc.sm}/{wc.lb}"
-        if not PAIRED_END:
-            filename = [f"{folder}/{wc.id}.fastq.gz"]
+        filename = [f"{folder}/{wc.id}.fastq.gz"]
+    return filename
+
+
+def get_cleaning_folder_extension(wc):
+    if is_collapse(wc):
+        folder = "collapse"
+    elif is_paired_end(wc):
+        folder = "pe"
+    else:
+        folder = "se"
+    return folder
+
+
+## get the fastq file(s) used for mapping (output is a list)
+def get_fastq_4_mapping(wc):
+    cleaning = get_paramGrp(
+        ["cleaning", "run"], ["adapterremoval", "fastp", "False"], wc
+    )
+    if cleaning == "adapterremoval":
+        folder = f"{wc.folder}/01_fastq/01_trimmed/01_adapterremoval"
+        if is_collapse(wc):
+            filename = [f"{folder}_collapse/{wc.sm}/{wc.lb}/{wc.id}.fastq.gz"]
+        elif is_paired_end(wc):
+            filename = [
+                f"{folder}_pe/{wc.sm}/{wc.lb}/{wc.id}_R1.fastq.gz",
+                f"{folder}_pe/{wc.sm}/{wc.lb}/{wc.id}_R2.fastq.gz",
+            ]
         else:
-            data2 = recursive_get(
-                [wc.sm, wc.lb, wc.id, "Data2"],
-                "nan",
-                my_dict=SAMPLES,
-            )
-            # checking a single-end file
-            if data2 != data2:
-                filename = [f"{folder}/{wc.id}.fastq.gz"]
-            else:
-                filename = [
-                    f"{folder}/{wc.id}_R1.fastq.gz",
-                    f"{folder}/{wc.id}_R2.fastq.gz",
-                ]
+            filename = [f"{folder}_se/{wc.sm}/{wc.lb}/{wc.id}.fastq.gz"]
+
+    elif cleaning == "fastp":
+        folder = f"{wc.folder}/01_fastq/01_trimmed/02_fastp"
+        if is_collapse(wc):
+            filename = [f"{folder}_collapse/{wc.sm}/{wc.lb}/{wc.id}.fastq.gz"]
+        elif is_paired_end(wc):
+            filename = [
+                f"{folder}_pe/{wc.sm}/{wc.lb}/{wc.id}_R1.fastq.gz",
+                f"{folder}_pe/{wc.sm}/{wc.lb}/{wc.id}_R2.fastq.gz",
+            ]
+        else:
+            filename = [f"{folder}_se/{wc.sm}/{wc.lb}/{wc.id}.fastq.gz"]
+
+    else:  ## no cleaning
+        filename = get_fastq_4_cleaning(wc)
     return filename
 
 
 ## fastqc may be run on the original or trimmed fastq files
 def inputs_fastqc(wc):
     if "trim" in wc.type:
-        return get_fastq_4_mapping(wc, True)
+        return get_fastq_4_mapping(wc)
     else:
-        return get_fastq_4_mapping(wc, False)
+        return get_fastq_4_cleaning(wc)
 
 
 ## get the bam file used for sorting
 def get_bam_4_sorting(wc):
     # print(f"get_bam_for_sorting: {wc}")
     if mapper == "bwa_aln":
-        if (
-            not COLLAPSE
-            # and str(SAMPLES[wc.sm][wc.lb][wc.id]["Data2"]) != "nan"
-            and str(
-                recursive_get(
-                    [wc.sm, wc.lb, wc.id, "Data2"],
-                    "nan",
-                    my_dict=SAMPLES,
-                )
-            )
-            != "nan"
-        ):
+        if is_paired_end(wc) and not is_collapse(wc):
             folder = "02_bwa_sampe"
         else:
             folder = "02_bwa_samse"
@@ -106,7 +102,7 @@ def get_bam_4_sorting(wc):
 
 ## get the final bam file of at the FASTQ level
 def get_final_bam_FASTQ(wc):
-    if run_filtering:
+    if str2bool(get_paramGrp(["filtering", "run"], ["True", "False"], wc)):
         file = f"{wc.folder}/01_fastq/03_filtered/01_bam_filter/{wc.sm}/{wc.lb}/{wc.id}.{wc.genome}.bam"
     else:
         file = f"{wc.folder}/01_fastq/02_mapped/03_bam_sort/{wc.sm}/{wc.lb}/{wc.id}.{wc.genome}.bam"
@@ -124,7 +120,7 @@ def get_final_bam_low_qual_FASTQ(wc):
 
 ## get the bam file(s) to be merged
 def get_bam_4_merge_bam_fastq2library(wc):
-    return [        
+    return [
         get_final_bam_FASTQ(Wildcards(wc, {"id": id})) for id in SAMPLES[wc.sm][wc.lb]
     ]
 
@@ -139,9 +135,8 @@ def get_bam_4_merge_bam_low_qual_fastq2library(wc):
 ## get the (merged) bam file
 def get_merged_bam_LB(wc):
     bam = get_bam_4_merge_bam_fastq2library(wc)
-    if (
-        len(bam) > 1
-    ):  ## library consits of more than one fastq file: return 00_merged_fastq
+    ## library consits of more than one fastq file: return 00_merged_fastq
+    if len(bam) > 1:
         return f"{wc.folder}/02_library/00_merged_fastq/01_bam/{wc.sm}/{wc.lb}.{wc.genome}.bam"
     else:  ## library consits of one fastq file: return return the location of the final library bam file
         return bam[0]
@@ -149,9 +144,8 @@ def get_merged_bam_LB(wc):
 
 def get_merged_bam_low_qual_LB(wc):
     bam = get_bam_4_merge_bam_low_qual_fastq2library(wc)
-    if (
-        len(bam) > 1
-    ):  ## library consits of more than one fastq file: return 00_merged_fastq
+    ## library consits of more than one fastq file: return 00_merged_fastq
+    if len(bam) > 1:
         return f"{wc.folder}/02_library/00_merged_fastq/01_bam_low_qual/{wc.sm}/{wc.lb}.{wc.genome}.bam"
     else:  ## library consits of one fastq file: return return the location of the final library bam file
         return bam[0]
@@ -163,22 +157,41 @@ def get_bam_4_markduplicates(wc):
 
 
 ## get the bam file used to compte the damage
-def get_bam_4_damage(wc):
-    if remove_duplicates == "markduplicates":
+def get_bam_4_damage_rescale(wc):
+    rm_duplicates = get_paramGrp(
+        ["remove_duplicates", "run"], ["markduplicates", "dedup", "False"], wc
+    )
+    if rm_duplicates == "markduplicates":
         bam = f"{wc.folder}/02_library/01_duplicated/01_markduplicates/{wc.sm}/{wc.lb}.{wc.genome}.bam"
-    elif remove_duplicates == "dedup":
+    elif rm_duplicates == "dedup":
+        ## use only on collapsed paired-end reads
+        if not is_collapse(wc):
+            LOGGER.warning(
+                f"WARNING: DeDup should only be run on collapsed paired-end reads (SAMPLES[{wc.sm}][{wc.lb}])."
+            )
         bam = f"{wc.folder}/02_library/01_duplicated/01_dedup/{wc.sm}/{wc.lb}.{wc.genome}.bam"
     else:
         bam = get_bam_4_markduplicates(wc)
     return bam
 
 
-## get the final bam files at the library level
-def get_final_bam_LB(wc):
-    if run_damage_rescale:
+## get the bam file used to trim the read ends with BamUtil
+def get_bam_4_bamutil(wc):
+    if str2bool(get_paramGrp(["damage_rescale", "run"], ["False", "True"], wc)):
         file = f"{wc.folder}/02_library/02_rescaled/01_mapDamage/{wc.sm}/{wc.lb}.{wc.genome}.bam"
     else:
-        file = get_bam_4_damage(wc)
+        file = get_bam_4_damage_rescale(wc)
+    return file
+
+
+## get the final bam files at the library level
+def get_final_bam_LB(wc):
+    if str2bool(get_paramGrp(["bamutil", "run"], ["False", "True"], wc)):
+        file = (
+            f"{wc.folder}/02_library/03_trim/01_bamutil/{wc.sm}/{wc.lb}.{wc.genome}.bam"
+        )
+    else:
+        file = get_bam_4_bamutil(wc)
     return file
 
 
@@ -258,8 +271,8 @@ def get_damage_output():
     if run_damage == "bamdamage":
         files = [
             f"{RESULT_DIR}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}.{type}.{ext}"
-            for sm in SAMPLES
-            for lb in SAMPLES[sm]
+            for sm, smVals in SAMPLES.items()
+            for lb in smVals
             for type in ["dam", "length"]
             for ext in ["pdf", "svg"]
             for genome in GENOMES
@@ -267,8 +280,8 @@ def get_damage_output():
     elif run_damage == "mapDamage":
         files = [
             f"{{RESULT_DIR}}/04_stats/01_sparse_stats/02_library/04_mapDamage/{sm}/{lb}.{genome}_results_mapDamage/Fragmisincorporation_plot.pdf"
-            for sm in SAMPLES
-            for lb in SAMPLES[sm]
+            for sm, smVals in SAMPLES.items()
+            for lb in smVals
             for genome in GENOMES
         ]
     else:  ## if False
@@ -283,15 +296,15 @@ def path_stats_by_level(wc):
     if wc.level == "FASTQ":
         paths = [
             f"{wc.folder}/04_stats/02_separate_tables/{wc.genome}/{sm}/{lb}/{id}/fastq_stats.csv"
-            for sm in SAMPLES
-            for lb in SAMPLES[sm]
-            for id in SAMPLES[sm][lb]
+            for sm, smVals in SAMPLES.items()
+            for lb, lbVals in smVals.items()
+            for id in lbVals
         ]
     elif wc.level == "LB":
         paths = [
             f"{wc.folder}/04_stats/02_separate_tables/{wc.genome}/{sm}/{lb}/library_stats.csv"
-            for sm in SAMPLES
-            for lb in SAMPLES[sm]
+            for sm, smVals in SAMPLES.items()
+            for lb in smVals
         ]
     elif wc.level == "SM":
         paths = [
@@ -342,9 +355,7 @@ def get_bam_file(wc):
 
 ## sex may be infered at teh sample or/and library level
 def get_sex_file(wc):
-    if str2bool(
-        recursive_get_and_test(["sex_inference", wc.genome, "run"], ["False", "True"])
-    ):
+    if str2bool(get_param(["sex_inference", wc.genome, "run"], ["False", "True"])):
         return f"{wc.folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{wc.sm}.{wc.genome}_sex.txt"
     else:
         return f"{wc.folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{wc.sm}.{wc.genome}_nosex.txt"
@@ -405,15 +416,19 @@ def get_stat_plot_files():
 def get_fastqc_files():
     fastqc = [
         f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{sm}/{lb}/{id}_fastqc.zip"
-        for sm in SAMPLES
-        for lb in SAMPLES[sm]
-        for id in SAMPLES[sm][lb]
+        for sm, smVals in SAMPLES.items()
+        for lb, lbVals in smVals.items()
+        for id in lbVals
     ] + [
         f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}_fastqc.zip"
-        for sm in SAMPLES
-        for lb in SAMPLES[sm]
-        for id in SAMPLES[sm][lb]
-        if run_adapter_removal
+        for sm, smVals in SAMPLES.items()
+        for lb, lbVals in smVals.items()
+        for id in lbVals
+        if get_paramGrp(
+            ["adapterremoval", "run"],
+            ["True", "False"],
+            Wildcards(fromdict={"id": id, "lb": lb, "sm": sm}),
+        )
     ]
     return fastqc
 
@@ -422,9 +437,9 @@ def get_samtools_stats_files():
     samtools_stats = [
         f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}_stats.txt"
         for genome in GENOMES
-        for sm in SAMPLES
-        for lb in SAMPLES[sm]
-        for id in SAMPLES[sm][lb]
+        for sm, smVals in SAMPLES.items()
+        for lb, lbVals in smVals.items()
+        for id in lbVals
         for file in [
             f"01_fastq/04_final_fastq/01_bam/{sm}/{lb}/{id}.{genome}",
             f"02_library/03_final_library/01_bam/{sm}/{lb}.{genome}",
@@ -438,9 +453,9 @@ def get_length_files():
     lengths = [
         f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}_length.txt"
         for genome in GENOMES
-        for sm in SAMPLES
-        for lb in SAMPLES[sm]
-        for id in SAMPLES[sm][lb]
+        for sm, smVals in SAMPLES.items()
+        for lb, lbVals in smVals.items()
+        for id in lbVals
         for file in [
             f"01_fastq/04_final_fastq/01_bam/{sm}/{lb}/{id}.{genome}",
             f"02_library/03_final_library/01_bam/{sm}/{lb}.{genome}",
@@ -463,8 +478,8 @@ def get_idxstats_files():
     idxstats = [
         f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}_idxstats.txt"
         for genome in GENOMES
-        for sm in SAMPLES
-        for lb in SAMPLES[sm]
+        for sm, smVals in SAMPLES.items()
+        for lb in smVals
         for file in [
             f"02_library/03_final_library/01_bam/{sm}/{lb}.{genome}",
             f"03_sample/03_final_sample/01_bam/{sm}.{genome}",
@@ -488,7 +503,7 @@ def get_sex_files():
     for genome in GENOMES:
         ext = (
             "sex"
-            if str2bool(recursive_get(["sex_inference", genome, "run"], "False"))
+            if str2bool(get_param(["sex_inference", genome, "run"], "False"))
             else "nosex"
         )
 
@@ -511,16 +526,22 @@ def get_multiqc_files():
 def get_imputation_files():
     files = []
     for genome in GENOMES:
-        if str2bool(recursive_get_and_test(["imputation", genome, "run"], ["False", "True"])):
-            files = files + [
-                f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/{sm}.{genome}_gp{GP}.{ext}"
-                for sm in SAMPLES
-                for GP in str2list(recursive_get(["imputation", genome, "gp_filter"], "[0.8]"))
-                for ext in ["bcf", "bcf.csi"]
-            ] + [
-                f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}.{genome}_gp.txt"
-                for sm in SAMPLES
-            ]
+        if str2bool(get_param(["imputation", genome, "run"], ["False", "True"])):
+            files = (
+                files
+                + [
+                    f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/{sm}.{genome}_gp{GP}.{ext}"
+                    for sm in SAMPLES
+                    for GP in str2list(
+                        get_param(["imputation", genome, "gp_filter"], "[0.8]")
+                    )
+                    for ext in ["bcf", "bcf.csi"]
+                ]
+                + [
+                    f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}.{genome}_gp.txt"
+                    for sm in SAMPLES
+                ]
+            )
     return files
 
 
@@ -528,23 +549,29 @@ def get_imputation_files_external():
     samples_ = [sm for gen in EXTERNAL_SAMPLES for sm in EXTERNAL_SAMPLES[gen]]
     files = []
     for genome in GENOMES:
-        if str2bool(recursive_get_and_test(["imputation", genome, "run"], ["False", "True"])):
-            files = files + [
-                f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/{sm}.{genome}_gp{GP}.{ext}"
-                for sm in samples_
-                for GP in str2list(recursive_get(["imputation", genome, "gp_filter"], "[0.8]"))
-                for ext in ["bcf", "bcf.csi"]
-            ] + [
-                f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}.{genome}_gp.txt"
-                for sm in samples_
-            ]
+        if str2bool(get_param(["imputation", genome, "run"], ["False", "True"])):
+            files = (
+                files
+                + [
+                    f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/{sm}.{genome}_gp{GP}.{ext}"
+                    for sm in samples_
+                    for GP in str2list(
+                        get_param(["imputation", genome, "gp_filter"], "[0.8]")
+                    )
+                    for ext in ["bcf", "bcf.csi"]
+                ]
+                + [
+                    f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}.{genome}_gp.txt"
+                    for sm in samples_
+                ]
+            )
     return files
 
 
 def get_imputation_plots():
     files = []
     for genome in GENOMES:
-        if str2bool(recursive_get_and_test(["imputation", genome, "run"], ["False", "True"])):
+        if str2bool(get_param(["imputation", genome, "run"], ["False", "True"])):
             files = files + [
                 f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}.{genome}_gp.svg"
                 for sm in SAMPLES
@@ -556,9 +583,148 @@ def get_imputation_plots_external():
     samples_ = [sm for gen in EXTERNAL_SAMPLES for sm in EXTERNAL_SAMPLES[gen]]
     files = []
     for genome in GENOMES:
-        if str2bool(recursive_get_and_test(["imputation", genome, "run"], ["False", "True"])):
+        if str2bool(get_param(["imputation", genome, "run"], ["False", "True"])):
             files = files + [
                 f"{RESULT_DIR}/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}.{genome}_gp.svg"
                 for sm in samples_
+            ]
+    return files
+
+
+#################################################################################################################
+## multiqc input files
+def get_files_4_multiqc(wc):
+    files = []
+
+    ## fastqc original
+    files += [
+        f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{sm}/{lb}/{id}_fastqc.zip"
+        for sm, smVals in SAMPLES.items()
+        for lb, lbVals in smVals.items()
+        for id in lbVals
+    ]
+
+    ## adapterremoval
+    files += [
+        f"{RESULT_DIR}/01_fastq/01_trimmed/01_adapterremoval_{get_cleaning_folder_extension(Wildcards(fromdict={'id': id, 'lb': lb, 'sm': sm}))}/{sm}/{lb}/{id}.settings"
+        for sm, smVals in SAMPLES.items()
+        for lb, lbVals in smVals.items()
+        for id in lbVals
+        if get_paramGrp(
+            ["cleaning", "run"],
+            ["adapterremoval", "fastp", "False"],
+            Wildcards(fromdict={"id": id, "lb": lb, "sm": sm}),
+        )
+        == "adapterremoval"
+    ]
+
+    ## fastp
+    files += [
+        f"{RESULT_DIR}/01_fastq/01_trimmed/01_fastp_{get_cleaning_folder_extension(Wildcards(fromdict={'id': id, 'lb': lb, 'sm': sm}))}/{sm}/{lb}/{id}.json"
+        for sm, smVals in SAMPLES.items()
+        for lb, lbVals in smVals.items()
+        for id in lbVals
+        if get_paramGrp(
+            ["cleaning", "run"],
+            ["adapterremoval", "fastp", "False"],
+            Wildcards(fromdict={"id": id, "lb": lb, "sm": sm}),
+        )
+        == "fastp"
+    ]
+
+    ## fastqc trim
+    files += [
+        f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_adapterremoval_{get_cleaning_folder_extension(Wildcards(fromdict={'id': id, 'lb': lb, 'sm': sm}))}/{sm}/{lb}/{id}_fastqc.zip"
+        for sm, smVals in SAMPLES.items()
+        for lb, lbVals in smVals.items()
+        for id in lbVals
+        if get_paramGrp(
+            ["cleaning", "run"],
+            ["adapterremoval", "fastp", "False"],
+            Wildcards(fromdict={"id": id, "lb": lb, "sm": sm}),
+        )
+        == "adapterremoval"
+    ] + [
+        f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_fastp_{get_cleaning_folder_extension(Wildcards(fromdict={'id': id, 'lb': lb, 'sm': sm}))}/{sm}/{lb}/{id}_fastqc.zip"
+        for sm, smVals in SAMPLES.items()
+        for lb, lbVals in smVals.items()
+        for id in lbVals
+        if get_paramGrp(
+            ["cleaning", "run"],
+            ["adapterremoval", "fastp", "False"],
+            Wildcards(fromdict={"id": id, "lb": lb, "sm": sm}),
+        )
+        == "fastp"
+    ]
+
+    ## samtools_stats at final fastq bam
+    files += [
+        f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{sm}/{lb}/{id}.{wc.genome}_stats.txt"
+        for sm, smVals in SAMPLES.items()
+        for lb, lbVals in smVals.items()
+        for id in lbVals
+    ]
+
+    ## picard markduplicates
+    files += [
+        f"{RESULT_DIR}/02_library/01_duplicated/01_markduplicates/{sm}/{lb}.{wc.genome}.stats"
+        for sm, smVals in SAMPLES.items()
+        for lb, lbVals in smVals.items()
+        for id in lbVals
+    ]
+
+    ## samtools_stats at final library bam
+    files += [
+        f"{RESULT_DIR}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{sm}/{lb}.{wc.genome}_stats.txt"
+        for sm, smVals in SAMPLES.items()
+        for lb, lbVals in smVals.items()
+        for id in lbVals
+    ]
+
+    ## samtools_stats at fineal bam file
+    files += [
+        f"{RESULT_DIR}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{sm}.{wc.genome}_stats.txt"
+        for sm, smVals in SAMPLES.items()
+        for lb, lbVals in smVals.items()
+        for id in lbVals
+    ]
+
+    ## qualimap at final bam file
+    files += [
+        f"{RESULT_DIR}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{sm}.{wc.genome}_qualimap"
+        for sm, smVals in SAMPLES.items()
+        for lb, lbVals in smVals.items()
+        for id in lbVals
+        for files in ["genome_results.txt", "raw_data_qualimapReport"]
+        if str2bool(get_param(["stats", "qualimap"], False))
+    ]
+
+    return files
+
+
+## return all files containing version information
+def get_version_file_of_tools():
+    ## extract tools form the conda environment file
+    filename = "config/mapache-env.yaml"
+    tools = []
+    with open(filename) as file:
+        for line in file:
+            if "dependencies" in line:
+                for line in file:
+                    if (
+                        "r-" not in line
+                        and "charset-normalizer" not in line
+                        and "mamba" not in line
+                    ):
+                        tools.append(
+                            line.strip()
+                            .replace("- ", "")
+                            .replace("-bio", "")
+                            .split("=")[0]
+                        )
+
+    files = [
+        f"{RESULT_DIR}/04_stats/02_separate_tables/software/{tool}.txt"
+        for tool in tools
     ]
     return files

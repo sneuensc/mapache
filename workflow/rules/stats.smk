@@ -151,7 +151,7 @@ rule read_length:
             ["stats", "read_length"], attempt, 2
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
-            ["stats", "read_length"], attempt, 1
+            ["stats", "read_length"], attempt, 2
         ),
     log:
         "{folder}/04_stats/01_sparse_stats/{file}.{genome}_length.log",
@@ -212,7 +212,7 @@ rule assign_sex:
         sex_params=lambda wildcards: " ".join(
             [
                 f"--{key}='{value}'"
-                for key, value in recursive_get(
+                for key, value in get_param(
                     ["sex_inference", wildcards.genome, "params"], {}
                 ).items()
             ]
@@ -254,8 +254,8 @@ rule assign_no_sex:
 rule merge_stats_per_fastq:
     input:
         fastqc_orig="{folder}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{sm}/{lb}/{id}_fastqc.zip",  # raw sequenced reads
-        fastqc_trim="{folder}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}_fastqc.zip"
-        if run_adapter_removal
+        fastqc_trim=lambda wildcards: "{folder}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}_fastqc.zip"
+        if get_paramGrp(["adapterremoval", "run"], ["True", "False"], wildcards)
         else "{folder}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{sm}/{lb}/{id}_fastqc.zip",
         stats_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{sm}/{lb}/{id}.{genome}_stats.txt",  # mapped and high-qual reads
         length_fastq_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{sm}/{lb}/{id}.{genome}_length.txt",
@@ -298,16 +298,13 @@ rule merge_stats_per_lb:
         ),
         stats_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{sm}/{lb}.{genome}_stats.txt",
         length_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{sm}/{lb}.{genome}_length.txt",
-        #genomecov_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{sm}/{lb}.{genome}_genomecov.txt",
         idxstats_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{sm}/{lb}.{genome}_idxstats.txt",
     output:
         "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/library_stats.csv",
     params:
         chrs_selected=lambda wildcards: ",".join(
             to_list(
-                recursive_get(
-                    ["depth", wildcards.genome, "chromosomes"], "not_requested"
-                )
+                get_param(["depth", wildcards.genome, "chromosomes"], "not_requested")
             )
         ),
         script=workflow.source_path("../scripts/merge_stats_per_LB.R"),
@@ -345,11 +342,9 @@ rule merge_stats_per_lb:
 
 def get_chroms(wildcards):
     chrs_selected = (
-        to_list(
-            recursive_get(["depth", wildcards.genome, "chromosomes"], "not_requested")
-        ),
+        to_list(get_param(["depth", wildcards.genome, "chromosomes"], "not_requested")),
     )
-    print(chrs_selected)
+    # print(chrs_selected)
     return chrs_selected
 
 
@@ -368,9 +363,7 @@ rule merge_stats_per_sm:
     params:
         chrs_selected=lambda wildcards: ",".join(
             to_list(
-                recursive_get(
-                    ["depth", wildcards.genome, "chromosomes"], "not_requested"
-                )
+                get_param(["depth", wildcards.genome, "chromosomes"], "not_requested")
             )
         ),
         #chrs_selected=get_chroms,
@@ -554,8 +547,8 @@ rule bamdamage:
     message:
         "--- RUN BAMDAMAGE {input.bam}"
     params:
-        params=recursive_get(["damage", "bamdamage_params"], ""),
-        fraction=recursive_get(["damage", "bamdamage_fraction"], 0),
+        params=get_param(["damage", "bamdamage_params"], ""),
+        fraction=get_param(["damage", "bamdamage_fraction"], 0),
         script=workflow.source_path("../scripts/bamdamage"),
     log:
         "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}_bamdamage.log",
@@ -609,7 +602,7 @@ rule plot_bamdamage:
         "--- PLOT DAMAGE"
     params:
         script=workflow.source_path("../scripts/plot_bamdamage.R"),
-        params=recursive_get(["stats", "bamdamage_params"], ""),
+        params=get_param(["stats", "bamdamage_params"], ""),
     log:
         "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}_plot.log",
     conda:
@@ -697,12 +690,12 @@ rule plot_summary_statistics:
         "--- PLOT SUMMARY STATISTICS"
     params:
         script=workflow.source_path("../scripts/plot_stats.R"),
-        x_axis=recursive_get(["stats", "plots", "x_axis"], "auto"),
-        n_col=recursive_get(["stats", "plots", "n_col"], 1),
-        width=recursive_get(["stats", "plots", "width"], 11),
-        height=recursive_get(["stats", "plots", "height"], 7),
-        color=recursive_get(["stats", "plots", "color"], "blue"),
-        sex_ribbons=recursive_get(
+        x_axis=get_param(["stats", "plots", "x_axis"], "auto"),
+        n_col=get_param(["stats", "plots", "n_col"], 1),
+        width=get_param(["stats", "plots", "width"], 11),
+        height=get_param(["stats", "plots", "height"], 7),
+        color=get_param(["stats", "plots", "color"], "blue"),
+        sex_ribbons=get_param(
             ["stats", "plots", "sex_ribbons"], 'c("XX"="red","XY"="blue")'
         ).replace("=", "?"),
         sex_thresholds=get_sex_threshold_plotting(),
@@ -761,78 +754,25 @@ rule multiqc:
     Running multiqc
     """
     input:
-        orig=lambda wildcards: [
-            f"{{folder}}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{sm}/{lb}/{id}_fastqc.zip"
-            for sm in SAMPLES
-            for lb in SAMPLES[sm]
-            for id in SAMPLES[sm][lb]
-        ],
-        adaptRem=lambda wildcards: [
-            f"{{folder}}/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}.settings"
-            for sm in SAMPLES
-            for lb in SAMPLES[sm]
-            for id in SAMPLES[sm][lb]
-            if run_adapter_removal
-        ],
-        trim=lambda wildcards: [
-            f"{{folder}}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}_fastqc.zip"
-            for sm in SAMPLES
-            for lb in SAMPLES[sm]
-            for id in SAMPLES[sm][lb]
-            if run_adapter_removal
-        ],
-        samtools_stats1=lambda wildcards: [
-            f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{sm}/{lb}/{id}.{genome}_stats.txt"
-            for genome in GENOMES
-            for sm in SAMPLES
-            for lb in SAMPLES[sm]
-            for id in SAMPLES[sm][lb]
-        ],
-        picard=lambda wildcards: [
-            f"{RESULT_DIR}/02_library/01_duplicated/01_markduplicates/{sm}/{lb}.{genome}.stats"
-            for genome in GENOMES
-            for sm in SAMPLES
-            for lb in SAMPLES[sm]
-            for id in SAMPLES[sm][lb]
-        ],
-        samtools_stats2=lambda wildcards: [
-            f"{RESULT_DIR}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{sm}/{lb}.{genome}_stats.txt"
-            for genome in GENOMES
-            for sm in SAMPLES
-            for lb in SAMPLES[sm]
-            for id in SAMPLES[sm][lb]
-        ],
-        samtools_stats3=lambda wildcards: [
-            f"{RESULT_DIR}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{sm}.{genome}_stats.txt"
-            for genome in GENOMES
-            for sm in SAMPLES
-            for lb in SAMPLES[sm]
-            for id in SAMPLES[sm][lb]
-        ],
-        qualimap=lambda wildcards: [
-            f"{RESULT_DIR}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{sm}.{genome}_qualimap"
-            for genome in GENOMES
-            for sm in SAMPLES
-            for lb in SAMPLES[sm]
-            for id in SAMPLES[sm][lb]
-            for files in ["genome_results.txt", "raw_data_qualimapReport"]
-            if str2bool(recursive_get(["stats", "qualimap"], False))
-        ],
-        sample_stats=f"{RESULT_DIR}/04_stats/03_summary/SM_stats.csv"
+        SM="{folder}/04_stats/03_summary/SM_stats.{genome}.csv",
+        LB="{folder}/04_stats/03_summary/LB_stats.{genome}.csv",
+        FASTQ="{folder}/04_stats/03_summary/FASTQ_stats.{genome}.csv",
+        files=get_files_4_multiqc,
     output:
         html=report(
             "{folder}/04_stats/02_separate_tables/{genome}/multiqc_mapache.html",
-            category=" Quality control",
+            category="MultiQC",
         ),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
-            ["stats", "multiqc"], attempt, 2
+            ["stats", "multiqc"], attempt, 4
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
             ["stats", "multiqc"], attempt, 1
         ),
     params:
         config="workflow/report/multiqc_config.yaml",
+        resultdir=RESULT_DIR,
     log:
         "{folder}/04_stats/02_separate_tables/{genome}/multiqc_mapache.log",
     conda:
@@ -840,10 +780,29 @@ rule multiqc:
     envmodules:
         module_multiqc,
     message:
-        "--- MULTIQC fastqc of {genome}"
+        "--- MULTIQC of {genome}"
     shell:
         """
-        multiqc -c {params.config} -n $(basename {output.html}) -f -d -o \
-            $(dirname {output.html}) {input}  \
-            --title 'Mapache report (genome {wildcards.genome})' 2> {log}
+        ## adapt the summary stat tables for multiqc
+        SM={input.SM};
+        SM2=${{SM%%.csv}}_mqc.csv;
+        LB={input.LB};
+        LB2=${{LB%%.csv}}_mqc.csv;
+        FASTQ={input.FASTQ};
+        FASTQ2=${{FASTQ%%.csv}}_mqc.csv;
+        awk -F "," -v OFS="," '{{$3=$2"/"$3"/"$4; $1=$2=""; print substr($0,3)}}' $FASTQ > $FASTQ2;
+        awk -F "," -v OFS="," '{{$2=$2"/"$3; $1=""; print substr($0,2)}}' $LB > $LB2;
+        awk -F "," -v OFS="," '{{$1=""; print substr($0,2)}}' $SM > $SM2;
+
+        ## run mutliqc
+        multiqc -c {params.config} \
+                -f \
+                -n $(basename {output.html}) \
+                -o $(dirname {output.html}) \
+                --title 'Mapache report (genome {wildcards.genome})' \
+                --cl-config "extra_fn_clean_trim: ['{params.resultdir}']" \
+                {input.files} $SM2 $LB2 $FASTQ2 2> {log};
+
+        ## delete the temp files
+        rm -f $SM2 $LB2 $FASTQ2;
         """
