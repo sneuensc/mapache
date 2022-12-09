@@ -183,6 +183,8 @@ stats:
     
     # Output qualimap and multiqc reports?
     qualimap: True
+    qualimap_mem: 8
+    
     multiqc: True
     
     # specific to plots in the html report
@@ -218,7 +220,7 @@ damage:
     # This step can take a lot of time. We recommend to run it on a small subset of the mapped
     # reads in order to get an estimate of the damage. The value can be an integer (number of reads)
     # or a float (fraction of mapped reads)
-    bamdamage_params: ' --rlength 100 --plot_length 30'
+    bamdamage_params: ' --rlength 150 --plot_length 30'
     # This parameter indicates that the estimation will be done with the first 100 bp of each read
     # and the plots will include the first and last 30 bp.
 
