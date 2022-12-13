@@ -2,18 +2,8 @@
 
 
 # -----------------------------------------------------------------------------#
-# Each GLIMPSE_phase step runs in about 1 minute (human GENOMES and defaults at least).
-# Run at most n = num_imputations commands in one job
-# Reasoning:
-#   The human GENOMES is broken in approx. 2000 chunks.
-#   GLIMPSE_phase is run for each block.
-#   Unfortunately, snakemake might take a long time to infer the DAG with so many jobs.
-#   2000 jobs is still fine for 1 individual, but if imputating more individuals it might be worth
-#   to group a few GLIMPSE_phase commands in a single job, as they are usually fast (1-2 minutes each)
 for genome in GENOMES:
     if str2bool(get_param(["imputation", genome, "run"], ["False", "True"])):
-        num_imputations = int(get_param(["imputation", genome, "num_imputations"], 1))
-
         # Imputation will be run by default on all chromosomes. The paramter below allow to select a subset of chromosomes.
         chromosomes = to_str(
             to_list(get_param(["imputation", genome, "chromosomes"], []))
