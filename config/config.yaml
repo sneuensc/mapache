@@ -101,6 +101,7 @@ mapping:
     bwa_sampe_params: ''
     bwa_mem_params: ''
     bowtie2_params: ''
+    pl: 'ILLUMINA'
     threads: 4
     mem: 16
     time: 30
@@ -259,9 +260,6 @@ sex_inference:
 imputation:
     hg19:
         run: False
-
-        num_imputations: 2
-
         ## The imputation is done using the first named reference genome 'genome/{name}/fasta'
         gp_filter: [0.8]
 
