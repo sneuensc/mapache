@@ -56,7 +56,7 @@ You will mostly interact with mapache through its **configuration file** (`confi
 
 ## Installation
 
-```
+```bash
 #--------------------------------------------------------------#
 ## create mamba environment
 conda create -n base-mamba -c conda-forge mamba
@@ -89,7 +89,7 @@ A samples file for the test dataset is provided (`config/samples.tsv`). If you w
 
 Example of a sample file for single-end libraries:
 
-```
+```yaml
 SM      LB    ID       Data
 ind1    L1    L1_1     reads/ind1.L1_R1_001.fastq.gz
 ind1    L1    L1_2     reads/ind1.L1_R1_002.fastq.gz
@@ -99,7 +99,7 @@ ind1    L2    L2_2     reads/ind1.L2_R1_002.fastq.gz
 
 Example of a sample file for paired-end and single-end libraries:
 
-```
+```yaml
 SM      LB    ID       Data1                            Data2
 ind2    L1    L1_1     reads/ind2.L1_R1_001.fastq.gz    reads/ind2.L1_R2_001.fastq.gz
 ind2    L1    L1_2     reads/ind2.L1_R1_002.fastq.gz    reads/ind2.L1_R2_001.fastq.gz
@@ -133,7 +133,7 @@ The path to the genome in FASTA format should be indicated with the keyword `fas
 
 In the example below, all the samples will be mapped to two versions of the human genome. The final BAM files will be named with the format `{sample_ID}.{genome_name}.bam` (e.g., ind1.hg19.bam, ind1.GRCh38.bam).
 
-```
+```yaml
 genome: 
     GRCh37: path_to_reference/GRCh37.fasta
     # GRCh38: path_to_reference/GCA_000001405.15_GRCh38.fa
@@ -144,7 +144,7 @@ Mapache will perform different steps (see below) in order to produce a BAM file.
 
 The config file contains entries corresponding to each of the steps that can be run and customized. For example, the entry with the options to clean the fastq files looks like this:
 
-```
+```yaml
 # fastq cleaning (optional)
 cleaning:
     run: 'adapterremoval'   # options: adapterremoval (default), fastp, False
@@ -169,7 +169,7 @@ To run mapache on your working directory, you will need to copy or create symbol
 
 Assuming that you are in the mapache directory, you can use the next lines to create an alias to copy or symlink those directories. You can adjust it by including only the directories that you want to copy/symlink.
 
-```
+```bash
 # alias to cp directories
  echo "alias copy_mapache='cp -r $(pwd -P)/{config,workflow,test_data,slurm} . ' " >> ~/.bash_profile
 # alias to symlink directories
@@ -196,7 +196,7 @@ as well as the paths listed in samples.tsv  are properly specified
 ## Dry run
 
 We highly recommend to make use of dry runs to get an idea of the jobs that will be executed.
-```
+```bash
 # print jobs to be executed
 snakemake -pn
 # Visualization of the pipeline in a directed acyclic graph (DAG).
@@ -205,7 +205,7 @@ snakemake dag --dag | dot -Tpng > dag.png
 
 The command below will produce a figure with the rules that will be run. 
 
-```
+```bash
 snakemake --rulegraph |dot -Tpng > rulegraph.png
 ```
 
@@ -234,7 +234,7 @@ mapache can be run locally by indicating the number of cores available or with a
 
 Example of execution using only one CPU:
 
-```
+```bash
 snakemake --cores 1
 ```
 
@@ -250,7 +250,7 @@ If you work on an HPC system managed by slurm, you can use the slurm profile in 
 
 Example of a submission of 999 jobs (simoultaneously) with the slurm profile:
 
-```
+```bash
 snakemake --jobs 999 --profile slurm
 ```
 
@@ -259,21 +259,20 @@ snakemake --jobs 999 --profile slurm
 The template using to produce the html report will change depending on the version of Snakemake that you are using with `mapache`. Although we try to include one of the most recent distributions of Snakemake, we think that the template used in older versions is more useful to navigate through the results in the report. We thus recommend you to create a new environment with conda or mamba to create such report:
 
 
-```
+```bash
 mamba create -n snakemake610 snakemake=6.10.0
-
 mamba activate snakemake610
 ```
 
 Once you have activated the new environment, creating the report is straightforward:
 
-```
+```bash
 snakemake --report report.zip
 ```
 
 or
 
-```
+```bash
 snakemake --report report.html
 ```
 
@@ -284,7 +283,7 @@ Explore the [zipped report](https://github.com/sneuensc/mapache/wiki/report/repo
 
 ## Summary of useful commands
 
-```
+```bash
 #------------------------------------------
 # Get an idea of the jobs that will be executed. Not mandatory but very useful to spot possible mistakes in the configuration or input files
 
@@ -324,10 +323,7 @@ snakemake --report report.zip                            Create a zip report; us
 ```
 
 ## Citing mapache
-If you use mapache for your study, please refer to mapache's repository on github (https://github.com/sneuensc/mapache), its preprint and the tools that you used within mapache. See the table below for a list of tools used at each step.
-
-Preprint: 
-> Neuenschwander et al. (2022) arXiv.org (https://doi.org/10.48550/arXiv.2208.13283 / [pdf](https://arxiv.org/pdf/2208.13283))
+If you use mapache for your study, please refer to mapache's repository on github (https://github.com/sneuensc/mapache), its preprint ([Neuenschwander et al. (2022) arXiv.org](https://doi.org/10.48550/arXiv.2208.13283)) and the tools that you used within mapache. See the table below for a list of tools used at each step.
 
 ## Tools included in mapache
 <table class=" lightable-minimal" style="font-family: &quot;Trebuchet MS&quot;, verdana, sans-serif; margin-left: auto; margin-right: auto;">
