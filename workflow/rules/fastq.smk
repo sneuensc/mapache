@@ -63,7 +63,7 @@ rule get_fasta:
 ## trimming
 
 
-rule adapter_removal_collapse:
+rule adapterremoval_collapse:
     """
     Remove adapter and low quality bases at the edges and collapse paired-end reads
     """
@@ -183,7 +183,7 @@ rule adapter_removal_pe:
         """
 
 
-rule adapter_removal_se:
+rule adapterremoval_se:
     """
     Remove adapter and low quality bases at the edges
     """
@@ -224,6 +224,45 @@ rule adapter_removal_se:
         AdapterRemoval --threads {threads} $params --file1 {input} \
                 --basename ${{out%%.fastq.gz}} --gzip \
                 --output1 {output.R} 2> {log};
+        """
+
+
+rule adapterremoval_infer_adapters:
+    """
+    Remove adapter and low quality bases at the edges and collapse paired-end reads
+    """
+    input:
+        get_fastq_4_cleaning,
+    output:
+        adapters="{folder}/01_fastq/01_trimmed/01_adapterremoval_infer_adapters/{sm}/{lb}/{id}.txt",
+    resources:
+        memory=lambda wildcards, attempt: get_memory_alloc("cleaning", attempt, 4),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("cleaning", attempt, 24),
+    params:
+        params=lambda wildcards: get_paramGrp(
+            ["cleaning", "params_adapterremoval"],
+            "--minlength 30 --trimns --trimqualities",
+            wildcards,
+        ),
+        collapsed=lambda wildcards: get_paramGrp(
+            ["cleaning", "collapse_opt"],
+            ["only_collapse", "collapse_trunc", "all"],
+            wildcards,
+        ),
+    log:
+        "{folder}/01_fastq/01_trimmed/01_adapterremoval_infer_adapters/{sm}/{lb}/{id}.log",
+    threads: get_threads("cleaning", 1)
+    conda:
+        "../envs/adapterremoval.yaml"
+    envmodules:
+        module_adapterremoval,
+    message:
+        "--- ADAPTERREMOVAL INFER ADAPTERTS {input}"
+    shell:
+        """
+        set +e;
+        AdapterRemoval --threads {threads} {params.params} --file1 {input[0]} \
+                --file2 {input[1]} --identify-adapters > {output};
         """
 
 

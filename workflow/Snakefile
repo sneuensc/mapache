@@ -392,6 +392,26 @@ rule version:
         """
 
 
+rule infer_adapter:
+    """
+    infer adapters for paried-end libraries with AdapterRemoval2
+    """
+    input:
+        [
+        f"{RESULT_DIR}/01_fastq/01_trimmed/01_adapterremoval_infer_adapters/{sm}/{lb}/{id}.txt"
+        for sm, smVals in SAMPLES.items()
+        for lb, lbVals in smVals.items()
+        for id in lbVals
+    ]
+    output:
+        adapter1=f"{RESULT_DIR}/04_stats/04_infered_adapter/adapter1.txt",
+        adapter2=f"{RESULT_DIR}/04_stats/04_infered_adapter/adapter2.txt",
+    shell:
+        """
+        for i in {input}; do echo $(grep 'Consensus:' $i | head -n1) {sm}/{lb}/{id}; done > {output.adapter1};
+        for i in {input}; do echo $(grep 'Consensus:' $i | tail -n1) {sm}/{lb}/{id}; done > {output.adapter2}
+        """
+
 # -----------------------------------------------------------------------------#
 
 
