@@ -773,9 +773,8 @@ def set_chromosome_names(genome):
 ## empty list means that all matched
 def valid_chromosome_names(genome, names):
     allChr = get_chromosome_names(genome)
-    print(f"{names} in {allChr}")
 
-    if type(names) is string and names not in allChr:
+    if type(names) is not list and names not in allChr:
             return [names]
     
     if list(set(names) - set(allChr)):
@@ -798,7 +797,7 @@ def set_sex_inference(genome):
         # check if the chromosomes specified in sex determination exist
         ## X chromosome
         if len(sex_chr):
-            print(sex_chr)
+            #print(sex_chr)
             if valid_chromosome_names(genome, sex_chr):
                 LOGGER.error(
                     f"ERROR: Sex chromosome specified in config[sex_inference][{genome}][sex_chr] ({sex_chr}) does not exist in the reference genome."
