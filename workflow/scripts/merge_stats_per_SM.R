@@ -87,7 +87,7 @@ chrs_selected = get_args(argsL, "chrs_selected", NULL)
 # genome                  = "GRCh38"
 # output_file             = "results/04_stats/02_separate_tables/GRCh38/ind2/stats.csv"
 # path_list_stats_lb      = "results/04_stats/02_separate_tables/GRCh38/ind2/lib3_lb/stats.csv"
-## path_flagstat_unique    = "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/ind2.GRCh38_flagstat.txt"  
+## path_idxstats_unique    = "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/ind2.GRCh38_idxstats.txt"  
 # path_length_unique      = "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/ind2.GRCh38.length"
 # path_genomecov_unique   = "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/ind2.GRCh38_genomecov"    
 # path_sex_unique         = "results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/ind2.GRCh38_sex"
@@ -102,63 +102,68 @@ if(!is.null(chrs_selected)){
 ## double is used instead of integer, as integers are limited in size:
 ##   "Note that current implementations of R use 32-bit integers for integer vectors, so the range
 ##    of representable integers is restricted to about +/-2*10^9: doubles can hold much larger integers exactly.""
-stats_lb = do.call(rbind, lapply(strsplit(path_list_stats_lb, ",")[[1]], read.csv, 
-        colClasses = c(rep("character", 3), rep("numeric", 13 + nb_chrs_depth))))
-mapped_unique = sum(stats_lb$mapped_unique) # should give the same
-#mapped_unique = as.double(strsplit(readLines(path_flagstat_unique)[1], " ")[[1]][1])
-length_unique_table = read.table(path_length_unique, header = T, sep = "\t", colClasses = c("numeric", "numeric"))
-#genomecov_unique = read.table(path_genomecov_unique, header = F, sep = "\t")
-#colnames(genomecov_unique) =  c("chr", "depth", "counts", "length", "frac")
-idxstats = read.table(
-    path_idxstats_unique, 
-    header=F,
-    col.names=c("chr", "length", "mapped", "unmapped")
-    )
-sex_unique = read.csv(path_sex_unique)
-
 #-----------------------------------------------------------------------------#
-calc_avg_len <- function(l){ sum(l$n_reads * l$length) / sum(l$n_reads) }
+calc_DoC_idxstats <- function(idxstats, read_length, chr){
+    chr_length <- sum(idxstats$length[idxstats$chr %in% chr])
+    reads_chr <- sum(idxstats$mapped[idxstats$chr %in% chr])
+    DoC <- (reads_chr * read_length) / chr_length
+    return(DoC)
+} 
 calc_DoC <- function(genomecov, chr){
     genomecov = genomecov[genomecov$chr == chr,]
     chr_length = unique(genomecov$length)
     DoC = sum(genomecov$depth * genomecov$counts) / chr_length
     return(DoC)
 }
-
-calc_DoC_idxstats <- function(idxstats, read_length, chr){
-    chr_length <- sum(idxstats$length[idxstats$chr %in% chr])
-    reads_chr <- sum(idxstats$mapped[idxstats$chr %in% chr])
-    DoC <- (reads_chr * read_length) / chr_length
-    return(DoC)
-}
+calc_avg_len <- function(l){ sum(l$n_reads * l$length) / sum(l$n_reads) }
 #-----------------------------------------------------------------------------#
+ 
+idxstats = read.table(
+    path_idxstats_unique, 
+    header=F,
+    col.names=c("chr", "length", "mapped", "unmapped")
+    )
 
-reads_raw = sum(stats_lb$reads_raw)
-
-reads_trim = sum(stats_lb$reads_trim)
-
-trim_prop = reads_trim / reads_raw 
-
-mapped_raw = sum(stats_lb$mapped_raw)
-
-duplicates = mapped_raw - mapped_unique 
-duplicates_prop = duplicates / mapped_raw
-
-endogenous_raw = mapped_raw / reads_raw
-endogenous_unique = mapped_unique / reads_raw
-
-length_reads_raw = sum(stats_lb$length_reads_raw * stats_lb$reads_raw) / reads_raw
-length_reads_trimmed = sum(stats_lb$length_reads_trimmed * stats_lb$reads_trim) / reads_trim
-
-length_mapped_raw = sum(stats_lb$length_mapped_raw * stats_lb$mapped_raw) / mapped_raw
+length_unique_table = read.table(path_length_unique, header = T, sep = "\t", colClasses = c("numeric", "numeric"))
 length_mapped_unique = calc_avg_len(length_unique_table)
-
 read_depth = calc_DoC_idxstats(idxstats = idxstats, read_length = length_mapped_unique, chr = idxstats$chr)
+sex_unique = read.csv(path_sex_unique)
+mapped_unique = sum(idxstats$mapped)
 
+if(path_list_stats_lb != "path_list_stats_lb"){
+    stats_lb = do.call(rbind, lapply(strsplit(path_list_stats_lb, ",")[[1]], read.csv, 
+            colClasses = c(rep("character", 3), rep("numeric", 13 + nb_chrs_depth))))
+    #genomecov_unique = read.table(path_genomecov_unique, header = F, sep = "\t")
+    #colnames(genomecov_unique) =  c("chr", "depth", "counts", "length", "frac")
+    reads_raw = sum(stats_lb$reads_raw)
+    reads_trim = sum(stats_lb$reads_trim)
+    trim_prop = reads_trim / reads_raw 
+    mapped_raw = sum(stats_lb$mapped_raw)
+    duplicates = mapped_raw - mapped_unique 
+    duplicates_prop = duplicates / mapped_raw
+    endogenous_raw = mapped_raw / reads_raw
+    endogenous_unique = mapped_unique / reads_raw
+    length_reads_raw = sum(stats_lb$length_reads_raw * stats_lb$reads_raw) / reads_raw
+    length_reads_trimmed = sum(stats_lb$length_reads_trimmed * stats_lb$reads_trim) / reads_trim
+    length_mapped_raw = sum(stats_lb$length_mapped_raw * stats_lb$mapped_raw) / mapped_raw
+} else {    ## if external sample and thus no library information
+    reads_raw = NA
+    reads_trim = NA
+    trim_prop = NA
+    mapped_raw = NA
+    duplicates = NA
+    duplicates_prop = NA
+    endogenous_raw = NA
+    endogenous_unique = NA
+    length_reads_raw = NA
+    length_reads_trimmed = NA
+    length_mapped_raw = NA
+}
 
 
 my_stats = data.frame(
-    genome = genome, SM = SM, 
+    genome = genome, 
+    SM = SM, 
     reads_raw = reads_raw,
     reads_trim = reads_trim,
     trim_prop = trim_prop,

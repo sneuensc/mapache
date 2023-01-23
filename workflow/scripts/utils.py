@@ -53,35 +53,36 @@ def write_log():
     # ----------------------------------------------------------------------------------------------------------
     ## sample file
     LOGGER.info(f"SAMPLES:")
-    if PAIRED_END:
-        if SAMPLE_FILE == "yaml":
-            LOGGER.info(f"  - Samples (YAML input) in paired-end format:")
-        else:
-            LOGGER.info(f"  - Sample file ('{SAMPLE_FILE}') in paired-end format:")
+    if len(SAMPLES):
+        if PAIRED_END:
+            if SAMPLE_FILE == "yaml":
+                LOGGER.info(f"  - Samples (YAML input) in paired-end format:")
+            else:
+                LOGGER.info(f"  - Sample file ('{SAMPLE_FILE}') in paired-end format:")
 
-        LOGGER.info(f"    - {len(SAMPLES)} SAMPLES")
-        LOGGER.info(f"    - {len([l for s in SAMPLES.values() for l in s])} libraries")
-        tmp = [
-            i["Data2"] for s in SAMPLES.values() for l in s.values() for i in l.values()
-        ]
-        LOGGER.info(
-            f"    - {len([x for x in tmp if str(x) != 'nan'])} paired-end fastq files"
-        )
-        nb = len([x for x in tmp if str(x) == "nan"])
-        if nb:
-            LOGGER.info(f"    - {nb} single-end fastq files")
-    else:
-        if SAMPLE_FILE == "yaml":
-            LOGGER.info(f"  - Samples (YAML input) in single-end format:")
+            LOGGER.info(f"    - {len(SAMPLES)} SAMPLES")
+            LOGGER.info(f"    - {len([l for s in SAMPLES.values() for l in s])} libraries")
+            tmp = [
+                i["Data2"] for s in SAMPLES.values() for l in s.values() for i in l.values()
+            ]
+            LOGGER.info(
+                f"    - {len([x for x in tmp if str(x) != 'nan'])} paired-end fastq files"
+            )
+            nb = len([x for x in tmp if str(x) == "nan"])
+            if nb:
+                LOGGER.info(f"    - {nb} single-end fastq files")
         else:
-            LOGGER.info(f"  - Sample file ('{SAMPLE_FILE}') in single-end format:")
-        LOGGER.info(f"    - {len(SAMPLES)} SAMPLES")
-        LOGGER.info(f"    - {len([l for s in SAMPLES.values() for l in s])} libraries")
-        LOGGER.info(
-            f"    - {len([i for s in SAMPLES.values() for l in s.values() for i in l])} single-end fastq files"
-        )
+            if SAMPLE_FILE == "yaml":
+                LOGGER.info(f"  - Samples (YAML input) in single-end format:")
+            else:
+                LOGGER.info(f"  - Sample file ('{SAMPLE_FILE}') in single-end format:")
+            LOGGER.info(f"    - {len(SAMPLES)} SAMPLES")
+            LOGGER.info(f"    - {len([l for s in SAMPLES.values() for l in s])} libraries")
+            LOGGER.info(
+                f"    - {len([i for s in SAMPLES.values() for l in s.values() for i in l])} single-end fastq files"
+            )
 
-    if len(EXTERNAL_SAMPLES) > 0:
+    if len(EXTERNAL_SAMPLES):
         if EXTERNAL_SAMPLE_FILE == "yaml":
             LOGGER.info(f"  - External samples (YAML input; only stats are computed):")
         else:
@@ -100,74 +101,65 @@ def write_log():
                 break
 
     # ----------------------------------------------------------------------------------------------------------
-    # print a summary of the workflow
-    LOGGER.info("MAPPING WORKFLOW:")
-    if run_subsampling:
-        if type(subsampling_number) is str:
-            LOGGER.info(f"  - Subsampling with group specific settings")
-        elif subsampling_number < 1:
-            LOGGER.info(f"  - Subsampling {100 * subsampling_number}% of the reads")
-        else:
-            LOGGER.info(f"  - Subsampling {subsampling_number} reads per fastq file")
+    if len(final_bam):
+        # print a summary of the workflow
+        LOGGER.info("MAPPING WORKFLOW:")
+        if run_subsampling:
+            if type(subsampling_number) is str:
+                LOGGER.info(f"  - Subsampling with group specific settings")
+            elif subsampling_number < 1:
+                LOGGER.info(f"  - Subsampling {100 * subsampling_number}% of the reads")
+            else:
+                LOGGER.info(f"  - Subsampling {subsampling_number} reads per fastq file")
 
-    run_adapter_removal = get_param(["adapterremoval", "run"], "True") ## get param 'simple'
-    if type(run_adapter_removal) is dict:
-        if COLLAPSE:
-            LOGGER.info(f"  - Removing adapters (variable) with AdapterRemoval and collapsing paired-end reads")
-        else:
-            LOGGER.info(f"  - Removing adapters (variable) with AdapterRemoval")
-    elif str2bool(run_adapter_removal):
-        if COLLAPSE:
-            LOGGER.info(f"  - Removing adapters with AdapterRemoval and collapsing paired-end reads")
-        else:
-            LOGGER.info(f"  - Removing adapters with AdapterRemoval")
+        run_adapter_removal = get_param(["adapterremoval", "run"], "True") ## get param 'simple'
+        if type(run_adapter_removal) is dict:
+            if COLLAPSE:
+                LOGGER.info(f"  - Removing adapters (variable) with AdapterRemoval and collapsing paired-end reads")
+            else:
+                LOGGER.info(f"  - Removing adapters (variable) with AdapterRemoval")
+        elif str2bool(run_adapter_removal):
+            if COLLAPSE:
+                LOGGER.info(f"  - Removing adapters with AdapterRemoval and collapsing paired-end reads")
+            else:
+                LOGGER.info(f"  - Removing adapters with AdapterRemoval")
 
-    LOGGER.info(f"  - Mapping with {mapper}")
+        LOGGER.info(f"  - Mapping with {mapper}")
 
-    LOGGER.info(f"  - Sorting bam file")
+        LOGGER.info(f"  - Sorting bam file")
 
-    if run_filtering:
-        if save_low_qual:
-            LOGGER.info(
-                f"  - Filtering and keeping separately low quality/unmapped reads"
-            )
-        else:
-            LOGGER.info(f"  - Filtering and discarding low quality/unmapped reads")
+        if run_filtering:
+            if save_low_qual:
+                LOGGER.info(
+                    f"  - Filtering and keeping separately low quality/unmapped reads"
+                )
+            else:
+                LOGGER.info(f"  - Filtering and discarding low quality/unmapped reads")
 
-    rmduplicates = get_param(["remove_duplicates", "run"], "markduplicates") ## get param 'simple'
-    if rmduplicates == "markduplicates":
-        LOGGER.info(f"  - Removing duplicates with MarkDuplicates")
-    elif rmduplicates == "dedup":
-        LOGGER.info(f"  - Removing duplicates with DeDup")
-        
+        rmduplicates = get_param(["remove_duplicates", "run"], "markduplicates") ## get param 'simple'
+        if rmduplicates == "markduplicates":
+            LOGGER.info(f"  - Removing duplicates with MarkDuplicates")
+        elif rmduplicates == "dedup":
+            LOGGER.info(f"  - Removing duplicates with DeDup")
+            
 
-    if run_damage_rescale:
-        LOGGER.info(f"  - Rescaling damage with MapDamage2")
+        if run_damage_rescale:
+            LOGGER.info(f"  - Rescaling damage with MapDamage2")
 
-    if run_realign:
-        LOGGER.info(f"  - Realigning indels with GATK v3.8")
+        if run_realign:
+            LOGGER.info(f"  - Realigning indels with GATK v3.8")
 
-    if run_compute_md:
-        LOGGER.info(f"  - Recomputing md flag")
+        if run_compute_md:
+            LOGGER.info(f"  - Recomputing md flag")
 
     # ----------------------------------------------------------------------------------------------------------
-    LOGGER.info("FINAL BAM FILES:")
-    LOGGER.info(
-        f"  - BAM FILES ({len(final_bam)} files in folder '{os.path.dirname(final_bam[0])}'):"
-    )
-    for i, file in enumerate(final_bam):
-        if i < 4:
-            LOGGER.info(f"    - {file}")
-        elif i == 4:
-            LOGGER.info(f"    - ...")
-        else:
-            break
-
-    if save_low_qual:
+    final_bam_tmp = final_bam + final_external_bam
+    if len(final_bam_tmp):
+        LOGGER.info("FINAL BAM FILES:")
         LOGGER.info(
-            f"  - LOW QUALITY AND UNMAPPED BAM FILES ({len(final_bam_low_qual)} files in folder '{os.path.dirname(final_bam_low_qual[0])}'):"
+            f"  - BAM FILES ({len(final_bam_tmp)} files in folder '{os.path.dirname(final_bam_tmp[0])}'):"
         )
-        for i, file in enumerate(final_bam_low_qual):
+        for i, file in enumerate(final_bam_tmp):
             if i < 4:
                 LOGGER.info(f"    - {file}")
             elif i == 4:
@@ -175,16 +167,28 @@ def write_log():
             else:
                 break
 
+        if save_low_qual:
+            LOGGER.info(
+                f"  - LOW QUALITY AND UNMAPPED BAM FILES ({len(final_bam_low_qual)} files in folder '{os.path.dirname(final_bam_low_qual[0])}'):"
+            )
+            for i, file in enumerate(final_bam_low_qual):
+                if i < 4:
+                    LOGGER.info(f"    - {file}")
+                elif i == 4:
+                    LOGGER.info(f"    - ...")
+                else:
+                    break
+
     # ----------------------------------------------------------------------------------------------------------
     LOGGER.info("ANALYSES:")
-    if len(run_sex_inference) > 0:
-        if len(genome) > 0:
+    if len(run_sex_inference):
+        if len(genome):
             LOGGER.info(f"  - Inferring sex {run_sex_inference}")
         else:
             LOGGER.info(f"  - Inferring sex")
 
-    if len(run_depth) > 0:
-        if len(genome) > 0:
+    if len(run_depth):
+        if len(genome):
             LOGGER.info(f"  - Computing depth per given chromosomes {run_depth}")
         else:
             LOGGER.info(f"  - Computing depth per given chromosomes ")
@@ -209,7 +213,7 @@ def write_log():
                 f"  - Inferring damage and read length with bamdamge on {fraction} alignments"
             )
 
-    if len(run_imputation) > 0:
+    if len(run_imputation):
         if len(genome) > 1:
             LOGGER.info(f"  - Imputing {run_imputation}")
         else:
@@ -343,10 +347,10 @@ def is_collapse(wc):
 #######################################################################################################################
 ## read sample file
 def read_sample_file():
-    file = get_param(["sample_file"], "config/SAMPLES.tsv")
+    file = get_param(["sample_file"], "")
     #print(file)
     if file == "":
-        return {}, False, False, ""
+        return {}, ""
 
     if type(file) is dict:  ## yaml input
         SAMPLES = file
@@ -505,10 +509,10 @@ def get_external_samples():
             sys.exit(1)
 
         ## test each bam file
-        for bam in list(samples_stats[genome].values()):
+        for id,bam in list(samples_stats[genome].items()):
             if not os.path.isfile(bam):
                 LOGGER.error(
-                    f"ERROR: Bam file config[external_sample][genome][{s}][bam] does not exist ({bam})!"
+                    f"ERROR: Bam file config[external_sample][genome][{id}][bam] does not exist ({bam})!"
                 )
                 sys.exit(1)
 

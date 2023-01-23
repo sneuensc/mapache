@@ -20,8 +20,6 @@ localrules:
 
 # -----------------------------------------------------------------------------#
 ## get sparse stats stats
-
-
 rule fastqc:
     """
     Quality control of fastq file by fastqc (SE or R1)
@@ -350,11 +348,7 @@ def get_chroms(wildcards):
 
 rule merge_stats_per_sm:
     input:
-        lb_stats=lambda wildcards: expand(
-            "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/library_stats.csv",
-            lb=SAMPLES[wildcards.sm],
-            allow_missing=True,
-        ),
+        lb_stats=get_lb_stats,
         length_unique="{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{sm}.{genome}_length.txt",
         idxstats_unique="{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{sm}.{genome}_idxstats.txt",
         sex_unique=lambda wildcards: get_sex_file(wildcards),
@@ -754,9 +748,6 @@ rule multiqc:
     Running multiqc
     """
     input:
-        SM="{folder}/04_stats/03_summary/SM_stats.{genome}.csv",
-        LB="{folder}/04_stats/03_summary/LB_stats.{genome}.csv",
-        FASTQ="{folder}/04_stats/03_summary/FASTQ_stats.{genome}.csv",
         files=get_files_4_multiqc,
     output:
         html=report(
@@ -783,17 +774,6 @@ rule multiqc:
         "--- MULTIQC of {genome}"
     shell:
         """
-        ## adapt the summary stat tables for multiqc
-        SM={input.SM};
-        SM2=${{SM%%.csv}}_mqc.csv;
-        LB={input.LB};
-        LB2=${{LB%%.csv}}_mqc.csv;
-        FASTQ={input.FASTQ};
-        FASTQ2=${{FASTQ%%.csv}}_mqc.csv;
-        awk -F "," -v OFS="," '{{$3=$2"/"$3"/"$4; $1=$2=""; print substr($0,3)}}' $FASTQ > $FASTQ2;
-        awk -F "," -v OFS="," '{{$2=$2"/"$3; $1=""; print substr($0,2)}}' $LB > $LB2;
-        awk -F "," -v OFS="," '{{$1=""; print substr($0,2)}}' $SM > $SM2;
-
         ## run mutliqc
         multiqc -c {params.config} \
                 -f \
@@ -801,8 +781,5 @@ rule multiqc:
                 -o $(dirname {output.html}) \
                 --title 'Mapache report (genome {wildcards.genome})' \
                 --cl-config "extra_fn_clean_trim: ['{params.resultdir}']" \
-                {input.files} $SM2 $LB2 $FASTQ2 2> {log};
-
-        ## delete the temp files
-        rm -f $SM2 $LB2 $FASTQ2;
+                {input.files} 2> {log};
         """

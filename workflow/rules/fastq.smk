@@ -727,7 +727,6 @@ if save_low_qual:
             -U {output.low_qual} {input} > {output.mapped} 2> {log}
             """
 
-
 else:
 
     rule samtools_filter:

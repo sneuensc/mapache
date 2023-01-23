@@ -32,10 +32,10 @@ sample_file: config/samples.tsv
 ##        ind2:  path_to_bam2.bam
 ##        ...
 
-#external_sample: config/samples_stats.tsv
-#    hg19:
-#        test1: /users/sneuensc/work_sneuensc/mapping_pipeline/mapache_test2/results/03_sample/03_final_sample/01_bam/ind1.hg19.bam
-#        test2: /users/sneuensc/work_sneuensc/mapping_pipeline/mapache_test2/results/03_sample/03_final_sample/01_bam/ind2.hg19.bam
+external_sample: 
+    hg19:
+        test1: /users/sneuensc/work_sneuensc/mapping_pipeline/mapache_test2/results/03_sample/03_final_sample/01_bam/ind1.hg19.bam
+        test2: /users/sneuensc/work_sneuensc/mapping_pipeline/mapache_test2/results/03_sample/03_final_sample/01_bam/ind2.hg19.bam
 
 ## if the deliminator to read the sample file has to be adapted
 #delim: "\s+"
@@ -227,7 +227,7 @@ damage:
 
 depth:
     hg19:
-        run: False
+        run: True
         # Mapache outputs the depth of coverage (DoC) for each of the genomes. 
         # If you also want the DoC to be reported for some chromosomes in the main stats table, list them below. 
         # Their names have to match their IDs in the FASTA file specified above.
@@ -259,7 +259,7 @@ sex_inference:
 
 imputation:
     hg19:
-        run: False
+        run: True
         ## The imputation is done using the first named reference genome 'genome/{name}/fasta'
         gp_filter: [0.8]
 

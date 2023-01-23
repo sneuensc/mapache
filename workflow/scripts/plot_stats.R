@@ -145,12 +145,22 @@ make_barplot <- function(data, x, y, group, n_figures, cols, color="blue", title
   ## add numbers if there are not too many columns
   if(nrow(data)<10){
     if(percent){
-      my_plot <- my_plot + geom_text(aes(label=paste0(format(round(100*data[,y],3), big.mark=","),'%')),
-                                     vjust=-0.25, color="black") +
+      meanVal = 100*mean(data[,y], na.rm=T)
+      if(1e8 > meanVal & meanVal > 1e-3){
+        vec = paste0(format(100*data[,y], scientific = FALSE, big.mark=",", digits = 3),'%')
+      } else {
+        vec = paste0(format(100*data[,y], scientific = TRUE, big.mark=",", digits = 3),'%')
+      }
+      my_plot <- my_plot + geom_text(aes(label=vec, vjust=-0.25, color="black")) +
         scale_y_continuous(labels = scales::percent)
     }else{
-      my_plot <- my_plot + geom_text(aes(label=format(round(data[,y], 3), big.mark=",")),
-                                     vjust=-0.25, color="black")
+      meanVal = mean(data[,y], na.rm=T)
+      if(1e8 > meanVal & meanVal > 1e-3){
+        vec = format(data[,y], scientific = F, big.mark=",", digits = 3)
+      } else {
+        vec = format(data[,y], scientific = T, big.mark=",", digits = 3)
+      }
+      my_plot <- my_plot + geom_text(aes(label=vec, vjust=-0.25, color="black"))
     }
   }
 
@@ -193,7 +203,7 @@ my_plot <- ggplot(mapped_reads, aes_string(x = x, y = "number_reads",
 ## add numbers if there are not too many columns
 if(nrow(mapped_reads)<10){
   my_plot <- my_plot + geom_text(aes(label=format(mapped_reads[,"number_reads"], big.mark=",")),
-                                 vjust=-0.25, color="black", show.legend = FALSE)
+                                 vjust=-0.25, color=color, show.legend = FALSE)
 }
 
 ## split figure if multidimensional

@@ -92,25 +92,15 @@ if len(SAMPLES) + len(EXTERNAL_SAMPLES) == 0:
     LOGGER.error(f"ERROR: No samples are specified)!")
     sys.exit(1)
 
+# print(EXTERNAL_SAMPLES)
+
 
 wildcard_constraints:
     sm="|".join(
         [sm for sm in SAMPLES] + [sm for g in EXTERNAL_SAMPLES.values() for sm in g]
     ),
-    lb="|".join(
-        [lb for sm in SAMPLES.values() for lb in sm]
-        + [lb for g in EXTERNAL_SAMPLES.values() for sm in g.values() for lb in sm]
-    ),
-    id="|".join(
-        [id for sm in SAMPLES.values() for lb in sm.values() for id in lb]
-        + [
-            id
-            for g in EXTERNAL_SAMPLES.values()
-            for sm in g.values()
-            for lb in sm.values()
-            for id in lb
-        ]
-    ),
+    lb="|".join([lb for sm in SAMPLES.values() for lb in sm]),
+    id="|".join([id for sm in SAMPLES.values() for lb in sm.values() for id in lb]),
     genome="|".join([g for g in GENOMES]),
 
 
@@ -268,13 +258,13 @@ report: "report/workflow.rst"
 # -----------------------------------------------------------------------------#
 ## get all final bam and bai files
 final_bam = get_final_bam_files()
-final_bam.extend([bam2bai(w) for w in final_bam])
+final_bai = [bam2bai(w) for w in final_bam]
 
 final_bam_low_qual = get_final_bam_low_qual_files()
-final_bam_low_qual.extend([bam2bai(w) for w in final_bam_low_qual])
+final_bami_low_qual = [bam2bai(w) for w in final_bam_low_qual]
 
 final_external_bam = get_final_external_bam_files()
-final_external_bam.extend([bam2bai(w) for w in final_external_bam])
+final_external_bai = [bam2bai(w) for w in final_external_bam]
 
 
 # -----------------------------------------------------------------------------#
@@ -301,7 +291,7 @@ stats_mapping_checkpoint = (
     fastqc + samtools_stats + lengths + idxstats + sex_files + damage_files,
 )
 
-final_stats = (stat_csv + qualimap_files + multiqc_files,)
+final_stats = stat_csv + qualimap_files + multiqc_files
 
 final_stat_figures = (damage_files + stat_plot,)
 
@@ -323,6 +313,15 @@ localrules:
     dag,
     mapping,  ## executed locally on a cluster
 
+#print(final_bam)
+#print(final_external_bam)
+#print(final_bam_low_qual)
+#print(final_stat_figures)
+#print(final_stats)
+#print(samtools_stats)
+#print(stats_mapping_checkpoint)
+#print(get_imputation_files())
+#print(get_imputation_plots())
 
 ## rules all
 rule all:
@@ -331,7 +330,9 @@ rule all:
     """
     input:
         final_bam,
+        final_bai,
         final_external_bam,
+        final_external_bai,
         final_bam_low_qual,
         final_stat_figures,
         final_stats,
@@ -354,6 +355,7 @@ rule dag:
     """
     input:
         final_bam,
+        final_bai,
         final_external_bam,
         final_bam_low_qual,
         get_imputation_files(),
@@ -367,6 +369,7 @@ rule mapping:
     """
     input:
         final_bam,
+        final_bai,
         final_external_bam,
         final_bam_low_qual,
         stats_mapping_checkpoint,
@@ -398,11 +401,11 @@ rule infer_adapter:
     """
     input:
         [
-        f"{RESULT_DIR}/01_fastq/01_trimmed/01_adapterremoval_infer_adapters/{sm}/{lb}/{id}.txt"
-        for sm, smVals in SAMPLES.items()
-        for lb, lbVals in smVals.items()
-        for id in lbVals
-    ]
+            f"{RESULT_DIR}/01_fastq/01_trimmed/01_adapterremoval_infer_adapters/{sm}/{lb}/{id}.txt"
+            for sm, smVals in SAMPLES.items()
+            for lb, lbVals in smVals.items()
+            for id in lbVals
+        ],
     output:
         adapter1=f"{RESULT_DIR}/04_stats/04_infered_adapter/adapter1.txt",
         adapter2=f"{RESULT_DIR}/04_stats/04_infered_adapter/adapter2.txt",
@@ -412,12 +415,8 @@ rule infer_adapter:
         for i in {input}; do echo $(grep 'Consensus:' $i | tail -n1) {sm}/{lb}/{id}; done > {output.adapter2}
         """
 
+
 # -----------------------------------------------------------------------------#
-
-
-rule only_stats:
-    input:
-        get_imputation_files_external(),
 
 
 rule stats:
