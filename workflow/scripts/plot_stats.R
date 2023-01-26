@@ -34,6 +34,7 @@ if("--help" %in% args) {
         --width=11                                   - width of the plot
         --height=7                                   - height of the plot
         --color=blue                                 - color of the plot
+        --show_numbers                               - print numbers to columns if the number of samples is below the given number (10)
         --thresholds=list('XX'=c(0.8, 1), 'XY'=c(0, 0.6), \
                           'consistent with XX but not XY'=c(0.6, 1), \
                           'consistent with XY but not XX'=c(0, 0.8))  - sex determination thresholds
@@ -78,6 +79,7 @@ n_col               = as.numeric( get_args(argsL, "n_col", 1 ) )
 width               = as.numeric( get_args(argsL, "width", 11 ) )
 height              = as.numeric( get_args(argsL, "height", 7 ) )
 color               = get_args(argsL, "color", "blue")
+show_numbers        = as.numeric( get_args(argsL, "show_numbers", 10 ) )
 
 
 sex_thresholds      = get_args(
@@ -143,7 +145,7 @@ make_barplot <- function(data, x, y, group, n_figures, cols, color="blue", title
     
 
   ## add numbers if there are not too many columns
-  if(nrow(data)<10){
+  if(nrow(data)<=show_numbers){
     if(percent){
       meanVal = 100*mean(data[,y], na.rm=T)
       if(1e8 > meanVal & meanVal > 1e-3){
@@ -151,7 +153,7 @@ make_barplot <- function(data, x, y, group, n_figures, cols, color="blue", title
       } else {
         vec = paste0(format(100*data[,y], scientific = TRUE, big.mark=",", digits = 3),'%')
       }
-      my_plot <- my_plot + geom_text(aes(label=vec, vjust=-0.25, color="black")) +
+      my_plot <- my_plot + geom_text(aes(label=vec), vjust=-0.25, color="black") +
         scale_y_continuous(labels = scales::percent)
     }else{
       meanVal = mean(data[,y], na.rm=T)
@@ -160,7 +162,7 @@ make_barplot <- function(data, x, y, group, n_figures, cols, color="blue", title
       } else {
         vec = format(data[,y], scientific = T, big.mark=",", digits = 3)
       }
-      my_plot <- my_plot + geom_text(aes(label=vec, vjust=-0.25, color="black"))
+      my_plot <- my_plot + geom_text(aes(label=vec), vjust=-0.25, color="black")
     }
   }
 
@@ -201,9 +203,9 @@ my_plot <- ggplot(mapped_reads, aes_string(x = x, y = "number_reads",
   guides(fill="none", color="none")
 
 ## add numbers if there are not too many columns
-if(nrow(mapped_reads)<10){
+if(nrow(mapped_reads)/2<=show_numbers){
   my_plot <- my_plot + geom_text(aes(label=format(mapped_reads[,"number_reads"], big.mark=",")),
-                                 vjust=-0.25, color=color, show.legend = FALSE)
+                                 vjust=-0.25, color="black", show.legend = FALSE)
 }
 
 ## split figure if multidimensional
