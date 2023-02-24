@@ -2,7 +2,7 @@
 ## FASTQ LEVEL
 
 ## get the path to the fastq file given sm, lb and id
-def get_fastq_of_ID(wc):
+def get_fastq_of_ID_0(wc): 
     # print(f"get_fastq_of_ID: {wc}")
     if "_R1" == wc.idd[-3:]:
         filename = SAMPLES[wc.sm][wc.lb][wc.idd[:-3]]["Data1"]
@@ -13,7 +13,33 @@ def get_fastq_of_ID(wc):
         filename = SAMPLES[wc.sm][wc.lb][wc.idd]["Data1"]
     else:
         filename = SAMPLES[wc.sm][wc.lb][wc.idd]["Data"]
+    
     return filename
+
+
+## return the file, but only if it is present (not remote file)
+def get_fastq_of_ID(wc):
+    filename = get_fastq_of_ID_0(wc)
+
+    if filename[:3] == 'ftp': ## if it is a remote file return nothing
+        return f"{wc.folder}/00_reads/00_files_remote/{wc.sm}/{wc.lb}/{wc.idd}.fastq.gz"
+    else:
+        return filename
+
+
+## get the md5 of the given ID
+def get_md5_of_ID(wc):
+    if "_R1" == wc.idd[-3:] or "_R2" == wc.idd[-3:]:
+        id = wc.idd[-3:]
+    else:
+        id = wc.idd
+        
+    if 'MD5' in SAMPLES[wc.sm][wc.lb][id]:
+        md5 = SAMPLES[wc.sm][wc.lb][id]['MD5']
+    else:
+        md5 = ''
+
+    return md5
 
 
 def get_fastq_4_cleaning(wc):

@@ -3,10 +3,43 @@
 ##########################################################################################
 ## get/rename reference and fastq files
 
-
 localrules:
     get_fastq,
     get_fasta,  ## executed locally on a cluster
+
+
+
+
+## all rules for fastq files
+rule get_fastq_remote:
+    """
+    Download a remote fastq file from an anonymous ftp server and check the md5sum
+    """
+    output:
+        temp("{folder}/00_reads/00_files_remote/{sm}/{lb}/{idd}.fastq.gz"),
+    threads: 1
+    params:
+        ftp = get_fastq_of_ID_0,
+        md5 = get_md5_of_ID,
+    message:
+        "--- GET FASTQ FILES REMOTELY {input}"
+    log:
+        "{folder}/00_reads/00_files_remote/{sm}/{lb}/{idd}.fastq.gz.log",
+    shell:
+        """
+        ## download file
+        wget -O {output} {params.ftp} > {log};
+
+        ## test md5sum if available
+        if [ "{params.md5}" == "''" ] || [ "{params.md5}" == "nan" ] ; then
+            echo "WARNING: Downloaded fastq file '{params.ftp}' has no md5sum to verify the download!";
+        else
+            if [ $(md5sum {output} | cut -d' ' -f1) != "{params.md5}" ]; then
+                echo "ERROR: Downloaded fastq file '{params.ftp}' has a wrong md5sum!";
+                exit 1;
+            fi
+        fi
+        """
 
 
 ## all rules for fastq files
@@ -27,6 +60,7 @@ rule get_fastq:
         params=lambda wildcards: get_paramGrp(
             ["subsampling", "params"], "-s1", wildcards
         ),
+        ftp = lambda wildcards: get_fastq_of_ID_0(wildcards),
     conda:
         "../envs/seqtk.yaml"
     envmodules:

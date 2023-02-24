@@ -419,19 +419,19 @@ def test_SAMPLES():
         ## forward reads
         #print(get_sample_column("Data1"))
         for fq in get_sample_column("Data1"):
-            if not os.path.isfile(fq):
+            if not os.path.isfile(fq) and fq[:3] != 'ftp':
                 LOGGER.error(f"ERROR: Fastq file '{fq}' does not exist!")
                 sys.exit(1)
 
         ## reverse reads (may be NaN)
         for fq in get_sample_column("Data2"):
-            if fq == fq and not os.path.isfile(fq):
+            if fq == fq and not os.path.isfile(fq) and fq[:3] != 'ftp':
                 LOGGER.error(f"ERROR: Fastq file '{fq}' does not exist!")
                 sys.exit(1)
 
     else:  ## single end
         for fq in get_sample_column("Data"):
-            if not os.path.isfile(fq):
+            if not os.path.isfile(fq) and fq[:3] != 'ftp':
                 LOGGER.error(f"ERROR: Fastq file '{fq}' does not exist!")
                 sys.exit(1)
     
