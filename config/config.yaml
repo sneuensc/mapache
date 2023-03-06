@@ -32,10 +32,10 @@ sample_file: config/samples.tsv
 ##        ind2:  path_to_bam2.bam
 ##        ...
 
-external_sample: 
-    hg19:
-        test1: /users/sneuensc/work_sneuensc/mapping_pipeline/mapache_test2/results/03_sample/03_final_sample/01_bam/ind1.hg19.bam
-        test2: /users/sneuensc/work_sneuensc/mapping_pipeline/mapache_test2/results/03_sample/03_final_sample/01_bam/ind2.hg19.bam
+#external_sample: 
+#    hg19:
+#        test1: /users/sneuensc/work_sneuensc/mapping_pipeline/mapache_test2/results/03_sample/03_final_sample/01_bam/ind1.hg19.bam
+#        test2: /users/sneuensc/work_sneuensc/mapping_pipeline/mapache_test2/results/03_sample/03_final_sample/01_bam/ind2.hg19.bam
 
 ## if the deliminator to read the sample file has to be adapted
 #delim: "\s+"
@@ -77,6 +77,11 @@ indexing:
 ## FASTQ level
 # To consider when assigning runtime and memory:
 # These steps will be run once per FASTQ file specified in the "samples" file.
+
+## only used when remote files form an ftp server are downloaded
+download:
+    mem: 2 ## in GB
+    time: 10    
 
 ## subsampling (optional)
 subsampling:
@@ -259,7 +264,7 @@ sex_inference:
 
 imputation:
     hg19:
-        run: True
+        run: False
         ## The imputation is done using the first named reference genome 'genome/{name}/fasta'
         gp_filter: [0.8]
 

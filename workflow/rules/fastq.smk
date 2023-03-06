@@ -3,11 +3,10 @@
 ##########################################################################################
 ## get/rename reference and fastq files
 
+
 localrules:
     get_fastq,
     get_fasta,  ## executed locally on a cluster
-
-
 
 
 ## all rules for fastq files
@@ -16,11 +15,14 @@ rule get_fastq_remote:
     Download a remote fastq file from an anonymous ftp server and check the md5sum
     """
     output:
-        temp("{folder}/00_reads/00_files_remote/{sm}/{lb}/{idd}.fastq.gz"),
+        "{folder}/00_reads/00_files_remote/{sm}/{lb}/{idd}.fastq.gz",
     threads: 1
+    resources:
+        memory=lambda wildcards, attempt: get_memory_alloc("download", attempt, 2),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("download", attempt, 10),
     params:
-        ftp = get_fastq_of_ID_0,
-        md5 = get_md5_of_ID,
+        ftp=get_fastq_of_ID_0,
+        md5=get_md5_of_ID,
     message:
         "--- GET FASTQ FILES REMOTELY {input}"
     log:
@@ -60,7 +62,7 @@ rule get_fastq:
         params=lambda wildcards: get_paramGrp(
             ["subsampling", "params"], "-s1", wildcards
         ),
-        ftp = lambda wildcards: get_fastq_of_ID_0(wildcards),
+        ftp=lambda wildcards: get_fastq_of_ID_0(wildcards),
     conda:
         "../envs/seqtk.yaml"
     envmodules:

@@ -693,7 +693,7 @@ rule plot_summary_statistics:
             ["stats", "plots", "sex_ribbons"], 'c("XX"="red","XY"="blue")'
         ).replace("=", "?"),
         sex_thresholds=get_sex_threshold_plotting(),
-        show_numbers = get_param(["stats", "plots", "show_numbers"], "10"),
+        show_numbers=get_param(["stats", "plots", "show_numbers"], "10"),
     shell:
         """
         Rscript {params.script} \

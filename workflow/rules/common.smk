@@ -2,7 +2,7 @@
 ## FASTQ LEVEL
 
 ## get the path to the fastq file given sm, lb and id
-def get_fastq_of_ID_0(wc): 
+def get_fastq_of_ID_0(wc):
     # print(f"get_fastq_of_ID: {wc}")
     if "_R1" == wc.idd[-3:]:
         filename = SAMPLES[wc.sm][wc.lb][wc.idd[:-3]]["Data1"]
@@ -13,7 +13,7 @@ def get_fastq_of_ID_0(wc):
         filename = SAMPLES[wc.sm][wc.lb][wc.idd]["Data1"]
     else:
         filename = SAMPLES[wc.sm][wc.lb][wc.idd]["Data"]
-    
+
     return filename
 
 
@@ -21,23 +21,40 @@ def get_fastq_of_ID_0(wc):
 def get_fastq_of_ID(wc):
     filename = get_fastq_of_ID_0(wc)
 
-    if filename[:3] == 'ftp': ## if it is a remote file return nothing
+    if filename[:3] == "ftp":  ## if it is a remote file return nothing
         return f"{wc.folder}/00_reads/00_files_remote/{wc.sm}/{wc.lb}/{wc.idd}.fastq.gz"
     else:
         return filename
 
 
-## get the md5 of the given ID
+## get the md5 of the given ID (if available, otherwise return '')
 def get_md5_of_ID(wc):
-    if "_R1" == wc.idd[-3:] or "_R2" == wc.idd[-3:]:
-        id = wc.idd[-3:]
+    # print(f"get_fastq_of_ID: {wc}")
+    if "_R1" == wc.idd[-3:]:
+        md5 = (
+            SAMPLES[wc.sm][wc.lb][wc.idd[:-3]]["MD5_1"]
+            if "MD5_1" in SAMPLES[wc.sm][wc.lb][wc.idd]
+            else ""
+        )
+    elif "_R2" == wc.idd[-3:]:
+        md5 = (
+            SAMPLES[wc.sm][wc.lb][wc.idd[:-3]]["MD5_2"]
+            if "MD5_2" in SAMPLES[wc.sm][wc.lb][wc.idd]
+            else ""
+        )
+    elif PAIRED_END:
+        # elif PAIRED_END != 0:  ## SE library in a paired-end sample file
+        md5 = (
+            SAMPLES[wc.sm][wc.lb][wc.idd]["MD5_1"]
+            if "MD5_1" in SAMPLES[wc.sm][wc.lb][wc.idd]
+            else ""
+        )
     else:
-        id = wc.idd
-        
-    if 'MD5' in SAMPLES[wc.sm][wc.lb][id]:
-        md5 = SAMPLES[wc.sm][wc.lb][id]['MD5']
-    else:
-        md5 = ''
+        md5 = (
+            SAMPLES[wc.sm][wc.lb][wc.idd]["MD5"]
+            if "MD5" in SAMPLES[wc.sm][wc.lb][wc.idd]
+            else ""
+        )
 
     return md5
 
@@ -487,13 +504,13 @@ def get_samtools_stats_files():
         for file in [
             f"01_fastq/04_final_fastq/01_bam/{sm}/{lb}/{id}.{genome}",
             f"02_library/03_final_library/01_bam/{sm}/{lb}.{genome}",
-            f"03_sample/03_final_sample/01_bam/{sm}.{genome}"
+            f"03_sample/03_final_sample/01_bam/{sm}.{genome}",
         ]
     ] + [
-            f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}_stats.txt"
-            for genome, gVal in EXTERNAL_SAMPLES.items()
-            for sm in gVal
-            for file in [f"03_sample/03_final_sample/01_bam/{sm}.{genome}"]
+        f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}_stats.txt"
+        for genome, gVal in EXTERNAL_SAMPLES.items()
+        for sm in gVal
+        for file in [f"03_sample/03_final_sample/01_bam/{sm}.{genome}"]
     ]
     # print(samtools_stats)
     return list(set(samtools_stats))  ## remove duplicates
@@ -512,10 +529,10 @@ def get_length_files():
             f"03_sample/03_final_sample/01_bam/{sm}.{genome}",
         ]
     ] + [
-            f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}_length.txt"
-            for genome, gVal in EXTERNAL_SAMPLES.items()
-            for sm in gVal
-            for file in [f"03_sample/03_final_sample/01_bam/{sm}.{genome}"]
+        f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}_length.txt"
+        for genome, gVal in EXTERNAL_SAMPLES.items()
+        for sm in gVal
+        for file in [f"03_sample/03_final_sample/01_bam/{sm}.{genome}"]
     ]
     return list(set(lengths))  ## remove duplicates
 

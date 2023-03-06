@@ -1,6 +1,7 @@
-SM LB ID Data
-ind1 lib1_lb lib1_R1_001_fq test_data/lib1_R1_001.fastq.gz
-ind1 lib1_lb lib1_R1_002_fq test_data/lib1_R1_002.fastq.gz
-ind1 lib2_lb lib2_R1_001_fq test_data/lib2_R1_001.fastq.gz
-ind2 lib3_lb lib3_R1_001_fq test_data/lib3_R1_001.fastq.gz
-ind2 lib3_lb lib3_R1_002_fq test_data/lib3_R1_002.fastq.gz
+SM LB ID Data MD5
+ind1 lib1_lb lib1_R1_001_fq test_data/lib1_R1_001.fastq.gz ''
+ind1 lib1_lb lib1_R1_002_fq test_data/lib1_R1_002.fastq.gz ''
+ind1 lib2_lb lib2_R1_001_fq test_data/lib2_R1_001.fastq.gz ''
+ind2 lib3_lb lib3_R1_001_fq test_data/lib3_R1_001.fastq.gz ''
+ind2 lib3_lb lib3_R1_002_fq test_data/lib3_R1_002.fastq.gz ''
+ind3 ftp_lib ftp_id ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR106/095/ERR10675895/ERR10675895.fastq.gz 906a3243190c072ea4dce55b8fecb7e8
