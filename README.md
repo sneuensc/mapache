@@ -323,7 +323,7 @@ snakemake --report report.zip                            Create a zip report; us
 ```
 
 ## Citing mapache
-If you use mapache in your study, please cite mapache: **Neuenschwander S, Cruz Dávalos DI, et al. (2023) Mapache: a flexible pipeline to map ancient DNA. Bioinformatics** (https://doi.org/10.1093/bioinformatics/btad028) and the tools that you used within mapache. See the table below for a list of tools used at each step.
+If you use mapache in your study, please cite **Neuenschwander S, Cruz Dávalos DI, et al. (2023) Mapache: a flexible pipeline to map ancient DNA. _Bioinformatics_** (https://doi.org/10.1093/bioinformatics/btad028) and the tools that you used within mapache. See the table below for a list of tools used at each step.
 
 
 ## Tools included in mapache
