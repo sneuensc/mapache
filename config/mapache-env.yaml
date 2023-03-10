@@ -20,6 +20,7 @@ dependencies:
   - multiqc=1.13
   - glimpse-bio=1.1.1
   - bcftools=1.15
+  - bamutil=1.0.15
   - charset-normalizer=2.0.0
   - R=4.0
   - r-ggplot2

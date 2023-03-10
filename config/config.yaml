@@ -137,7 +137,7 @@ merging:
     mem: 16
     time: 2
 
-# ## extract_duplicates (optional)
+## extract_duplicates (optional)
 remove_duplicates:
     run: markduplicates  # (False (default), markduplicates, dedup)
     params_markduplicates: '--REMOVE_DUPLICATES true'
@@ -154,9 +154,18 @@ remove_duplicates:
 damage_rescale:
     run: False
     params: ''
-    time: 2
     threads: 1 ## hardcoded at 1
     mem: 8
+    time: 2
+
+
+## trim trailing bases
+bamutil:
+    run: False
+    params: ''
+    threads: 1 ## hardcoded at 1
+    time: 2
+    mem: 
 
 #-----------------------------------------------------------------------------------------
 ## sample level
