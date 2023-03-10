@@ -424,6 +424,13 @@ If you use mapache in your study, please cite **Neuenschwander S, Cruz Dávalos 
    <td style="text-align:left;"> Jonsson, et al. (2013) </td>
    <td style="text-align:left;"> https://github.com/ginolhac/mapDamage </td>
   </tr>
+  <tr grouplength="1"><td colspan="4" style="border-bottom: 1px solid;"><strong>Trim alignments</strong></td></tr>
+<tr>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> BamUtil </td>
+   <td style="text-align:left;"> 1.0.15 </td>
+   <td style="text-align:left;"> Jun, et al. (2015) </td>
+   <td style="text-align:left;"> https://github.com/statgen/bamUtil </td>
+  </tr>
   <tr grouplength="1"><td colspan="4" style="border-bottom: 1px solid;"><strong>Merge libraries</strong></td></tr>
 <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> SAMtools </td>
