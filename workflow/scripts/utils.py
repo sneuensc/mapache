@@ -829,17 +829,15 @@ def set_sex_inference(genome):
             os._exit(1)
     else:       ## if they are not set, try to infer the genome (hg19 or GRCh38)
         hg19 = list(map(str, list(range(1, 23)) + ["X", "Y", "MT"]))
-        GRCh38 = [f"str{x}" for x in list(range(1, 23)) + ["X", "Y", "M"]]
-        if sorted(allChr) == sorted(hg19):
-        #if set(hg19).issubset(set(allChr)):
+        GRCh38 = [f"chr{x}" for x in list(range(1, 23)) + ["X", "Y", "M"]]
+        if set(hg19).issubset(set(allChr)):
             name = "hg19"
             detectedSexChrom = ["X", "Y", "MT"]
-            detectedAutosomes = list(set(allChr) - set(detectedSexChrom))
-        #elif sorted(allChr) == sorted(GRCh38):
+            detectedAutosomes = list(set(hg19) - set(detectedSexChrom))
         elif set(GRCh38).issubset(set(allChr)):
             name = "GRCh38"
             detectedSexChrom = ["chrX", "chrY", "chrM"]
-            detectedAutosomes = list(set(allChr) - set(detectedSexChrom))
+            detectedAutosomes = list(set(GRCh38) - set(detectedSexChrom))
         else:
             LOGGER.error(
                 f"ERROR: For sex inference the parameters config[sex_inference][{genome}][sex_chr] and config[sex_inference][{genome}][autosomes] are required!"
