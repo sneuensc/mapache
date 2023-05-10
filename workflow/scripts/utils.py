@@ -268,6 +268,7 @@ def get_sample_column(col, wc=None):
         grp = [val[col] for val in SAMPLES[wc.sm][wc.lb].values() if col in val]
     elif 'sm' in wc.keys():
         grp = [id[col] for lb in SAMPLES[wc.sm].values() for id in lb.values() if col in id]
+    
     return grp
 
 ## get the number of fastq files of the given sample path
@@ -311,7 +312,7 @@ def is_paired_end(wc):
         sys.exit(1)
 
     ## entry may be empty (SE): either all or none
-    nbEmpty = data2.count("nan")
+    nbEmpty = data2.count('NULL')
     if nbEmpty == 0:
         return True 
 
@@ -359,7 +360,7 @@ def read_sample_file():
     else:  ## sample file
         ## read the file
         delim = get_param(["delim"], "\s+")
-        db = pd.read_csv(file, sep=delim, comment="#", dtype=str)
+        db = pd.read_csv(file, sep=delim, comment="#", dtype=str, keep_default_na=False)
         input = file
 
         ## check number of columns and column names
@@ -425,7 +426,7 @@ def test_SAMPLES():
 
         ## reverse reads (may be NaN)
         for fq in get_sample_column("Data2"):
-            if fq == fq and not os.path.isfile(fq) and fq[:3] != 'ftp':
+            if fq != 'NULL' and not os.path.isfile(fq) and fq[:3] != 'ftp':
                 LOGGER.error(f"ERROR: Fastq file '{fq}' does not exist!")
                 sys.exit(1)
 
