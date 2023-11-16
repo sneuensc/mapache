@@ -227,14 +227,23 @@ def get_bam_4_bamutil(wc):
     return file
 
 
-## get the final bam files at the library level
-def get_final_bam_LB(wc):
+## get the bam file used to mask the read ends with BamRefine
+def get_bam_4_bamrefine(wc):
     if str2bool(get_paramGrp(["bamutil", "run"], ["False", "True"], wc)):
-        file = (
-            f"{wc.folder}/02_library/03_trim/01_bamutil/{wc.sm}/{wc.lb}.{wc.genome}.bam"
-        )
+        file = f"{wc.folder}/02_library/03_trim/01_bamutil/{wc.sm}/{wc.lb}.{wc.genome}.bam"
     else:
         file = get_bam_4_bamutil(wc)
+    return file
+
+
+## get the final bam files at the library level
+def get_final_bam_LB(wc):
+    if str2bool(get_paramGrp(["bamrefine", "run"], ["False", "True"], wc)):
+        file = (
+            f"{wc.folder}/02_library/03_trim/02_bamrefine/{wc.sm}/{wc.lb}.{wc.genome}.bam"
+        )
+    else:
+        file = get_bam_4_bamrefine(wc)
     return file
 
 

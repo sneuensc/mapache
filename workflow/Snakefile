@@ -58,6 +58,7 @@ module_glimpse = get_param(["envmodules", "glimpse"], "")
 module_bcftools = get_param(["envmodules", "bcftools"], "")
 module_bamutil = get_param(["envmodules", "bamutil"], "")
 module_fastp = get_param(["envmodules", "fastp"], "")
+module_bamrefine = get_param(["envmodules", "bamrefine"], "")
 
 
 ##########################################################################################

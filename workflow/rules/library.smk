@@ -202,7 +202,7 @@ rule mapDamage_rescale:
     shell:
         """
         mapDamage -i {input.bam} -r {input.ref} -d $(dirname {input.deamination}) \
-        {params.params} --merge-reference-sequences --rescale-only --rescale-out {output} 2>> {log};
+        {params.params} --merge-reference-sequences --rescale-only --rescale-out {output} 2> {log};
         """
 
 
@@ -230,5 +230,31 @@ rule bamutil:
         "--- TRIM BAM {output.bam}"
     shell:
         """
-        bam trimBam {input} {output} {params} 2>> {log};
+        bam trimBam {input} {output} {params} 2> {log};
+        """
+
+
+rule bamrefine:
+    "Run bamrefine to masks variant position affected by post-mortem damage"
+    input:
+        bam=get_bam_4_bamrefine,
+    output:
+        bam=temp("{folder}/02_library/03_trim/02_bamrefine/{sm}/{lb}.{genome}.bam"),
+    resources:
+        memory=lambda wildcards, attempt: get_memory_alloc("bamrefine", attempt, 4),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("bamrefine", attempt, 24),
+    log:
+        "{folder}/02_library/03_trim/02_bamrefine/{sm}/{lb}.{genome}.log",
+    threads: 1
+    params:
+        lambda wildcards: get_paramGrp(["bamrefine", "params"], "", wildcards),
+    #conda:
+    #    "../envs/bamrefine.yaml"
+    envmodules:
+        module_bamrefine,
+    message:
+        "--- MASK BAM WITH BAMREFINE {output.bam}"
+    shell:
+        """
+        bamrefine {params} -p {threads} {input} {output} 2> {log};
         """
