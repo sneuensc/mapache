@@ -669,7 +669,7 @@ rule mapping_bowtie2:
         ref="{folder}/00_reference/{genome}/{genome}.fasta",
         fastq=get_fastq_4_mapping,
     output:
-        temp("{folder}/01_fastq/02_mapped/02_bwa_bowtie2/{sm}/{lb}/{id}.{genome}.bam"),
+        temp("{folder}/01_fastq/02_mapped/02_bowtie2/{sm}/{lb}/{id}.{genome}.bam"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
@@ -678,7 +678,7 @@ rule mapping_bowtie2:
             ["mapping", "bowtie2_params"], "", wildcards
         ),
     log:
-        "{folder}/01_fastq/02_mapped/02_bwa_bowtie2/{sm}/{lb}/{id}.{genome}.log",
+        "{folder}/01_fastq/02_mapped/02_bowtie2/{sm}/{lb}/{id}.{genome}.log",
     threads: get_threads("mapping", 4)
     conda:
         "../envs/bowtie2.yaml"
