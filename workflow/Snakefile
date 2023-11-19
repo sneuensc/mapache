@@ -127,7 +127,7 @@ if run_subsampling:
 
 ## --------------------------------------------------------------------------------------------------
 ## mapping
-mapper = get_param(["mapping", "mapper"], ["bwa_aln", "bwa_mem", "bowtie2"])
+mapper = get_param(["mapping", "mapper"], ["bwa_aln", "bwa_mem", "bowtie2","bowtie2l"])
 
 ## --------------------------------------------------------------------------------------------------
 ## filtering

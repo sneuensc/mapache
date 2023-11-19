@@ -122,6 +122,22 @@ def inputs_fastqc(wc):
     else:
         return get_fastq_4_cleaning(wc)
 
+## get the needed index files
+def get_fasta_index(wc):
+    ref=f"{wc.folder}/00_reference/{wc.genome}/{wc.genome}.fasta"
+    if mapper == "bwa_aln" or mapper == "bwa_mem" or mapper == "bwa_mem":
+        ext = ["", ".sa", ".amb", ".ann", ".bwt", ".pac"]
+    elif mapper == "bowtie2":
+        ext = ["", ".1.bt2", ".2.bt2", ".3.bt2", ".4.bt2", ".rev.1.bt2", ".rev.2.bt2"]
+    elif mapper == "bowtie2l":
+        ext = ["", ".1.bt2l", ".2.bt2l", ".3.bt2l", ".4.bt2l", ".rev.1.bt2l", ".rev.2.bt2l"]
+    else:
+        LOGGER.error(
+            f"ERROR: The parameter config[mapping][mapper] is not correctly specified: {mapper} is unknown!"
+        )
+        os._exit(1)
+    return [ref + x for x in ext]
+
 
 ## get the bam file used for sorting
 def get_bam_4_sorting(wc):
@@ -133,7 +149,7 @@ def get_bam_4_sorting(wc):
             folder = "02_bwa_samse"
     elif mapper == "bwa_mem":
         folder = "02_bwa_mem"
-    elif mapper == "bowtie2":
+    elif mapper == "bowtie2" or mapper == "bowtie2l":
         folder = "02_bowtie2"
     else:
         LOGGER.error(

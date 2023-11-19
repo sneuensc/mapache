@@ -67,7 +67,44 @@ rule genome_index_bowtie2:
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
     params:
         get_param(["indexing", "bowtie2_params"], ""),
-        cmd="f'bowtie2-build {snakemake.params[0]} --threads {snakemake.threads} {snakemake.input.fasta} > {snakemake.log}'",
+        cmd="f'bowtie2-build {snakemake.params[0]} --threads {snakemake.threads} {snakemake.input.fasta} {snakemake.input.fasta}> {snakemake.log}'",
+    log:
+        "{folder}/{genome}_bowtie2_build.log",
+    threads: 1
+    conda:
+        "../envs/bowtie2.yaml"
+    envmodules:
+        module_bowtie2,
+    message:
+        "--- BOWTIE2-BUILD {input.fasta} {input.fasta}"
+    script:
+        "../scripts/fasta_indexing.py"
+
+rule genome_index_bowtie2_long:
+    """
+    Indexing the genome for bowtie2
+    """
+    input:
+        fasta="{folder}/{genome}.fasta",
+        orig=lambda wildcards: get_param(["genome", wildcards.genome], ""),
+    output:
+        temp(
+            multiext(
+                "{folder}/{genome}.fasta",
+                ".1.bt2l",
+                ".2.bt2l",
+                ".3.bt2l",
+                ".4.bt2l",
+                ".rev.1.bt2l",
+                ".rev.2.bt2l",
+            )
+        ),
+    resources:
+        memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
+    params:
+        get_param(["indexing", "bowtie2_params"], ""),
+        cmd="f'bowtie2-build {snakemake.params[0]} --threads {snakemake.threads} {snakemake.input.fasta} {snakemake.input.fasta} > {snakemake.log}'",
     log:
         "{folder}/{genome}_bowtie2_build.log",
     threads: 1
