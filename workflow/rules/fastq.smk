@@ -172,7 +172,7 @@ rule adapterremoval_collapse:
         """
 
 
-rule adapter_removal_pe:
+rule adapterremoval_pe:
     """
     Remove adapter and low quality bases at the edges
     """
@@ -238,7 +238,7 @@ rule adapterremoval_se:
         runtime=lambda wildcards, attempt: get_runtime_alloc("cleaning", attempt, 24),
     params:
         lambda wildcards: get_paramGrp(
-            ["cleaning", "params_dapterremoval"],
+            ["cleaning", "params_adapterremoval"],
             "--minlength 30 --trimns --trimqualities",
             wildcards,
         ),
@@ -437,7 +437,14 @@ rule mapping_bwa_aln_se:
     Align reads to the reference
     """
     input:
-        index=get_fasta_index,
+        multiext(
+            "{folder}/00_reference/{genome}/{genome}.fasta",
+            ".sa",
+            ".amb",
+            ".ann",
+            ".bwt",
+            ".pac",
+        ),
         ref="{folder}/00_reference/{genome}/{genome}.fasta",
         fastq=get_fastq_4_mapping,
     output:
@@ -469,7 +476,14 @@ rule mapping_bwa_aln_pe:
     Align reads to the reference
     """
     input:
-        index=get_fasta_index,
+        multiext(
+            "{folder}/00_reference/{genome}/{genome}.fasta",
+            ".sa",
+            ".amb",
+            ".ann",
+            ".bwt",
+            ".pac",
+        ),
         ref="{folder}/00_reference/{genome}/{genome}.fasta",
         fastq=get_fastq_4_mapping,
     output:
@@ -503,7 +517,14 @@ rule mapping_bwa_samse:
     Creates bam file from sai file for SE reads
     """
     input:
-        index=get_fasta_index,
+        multiext(
+            "{folder}/00_reference/{genome}/{genome}.fasta",
+            ".sa",
+            ".amb",
+            ".ann",
+            ".bwt",
+            ".pac",
+        ),
         ref="{folder}/00_reference/{genome}/{genome}.fasta",
         fastq=get_fastq_4_mapping,
         sai="{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}.{genome}.sai",
@@ -542,7 +563,14 @@ rule mapping_bwa_sampe:
     Creates bam file from sai file for PE reads
     """
     input:
-        index=get_fasta_index,
+        multiext(
+            "{folder}/00_reference/{genome}/{genome}.fasta",
+            ".sa",
+            ".amb",
+            ".ann",
+            ".bwt",
+            ".pac",
+        ),
         ref="{folder}/00_reference/{genome}/{genome}.fasta",
         fastq=get_fastq_4_mapping,
         ## should get both pairs
@@ -584,7 +612,14 @@ rule mapping_bwa_mem:
     Map reads to GENOMES using bwa mem
     """
     input:
-        index=get_fasta_index,
+        multiext(
+            "{folder}/00_reference/{genome}/{genome}.fasta",
+            ".sa",
+            ".amb",
+            ".ann",
+            ".bwt",
+            ".pac",
+        ),
         ref="{folder}/00_reference/{genome}/{genome}.fasta",
         fastq=get_fastq_4_mapping,
     output:
@@ -622,11 +657,19 @@ rule mapping_bowtie2:
     Map reads to GENOMES using bowtie2
     """
     input:
-        index=get_fasta_index,
+        multiext(
+            "{folder}/00_reference/{genome}/{genome}.fasta",
+            ".1.bt2",
+            ".2.bt2",
+            ".3.bt2",
+            ".4.bt2",
+            ".rev.1.bt2",
+            ".rev.2.bt2",
+        ),
         ref="{folder}/00_reference/{genome}/{genome}.fasta",
         fastq=get_fastq_4_mapping,
     output:
-        temp("{folder}/01_fastq/02_mapped/02_bowtie2/{sm}/{lb}/{id}.{genome}.bam"),
+        temp("{folder}/01_fastq/02_mapped/02_bwa_bowtie2/{sm}/{lb}/{id}.{genome}.bam"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
@@ -635,7 +678,7 @@ rule mapping_bowtie2:
             ["mapping", "bowtie2_params"], "", wildcards
         ),
     log:
-        "{folder}/01_fastq/02_mapped/02_bowtie2/{sm}/{lb}/{id}.{genome}.log",
+        "{folder}/01_fastq/02_mapped/02_bwa_bowtie2/{sm}/{lb}/{id}.{genome}.log",
     threads: get_threads("mapping", 4)
     conda:
         "../envs/bowtie2.yaml"
@@ -663,11 +706,6 @@ rule samtools_sort:
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("sorting", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("sorting", attempt, 24),
-    params:
-       params=lambda wildcards: get_paramGrp(
-            ["sorting", "params"], "", wildcards
-        ),
-        mem_thread=lambda wildcards, resources, threads: round(0.9 * resources.memory / threads)
     log:
         "{folder}/01_fastq/02_mapped/03_bam_sort/{sm}/{lb}/{id}.{genome}.log",
     threads: get_threads("sorting", 4)
@@ -679,7 +717,7 @@ rule samtools_sort:
         "--- SAMTOOLS SORT {input}"
     shell:
         """
-        samtools sort -m {params.mem_thread}M --threads {threads} {params.params} {input} > {output} 2> {log}
+        samtools sort --threads {threads} {input} > {output} 2> {log}
         """
 
 
