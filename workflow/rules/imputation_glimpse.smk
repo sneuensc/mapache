@@ -222,10 +222,10 @@ checkpoint glimpse_chunk:
         chunks="{folder}/03_sample/04_imputed/04_glimpse_chunked/{genome}/chunks_chr{chr}.txt",
     params:
         params=lambda wildcards: get_param(
-            ["imputation", wildcards.genome, "glimse_chunk_params"], ""
+            ["imputation", wildcards.genome, "glimpse_chunk_params"], ""
         ),
     message:
-        "--- GLIMSE_CHUNK: split GENOMES (genome {wildcards.genome}; chr {wildcards.chr})"
+        "--- GLIMPSE_CHUNK: split GENOMES (genome {wildcards.genome}; chr {wildcards.chr})"
     log:
         "{folder}/log/03_sample/04_imputed/04_glimpse_chunked/{genome}/chunks_chr{chr}.log",
     resources:
@@ -269,7 +269,7 @@ rule glimpse_phase:
         "--- IMPUTATION: impute phase (sample {wildcards.sm}; genome {wildcards.genome}; chr {wildcards.chr}; chunk: {wildcards.n})"
     params:
         params=lambda wildcards: get_param(
-            ["imputation", wildcards.genome, "glimse_phase_params"], ""
+            ["imputation", wildcards.genome, "glimpse_phase_params"], ""
         ),
     log:
         "{folder}/log/03_sample/04_imputed/05_glimpse_phased/{sm}.{genome}/chr{chr}/chunk{n}.log",
