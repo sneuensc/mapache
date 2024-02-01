@@ -3,7 +3,7 @@
 
 # -----------------------------------------------------------------------------#
 for genome in GENOMES:
-    if str2bool(get_param(["imputation", genome, "run"], ["False", "True"])):
+    if get_param(["imputation", genome, "run"], ["False", "glimpse1", "glimpse2"]) != "False":
         # Imputation will be run by default on all chromosomes. The paramter below allow to select a subset of chromosomes.
         chromosomes = to_str(
             to_list(get_param(["imputation", genome, "chromosomes"], []))
@@ -20,6 +20,7 @@ for genome in GENOMES:
         # This string contains a wildcard where we will place the name of the chromosome
         # something like "path/to/my/panel_chr{chr}.vcf.gz"
         path_panel = get_param(["imputation", genome, "path_panel"], "")
+        #print(path_panel)
         for chr in chromosomes:
             file = path_panel.format(chr=chr)
             if not os.path.isfile(file):
@@ -31,6 +32,7 @@ for genome in GENOMES:
         # This string contains a wildcard where we will place the name of the chromosome
         # something like "path/to/my/panel_chr{chr}.vcf.gz"
         path_map = get_param(["imputation", genome, "path_map"], "")
+        #print(chromosomes)
         for chr in chromosomes:
             file = path_map.format(chr=chr)
             if not os.path.isfile(file):
@@ -96,6 +98,7 @@ rule get_panel:
         """
 
 
+## currently unused
 rule get_map:
     """
     Symlink the map
@@ -224,16 +227,17 @@ checkpoint glimpse_chunk:
         params=lambda wildcards: get_param(
             ["imputation", wildcards.genome, "glimpse_chunk_params"], ""
         ),
+    threads: lambda wildcards: get_threads2(["imputation", wildcards.genome, "glimpse_chunk"], 1)
     message:
         "--- GLIMPSE_CHUNK: split GENOMES (genome {wildcards.genome}; chr {wildcards.chr})"
     log:
         "{folder}/log/03_sample/04_imputed/04_glimpse_chunked/{genome}/chunks_chr{chr}.log",
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
-            ["imputation", wildcards.genome, "split_genome"], attempt, 2
+            ["imputation", wildcards.genome, "glimpse_chunk"], attempt, 2
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
-            ["imputation", wildcards.genome, "split_genome"], attempt, 4
+            ["imputation", wildcards.genome, "glimpse_chunk"], attempt, 4
         ),
     conda:
         "../envs/glimpse.yaml"
@@ -257,7 +261,7 @@ rule glimpse_phase:
         chunks="{folder}/03_sample/04_imputed/04_glimpse_chunked/{genome}/chunks_chr{chr}.txt",
         vcf_sample="{folder}/03_sample/04_imputed/03_vcf/{sm}.{genome}_chr{chr}.vcf.gz",
         csi_sample="{folder}/03_sample/04_imputed/03_vcf/{sm}.{genome}_chr{chr}.vcf.gz.csi",
-        map="{folder}/03_sample/04_imputed/02_map/{genome}/chr{chr}.gz",
+        map=lambda wildcards: get_param(["imputation", wildcards.genome, "path_map"], ""),
     output:
         bcf=temp(
             "{folder}/03_sample/04_imputed/05_glimpse_phased/{sm}.{genome}/chr{chr}/chunk{n}.bcf"
@@ -273,13 +277,13 @@ rule glimpse_phase:
         ),
     log:
         "{folder}/log/03_sample/04_imputed/05_glimpse_phased/{sm}.{genome}/chr{chr}/chunk{n}.log",
-    threads: lambda wildcards: get_threads2(["imputation", wildcards.genome, "impute_phase"], 1)
+    threads: lambda wildcards: get_threads2(["imputation", wildcards.genome, "glimpse_phase"], 1)
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
-            ["imputation", wildcards.genome, "impute_phase"], attempt, 2
+            ["imputation", wildcards.genome, "glimpse_phase"], attempt, 2
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
-            ["imputation", wildcards.genome, "impute_phase"], attempt, 2
+            ["imputation", wildcards.genome, "glimpse_phase"], attempt, 2
         ),
     conda:
         "../envs/glimpse.yaml"
@@ -329,12 +333,13 @@ rule glimpse_ligate:
         "--- IMPUTATION: ligate chunks (sample {wildcards.sm}; genome: {wildcards.genome}; chr {wildcards.chr})"
     log:
         "{folder}/log/03_sample/04_imputed/06_glimpse_ligated/{sm}.{genome}/chr{chr}.log",
+    threads: lambda wildcards: get_threads2(["imputation", wildcards.genome, "glimpse_ligate"], 1)
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
-            ["imputation", wildcards.genome, "ligate_chunks"], attempt, 4
+            ["imputation", wildcards.genome, "glimpse_ligate"], attempt, 4
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
-            ["imputation", wildcards.genome, "ligate_chunks"], attempt, 6
+            ["imputation", wildcards.genome, "glimpse_ligate"], attempt, 6
         ),
     conda:
         "../envs/glimpse.yaml"
@@ -345,10 +350,29 @@ rule glimpse_ligate:
         """
         list_files={output.ligated_bcf}.list_files;
         for file in {input.bcf}; do echo $file; done > ${{list_files}};
-        GLIMPSE_ligate --input ${{list_files}} --output {output.ligated_bcf};
+        GLIMPSE_ligate \
+            --thread {threads} \
+            --input ${{list_files}} \
+            --output {output.ligated_bcf};
         rm ${{list_files}};
         bcftools index -f {output.ligated_bcf};
         """
+
+
+
+def get_ligated_bcf(wc):
+    txt = get_param(["imputation", wc.genome, "run"], ["False", "glimpse1", "glimpse2"])
+    if txt == 'glimpse1':
+        folder = "06_glimpse_ligated"
+    elif txt == 'glimpse2':
+        folder = "06_glimpse2_ligated"
+    else:
+        LOGGER.error(
+            f"ERROR: The parameter config[imputation][{wc.genome}][run] is not correctly specified: {txt} is unknown!"
+        )
+        os._exit(1)
+    
+    return [f"{wc.folder}/03_sample/04_imputed/{folder}/{wc.sm}.{wc.genome}/chr{chr}.bcf" for chr in chromosomes]
 
 
 # #  # 6.1
@@ -358,27 +382,15 @@ rule concat:
     Concatenate imputed genotypes per sample
     """
     input:
-        bcf=lambda wildcards: expand(
-            "{folder}/03_sample/04_imputed/06_glimpse_ligated/{sm}.{genome}/chr{chr}.bcf",
-            chr=chromosomes,
-            sm=wildcards.sm,
-            genome=wildcards.genome,
-            allow_missing=True,
-        ),
-        index=lambda wildcards: expand(
-            "{folder}/03_sample/04_imputed/06_glimpse_ligated/{sm}.{genome}/chr{chr}.bcf.csi",
-            chr=chromosomes,
-            sm=wildcards.sm,
-            genome=wildcards.genome,
-            allow_missing=True,
-        ),
+        bcf = get_ligated_bcf,
+        csi = lambda wildcards: [f"{x}.csi" for x in get_ligated_bcf(wildcards)],
     output:
-        bcf="{folder}/03_sample/04_imputed/06_glimpse_ligated/{sm}.{genome}.bcf",
-        csi="{folder}/03_sample/04_imputed/06_glimpse_ligated/{sm}.{genome}.bcf.csi",
+        bcf="{folder}/03_sample/04_imputed/06_glimpse_ligated_concat/{sm}.{genome}.bcf",
+        csi="{folder}/03_sample/04_imputed/06_glimpse_ligated_concat/{sm}.{genome}.bcf.csi",
     message:
         "--- IMPUTATION: concatenate chromosomes (sample {wildcards.sm}; genome: {wildcards.genome})"
     log:
-        "{folder}/log/03_sample/04_imputed/06_glimpse_ligated/{sm}.{genome}.log",
+        "{folder}/log/03_sample/04_imputed/06_glimpse_ligated_concat/{sm}.{genome}.log",
     conda:
         "../envs/bcftools.yaml"
     envmodules:
@@ -391,21 +403,21 @@ rule concat:
 
 
 # # # 6.2 Filter by GP
-rule filter_gp_split_sm:
+rule filter_gp_sm:
     input:
-        bcf="{folder}/03_sample/04_imputed/06_glimpse_ligated/{sm}.{genome}.bcf",
-        index="{folder}/03_sample/04_imputed/06_glimpse_ligated/{sm}.{genome}.bcf.csi",
+        bcf="{folder}/03_sample/04_imputed/06_glimpse_ligated_concat/{sm}.{genome}.bcf",
+        index="{folder}/03_sample/04_imputed/06_glimpse_ligated_concat/{sm}.{genome}.bcf.csi",
     output:
         bcf=temp(
-            "{folder}/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}.{genome}_gp{gp}.bcf"
+            "{folder}/03_sample/04_imputed/07_gp_filtered/{sm}.{genome}_gp{gp}.bcf"
         ),
         csi=temp(
-            "{folder}/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}.{genome}_gp{gp}.bcf.csi"
+            "{folder}/03_sample/04_imputed/07_gp_filtered/{sm}.{genome}_gp{gp}.bcf.csi"
         ),
     message:
         "--- IMPUTATION: GP filtering (sample {wildcards.sm}; genome: {wildcards.genome}; GP {wildcards.gp})"
     log:
-        "{folder}/log/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}.{genome}_gp{gp}.log",
+        "{folder}/log/03_sample/04_imputed/07_gp_filtered/{sm}.{genome}_gp{gp}.log",
     conda:
         "../envs/bcftools.yaml"
     envmodules:
@@ -416,14 +428,13 @@ rule filter_gp_split_sm:
         bcftools index -f {output.bcf};
         """
 
-
 rule get_gp:
     input:
-        bcf="{folder}/03_sample/04_imputed/06_glimpse_ligated/{sm}.{genome}.bcf",
-        index="{folder}/03_sample/04_imputed/06_glimpse_ligated/{sm}.{genome}.bcf.csi",
+        bcf="{folder}/03_sample/04_imputed/06_glimpse_ligated_concat/{sm}.{genome}.bcf",
+        index="{folder}/03_sample/04_imputed/06_glimpse_ligated_concat/{sm}.{genome}.bcf.csi",
     output:
         table=report(
-            "{folder}/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}.{genome}_gp.txt",
+            "{folder}/03_sample/04_imputed/07_gp_filtered/{sm}.{genome}_gp.txt",
             caption="../report/imputation_gp_table.rst",
             category="Imputation",
             subcategory="Tables",
@@ -431,7 +442,7 @@ rule get_gp:
     message:
         "--- IMPUTATION: get GP values (sample {wildcards.sm}; genome {wildcards.genome})"
     log:
-        "{folder}/log/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}.{genome}_gp.log",
+        "{folder}/log/03_sample/04_imputed/07_gp_filtered/{sm}.{genome}_gp.log",
     conda:
         "../envs/bcftools.yaml"
     envmodules:
@@ -444,10 +455,10 @@ rule get_gp:
 
 rule plot_gp:
     input:
-        "{folder}/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}.{genome}_gp.txt",
+        "{folder}/03_sample/04_imputed/07_gp_filtered/{sm}.{genome}_gp.txt",
     output:
         report(
-            "{folder}/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}.{genome}_gp.svg",
+            "{folder}/03_sample/04_imputed/07_gp_filtered/{sm}.{genome}_gp.svg",
             caption="../report/imputation_gp_plot.rst",
             category="Imputation",
             subcategory="Plots",
@@ -469,7 +480,7 @@ rule plot_gp:
             ["imputation", wildcards.genome, "plot_gp"], attempt, 1
         ),
     log:
-        "{folder}/log/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}.{genome}_gp_plot.log",
+        "{folder}/log/03_sample/04_imputed/07_gp_filtered/{sm}.{genome}_gp_plot.log",
     conda:
         "../envs/r.yaml"
     envmodules:
@@ -490,23 +501,34 @@ rule plot_gp:
 # #  # 7. Sample haplotypes
 rule glimpse_sample:
     input:
-        ligated_bcf="{folder}/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}.{genome}_gp{gp}.bcf",
-        ligated_csi="{folder}/03_sample/04_imputed/07_glimpse_sampled/unphased/{sm}.{genome}_gp{gp}.bcf.csi",
+        ligated_bcf="{folder}/03_sample/04_imputed/07_gp_filtered/{sm}.{genome}_gp{gp}.bcf",
+        ligated_csi="{folder}/03_sample/04_imputed/07_gp_filtered/{sm}.{genome}_gp{gp}.bcf.csi",
     output:
-        phased_bcf="{folder}/03_sample/04_imputed/07_glimpse_sampled/{sm}.{genome}_gp{gp}.bcf",
-        phased_csi="{folder}/03_sample/04_imputed/07_glimpse_sampled/{sm}.{genome}_gp{gp}.bcf.csi",
+        phased_bcf="{folder}/03_sample/04_imputed/08_glimpse_sampled/{sm}.{genome}_gp{gp}.bcf",
+        phased_csi="{folder}/03_sample/04_imputed/08_glimpse_sampled/{sm}.{genome}_gp{gp}.bcf.csi",
     message:
         "--- IMPUTATION: sample haplotypes (sample {wildcards.sm}; genome {wildcards.genome}; GP {wildcards.gp})"
+    threads: lambda wildcards: get_threads2(["imputation", wildcards.genome, "glimpse_sample"], 1)
+    resources:
+        memory=lambda wildcards, attempt: get_memory_alloc2(
+            ["imputation", wildcards.genome, "glimpse_sample"], attempt, 4
+        ),
+        runtime=lambda wildcards, attempt: get_runtime_alloc2(
+            ["imputation", wildcards.genome, "glimpse_sample"], attempt, 1
+        ),
+    params:
+        lambda wildcards: get_param(["imputation", wildcards.genome, "glimpse_sample"], '--solve'),
     log:
-        "{folder}/log/03_sample/04_imputed/07_glimpse_sampled/{sm}.{genome}_gp{gp}.log",
+        "{folder}/log/03_sample/04_imputed/08_glimpse_sampled/{sm}.{genome}_gp{gp}.log",
     conda:
         "../envs/glimpse.yaml"
     envmodules:
         module_glimpse,
     shell:
         """
-        GLIMPSE_sample --input {input.ligated_bcf} \
-            --solve \
+        GLIMPSE_sample {params} \
+            --input {input.ligated_bcf} \
+            --thread {threads} \
             --output {output.phased_bcf};
         bcftools index -f {output.phased_bcf};
         """

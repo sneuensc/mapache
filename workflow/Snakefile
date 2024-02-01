@@ -55,6 +55,7 @@ module_qualimap = get_param(["envmodules", "qualimap"], "")
 module_multiqc = get_param(["envmodules", "multiqc"], "")
 module_dedup = get_param(["envmodules", "dedup"], "")
 module_glimpse = get_param(["envmodules", "glimpse"], "")
+module_glimpse2 = get_param(["envmodules", "glimpse2"], "")
 module_bcftools = get_param(["envmodules", "bcftools"], "")
 module_bamutil = get_param(["envmodules", "bamutil"], "")
 module_fastp = get_param(["envmodules", "fastp"], "")
@@ -226,8 +227,9 @@ for genome in GENOMES:
 ## imputation (is assumed to be run ONLY on the first specified reference GENOMES!!!)
 run_imputation = []
 for genome in GENOMES:
-    if str2bool(get_param(["imputation", "run"], ["False", "True"])):
+    if get_param(["imputation", genome, "run"], ["False", "glimpse1", "glimpse2"]) != 'False':
         run_imputation = run_imputation + [genome]
+        
 
 
 ##########################################################################################
@@ -247,6 +249,7 @@ include: "rules/fastq.smk"
 include: "rules/library.smk"
 include: "rules/sample.smk"
 include: "rules/imputation_glimpse.smk"
+include: "rules/imputation_glimpse2.smk"
 include: "rules/software_version.smk"
 
 
@@ -323,6 +326,7 @@ localrules:
 #print(stats_mapping_checkpoint)
 #print(get_imputation_files())
 #print(get_imputation_plots())
+
 
 ## rules all
 rule all:
