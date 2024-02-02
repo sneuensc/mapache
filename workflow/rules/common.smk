@@ -643,16 +643,20 @@ def get_imputation_files():
     for genome in GENOMES:
         run_imputation = get_param(["imputation", genome, "run"], ["False", "glimpse1", "glimpse2"]) 
         if run_imputation != 'False':
-            ## SAMPLES
             if run_imputation == "glimpse1":
-                files += [
-                    f"{RESULT_DIR}/03_sample/04_imputed/08_glimpse_sampled/{sm}.{genome}_gp{GP}.{ext}"
-                    for sm in SAMPLES
-                    for GP in str2list(
-                        get_param(["imputation", genome, "gp_filter"], "[0.8]")
-                    )
-                    for ext in ["bcf", "bcf.csi"]
-                ]
+                folder="08_glimpse_sampled"
+            else:
+                folder="07_gp_filtered"
+
+            ## SAMPLES
+            files += [
+                f"{RESULT_DIR}/03_sample/04_imputed/{folder}/{sm}.{genome}_gp{GP}.{ext}"
+                for sm in SAMPLES
+                for GP in str2list(
+                    get_param(["imputation", genome, "gp_filter"], "[0.8]")
+                )
+                for ext in ["bcf", "bcf.csi"]
+            ]
 
             files += [
                 f"{RESULT_DIR}/03_sample/04_imputed/07_gp_filtered/{sm}.{genome}_gp.txt"
@@ -660,17 +664,16 @@ def get_imputation_files():
             ]
 
             ## EXTERNAL_SAMPLES
-            if run_imputation == "glimpse1":
-                files += [
-                    f"{RESULT_DIR}/03_sample/04_imputed/08_glimpse_sampled/{sm}.{genome}_gp{GP}.{ext}"
-                    for g, gVal in EXTERNAL_SAMPLES.items()
-                    if g == genome
-                    for sm in gVal
-                    for GP in str2list(
-                        get_param(["imputation", genome, "gp_filter"], "[0.8]")
-                    )
-                    for ext in ["bcf", "bcf.csi"]
-                ]
+            files += [
+                f"{RESULT_DIR}/03_sample/04_imputed/{folder}/{sm}.{genome}_gp{GP}.{ext}"
+                for g, gVal in EXTERNAL_SAMPLES.items()
+                if g == genome
+                for sm in gVal
+                for GP in str2list(
+                    get_param(["imputation", genome, "gp_filter"], "[0.8]")
+                )
+                for ext in ["bcf", "bcf.csi"]
+            ]
             files += [
                 f"{RESULT_DIR}/03_sample/04_imputed/07_gp_filtered/{sm}.{genome}_gp.txt"
                 for g, gVal in EXTERNAL_SAMPLES.items()
