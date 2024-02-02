@@ -151,10 +151,9 @@ rule glimpse2_phase:
         ## run glimpse
         GLIMPSE2_phase {params.params} \
             --bam-file {input.bam} \
-            --threads {threads} \
             --reference {input.ref} \
             --output {output.bcf} \
-            --thread {threads};
+            --threads {threads};
 
         ## index bcf file
         bcftools index -f {output.bcf};
