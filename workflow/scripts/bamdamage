@@ -638,42 +638,24 @@ sub R_script {
         saving=paste("Saved under: ",pdfname_length);
         write(saving, stderr());
         
-        ## plot the quality distribution: remove!
-        ## ifn1 <- textConnection(str);
-        ## data1<-read.table(ifn1,header=F,nrows=2,skip=0)
-        ## data1[2,]<-data1[2,]/sum(as.numeric(data1[2,]))
-        ## mat1<-as.matrix(data1[2,])
-        ##barplot(mat1,main="sequencing quality distribution",xlab="quality score",ylab="frequency",col="dodgerblue4",names.arg=data1[1,],legend=sample_name)
-        ## plot of the damage distribution
-        #ifn1 <- textConnection(str);
-        #data1<-read.table(ifn1,header=F,nrows=2,skip=4)
-        #data1[2,]<-data1[2,]/sum(as.numeric(data1[2,]))
-        #mat3<-as.matrix(data1[2,])
-        #barplot(mat3,main="damage distribution",xlab="damage %",ylab="frequency",col="dodgerblue4",names.arg=data1[1,],legend=sample_name)
-        
         #-------------------------------------------------------------#
-        ##plot of the read length distribution
+        ##plot of the read length distribution (updated 14.02.2024 to work with new version of R, there were conversion issues to get a numeric vector)
         par(mfrow=c(1,2),mar=c(2.5, 1.8, 2, 0.5),mgp=c(1,0.,0))
         ifn1 <- textConnection(str);
         data1<-read.table(ifn1,header=F,nrows=2,skip=2)
-        values = data1[1,]
-        counts = data1[2,]
+        values = as.numeric(data1[1,])
+        counts = as.numeric(data1[2,])
+        freqs = counts / sum(counts)
+        average = sum(values * freqs)
         
-        dd<-t(data1[1:2,])
-        colnames(dd)<-c("length","counts")
+        ## write table to file
+        dd<-data.frame('length'=values, 'counts'=counts)
         write.csv(dd, gsub(".pdf", ".csv", pdfname_length), quote=F, row.names = FALSE)
-        
-        data1[2,]<-data1[2,]/sum(as.numeric(data1[2,]))
-        freqs = data1[2,]
-        average = sum(as.vector(values)*as.vector(freqs))
-        mat2<-as.matrix(data1[2,])
-        
-        bp=barplot(mat2,main="read length distribution",xlab="read length",ylab="frequency",col="dodgerblue4",names.arg=data1[1,],lwd=1,cex.axis=0.6,cex.lab=0.6,cex.main=0.8,axes=FALSE,axisnames=FALSE)
-        print(data1[1,]);
-        
+                
+        bp=barplot(counts,main="read length distribution",xlab="read length",ylab="frequency",col="dodgerblue4",
+            names.arg=values,lwd=1,cex.axis=0.6,cex.lab=0.6,cex.main=0.8,axes=FALSE,axisnames=FALSE)        
         axis(2, cex.axis = 0.6,tck=-0.005)
-        axis(1, at=bp,labels=data1[1,], cex.axis = 0.6,tick=FALSE)
-        #labels=data1[1,]
+        axis(1, at=bp,labels=values, cex.axis = 0.6,tick=FALSE)
         legend("topleft",paste(sample_name,", average: ",round(average,2),sep=""),fill="dodgerblue4",cex=0.6)
         
         dev.off()
@@ -683,7 +665,6 @@ sub R_script {
         open_plot_file(pdfname);
         
         saving=paste("Saved under: ",pdfname);
-        
         write(saving, stderr());
         
         ## plot damage from 5 end
