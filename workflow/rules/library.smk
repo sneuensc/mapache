@@ -94,7 +94,8 @@ rule markduplicates:
         "--- MARKDUPLICATES {output.bam}"
     shell:
         """
-        picard MarkDuplicates -Xmx{round(resources.memory * (1.0 - params.java_mem_overhead_factor))}M \
+        mem=$(echo "{resources.memory} * (1.0 - {params.java_mem_overhead_factor}) / 1" | bc);  # /1 is to remove decimals
+        picard MarkDuplicates -Xmx${{mem}}M \
             --INPUT {input} --OUTPUT {output.bam} --METRICS_FILE {output.stats} \
             {params.params} --ASSUME_SORT_ORDER coordinate --VALIDATION_STRINGENCY LENIENT 2> {log};
         """
