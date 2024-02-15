@@ -55,7 +55,8 @@ result_dir: 'results'
 # Include meaningful names for each genome. Final BAM(s) file will be named after it 
 # (e.g., ind1.hg19.bam)
 genome: 
-    hg19: /work/FAC/FBM/DBC/amalaspi/popgen/shared_resources/reference_human/hs.build37.1/hs.build37.1.fa
+    #hg19: /work/FAC/FBM/DBC/amalaspi/popgen/shared_resources/reference_human/hs.build37.1/hs.build37.1.fa
+    test: /users/sneuensc/work_sneuensc/mapping_pipeline/mapache/test_genome.fa
     #GRCh38: /work/FAC/FBM/DBC/amalaspi/popgen/shared_resources/reference_human/GCA_000001405.15_GRCh38.p13_onlyChrom/GCA_000001405.15_GRCh38.fa
 
 
@@ -281,7 +282,7 @@ sex_inference:
 
 imputation:
     hg19:
-        run: glimpse2   # (False (default), glimpse1, glimpse2)
+        run: 'False'   # (False (default), glimpse1, glimpse2)
         ## The imputation is done using the first named reference genome 'genome/{name}/fasta'
         gp_filter: [0.8]
         plot_gp_mem: 2
@@ -363,7 +364,7 @@ runtime_increment_ratio: 0.5
 # Software
 ##########################################################################################
 software:
-    picard_jar: 'picard'
+    java_mem_overhead_factor: 0.2
     gatk3_jar: 'GenomeAnalysisTK'
 
 # By default, mapache uses the software installed with the conda environment. Thus, no need

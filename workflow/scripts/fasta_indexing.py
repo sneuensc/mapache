@@ -25,5 +25,6 @@ elif all([os.path.isfile(f) for f in files2]):  ## foo.ext
     for idx, item in enumerate(files2):
         os.symlink(item, out_files[idx])
 else:    ## index is not present: create the index
-    #print(eval(snakemake.params.cmd))
-    subprocess.run(eval(snakemake.params.cmd), shell=True)
+    cmd = eval(snakemake.params.cmd)
+    #print(cmd)
+    subprocess.run(cmd, shell=True)

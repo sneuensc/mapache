@@ -159,9 +159,8 @@ rule genome_index_picard:
         memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
     params:
-        picard_bin=get_picard_bin(),
-        cmd="f'{snakemake.params.picard_bin} CreateSequenceDictionary --REFERENCE {snakemake.input.fasta} --OUTPUT {snakemake.output}'",
-    #        cmd="f'{get_picard_bin()} CreateSequenceDictionary --REFERENCE {snakemake.input.fasta} --OUTPUT {snakemake.output}'",
+        java_mem_overhead_factor = float(get_param(["software", "java_mem_overhead_factor"], 0.2)),
+        cmd="f'picard CreateSequenceDictionary -Xmx{round(snakemake.resources.memory * (1.0 - snakemake.params.java_mem_overhead_factor))}M --REFERENCE {snakemake.input.fasta} --OUTPUT {snakemake.output}'",
     log:
         "{folder}/{genome}_picard_index.log",
     threads: 1

@@ -82,7 +82,7 @@ rule markduplicates:
             "--REMOVE_DUPLICATES true",
             wildcards,
         ),
-        PICARD=get_picard_bin(),
+        java_mem_overhead_factor = float(get_param(["software", "java_mem_overhead_factor"], 0.2)),
     threads: get_threads("remove_duplicates", 4)
     log:
         "{folder}/02_library/01_duplicated/01_markduplicates/{sm}/{lb}.{genome}.log",
@@ -94,7 +94,8 @@ rule markduplicates:
         "--- MARKDUPLICATES {output.bam}"
     shell:
         """
-        {params.PICARD} MarkDuplicates --INPUT {input} --OUTPUT {output.bam} --METRICS_FILE {output.stats} \
+        picard MarkDuplicates -Xmx{round(resources.memory * (1.0 - params.java_mem_overhead_factor))}M \
+            --INPUT {input} --OUTPUT {output.bam} --METRICS_FILE {output.stats} \
             {params.params} --ASSUME_SORT_ORDER coordinate --VALIDATION_STRINGENCY LENIENT 2> {log};
         """
 

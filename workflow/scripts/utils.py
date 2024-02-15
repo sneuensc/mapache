@@ -980,17 +980,12 @@ def bam2bai(bam):
 
 ##########################################################################################
 ## check if java is called by a .jar file or by a wrapper
-def get_picard_bin():
-    bin = get_param(["software", "picard_jar"], "picard.jar")
-    if bin[-4:] == ".jar":
-        bin = "java -XX:ParallelGCThreads={threads} -XX:+UseParallelGC -XX:-UsePerfData \
-            -Xms{resources.memory}m -Xmx{resources.memory}m -jar bin"
-    return bin
+
 
 
 def get_gatk_bin():
     bin = get_param(["software", "gatk3_jar"], "GenomeAnalysisTK.jar")
     if bin[-4:] == ".jar":
-        bin = "java -XX:ParallelGCThreads={threads} -XX:+UseParallelGC -XX:-UsePerfData \
-            -Xms{resources.memory}m -Xmx{resources.memory}m -jar bin"
+        bin = f"java -XX:ParallelGCThreads={{snakemake.threads}} -XX:+UseParallelGC -XX:-UsePerfData \
+            -Xms{{snakemake.resources.memory}}m -Xmx{{snakemake.resources.memory}}m -jar {bin}"
     return bin

@@ -109,12 +109,10 @@ rule version_picard:
         "../envs/picard.yaml"
     envmodules:
         module_picard,
-    params:
-        PICARD=get_picard_bin(),
     shell:
         """
         set +e;
-        txt=$({params.PICARD} MarkDuplicates --version 2>&1 | sed 's/Version:/Picard MarkDuplicates version /g')
+        txt=$(picard MarkDuplicates --version 2>&1 | sed 's/Version:/Picard MarkDuplicates version /g')
         if [[ "$txt" == *"Picard"* ]]; then
             echo $txt > {output};
         else
