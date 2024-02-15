@@ -2,6 +2,6 @@ channels:
   - bioconda
   - conda-forge
 dependencies:
-  - glimpse-bio = 1.1.1
+  - glimpse-bio = 2.0.1
   - bcftools = 1.15
   
