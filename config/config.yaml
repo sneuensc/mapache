@@ -170,7 +170,7 @@ bamutil:
 
 ## mask the read ends
 bamrefine:
-    run: True
+    run: False
     params: '-l 10,10 -s /work/FAC/FBM/DBC/amalaspi/popgen/shared_ressources/AADR_ReichLab/v44.3_1240K_public.snp'
     threads: 1
     time: 2
