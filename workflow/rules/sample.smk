@@ -69,7 +69,9 @@ rule realign:
         bai=lambda wildcards: bam2bai(get_bam_4_realign(wildcards)),
     output:
         bam=temp("{folder}/03_sample/01_realigned/01_realign/{sm}.{genome}.bam"),
-        intervals=temp("{folder}/03_sample/01_realigned/01_realign/{sm}.{genome}.intervals"),
+        intervals=temp(
+            "{folder}/03_sample/01_realigned/01_realign/{sm}.{genome}.intervals"
+        ),
         bai=temp("{folder}/03_sample/01_realigned/01_realign/{sm}.{genome}.bai"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("realign", attempt, 4),

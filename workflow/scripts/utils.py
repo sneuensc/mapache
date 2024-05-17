@@ -42,7 +42,7 @@ def write_log():
             if autosomes:
                 if len(autosomes) > 10:
                     LOGGER.info(
-                        f"    - Autosomes: {autosomes[: 4] +['...'] + autosomes[- 4:]}"
+                        f"    - Autosomes: {autosomes[:4] + ['...'] + autosomes[-4:]}"
                     )
                 else:
                     LOGGER.info(f"    - Autosomes: {autosomes}")
@@ -62,7 +62,7 @@ def write_log():
                 LOGGER.info(f"  - Sample file ('{SAMPLE_FILE}') in paired-end format:")
 
             LOGGER.info(f"    - {len(SAMPLES)} SAMPLES")
-            # LOGGER.info(f"    - {len([l for s in SAMPLES.values() for l in s])} libraries")
+            LOGGER.info(f"    - {len([l for s in SAMPLES.values() for l in s])} libraries")
             tmp = [
                 i["Data2"] for s in SAMPLES.values() for l in s.values() for i in l.values()
             ]
@@ -78,10 +78,10 @@ def write_log():
             else:
                 LOGGER.info(f"  - Sample file ('{SAMPLE_FILE}') in single-end format:")
             LOGGER.info(f"    - {len(SAMPLES)} SAMPLES")
-            # LOGGER.info(f"    - {len([l for s in SAMPLES.values() for l in s])} libraries")
-            # LOGGER.info(
-            #    f"    - {len([i for s in SAMPLES.values() for l in s.values() for i in l])} single-end fastq files"
-            # )
+            LOGGER.info(f"    - {len([l for s in SAMPLES.values() for l in s])} libraries")
+            LOGGER.info(
+                f"    - {len([i for s in SAMPLES.values() for l in s.values() for i in l])} single-end fastq files"
+            )
 
     if len(EXTERNAL_SAMPLES):
         if EXTERNAL_SAMPLE_FILE == "yaml":
@@ -113,23 +113,20 @@ def write_log():
             else:
                 LOGGER.info(f"  - Subsampling {subsampling_number} reads per fastq file")
 
-        run_adapter_removal = get_param(
-            ["adapterremoval", "run"], "True"
-        )  ## get param 'simple'
-        if type(run_adapter_removal) is dict:
-            if COLLAPSE:
-                LOGGER.info(
-                    f"  - Removing adapters (variable) with AdapterRemoval and collapsing paired-end reads"
-                )
+        run_adapter_removal = get_param(["cleaning", "run"], ["adapterremoval", "fastp", "False"]) ## get param 'simple'
+        if run_adapter_removal != False:
+            if type(run_adapter_removal) is dict:
+                if COLLAPSE:
+                    LOGGER.info(f"  - Removing adapters is variable and collapsing paired-end reads")
+                else:
+                    LOGGER.info(f"  - Removing adapters is variable")
+            elif run_adapter_removal == 'adapterremoval':
+                if COLLAPSE:
+                    LOGGER.info(f"  - Removing adapters with AdapterRemoval and collapsing paired-end reads")
+                else:
+                    LOGGER.info(f"  - Removing adapters with AdapterRemoval")
             else:
-                LOGGER.info(f"  - Removing adapters (variable) with AdapterRemoval")
-        elif str2bool(run_adapter_removal):
-            if COLLAPSE:
-                LOGGER.info(
-                    f"  - Removing adapters with AdapterRemoval and collapsing paired-end reads"
-                )
-            else:
-                LOGGER.info(f"  - Removing adapters with AdapterRemoval")
+                LOGGER.info(f"  - Removing adapters with fastp")
 
         LOGGER.info(f"  - Mapping with {mapper}")
 
@@ -137,17 +134,18 @@ def write_log():
 
         if run_filtering:
             if save_low_qual:
-                LOGGER.info(f"  - Filtering and keeping separately low quality/unmapped reads")
+                LOGGER.info(
+                    f"  - Filtering and keeping separately low quality/unmapped reads"
+                )
             else:
                 LOGGER.info(f"  - Filtering and discarding low quality/unmapped reads")
 
-        rmduplicates = get_param(
-            ["remove_duplicates", "run"], "markduplicates"
-        )  ## get param 'simple'
+        rmduplicates = get_param(["remove_duplicates", "run"], "markduplicates") ## get param 'simple'
         if rmduplicates == "markduplicates":
             LOGGER.info(f"  - Removing duplicates with MarkDuplicates")
         elif rmduplicates == "dedup":
             LOGGER.info(f"  - Removing duplicates with DeDup")
+            
 
         if run_damage_rescale:
             LOGGER.info(f"  - Rescaling damage with MapDamage2")
@@ -198,8 +196,7 @@ def write_log():
             LOGGER.info(f"  - Computing depth per given chromosomes {run_depth}")
         else:
             LOGGER.info(f"  - Computing depth per given chromosomes ")
-
-    if run_damage != "False":
+    if run_damage  != False:
         if run_damage == "mapDamage":
             LOGGER.info(
                 f"  - Inferring damage and read length with MapDamage2 on all alignments"
@@ -212,7 +209,7 @@ def write_log():
             )
         elif fraction < 1:
             LOGGER.info(
-                f"  - Inferring damage and read length with bamdamge on {100 *fraction}% of the alignments"
+                f"  - Inferring damage and read length with bamdamge on {100 * fraction}% of the alignments"
             )
         else:
             LOGGER.info(
@@ -246,7 +243,7 @@ def write_log():
 
     if run_multiqc:
         LOGGER.info(
-            f"  - Multiqc report: {len(multiqc_files)} HTML report(s) combining statistics per genome:"
+            f"  - Mulitqc report: {len(multiqc_files)} HTML report(s) combining statistics per genome:"
         )
         for i, file in enumerate(multiqc_files):
             if i < 4:

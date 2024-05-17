@@ -36,7 +36,9 @@ rule merge_bam_low_qual_fastq2library:
     input:
         get_bam_4_merge_bam_low_qual_fastq2library,
     output:
-        temp("{folder}/02_library/00_merged_fastq/01_bam_low_qual/{sm}/{lb}.{genome}.bam"),
+        temp(
+            "{folder}/02_library/00_merged_fastq/01_bam_low_qual/{sm}/{lb}.{genome}.bam"
+        ),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24),
@@ -62,12 +64,18 @@ rule markduplicates:
     input:
         get_bam_4_markduplicates,
     output:
-        bam=temp("{folder}/02_library/01_duplicated/01_markduplicates/{sm}/{lb}.{genome}.bam"),
+        bam=temp(
+            "{folder}/02_library/01_duplicated/01_markduplicates/{sm}/{lb}.{genome}.bam"
+        ),
         stats="{folder}/02_library/01_duplicated/01_markduplicates/{sm}/{lb}.{genome}.stats",
     resources:
         ## Java: there is an overhead: so reduce slightly the amount of memory given to the tool comapred to the job
-        memory=lambda wildcards, attempt: get_memory_alloc("remove_duplicates", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("remove_duplicates", attempt, 24),
+        memory=lambda wildcards, attempt: get_memory_alloc(
+            "remove_duplicates", attempt, 4
+        ),
+        runtime=lambda wildcards, attempt: get_runtime_alloc(
+            "remove_duplicates", attempt, 24
+        ),
     params:
         params=lambda wildcards: get_paramGrp(
             ["remove_duplicates", "params_markduplicates"],
@@ -107,8 +115,12 @@ rule dedup:
         log="{folder}/02_library/01_duplicated/01_dedup/{sm}/{lb}.{genome}.log",
         bam=temp("{folder}/02_library/01_duplicated/01_dedup/{sm}/{lb}.{genome}.bam"),
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("remove_duplicates", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("remove_duplicates", attempt, 24),
+        memory=lambda wildcards, attempt: get_memory_alloc(
+            "remove_duplicates", attempt, 4
+        ),
+        runtime=lambda wildcards, attempt: get_runtime_alloc(
+            "remove_duplicates", attempt, 24
+        ),
     params:
         params=lambda wildcards: get_paramGrp(
             ["remove_duplicates", "params_dedup"], "-m", wildcards

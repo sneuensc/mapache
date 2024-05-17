@@ -56,8 +56,12 @@ rule get_fastq:
     threads: 1
     params:
         run=lambda wildcards: get_paramGrp(["subsampling", "run"], False, wildcards),
-        number=lambda wildcards: get_paramGrp(["subsampling", "number"], 1000, wildcards),
-        params=lambda wildcards: get_paramGrp(["subsampling", "params"], "-s1", wildcards),
+        number=lambda wildcards: get_paramGrp(
+            ["subsampling", "number"], 1000, wildcards
+        ),
+        params=lambda wildcards: get_paramGrp(
+            ["subsampling", "params"], "-s1", wildcards
+        ),
         ftp=lambda wildcards: get_fastq_of_ID_0(wildcards),
     conda:
         "../envs/seqtk.yaml"
@@ -175,8 +179,12 @@ rule adapterremoval_pe:
     input:
         get_fastq_4_cleaning,
     output:
-        R1=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}_R1.fastq.gz"),
-        R2=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}_R2.fastq.gz"),
+        R1=temp(
+            "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}_R1.fastq.gz"
+        ),
+        R2=temp(
+            "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}_R2.fastq.gz"
+        ),
         singleton=temp(
             "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}.singleton.truncated.gz"
         ),
@@ -218,7 +226,9 @@ rule adapterremoval_se:
     input:
         get_fastq_4_cleaning,
     output:
-        R=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_se/{sm}/{lb}/{id}.fastq.gz"),
+        R=temp(
+            "{folder}/01_fastq/01_trimmed/01_adapterremoval_se/{sm}/{lb}/{id}.fastq.gz"
+        ),
         discard=temp(
             "{folder}/01_fastq/01_trimmed/01_adapterremoval_se/{sm}/{lb}/{id}.discarded.gz"
         ),
@@ -443,7 +453,9 @@ rule mapping_bwa_aln_se:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
-        lambda wildcards: get_paramGrp(["mapping", "bwa_aln_params"], "-l 1024", wildcards),
+        lambda wildcards: get_paramGrp(
+            ["mapping", "bwa_aln_params"], "-l 1024", wildcards
+        ),
     log:
         "{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}.{genome}.log",
     threads: get_threads("mapping", 4)
@@ -475,12 +487,16 @@ rule mapping_bwa_aln_pe:
         ref="{folder}/00_reference/{genome}/{genome}.fasta",
         fastq=get_fastq_4_mapping,
     output:
-        temp("{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}.{genome}_R{id_read}.sai"),
+        temp(
+            "{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}.{genome}_R{id_read}.sai"
+        ),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
-        lambda wildcards: get_paramGrp(["mapping", "bwa_aln_params"], "-l 1024", wildcards),
+        lambda wildcards: get_paramGrp(
+            ["mapping", "bwa_aln_params"], "-l 1024", wildcards
+        ),
     log:
         "{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}.{genome}_R{id_read}.log",
     threads: get_threads("mapping", 4)
@@ -518,7 +534,9 @@ rule mapping_bwa_samse:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
-        PL=lambda wildcards: get_paramGrp(["mapping", "platform"], "ILLUMINA", wildcards),
+        PL=lambda wildcards: get_paramGrp(
+            ["mapping", "platform"], "ILLUMINA", wildcards
+        ),
         params=lambda wildcards: get_paramGrp(
             ["mapping", "bwa_samse_params"], "-n 3", wildcards
         ),
@@ -564,7 +582,9 @@ rule mapping_bwa_sampe:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
-        PL=lambda wildcards: get_paramGrp(["mapping", "platform"], "ILLUMINA", wildcards),
+        PL=lambda wildcards: get_paramGrp(
+            ["mapping", "platform"], "ILLUMINA", wildcards
+        ),
         params=lambda wildcards: get_paramGrp(
             ["mapping", "bwa_sampe_params"], "-n 3", wildcards
         ),
@@ -608,8 +628,12 @@ rule mapping_bwa_mem:
         memory=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
     params:
-        PL=lambda wildcards: get_paramGrp(["mapping", "platform"], "ILLUMINA", wildcards),
-        params=lambda wildcards: get_paramGrp(["mapping", "bwa_mem_params"], "", wildcards),
+        PL=lambda wildcards: get_paramGrp(
+            ["mapping", "platform"], "ILLUMINA", wildcards
+        ),
+        params=lambda wildcards: get_paramGrp(
+            ["mapping", "bwa_mem_params"], "", wildcards
+        ),
     log:
         "{folder}/01_fastq/02_mapped/02_bwa_mem/{sm}/{lb}/{id}.{genome}.log",
     threads: get_threads("mapping", 4)
@@ -716,10 +740,14 @@ if save_low_qual:
                 "{folder}/01_fastq/03_filtered/01_bam_filter_low_qual/{sm}/{lb}/{id}.{genome}.bam"
             ),
         params:
-            lambda wildcards: get_paramGrp(["filtering", "params"], "-F 4 -q 30", wildcards),
+            lambda wildcards: get_paramGrp(
+                ["filtering", "params"], "-F 4 -q 30", wildcards
+            ),
         resources:
             memory=lambda wildcards, attempt: get_memory_alloc("filtering", attempt, 4),
-            runtime=lambda wildcards, attempt: get_runtime_alloc("filtering", attempt, 24),
+            runtime=lambda wildcards, attempt: get_runtime_alloc(
+                "filtering", attempt, 24
+            ),
         log:
             "{folder}/01_fastq/03_filtered/01_bam_filter/{sm}/{lb}/{id}.{genome}.log",
         threads: get_threads("filtering", 4)
@@ -748,10 +776,14 @@ else:
                 "{folder}/01_fastq/03_filtered/01_bam_filter/{sm}/{lb}/{id}.{genome}.bam"
             ),
         params:
-            lambda wildcards: get_paramGrp(["filtering", "params"], "-F 4 -q 30", wildcards),
+            lambda wildcards: get_paramGrp(
+                ["filtering", "params"], "-F 4 -q 30", wildcards
+            ),
         resources:
             memory=lambda wildcards, attempt: get_memory_alloc("filtering", attempt, 4),
-            runtime=lambda wildcards, attempt: get_runtime_alloc("filtering", attempt, 24),
+            runtime=lambda wildcards, attempt: get_runtime_alloc(
+                "filtering", attempt, 24
+            ),
         log:
             "{folder}/01_fastq/03_filtered/01_bam_filter/{sm}/{lb}/{id}.{genome}.log",
         threads: get_threads("filtering", 4)

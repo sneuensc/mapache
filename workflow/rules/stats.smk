@@ -32,8 +32,12 @@ rule fastqc:
     log:
         "{folder}/04_stats/01_sparse_stats/01_fastq/{type}/{sm}/{lb}/{id}_fastqc.log",
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc2(["stats", "fastqc"], attempt, 2),
-        runtime=lambda wildcards, attempt: get_runtime_alloc2(["stats", "fastqc"], attempt, 1),
+        memory=lambda wildcards, attempt: get_memory_alloc2(
+            ["stats", "fastqc"], attempt, 2
+        ),
+        runtime=lambda wildcards, attempt: get_runtime_alloc2(
+            ["stats", "fastqc"], attempt, 1
+        ),
     conda:
         "../envs/fastqc.yaml"
     envmodules:
@@ -299,7 +303,9 @@ rule merge_stats_per_lb:
         "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/library_stats.csv",
     params:
         chrs_selected=lambda wildcards: ",".join(
-            to_list(get_param(["depth", wildcards.genome, "chromosomes"], "not_requested"))
+            to_list(
+                get_param(["depth", wildcards.genome, "chromosomes"], "not_requested")
+            )
         ),
         script=workflow.source_path("../scripts/merge_stats_per_LB.R"),
     log:
@@ -352,7 +358,9 @@ rule merge_stats_per_sm:
         "{folder}/04_stats/02_separate_tables/{genome}/{sm}/sample_stats.csv",
     params:
         chrs_selected=lambda wildcards: ",".join(
-            to_list(get_param(["depth", wildcards.genome, "chromosomes"], "not_requested"))
+            to_list(
+                get_param(["depth", wildcards.genome, "chromosomes"], "not_requested")
+            )
         ),
         #chrs_selected=get_chroms,
         script=workflow.source_path("../scripts/merge_stats_per_SM.R"),
@@ -718,7 +726,9 @@ rule qualimap:
     output:
         directory("{folder}/04_stats/01_sparse_stats/{file}_qualimap"),
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc2(["stats", "qualimap"], attempt, 4),
+        memory=lambda wildcards, attempt: get_memory_alloc2(
+            ["stats", "qualimap"], attempt, 4
+        ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
             ["stats", "qualimap"], attempt, 1
         ),
@@ -749,8 +759,12 @@ rule multiqc:
             category="MultiQC",
         ),
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc2(["stats", "multiqc"], attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc2(["stats", "multiqc"], attempt, 1),
+        memory=lambda wildcards, attempt: get_memory_alloc2(
+            ["stats", "multiqc"], attempt, 4
+        ),
+        runtime=lambda wildcards, attempt: get_runtime_alloc2(
+            ["stats", "multiqc"], attempt, 1
+        ),
     params:
         config="workflow/report/multiqc_config.yaml",
         resultdir=RESULT_DIR,
