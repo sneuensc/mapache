@@ -5,22 +5,20 @@
 for genome in GENOMES:
     if get_param(["imputation", genome, "run"], ["False", "glimpse1", "glimpse2"]) != "False":
         # Imputation will be run by default on all chromosomes. The paramter below allow to select a subset of chromosomes.
-        chromosomes = to_str(
-            to_list(get_param(["imputation", genome, "chromosomes"], []))
-        )
+        chromosomes = to_str(to_list(get_param(["imputation", genome, "chromosomes"], [])))
         if not chromosomes:
             chromosomes = get_chromosome_names(genome)
         else:
             if valid_chromosome_names(genome, chromosomes):
                 LOGGER.error(
-                    f"ERROR: In config[imputation][{genome}][chromosomes], the following chromosome names are not recognized: {valid_chromosome_names(genome, chromosomes)}!"
+                    f"ERROR: In config[imputation][{genome}][chromosomes], the following chromosome names are not recognized: {valid_chromosome_names(genome , chromosomes)}!"
                 )
                 os._exit(1)
 
         # This string contains a wildcard where we will place the name of the chromosome
         # something like "path/to/my/panel_chr{chr}.vcf.gz"
         path_panel = get_param(["imputation", genome, "path_panel"], "")
-        #print(path_panel)
+        # print(path_panel)
         for chr in chromosomes:
             file = path_panel.format(chr=chr)
             if not os.path.isfile(file):
@@ -32,7 +30,7 @@ for genome in GENOMES:
         # This string contains a wildcard where we will place the name of the chromosome
         # something like "path/to/my/panel_chr{chr}.vcf.gz"
         path_map = get_param(["imputation", genome, "path_map"], "")
-        #print(chromosomes)
+        # print(chromosomes)
         for chr in chromosomes:
             file = path_map.format(chr=chr)
             if not os.path.isfile(file):
@@ -44,6 +42,7 @@ for genome in GENOMES:
 
 # -----------------------------------------------------------------------------#
 # Some useful functions
+
 
 # This function will be useful later to know how many chunks will be merged per chromosome
 def get_num_chunks(wildcards, return_str=False):
@@ -125,12 +124,8 @@ rule extract_positions:
         vcf="{folder}/03_sample/04_imputed/01_panel/01_panel/{genome}/chr{chr}.vcf.gz",
         index="{folder}/03_sample/04_imputed/01_panel/01_panel/{genome}/chr{chr}.vcf.gz.csi",
     output:
-        sites=temp(
-            "{folder}/03_sample/04_imputed/01_panel/02_sites/{genome}/chr{chr}.vcf.gz"
-        ),
-        tsv=temp(
-            "{folder}/03_sample/04_imputed/01_panel/02_sites/{genome}/chr{chr}.tsv.gz"
-        ),
+        sites=temp("{folder}/03_sample/04_imputed/01_panel/02_sites/{genome}/chr{chr}.vcf.gz"),
+        tsv=temp("{folder}/03_sample/04_imputed/01_panel/02_sites/{genome}/chr{chr}.tsv.gz"),
         csi=temp(
             "{folder}/03_sample/04_imputed/01_panel/02_sites/{genome}/chr{chr}.vcf.gz.csi"
         ),
@@ -173,9 +168,7 @@ rule bcftools_mpileup:
         sites="{folder}/03_sample/04_imputed/01_panel/02_sites/{genome}/chr{chr}.vcf.gz",
         tsv="{folder}/03_sample/04_imputed/01_panel/02_sites/{genome}/chr{chr}.tsv.gz",
     output:
-        final_vcf=temp(
-            "{folder}/03_sample/04_imputed/03_vcf/{sm}.{genome}_chr{chr}.vcf.gz"
-        ),
+        final_vcf=temp("{folder}/03_sample/04_imputed/03_vcf/{sm}.{genome}_chr{chr}.vcf.gz"),
         final_csi=temp(
             "{folder}/03_sample/04_imputed/03_vcf/{sm}.{genome}_chr{chr}.vcf.gz.csi"
         ),
@@ -359,20 +352,22 @@ rule glimpse_ligate:
         """
 
 
-
 def get_ligated_bcf(wc):
     txt = get_param(["imputation", wc.genome, "run"], ["False", "glimpse1", "glimpse2"])
-    if txt == 'glimpse1':
+    if txt == "glimpse1":
         folder = "06_glimpse_ligated"
-    elif txt == 'glimpse2':
+    elif txt == "glimpse2":
         folder = "06_glimpse2_ligated"
     else:
         LOGGER.error(
             f"ERROR: The parameter config[imputation][{wc.genome}][run] is not correctly specified: {txt} is unknown!"
         )
         os._exit(1)
-    
-    return [f"{wc.folder}/03_sample/04_imputed/{folder}/{wc.sm}.{wc.genome}/chr{chr}.bcf" for chr in chromosomes]
+
+    return [
+        f"{wc.folder}/03_sample/04_imputed/{folder}/{wc.sm}.{wc.genome}/chr{chr}.bcf"
+        for chr in chromosomes
+    ]
 
 
 # #  # 6.1
@@ -382,8 +377,8 @@ rule concat:
     Concatenate imputed genotypes per sample
     """
     input:
-        bcf = get_ligated_bcf,
-        csi = lambda wildcards: [f"{x}.csi" for x in get_ligated_bcf(wildcards)],
+        bcf=get_ligated_bcf,
+        csi=lambda wildcards: [f"{x}.csi" for x in get_ligated_bcf(wildcards)],
     output:
         bcf="{folder}/03_sample/04_imputed/06_glimpse_ligated_concat/{sm}.{genome}.bcf",
         csi="{folder}/03_sample/04_imputed/06_glimpse_ligated_concat/{sm}.{genome}.bcf.csi",
@@ -408,12 +403,8 @@ rule filter_gp_sm:
         bcf="{folder}/03_sample/04_imputed/06_glimpse_ligated_concat/{sm}.{genome}.bcf",
         index="{folder}/03_sample/04_imputed/06_glimpse_ligated_concat/{sm}.{genome}.bcf.csi",
     output:
-        bcf=temp(
-            "{folder}/03_sample/04_imputed/07_gp_filtered/{sm}.{genome}_gp{gp}.bcf"
-        ),
-        csi=temp(
-            "{folder}/03_sample/04_imputed/07_gp_filtered/{sm}.{genome}_gp{gp}.bcf.csi"
-        ),
+        bcf=temp("{folder}/03_sample/04_imputed/07_gp_filtered/{sm}.{genome}_gp{gp}.bcf"),
+        csi=temp("{folder}/03_sample/04_imputed/07_gp_filtered/{sm}.{genome}_gp{gp}.bcf.csi"),
     message:
         "--- IMPUTATION: GP filtering (sample {wildcards.sm}; genome: {wildcards.genome}; GP {wildcards.gp})"
     log:
@@ -427,6 +418,7 @@ rule filter_gp_sm:
         bcftools view -i'FORMAT/GP[0:*]>{wildcards.gp}' -Ob -o {output.bcf} {input.bcf};
         bcftools index -f {output.bcf};
         """
+
 
 rule get_gp:
     input:
@@ -517,7 +509,9 @@ rule glimpse_sample:
             ["imputation", wildcards.genome, "glimpse_sample"], attempt, 1
         ),
     params:
-        lambda wildcards: get_param(["imputation", wildcards.genome, "glimpse_sample"], '--solve'),
+        lambda wildcards: get_param(
+            ["imputation", wildcards.genome, "glimpse_sample"], "--solve"
+        ),
     log:
         "{folder}/log/03_sample/04_imputed/08_glimpse_sampled/{sm}.{genome}_gp{gp}.log",
     conda:

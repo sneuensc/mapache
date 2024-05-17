@@ -32,12 +32,8 @@ rule fastqc:
     log:
         "{folder}/04_stats/01_sparse_stats/01_fastq/{type}/{sm}/{lb}/{id}_fastqc.log",
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc2(
-            ["stats", "fastqc"], attempt, 2
-        ),
-        runtime=lambda wildcards, attempt: get_runtime_alloc2(
-            ["stats", "fastqc"], attempt, 1
-        ),
+        memory=lambda wildcards, attempt: get_memory_alloc2(["stats", "fastqc"], attempt, 2),
+        runtime=lambda wildcards, attempt: get_runtime_alloc2(["stats", "fastqc"], attempt, 1),
     conda:
         "../envs/fastqc.yaml"
     envmodules:
@@ -252,9 +248,11 @@ rule assign_no_sex:
 rule merge_stats_per_fastq:
     input:
         fastqc_orig="{folder}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{sm}/{lb}/{id}_fastqc.zip",  # raw sequenced reads
-        fastqc_trim=lambda wildcards: "{folder}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}_fastqc.zip"
-        if get_paramGrp(["adapterremoval", "run"], ["True", "False"], wildcards)
-        else "{folder}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{sm}/{lb}/{id}_fastqc.zip",
+        fastqc_trim=lambda wildcards: (
+            "{folder}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}_fastqc.zip"
+            if get_paramGrp(["adapterremoval", "run"], ["True", "False"], wildcards)
+            else "{folder}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{sm}/{lb}/{id}_fastqc.zip"
+        ),
         stats_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{sm}/{lb}/{id}.{genome}_stats.txt",  # mapped and high-qual reads
         length_fastq_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{sm}/{lb}/{id}.{genome}_length.txt",
     output:
@@ -301,9 +299,7 @@ rule merge_stats_per_lb:
         "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/library_stats.csv",
     params:
         chrs_selected=lambda wildcards: ",".join(
-            to_list(
-                get_param(["depth", wildcards.genome, "chromosomes"], "not_requested")
-            )
+            to_list(get_param(["depth", wildcards.genome, "chromosomes"], "not_requested"))
         ),
         script=workflow.source_path("../scripts/merge_stats_per_LB.R"),
     log:
@@ -356,9 +352,7 @@ rule merge_stats_per_sm:
         "{folder}/04_stats/02_separate_tables/{genome}/{sm}/sample_stats.csv",
     params:
         chrs_selected=lambda wildcards: ",".join(
-            to_list(
-                get_param(["depth", wildcards.genome, "chromosomes"], "not_requested")
-            )
+            to_list(get_param(["depth", wildcards.genome, "chromosomes"], "not_requested"))
         ),
         #chrs_selected=get_chroms,
         script=workflow.source_path("../scripts/merge_stats_per_SM.R"),
@@ -724,9 +718,7 @@ rule qualimap:
     output:
         directory("{folder}/04_stats/01_sparse_stats/{file}_qualimap"),
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc2(
-            ["stats", "qualimap"], attempt, 4
-        ),
+        memory=lambda wildcards, attempt: get_memory_alloc2(["stats", "qualimap"], attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
             ["stats", "qualimap"], attempt, 1
         ),
@@ -757,12 +749,8 @@ rule multiqc:
             category="MultiQC",
         ),
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc2(
-            ["stats", "multiqc"], attempt, 4
-        ),
-        runtime=lambda wildcards, attempt: get_runtime_alloc2(
-            ["stats", "multiqc"], attempt, 1
-        ),
+        memory=lambda wildcards, attempt: get_memory_alloc2(["stats", "multiqc"], attempt, 4),
+        runtime=lambda wildcards, attempt: get_runtime_alloc2(["stats", "multiqc"], attempt, 1),
     params:
         config="workflow/report/multiqc_config.yaml",
         resultdir=RESULT_DIR,

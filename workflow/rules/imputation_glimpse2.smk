@@ -17,9 +17,7 @@ checkpoint glimpse2_chunk:
     """
     input:
         #map="{folder}/03_sample/04_imputed/02_map/{genome}/chr{chr}.gz",
-        map=lambda wildcards: get_param(
-            ["imputation", wildcards.genome, "path_map"], ""
-        ),
+        map=lambda wildcards: get_param(["imputation", wildcards.genome, "path_map"], ""),
         vcf="{folder}/03_sample/04_imputed/01_panel/01_panel/{genome}/chr{chr}.vcf.gz",
         csi="{folder}/03_sample/04_imputed/01_panel/01_panel/{genome}/chr{chr}.vcf.gz.csi",
     output:
@@ -65,23 +63,20 @@ rule glimpse2_split_reference:
         vcf_ref="{folder}/03_sample/04_imputed/01_panel/01_panel/{genome}/chr{chr}.vcf.gz",
         csi_ref="{folder}/03_sample/04_imputed/01_panel/01_panel/{genome}/chr{chr}.vcf.gz.csi",
         chunks="{folder}/03_sample/04_imputed/04_glimpse2_chunked/{genome}/chunks_chr{chr}.txt",
-        map=lambda wildcards: get_param(
-            ["imputation", wildcards.genome, "path_map"], ""
-        ),
+        map=lambda wildcards: get_param(["imputation", wildcards.genome, "path_map"], ""),
     output:
         temp(
             "{folder}/03_sample/04_imputed/05_glimpse2_splitted_reference/{genome}/chr{chr}/chunk{n}.n"
         ),
     message:
         "--- IMPUTATION GLIMPSE2: create binary reference panel (genome {wildcards.genome}; chr {wildcards.chr}; chunk: {wildcards.n})"
+    threads: lambda wildcards: get_threads2(["imputation", wildcards.genome, "glimpse2_split_reference"], 1)
     params:
         params=lambda wildcards: get_param(
             ["imputation", wildcards.genome, "GLIMPSE2_split_reference_params"], ""
         ),
     log:
         "{folder}/log/03_sample/04_imputed/05_glimpse2_splitted_reference/{genome}/chr{chr}/chunk{n}.log",
-    threads: 
-        lambda wildcards: get_threads2(["imputation", wildcards.genome, "glimpse2_split_reference"], 1)
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc2(
             ["imputation2", wildcards.genome, "glimpse2_split_reference"], attempt, 2
@@ -112,7 +107,7 @@ rule glimpse2_split_reference:
         """
 
 
-# 5. Impute and phase a whole chromosome
+## 5. Impute and phase a whole chromosome
 rule glimpse2_phase:
     input:
         bam="{folder}/03_sample/03_final_sample/01_bam/{sm}.{genome}.bam",

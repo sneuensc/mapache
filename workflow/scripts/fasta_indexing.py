@@ -17,14 +17,14 @@ ext = [el[1] for el in file_extension]
 
 ## check if the indexes are present
 files1 = [orig_fasta + s for s in ext]  ## foo.fasta.ext
-files2 = [orig_prefix + s for s in ext] ## foo.ext
-if all([os.path.isfile(f) for f in files1]): ## foo.fasta.ext
+files2 = [orig_prefix + s for s in ext]  ## foo.ext
+if all([os.path.isfile(f) for f in files1]):  ## foo.fasta.ext
     for idx, item in enumerate(files1):
         os.symlink(item, out_files[idx])
 elif all([os.path.isfile(f) for f in files2]):  ## foo.ext
     for idx, item in enumerate(files2):
         os.symlink(item, out_files[idx])
-else:    ## index is not present: create the index
+else:  ## index is not present: create the index
     cmd = eval(snakemake.params.cmd)
-    #print(cmd)
+    # print(cmd)
     subprocess.run(cmd, shell=True)

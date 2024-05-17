@@ -36,9 +36,7 @@ rule merge_bam_low_qual_fastq2library:
     input:
         get_bam_4_merge_bam_low_qual_fastq2library,
     output:
-        temp(
-            "{folder}/02_library/00_merged_fastq/01_bam_low_qual/{sm}/{lb}.{genome}.bam"
-        ),
+        temp("{folder}/02_library/00_merged_fastq/01_bam_low_qual/{sm}/{lb}.{genome}.bam"),
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24),
@@ -64,25 +62,21 @@ rule markduplicates:
     input:
         get_bam_4_markduplicates,
     output:
-        bam=temp(
-            "{folder}/02_library/01_duplicated/01_markduplicates/{sm}/{lb}.{genome}.bam"
-        ),
+        bam=temp("{folder}/02_library/01_duplicated/01_markduplicates/{sm}/{lb}.{genome}.bam"),
         stats="{folder}/02_library/01_duplicated/01_markduplicates/{sm}/{lb}.{genome}.stats",
     resources:
         ## Java: there is an overhead: so reduce slightly the amount of memory given to the tool comapred to the job
-        memory=lambda wildcards, attempt: get_memory_alloc(
-            "remove_duplicates", attempt, 4
-        ),
-        runtime=lambda wildcards, attempt: get_runtime_alloc(
-            "remove_duplicates", attempt, 24
-        ),
+        memory=lambda wildcards, attempt: get_memory_alloc("remove_duplicates", attempt, 4),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("remove_duplicates", attempt, 24),
     params:
         params=lambda wildcards: get_paramGrp(
             ["remove_duplicates", "params_markduplicates"],
             "--REMOVE_DUPLICATES true",
             wildcards,
         ),
-        java_mem_overhead_factor = float(get_param(["software", "java_mem_overhead_factor"], 0.2)),
+        java_mem_overhead_factor=float(
+            get_param(["software", "java_mem_overhead_factor"], 0.2)
+        ),
     threads: get_threads("remove_duplicates", 4)
     log:
         "{folder}/02_library/01_duplicated/01_markduplicates/{sm}/{lb}.{genome}.log",
@@ -113,12 +107,8 @@ rule dedup:
         log="{folder}/02_library/01_duplicated/01_dedup/{sm}/{lb}.{genome}.log",
         bam=temp("{folder}/02_library/01_duplicated/01_dedup/{sm}/{lb}.{genome}.bam"),
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc(
-            "remove_duplicates", attempt, 4
-        ),
-        runtime=lambda wildcards, attempt: get_runtime_alloc(
-            "remove_duplicates", attempt, 24
-        ),
+        memory=lambda wildcards, attempt: get_memory_alloc("remove_duplicates", attempt, 4),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("remove_duplicates", attempt, 24),
     params:
         params=lambda wildcards: get_paramGrp(
             ["remove_duplicates", "params_dedup"], "-m", wildcards
@@ -250,7 +240,7 @@ rule bamrefine:
     threads: 1
     params:
         lambda wildcards: get_paramGrp(["bamrefine", "params"], "", wildcards),
-    #conda:
+    # conda:
     #    "../envs/bamrefine.yaml"
     envmodules:
         module_bamrefine,

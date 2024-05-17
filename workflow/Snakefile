@@ -5,7 +5,6 @@ Aim: Map ancient DNA libraries to a reference GENOMES
 Date: 28/10/2019
 """
 
-
 ##########################################################################################
 import logging
 
@@ -98,9 +97,7 @@ if len(SAMPLES) + len(EXTERNAL_SAMPLES) == 0:
 
 
 wildcard_constraints:
-    sm="|".join(
-        [sm for sm in SAMPLES] + [sm for g in EXTERNAL_SAMPLES.values() for sm in g]
-    ),
+    sm="|".join([sm for sm in SAMPLES] + [sm for g in EXTERNAL_SAMPLES.values() for sm in g]),
     lb="|".join([lb for sm in SAMPLES.values() for lb in sm]),
     id="|".join([id for sm in SAMPLES.values() for lb in sm.values() for id in lb]),
     genome="|".join([g for g in GENOMES]),
@@ -128,16 +125,14 @@ if run_subsampling:
 
 ## --------------------------------------------------------------------------------------------------
 ## mapping
-mapper = get_param(["mapping", "mapper"], ["bwa_aln", "bwa_mem", "bowtie2","bowtie2l"])
+mapper = get_param(["mapping", "mapper"], ["bwa_aln", "bwa_mem", "bowtie2", "bowtie2l"])
 
 ## --------------------------------------------------------------------------------------------------
 ## filtering
 run_filtering = str2bool(get_param(["filtering", "run"], ["True", "False"]))
 
 if run_filtering:
-    save_low_qual = str2bool(
-        get_param(["filtering", "save_low_qual"], ["True", "False"])
-    )
+    save_low_qual = str2bool(get_param(["filtering", "save_low_qual"], ["True", "False"]))
 
     ## only one of the parameters may be specified
     ## if mapq is set, write the corresponding argument to 'param'
@@ -166,9 +161,7 @@ else:
 
 ## --------------------------------------------------------------------------------------------------
 ## removing duplicates (if run is variable then it is set to true)
-remove_duplicates = get_param(
-    ["remove_duplicates", "run"], ["markduplicates", "dedup", "False"]
-)
+remove_duplicates = get_param(["remove_duplicates", "run"], ["markduplicates", "dedup", "False"])
 
 if remove_duplicates == "dedup" and not PAIRED_END:
     LOGGER.warning(
@@ -227,9 +220,8 @@ for genome in GENOMES:
 ## imputation (is assumed to be run ONLY on the first specified reference GENOMES!!!)
 run_imputation = []
 for genome in GENOMES:
-    if get_param(["imputation", genome, "run"], ["False", "glimpse1", "glimpse2"]) != 'False':
+    if get_param(["imputation", genome, "run"], ["False", "glimpse1", "glimpse2"]) != "False":
         run_imputation = run_imputation + [genome]
-        
 
 
 ##########################################################################################
@@ -317,15 +309,16 @@ localrules:
     dag,
     mapping,  ## executed locally on a cluster
 
-#print(final_bam)
-#print(final_external_bam)
-#print(final_bam_low_qual)
-#print(final_stat_figures)
-#print(final_stats)
-#print(samtools_stats)
-#print(stats_mapping_checkpoint)
-#print(get_imputation_files())
-#print(get_imputation_plots())
+
+# print(final_bam)
+# print(final_external_bam)
+# print(final_bam_low_qual)
+# print(final_stat_figures)
+# print(final_stats)
+# print(samtools_stats)
+# print(stats_mapping_checkpoint)
+# print(get_imputation_files())
+# print(get_imputation_plots())
 
 
 ## rules all
@@ -440,9 +433,7 @@ rule imputation:
 ##########################################################################################
 onsuccess:
     LOGGER.info("Wow, 'mapache' finished successfully!")
-    LOGGER.info(
-        "=> To generate the Snakemake report: run 'snakemake --report report.html'."
-    )
+    LOGGER.info("=> To generate the Snakemake report: run 'snakemake --report report.html'.")
     shell("cat {log} > snakemake.run.log")
     email = get_param(["email"], "")
     if os.path.exists(f"{RESULT_DIR}/verbose.touch"):

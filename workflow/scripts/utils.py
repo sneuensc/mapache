@@ -8,6 +8,7 @@ import subprocess, os.path
 
 from snakemake.io import Wildcards
 
+
 ##########################################################################################
 ## VERBOSE LOG
 ##########################################################################################
@@ -41,7 +42,7 @@ def write_log():
             if autosomes:
                 if len(autosomes) > 10:
                     LOGGER.info(
-                        f"    - Autosomes: {autosomes[:4] + ['...'] + autosomes[-4:]}"
+                        f"    - Autosomes: {autosomes[: 4] +['...'] + autosomes[- 4:]}"
                     )
                 else:
                     LOGGER.info(f"    - Autosomes: {autosomes}")
@@ -61,7 +62,7 @@ def write_log():
                 LOGGER.info(f"  - Sample file ('{SAMPLE_FILE}') in paired-end format:")
 
             LOGGER.info(f"    - {len(SAMPLES)} SAMPLES")
-            LOGGER.info(f"    - {len([l for s in SAMPLES.values() for l in s])} libraries")
+            # LOGGER.info(f"    - {len([l for s in SAMPLES.values() for l in s])} libraries")
             tmp = [
                 i["Data2"] for s in SAMPLES.values() for l in s.values() for i in l.values()
             ]
@@ -77,10 +78,10 @@ def write_log():
             else:
                 LOGGER.info(f"  - Sample file ('{SAMPLE_FILE}') in single-end format:")
             LOGGER.info(f"    - {len(SAMPLES)} SAMPLES")
-            LOGGER.info(f"    - {len([l for s in SAMPLES.values() for l in s])} libraries")
-            LOGGER.info(
-                f"    - {len([i for s in SAMPLES.values() for l in s.values() for i in l])} single-end fastq files"
-            )
+            # LOGGER.info(f"    - {len([l for s in SAMPLES.values() for l in s])} libraries")
+            # LOGGER.info(
+            #    f"    - {len([i for s in SAMPLES.values() for l in s.values() for i in l])} single-end fastq files"
+            # )
 
     if len(EXTERNAL_SAMPLES):
         if EXTERNAL_SAMPLE_FILE == "yaml":
@@ -112,15 +113,21 @@ def write_log():
             else:
                 LOGGER.info(f"  - Subsampling {subsampling_number} reads per fastq file")
 
-        run_adapter_removal = get_param(["adapterremoval", "run"], "True") ## get param 'simple'
+        run_adapter_removal = get_param(
+            ["adapterremoval", "run"], "True"
+        )  ## get param 'simple'
         if type(run_adapter_removal) is dict:
             if COLLAPSE:
-                LOGGER.info(f"  - Removing adapters (variable) with AdapterRemoval and collapsing paired-end reads")
+                LOGGER.info(
+                    f"  - Removing adapters (variable) with AdapterRemoval and collapsing paired-end reads"
+                )
             else:
                 LOGGER.info(f"  - Removing adapters (variable) with AdapterRemoval")
         elif str2bool(run_adapter_removal):
             if COLLAPSE:
-                LOGGER.info(f"  - Removing adapters with AdapterRemoval and collapsing paired-end reads")
+                LOGGER.info(
+                    f"  - Removing adapters with AdapterRemoval and collapsing paired-end reads"
+                )
             else:
                 LOGGER.info(f"  - Removing adapters with AdapterRemoval")
 
@@ -130,18 +137,17 @@ def write_log():
 
         if run_filtering:
             if save_low_qual:
-                LOGGER.info(
-                    f"  - Filtering and keeping separately low quality/unmapped reads"
-                )
+                LOGGER.info(f"  - Filtering and keeping separately low quality/unmapped reads")
             else:
                 LOGGER.info(f"  - Filtering and discarding low quality/unmapped reads")
 
-        rmduplicates = get_param(["remove_duplicates", "run"], "markduplicates") ## get param 'simple'
+        rmduplicates = get_param(
+            ["remove_duplicates", "run"], "markduplicates"
+        )  ## get param 'simple'
         if rmduplicates == "markduplicates":
             LOGGER.info(f"  - Removing duplicates with MarkDuplicates")
         elif rmduplicates == "dedup":
             LOGGER.info(f"  - Removing duplicates with DeDup")
-            
 
         if run_damage_rescale:
             LOGGER.info(f"  - Rescaling damage with MapDamage2")
@@ -206,7 +212,7 @@ def write_log():
             )
         elif fraction < 1:
             LOGGER.info(
-                f"  - Inferring damage and read length with bamdamge on {100 * fraction}% of the alignments"
+                f"  - Inferring damage and read length with bamdamge on {100 *fraction}% of the alignments"
             )
         else:
             LOGGER.info(
@@ -240,7 +246,7 @@ def write_log():
 
     if run_multiqc:
         LOGGER.info(
-            f"  - Mulitqc report: {len(multiqc_files)} HTML report(s) combining statistics per genome:"
+            f"  - Multiqc report: {len(multiqc_files)} HTML report(s) combining statistics per genome:"
         )
         for i, file in enumerate(multiqc_files):
             if i < 4:
@@ -258,53 +264,65 @@ def write_log():
 ##########################################################################################################
 ## helper function to deal with the SAMPLES nested dict
 
+
 ## get all values of the given key/column (multiple if it is at the lb or sm level)
 def get_sample_column(col, wc=None):
     if wc is None:
-        grp = [id[col] for sm in SAMPLES.values() for lb in sm.values() for id in lb.values() if col in id]
-    elif 'id' in wc.keys():
+        grp = [
+            id[col]
+            for sm in SAMPLES.values()
+            for lb in sm.values()
+            for id in lb.values()
+            if col in id
+        ]
+    elif "id" in wc.keys():
         grp = [val for keys, val in SAMPLES[wc.sm][wc.lb][wc.id].items() if col in keys]
-    elif 'lb' in wc.keys():
+    elif "lb" in wc.keys():
         grp = [val[col] for val in SAMPLES[wc.sm][wc.lb].values() if col in val]
-    elif 'sm' in wc.keys():
+    elif "sm" in wc.keys():
         grp = [id[col] for lb in SAMPLES[wc.sm].values() for id in lb.values() if col in id]
-    
+
     return grp
+
 
 ## get the number of fastq files of the given sample path
 def get_sample_count(wc=None):
     if wc is None:
-        grpNb = len([id for sm in SAMPLES.values() for lb in sm.values() for id in lb.values()])
-    elif 'id' in wc.keys():
+        grpNb = len(
+            [id for sm in SAMPLES.values() for lb in sm.values() for id in lb.values()]
+        )
+    elif "id" in wc.keys():
         grpNb = 1
-    elif 'lb' in wc.keys():
+    elif "lb" in wc.keys():
         grpNb = len([val for val in SAMPLES[wc.sm][wc.lb].values()])
-    elif 'sm' in wc.keys():
+    elif "sm" in wc.keys():
         grpNb = len([id for lb in SAMPLES[wc.sm].values() for id in lb.values()])
     return grpNb
+
 
 ## get the path, e.g., 'SAMPLES[sm][lb][id]'
 def get_sample_path(wc=None):
     if wc is None:
         return "SAMPLES"
-    if 'id' in wc.keys():
+    if "id" in wc.keys():
         return f"SAMPLES[{wc.sm}][{wc.lb}][{wc.id}]"
-    if 'lb' in wc.keys():
+    if "lb" in wc.keys():
         return f"SAMPLES[{wc.sm}][{wc.lb}]"
-    if 'sm' in wc.keys():
+    if "sm" in wc.keys():
         return f"SAMPLES[{wc.sm}]"
+
 
 ## return true if the data is paired-end and throw an error if it is a mixture
 def is_paired_end(wc):
     ## get all Data2 elements
-    data2 = get_sample_column('Data2', wc)
+    data2 = get_sample_column("Data2", wc)
 
     ## if not present it is SE
     if len(data2) == 0:
         return False
 
     ## if it is not homogenous across the group, return an error
-    nbItems= get_sample_count(wc)
+    nbItems = get_sample_count(wc)
     if len(data2) != nbItems:
         LOGGER.error(
             f"ERROR: {get_sample_path(wc)} does not contain key 'Data2' in all rows ({len(data2)} of {nbItems} present)!"
@@ -312,15 +330,15 @@ def is_paired_end(wc):
         sys.exit(1)
 
     ## entry may be empty (SE): either all or none
-    nbEmpty = data2.count('NULL')
+    nbEmpty = data2.count("NULL")
     if nbEmpty == 0:
-        return True 
+        return True
 
     if nbEmpty == nbItems:
-        return False    ## all are empty
+        return False  ## all are empty
 
     LOGGER.error(
-        f"ERROR: {get_sample_path(wc)} has a mixture of single-end ({nbEmpty}) and paired-end ({nbItems-nbEmpty}) fastq files!"
+        f"ERROR: {get_sample_path(wc)} has a mixture of single-end ({nbEmpty}) and paired-end ({nbItems - nbEmpty}) fastq files!"
     )
     sys.exit(1)
 
@@ -335,21 +353,29 @@ def is_collapse(wc):
     ## does the cleaning collapses the paired reads?: check if collapse is mentioned in the param
     run_cleaning = get_paramGrp(["cleaning", "run"], ["adapterremoval", "fastp", "False"], wc)
     if run_cleaning == "adapterremoval":
-        params = get_paramGrp(["cleaning", "params_adapterremoval"], "--minlength 30 --trimns --trimqualities", wc)
-        return any(ext in params for ext in ["--collapse", "--collapse-deterministic", "--collapse-conservatively"])
+        params = get_paramGrp(
+            ["cleaning", "params_adapterremoval"],
+            "--minlength 30 --trimns --trimqualities",
+            wc,
+        )
+        return any(
+            ext in params
+            for ext in ["--collapse", "--collapse-deterministic", "--collapse-conservatively"]
+        )
     elif run_cleaning == "fastp":
-        params = get_paramGrp(["cleaning", "params_fastp"], "--minlength 30 --trimns --trimqualities", wc)
+        params = get_paramGrp(
+            ["cleaning", "params_fastp"], "--minlength 30 --trimns --trimqualities", wc
+        )
         return any(ext in params for ext in ["--merge", "-m"])
     else:
         return False
-
 
 
 #######################################################################################################################
 ## read sample file
 def read_sample_file():
     file = get_param(["sample_file"], "")
-    #print(file)
+    # print(file)
     if file == "":
         return {}, ""
 
@@ -418,43 +444,42 @@ def test_SAMPLES():
     ## test all fastq files
     if PAIRED_END:
         ## forward reads
-        #print(get_sample_column("Data1"))
+        # print(get_sample_column("Data1"))
         for fq in get_sample_column("Data1"):
-            if not os.path.isfile(fq) and fq[:3] != 'ftp':
+            if not os.path.isfile(fq) and fq[:3] != "ftp":
                 LOGGER.error(f"ERROR: Fastq file '{fq}' does not exist!")
                 sys.exit(1)
 
         ## reverse reads (may be NaN)
         for fq in get_sample_column("Data2"):
-            if fq != 'NULL' and not os.path.isfile(fq) and fq[:3] != 'ftp':
+            if fq != "NULL" and not os.path.isfile(fq) and fq[:3] != "ftp":
                 LOGGER.error(f"ERROR: Fastq file '{fq}' does not exist!")
                 sys.exit(1)
 
     else:  ## single end
         for fq in get_sample_column("Data"):
-            if not os.path.isfile(fq) and fq[:3] != 'ftp':
+            if not os.path.isfile(fq) and fq[:3] != "ftp":
                 LOGGER.error(f"ERROR: Fastq file '{fq}' does not exist!")
                 sys.exit(1)
-    
+
     ## test if collapsing is correctly set
     COLLAPSE = "--collapse" in get_param(
-        ["adapterremoval", "params"], "--minlength 30 --trimns --trimqualities")
+        ["adapterremoval", "params"], "--minlength 30 --trimns --trimqualities"
+    )
 
     ## do we have Group settings? test if 'default' is absent
-    col = 'Group'
+    col = "Group"
     groups = get_sample_column(col)
     if len(groups) != 0:
         ## the word 'default' is reserved and may not be used as keyword
-        grpList = [ii.split(',') for ii in groups]
-        if [x.count('default') for x in grpList].count(0) != len(grpList):
+        grpList = [ii.split(",") for ii in groups]
+        if [x.count("default") for x in grpList].count(0) != len(grpList):
             LOGGER.error(
                 f"ERROR: Sample file column 'Group' contains the word 'default' which is not an allowed keyword!"
             )
             sys.exit(1)
 
     return PAIRED_END, COLLAPSE
-
-
 
 
 ##########################################################################################
@@ -510,7 +535,7 @@ def get_external_samples():
             sys.exit(1)
 
         ## test each bam file
-        for id,bam in list(samples_stats[genome].items()):
+        for id, bam in list(samples_stats[genome].items()):
             if not os.path.isfile(bam):
                 LOGGER.error(
                     f"ERROR: Bam file config[external_sample][genome][{id}][bam] does not exist ({bam})!"
@@ -523,9 +548,10 @@ def get_external_samples():
 ##########################################################################################
 ## all functions for main snakemake file
 
+
 ## get the argument of the keys (recursively acorss teh keays)
 ## keys: list of keys
-## def_value: 
+## def_value:
 ##     - the default value if the parameter is not specified
 ##     - if a list: possible arguments (throw error if different), first element is default value
 def get_param(keys, def_value, my_dict=config):
@@ -542,10 +568,10 @@ def get_param(keys, def_value, my_dict=config):
         arg = my_dict.get(keys[0], def_valueI)
     else:
         arg = get_param(keys[1:], def_valueI, my_dict=my_dict.get(keys[0], {}))
-    
+
     arg = eval_param(arg)
 
-    ## check if the arg is within the list of possible values 
+    ## check if the arg is within the list of possible values
     if type(def_value) is list and len(def_value) > 1:
         if str(arg) not in def_value:
             LOGGER.error(
@@ -557,7 +583,7 @@ def get_param(keys, def_value, my_dict=config):
 
 
 ## same as get_param(), but arguments may be a dict with group specific settings
-## group names may be specified in the sample file and may be any word, 
+## group names may be specified in the sample file and may be any word,
 ##   except 'default', which allows to define a default argument
 def get_paramGrp(keys, def_value, wc, my_dict=config):
     if type(def_value) is list and len(def_value) > 1:
@@ -567,7 +593,7 @@ def get_paramGrp(keys, def_value, wc, my_dict=config):
 
     ## if it is not a dict: return value and stop here
     if type(arg) is not dict:
-        ## check if the arg is within the list of possible values 
+        ## check if the arg is within the list of possible values
         if type(def_value) is list and len(def_value) > 1:
             if str(arg) not in def_value:
                 LOGGER.error(
@@ -578,43 +604,44 @@ def get_paramGrp(keys, def_value, wc, my_dict=config):
 
     else:
         ## get all 'Group' keywords (of the sample file of the given rank (sm, lb or id)
-        col = 'Group'
-        if 'id' in wc.keys():
+        col = "Group"
+        if "id" in wc.keys():
             grp = [val for keys, val in SAMPLES[wc.sm][wc.lb][wc.id].items() if col in keys]
             grpName = f"SAMPLES[{wc.sm}][{wc.lb}][{wc.id}]"
-        elif 'lb' in wc.keys():
+        elif "lb" in wc.keys():
             grp = [val[col] for val in SAMPLES[wc.sm][wc.lb].values() if col in val]
             grpName = f"SAMPLES[{wc.sm}][{wc.lb}]"
-        elif 'sm' in wc.keys():
-            grp = [id[col] for lb in SAMPLES[wc.sm].values() for id in lb.values() if col in id]
+        elif "sm" in wc.keys():
+            grp = [
+                id[col] for lb in SAMPLES[wc.sm].values() for id in lb.values() if col in id
+            ]
             grpName = f"SAMPLES[{wc.sm}]"
-        grpList = [ii.split(',') for ii in grp]
+        grpList = [ii.split(",") for ii in grp]
         if len(grpList) == 0:
             LOGGER.error(
                 f"ERROR: The parameter config[{']['.join(keys)}] has group specific settings, but no keywords are available. Is the column '{col}' missing in the sample file!"
             )
             sys.exit(1)
 
-
         ## go through all keywords and get the correct argument
         if type(def_value) is list and len(def_value) > 1:
-            param = def_value[0] ## system default argument
+            param = def_value[0]  ## system default argument
         else:
-            param = def_value   ## system default argument
+            param = def_value  ## system default argument
 
         for keyword in arg.keys():
             ## if a default is defined take it, but continue searching
             if keyword == "default":
                 param = arg[keyword]
                 continue
-            
+
             ## get the number of occurrences of the given group keyword
             argCount = [x.count(keyword) for x in grpList].count(0)
 
             ## if not present continue
             if argCount == len(grpList):
                 continue
-            
+
             ## if present in all rows, take it
             if argCount == 0:
                 param = arg[keyword]
@@ -626,7 +653,7 @@ def get_paramGrp(keys, def_value, wc, my_dict=config):
             )
             sys.exit(1)
 
-        ## check if the arg is within the list of possible values 
+        ## check if the arg is within the list of possible values
         if type(def_value) is list and len(def_value) > 1:
             if str(param) not in def_value:
                 LOGGER.error(
@@ -634,8 +661,8 @@ def get_paramGrp(keys, def_value, wc, my_dict=config):
                 )
                 sys.exit(1)
 
-        #print(f"{param} <= {keys}  of  {grpList} | {grpName}")
-    #print(f"{param} <= {keys}")
+        # print(f"{param} <= {keys}  of  {grpList} | {grpName}")
+    # print(f"{param} <= {keys}")
     return param
 
 
@@ -643,7 +670,9 @@ def get_paramGrp(keys, def_value, wc, my_dict=config):
 ## if it has a dict (group specific setting) a True is returned
 ## used at teh beginning to get a global view what is used
 def get_param_bool(key, def_value, my_dict=config):
-    arg = get_param(key, def_value[0], my_dict) ## search without predefined list (could be a dict...)
+    arg = get_param(
+        key, def_value[0], my_dict
+    )  ## search without predefined list (could be a dict...)
     if type(arg) is dict:
         return True
     if str(arg) not in def_value:
@@ -692,6 +721,7 @@ def update_value(keys, value, my_dict=config):
 ##########################################################################################
 ## functions to evaluate python code if necessary
 
+
 ## eval single element
 def eval_elem(x):
     try:
@@ -714,7 +744,7 @@ def eval_param(x):
 
 def to_str(x):
     if type(x) is list:
-        #return [str(i) for i in x]
+        # return [str(i) for i in x]
         return list(map(str, x))
     elif type(x) is int:
         return str(x)
@@ -750,27 +780,17 @@ def set_chromosome_names(genome):
     ## test if fasta is valid
     fasta = get_param(["genome", genome], "")
     if not os.path.isfile(fasta):
-        LOGGER.error(
-            f"ERROR: Reference genome config[{genome}] does not exist ({fasta})!"
-        )
+        LOGGER.error(f"ERROR: Reference genome config[{genome}] does not exist ({fasta})!")
 
     ## get all chromosome names from the reference genome
     if pathlib.Path(f"{fasta}.fai").exists():
-        allChr = list(
-            map(str, pd.read_csv(f"{fasta}.fai", header=None, sep="\t")[0].tolist())
-        )
-    elif pathlib.Path(
-        f"{RESULT_DIR}/00_reference/{genome}/{genome}.fasta.fai"
-    ).exists():
+        allChr = list(map(str, pd.read_csv(f"{fasta}.fai", header=None, sep="\t")[0].tolist()))
+    elif pathlib.Path(f"{RESULT_DIR}/00_reference/{genome}/{genome}.fasta.fai").exists():
         fasta = f"{RESULT_DIR}/00_reference/{genome}/{genome}.fasta"
-        allChr = list(
-            map(str, pd.read_csv(f"{fasta}.fai", header=None, sep="\t")[0].tolist())
-        )
+        allChr = list(map(str, pd.read_csv(f"{fasta}.fai", header=None, sep="\t")[0].tolist()))
     else:
         cmd = f"grep '^>' {fasta} | cut -c2- | awk '{{print $1}}'"
-        allChr = list(
-            map(str, subprocess.check_output(cmd, shell=True, text=True).split())
-        )
+        allChr = list(map(str, subprocess.check_output(cmd, shell=True, text=True).split()))
     config = update_value(["chromosome", genome, "all"], allChr)
 
 
@@ -780,11 +800,11 @@ def valid_chromosome_names(genome, names):
     allChr = get_chromosome_names(genome)
 
     if type(names) is not list and names not in allChr:
-            return [names]
-    
+        return [names]
+
     if list(set(names) - set(allChr)):
         return list(set(names) - set(allChr))
-    
+
     return []
 
 
@@ -794,15 +814,15 @@ def set_sex_inference(genome):
     allChr = get_chromosome_names(genome)
 
     ## get the specified sex and autosome chromosome names
-    sex_chr = to_str(get_param(["sex_inference", genome, "sex_chr"], ''))
-    autosomes = to_str(get_param(["sex_inference", genome, "autosomes"],[]))
+    sex_chr = to_str(get_param(["sex_inference", genome, "sex_chr"], ""))
+    autosomes = to_str(get_param(["sex_inference", genome, "autosomes"], []))
 
     ## if the sex and autosome chromosome names are set, check if they make sense
-    if sex_chr != '' and len(autosomes) > 0:
+    if sex_chr != "" and len(autosomes) > 0:
         # check if the chromosomes specified in sex determination exist
         ## X chromosome
         if len(sex_chr):
-            #print(sex_chr)
+            # print(sex_chr)
             if valid_chromosome_names(genome, sex_chr):
                 LOGGER.error(
                     f"ERROR: Sex chromosome specified in config[sex_inference][{genome}][sex_chr] ({sex_chr}) does not exist in the reference genome."
@@ -814,12 +834,12 @@ def set_sex_inference(genome):
                 f"ERROR: No sex chromosome specified in config[sex_inference][{genome}][sex_chr]!"
             )
             os._exit(1)
-        
+
         # autosomes
         if len(autosomes):
             if valid_chromosome_names(genome, autosomes):
                 LOGGER.error(
-                    f"ERROR: In config[sex_inference][{genome}][autosomes], the following chromosome names are not recognized: {valid_chromosome_names(genome, autosomes)}!"
+                    f"ERROR: In config[sex_inference][{genome}][autosomes], the following chromosome names are not recognized: {valid_chromosome_names(genome , autosomes)}!"
                 )
                 os._exit(1)
             config = update_value(["chromosome", genome, "autosomes"], autosomes)
@@ -828,7 +848,7 @@ def set_sex_inference(genome):
                 f"ERROR: No autosomes specified in config[sex_inference][{genome}][autosomes]!"
             )
             os._exit(1)
-    else:       ## if they are not set, try to infer the genome (hg19 or GRCh38)
+    else:  ## if they are not set, try to infer the genome (hg19 or GRCh38)
         hg19 = list(map(str, list(range(1, 23)) + ["X", "Y", "MT"]))
         GRCh38 = [f"chr{x}" for x in list(range(1, 23)) + ["X", "Y", "M"]]
         if set(hg19).issubset(set(allChr)):
@@ -858,7 +878,7 @@ def read_depth(genome):
     depth = to_str(get_param(["depth", genome, "chromosomes"], ""))
     if valid_chromosome_names(genome, depth):
         LOGGER.error(
-            f"ERROR: config[depth][{genome}][chromosomes] contains unrecognized chromosome names ({valid_chromosome_names(genome, depth)})!"
+            f"ERROR: config[depth][{genome}][chromosomes] contains unrecognized chromosome names ({valid_chromosome_names(genome , depth)})!"
         )
         os._exit(1)
     config = update_value(["chromosome", genome, "depth"], depth)
@@ -881,6 +901,7 @@ def str2list(v):
 ## 'startStr' is the first memory allocation in GB
 ## input is in GB; output in MB; default is 2GB, but can be changed by a rule
 
+
 ## get incremental memory allocation when jobs fail
 ## 'start' is the first memory allocation in GB (default 4GB)
 ## input is in GB; output is in MB;
@@ -891,9 +912,7 @@ def get_memory_alloc(module, attempt, default=2):
         moduleList = [module]
     mem_start = int(get_param(moduleList + ["mem"], default))
     mem_incre = int(
-        get_param(
-            moduleList + ["mem_increment"], memory_increment_ratio * mem_start
-        )
+        get_param(moduleList + ["mem_increment"], memory_increment_ratio * mem_start)
     )
     return int(1024 * ((attempt - 1) * mem_incre + mem_start))
 
@@ -933,9 +952,7 @@ def get_runtime_alloc(module, attempt, default=12):
         moduleList = [module]
     time_start = int(get_param(moduleList + ["time"], default))
     time_incre = int(
-        get_param(
-            moduleList + ["time_increment"], runtime_increment_ratio * time_start
-        )
+        get_param(moduleList + ["time_increment"], runtime_increment_ratio * time_start)
     )
     return int(60 * ((attempt - 1) * time_incre + time_start))
 
@@ -945,9 +962,7 @@ def get_runtime_alloc2(module, attempt, default=12):
     moduleList = module
     if type(moduleList) is not list:
         moduleList = [module]
-    time_start = int(
-        get_param(moduleList[:-1] + [moduleList[-1] + "_time"], default)
-    )
+    time_start = int(get_param(moduleList[:-1] + [moduleList[-1] + "_time"], default))
     time_incre = int(
         get_param(
             moduleList[:-1] + [moduleList[-1] + "_time_increment"],
@@ -975,12 +990,11 @@ def get_threads2(module, default=1):
 
 def bam2bai(bam):
     # return bam.replace('.bam', '.bai')
-    return f"{bam[:len(bam) - 4]}.bai"
+    return f"{bam[: len(bam) - 4]}.bai"
 
 
 ##########################################################################################
 ## check if java is called by a .jar file or by a wrapper
-
 
 
 def get_gatk_bin():
