@@ -70,7 +70,7 @@ rule genome_index_bowtie2:
         cmd="f'bowtie2-build {snakemake.params[0]} --threads {snakemake.threads} {snakemake.input.fasta} {snakemake.input.fasta}> {snakemake.log}'",
     log:
         "{folder}/{genome}_bowtie2_build.log",
-    threads: 1
+    threads: get_threads("indexing", 4)
     conda:
         "../envs/bowtie2.yaml"
     envmodules:
@@ -108,7 +108,7 @@ rule genome_index_bowtie2_long:
         cmd="f'bowtie2-build {snakemake.params[0]} --threads {snakemake.threads} {snakemake.input.fasta} {snakemake.input.fasta} > {snakemake.log}'",
     log:
         "{folder}/{genome}_bowtie2_build.log",
-    threads: 1
+    threads: get_threads("indexing", 4)
     conda:
         "../envs/bowtie2.yaml"
     envmodules:
