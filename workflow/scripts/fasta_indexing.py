@@ -12,8 +12,8 @@ orig_prefix = os.path.splitext(orig_fasta)[0]
 
 ## get the extensions
 out_files = list(snakemake.output)
-file_extension = list(map(os.path.splitext, out_files))
-ext = [el[1] for el in file_extension]
+in_fasta = snakemake.input.fasta
+ext = [s.replace(in_fasta, "") for s in out_files]
 
 ## check if the indexes are present
 files1 = [orig_fasta + s for s in ext]  ## foo.fasta.ext
