@@ -74,9 +74,8 @@ rule glimpse2_split_reference:
         ),
     message:
         "--- IMPUTATION GLIMPSE2: create binary reference panel (genome {wildcards.genome}; chr {wildcards.chr}; chunk: {wildcards.n})"
-    threads: lambda wildcards: get_threads2(
-    ["imputation", wildcards.genome, "glimpse2_split_reference"], 1
-)
+    threads: 
+        lambda wildcards: get_threads2(["imputation", wildcards.genome, "glimpse2_split_reference"], 1)
     params:
         params=lambda wildcards: get_param(
             ["imputation", wildcards.genome, "GLIMPSE2_split_reference_params"], ""
