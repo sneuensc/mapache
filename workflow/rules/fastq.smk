@@ -143,7 +143,7 @@ rule adapterremoval_collapse:
             wildcards,
         ),
     log:
-        "{folder}/01_fastq/01_trimmed/01_adapter_removal_collapse/{sm}/{lb}/{id}.log",
+        "{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}.log",
     threads: get_threads("cleaning", 4)
     conda:
         "../envs/adapterremoval.yaml"

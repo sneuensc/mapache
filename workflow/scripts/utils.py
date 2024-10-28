@@ -61,7 +61,7 @@ def write_log():
             else:
                 LOGGER.info(f"  - Sample file ('{SAMPLE_FILE}') in paired-end format:")
 
-            LOGGER.info(f"    - {len(SAMPLES)} SAMPLES")
+            LOGGER.info(f"    - {len(SAMPLES_FINAL)} SAMPLES")
             LOGGER.info(f"    - {len([l for s in SAMPLES.values() for l in s])} libraries")
             tmp = [
                 i["Data2"] for s in SAMPLES.values() for l in s.values() for i in l.values()
@@ -382,7 +382,7 @@ def read_sample_file():
 
     else:  ## sample file
         ## read the file
-        delim = get_param(["delim"], "\s+")
+        delim = get_param(["delim"], "\\s+")
         db = pd.read_csv(file, sep=delim, comment="#", dtype=str, keep_default_na=False)
         input = file
 
@@ -394,6 +394,10 @@ def read_sample_file():
                 f"ERROR: The column names in the sample file are wrong: single-end: {colsSE}; paired-end: {colsPE}"
             )
             sys.exit(1)
+
+        ## if SM_FINAL does not exist, copy it from SM
+        if "SM_FINAL" not in db.columns:
+            db['SM_FINAL'] = db.loc[:, 'SM']
 
         ## --------------------------------------------------------------------------------------------------
         ## check if all IDs per LB and SM are unique
@@ -407,7 +411,7 @@ def read_sample_file():
         ## --------------------------------------------------------------------------------------------------
         ## dataframe to nested dict
         SAMPLES = {}
-        cols = [e for e in list(db.columns) if e not in ("SM", "LB", "ID")]
+        cols = [e for e in list(db.columns) if e not in ("SM", "LB", "ID", "SM_FINAL")]
         for index, row in db.iterrows():
             ## if key not present add new dict
             if row["SM"] not in SAMPLES:
@@ -421,17 +425,10 @@ def read_sample_file():
             for col in cols:
                 SAMPLES[row["SM"]][row["LB"]][row["ID"]][col] = row[col]
 
-        #    ## from dataframe to nested dict
-        #    from collections import defaultdict
-        #    d = defaultdict(dict)
-        #    cols = [e for e in list(db.columns) if e not in ("SM", "LB", "ID")]
-        #    for row in db.itertuples(index=False):
-        #        for col in cols:
-        #            d[row.SM][row.LB][row.ID][col] = row[col]
+        ## create nested dict of the final sample name and the libraries (remove duplicates)
+        SAMPLES_FINAL = {k: list(set(g["LB"])) for k,g in db.groupby("SM_FINAL")}
 
-        #    SAMPLES = dict(d)
-
-    return SAMPLES, input
+    return SAMPLES, SAMPLES_FINAL, input
 
 
 def test_SAMPLES():
@@ -491,7 +488,7 @@ def get_external_samples():
         EXTERNAL_SAMPLE_FILE = "yaml"
 
     elif os.path.isfile(external_sample):
-        delim = get_param(["delim"], "\s+")
+        delim = get_param(["delim"], "\\s+")
         db_stats = pd.read_csv(external_sample, sep=delim, comment="#", dtype=str)
         EXTERNAL_SAMPLE_FILE = external_sample
         colnames = ["SM", "Bam", "Genome"]

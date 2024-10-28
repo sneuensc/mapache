@@ -395,7 +395,7 @@ module_order:
         info: "This section of the report shows FastQC results after adapter trimming."
         target: ""
         path_filters:
-            - "*/01_adapter_removal*/*_fastqc.zip"
+            - "*/01_adapterremoval*/*_fastqc.zip"
     
     # Alignment tool stats
     - bowtie2:

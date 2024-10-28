@@ -79,7 +79,7 @@ for genome in GENOMES:
 ## SAMPLES (sample file and external bam files)
 ##########################################################################################
 # sample_file="config/SAMPLES.tsv"
-SAMPLES, SAMPLE_FILE = read_sample_file()
+SAMPLES, SAMPLES_FINAL, SAMPLE_FILE = read_sample_file()
 PAIRED_END, COLLAPSE = test_SAMPLES()
 
 
@@ -342,8 +342,12 @@ rule all:
             f"{RESULT_DIR}/04_stats/03_summary/software_versions.txt",
             category="Software",
         ),
+    output:
+        f"{RESULT_DIR}/run_report.sh"
     message:
         "--- RUNNING ALL"
+    shell:
+        "echo 'snakemake --report report.html' > {output}"
 
 
 ## rules dag (just pipeline)
@@ -360,6 +364,7 @@ rule dag:
     message:
         "--- RUNNING DAG"
 
+print(stats_mapping_checkpoint)
 
 rule mapping:
     """
@@ -372,9 +377,37 @@ rule mapping:
         final_bam_low_qual,
         stats_mapping_checkpoint,
         get_imputation_files(),
+        final_stat_figures,
+    output:
+        f"{RESULT_DIR}/run_report.sh"
     message:
         "--- RUNNING MAPPING"
+    shell:
+        "echo 'snakemake mapping --report report_mapping.html' > {output}"
 
+
+rule mapping_libraries:
+    """
+    Performs the mapping unitl the libraries
+    """
+    input:
+        get_all_bam_after_mapDamage_inference(),
+        fastqc,
+        get_stat_csv_files(False),
+        get_stat_plot_files(False),
+        damage_files,
+
+        get_samtools_stats_files_library(),
+        get_sex_files_library(),
+        #lengths,
+        #idxstats,
+        #sex_files,
+    output:
+        f"{RESULT_DIR}/run_report.sh"
+    message:
+        "--- RUNNING MAPPING UNTIL LIBRARIES"
+    shell:
+        "echo 'snakemake mapping_libraries --report report_libraries.html' > {output}"
 
 rule version:
     """
@@ -433,7 +466,11 @@ rule imputation:
 ##########################################################################################
 onsuccess:
     LOGGER.info("Wow, 'mapache' finished successfully!")
-    LOGGER.info("=> To generate the Snakemake report: run 'snakemake --report report.html'.")
+    if os.path.exists(f"{RESULT_DIR}/run_report.sh"):
+        with open(f"{RESULT_DIR}/run_report.sh","r") as f: txt = f.read().rstrip()
+        LOGGER.info(f"=> To generate the Snakemake report: run '{txt}'.")
+        os.remove(f"{RESULT_DIR}/run_report.sh")
+
     shell("cat {log} > snakemake.run.log")
     email = get_param(["email"], "")
     if os.path.exists(f"{RESULT_DIR}/verbose.touch"):
@@ -447,6 +484,8 @@ onerror:
     LOGGER.error("'Mapache' finished with error(s), log stored in 'snakemake.run.log'")
     shell("cat {log} > snakemake.run.log")
     email = get_param(["email"], "")
+    if os.path.exists(f"{RESULT_DIR}/run_report.sh"):
+        os.remove(f"{RESULT_DIR}/run_report.sh")
     if os.path.exists(f"{RESULT_DIR}/verbose.touch"):
         os.remove(f"{RESULT_DIR}/verbose.touch")
     if email != "":

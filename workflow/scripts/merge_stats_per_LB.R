@@ -41,6 +41,7 @@ if("--help" %in% args) {
       --path_list_stats_fastq             - e.g., results/04_stats/02_separate_tables/GRCh38/ind1/lib2_lb/lib2_R1_001_fq/fastq_stats.csv
       --path_stats_unique                 - e.g., results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/ind1/lib2_lb.GRCh38_stats.txt
       --path_length_unique                - e.g., results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/ind1/lib2_lb.GRCh38_length.txt
+      --path_sex_unique                   - e.g., results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/ind1.hg19_sex.txt
       --path_idxstats_unique              - e.g., results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/ind1/lib2_lb.GRCh38_idxstats.txt
 
       --output_file                       - e.g., results/04_stats/02_separate_tables/GRCh38/ind1/lib2_lb/library_stats.csv
@@ -77,6 +78,8 @@ LB = get_args(argsL, "lb")
 SM = get_args(argsL, "sm")
 genome = get_args(argsL, "genome")
 output_file = get_args(argsL, "output_file")
+path_sex_unique = get_args(argsL, "path_sex_unique")
+
 
 path_list_stats_fastq = get_args(argsL, "path_list_stats_fastq")
 #path_flagstat_raw = get_args(argsL, "path_flagstat_raw")
@@ -155,9 +158,12 @@ length_mapped_raw = sum(stats_fastq$length_mapped_raw * stats_fastq$mapped_raw) 
 length_mapped_unique = calc_avg_len(length_unique_table)
 
 read_depth = calc_DoC_idxstats(idxstats = idxstats, read_length = length_mapped_unique, chr = idxstats$chr)
+sex_unique = read.csv(path_sex_unique)
 
 my_stats = data.frame(
-    genome = genome, SM = SM, LB = LB, 
+    genome = genome, 
+    SM = SM, 
+    LB = LB, 
     reads_raw = reads_raw,
     reads_trim = reads_trim,
     trim_prop = trim_prop,
@@ -170,7 +176,11 @@ my_stats = data.frame(
     length_mapped_raw = length_mapped_raw,
     length_mapped_unique = length_mapped_unique,
     endogenous_raw = endogenous_raw,
-    endogenous_unique = endogenous_unique
+    endogenous_unique = endogenous_unique,
+    read_depth = read_depth,
+    Sex = sex_unique$Sex,
+    Sex_Rx = sex_unique$Rx,
+    Sex_CI = sex_unique$CI
 )
 
 if(!is.na(chrs_selected)){

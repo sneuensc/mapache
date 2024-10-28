@@ -132,7 +132,7 @@ mapped_unique = sum(idxstats$mapped)
 
 if(path_list_stats_lb != "path_list_stats_lb"){
     stats_lb = do.call(rbind, lapply(strsplit(path_list_stats_lb, ",")[[1]], read.csv, 
-            colClasses = c(rep("character", 3), rep("numeric", 13 + nb_chrs_depth))))
+            colClasses = c(rep("character", 3), rep("numeric", 14), "character", rep("numeric", 2+nb_chrs_depth))))
     #genomecov_unique = read.table(path_genomecov_unique, header = F, sep = "\t")
     #colnames(genomecov_unique) =  c("chr", "depth", "counts", "length", "frac")
     reads_raw = sum(stats_lb$reads_raw)

@@ -5,7 +5,8 @@
 
 localrules:
     samtools_idxstats,
-    plot_summary_statistics,
+    plot_summary_statistics_sample,
+    plot_summary_statistics_library,
     merge_DoC_chr,
     assign_sex,
     assign_no_sex,
@@ -253,7 +254,7 @@ rule merge_stats_per_fastq:
     input:
         fastqc_orig="{folder}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{sm}/{lb}/{id}_fastqc.zip",  # raw sequenced reads
         fastqc_trim=lambda wildcards: (
-            "{folder}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_adapter_removal/{sm}/{lb}/{id}_fastqc.zip"
+            "{folder}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_adapterremoval/{sm}/{lb}/{id}_fastqc.zip"
             if get_paramGrp(["adapterremoval", "run"], ["True", "False"], wildcards)
             else "{folder}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{sm}/{lb}/{id}_fastqc.zip"
         ),
@@ -299,6 +300,7 @@ rule merge_stats_per_lb:
         stats_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{sm}/{lb}.{genome}_stats.txt",
         length_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{sm}/{lb}.{genome}_length.txt",
         idxstats_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{sm}/{lb}.{genome}_idxstats.txt",
+        sex_unique=get_sex_file_library,
     output:
         "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/library_stats.csv",
     params:
@@ -336,6 +338,7 @@ rule merge_stats_per_lb:
             --path_stats_unique={input.stats_unique} \
             --path_length_unique={input.length_unique} \
             --path_idxstats_unique={input.idxstats_unique} \
+            --path_sex_unique={input.sex_unique} \
             $chrsSelected
         """
 
@@ -632,8 +635,92 @@ rule plot_bamdamage:
 # -----------------------------------------------------------------------------#
 # plotting
 
+rule plot_summary_statistics_library:
+    """
+    Plot summary statistics
+    """
+    input:
+        sample_stats="{folder}/04_stats/03_summary/LB_stats.csv",
+    output:
+        plot_1_nb_reads=report(
+            "{folder}/04_stats/04_plots_library/1_nb_reads.svg",
+            caption="../report/1_nb_reads.rst",
+            category="Mapping statistics",
+            subcategory="Plots library",
+        ),
+        plot_2_mapped=report(
+            "{folder}/04_stats/04_plots_library/2_mapped.svg",
+            caption="../report/2_mapped.rst",
+            category="Mapping statistics",
+            subcategory="Plots library",
+        ),
+        plot_3_endogenous=report(
+            "{folder}/04_stats/04_plots_library/3_endogenous.svg",
+            caption="../report/3_endogenous.rst",
+            category="Mapping statistics",
+            subcategory="Plots library",
+        ),
+        plot_4_duplication=report(
+            "{folder}/04_stats/04_plots_library/4_duplication.svg",
+            caption="../report/4_duplication.rst",
+            category="Mapping statistics",
+            subcategory="Plots library",
+        ),
+        plot_5_AvgReadDepth=report(
+            "{folder}/04_stats/04_plots_library/5_AvgReadDepth.svg",
+            caption="../report/5_AvgReadDepth.rst",
+            category="Mapping statistics",
+            subcategory="Plots library",
+        ),
+        plot_6_Sex=report(
+            "{folder}/04_stats/04_plots_library/6_Sex.svg",
+            caption="../report/6_Sex.rst",
+            category="Mapping statistics",
+            subcategory="Plots library",
+        ),    
+    log:
+        "{folder}/04_stats/04_plots_library/plot_summary_statistics.log",
+    conda:
+        "../envs/r.yaml"
+    envmodules:
+        module_r,
+    message:
+        "--- PLOT SUMMARY STATISTICS"
+    params:
+        script=workflow.source_path("../scripts/plot_stats.R"),
+        x_axis=get_param(["stats", "plots", "x_axis"], "auto"),
+        n_col=get_param(["stats", "plots", "n_col"], 1),
+        width=get_param(["stats", "plots", "width"], 11),
+        height=get_param(["stats", "plots", "height"], 7),
+        color=get_param(["stats", "plots", "color"], "blue"),
+        sex_ribbons=get_param(
+            ["stats", "plots", "sex_ribbons"], 'c("XX"="red","XY"="blue")'
+        ).replace("=", "?"),
+        sex_thresholds=get_sex_threshold_plotting(),
+        show_numbers=get_param(["stats", "plots", "show_numbers"], "10"),
+    shell:
+        """
+        Rscript {params.script} \
+            --sm={input.sample_stats}  \
+            --out_1_reads={output.plot_1_nb_reads} \
+            --out_2_mapped={output.plot_2_mapped} \
+            --out_3_endogenous={output.plot_3_endogenous} \
+            --out_4_duplication={output.plot_4_duplication} \
+            --out_5_AvgReadDepth={output.plot_5_AvgReadDepth} \
+            --out_6_Sex={output.plot_6_Sex} \
+            --x_axis={params.x_axis} \
+            --n_col={params.n_col} \
+            --color={params.color} \
+            --thresholds='{params.sex_thresholds}' \
+            --sex_ribbons='{params.sex_ribbons}' \
+            --width={params.width} \
+            --height={params.height} \
+            --show_numbers={params.show_numbers}
+        """
 
-rule plot_summary_statistics:
+
+
+rule plot_summary_statistics_sample:
     """
     Plot summary statistics
     """
@@ -641,43 +728,43 @@ rule plot_summary_statistics:
         sample_stats="{folder}/04_stats/03_summary/SM_stats.csv",
     output:
         plot_1_nb_reads=report(
-            "{folder}/04_stats/04_plots/1_nb_reads.svg",
+            "{folder}/04_stats/04_plots_sample/1_nb_reads.svg",
             caption="../report/1_nb_reads.rst",
             category="Mapping statistics",
-            subcategory="Plots",
+            subcategory="Plots sample",
         ),
         plot_2_mapped=report(
-            "{folder}/04_stats/04_plots/2_mapped.svg",
+            "{folder}/04_stats/04_plots_sample/2_mapped.svg",
             caption="../report/2_mapped.rst",
             category="Mapping statistics",
-            subcategory="Plots",
+            subcategory="Plots sample",
         ),
         plot_3_endogenous=report(
-            "{folder}/04_stats/04_plots/3_endogenous.svg",
+            "{folder}/04_stats/04_plots_sample/3_endogenous.svg",
             caption="../report/3_endogenous.rst",
             category="Mapping statistics",
-            subcategory="Plots",
+            subcategory="Plots sample",
         ),
         plot_4_duplication=report(
-            "{folder}/04_stats/04_plots/4_duplication.svg",
+            "{folder}/04_stats/04_plots_sample/4_duplication.svg",
             caption="../report/4_duplication.rst",
             category="Mapping statistics",
-            subcategory="Plots",
+            subcategory="Plots sample",
         ),
         plot_5_AvgReadDepth=report(
-            "{folder}/04_stats/04_plots/5_AvgReadDepth.svg",
+            "{folder}/04_stats/04_plots_sample/5_AvgReadDepth.svg",
             caption="../report/5_AvgReadDepth.rst",
             category="Mapping statistics",
-            subcategory="Plots",
+            subcategory="Plots sample",
         ),
         plot_6_Sex=report(
-            "{folder}/04_stats/04_plots/6_Sex.svg",
+            "{folder}/04_stats/04_plots_sample/6_Sex.svg",
             caption="../report/6_Sex.rst",
             category="Mapping statistics",
-            subcategory="Plots",
+            subcategory="Plots sample",
         ),
     log:
-        "{folder}/04_stats/04_plots/plot_summary_statistics.log",
+        "{folder}/04_stats/04_plots_sample/plot_summary_statistics.log",
     conda:
         "../envs/r.yaml"
     envmodules:

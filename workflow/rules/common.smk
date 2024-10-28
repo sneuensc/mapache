@@ -175,7 +175,7 @@ def get_final_bam_FASTQ(wc):
         file = f"{wc.folder}/01_fastq/03_filtered/01_bam_filter/{wc.sm}/{wc.lb}/{wc.id}.{wc.genome}.bam"
     else:
         file = f"{wc.folder}/01_fastq/02_mapped/03_bam_sort/{wc.sm}/{wc.lb}/{wc.id}.{wc.genome}.bam"
-    # print(f"get_bam_4_final_fastq: {file}")
+    #print(f"get_bam_4_final_fastq: {file}")
     return file
 
 
@@ -277,6 +277,23 @@ def get_final_bam_LB(wc):
 def get_final_bam_low_qual_LB(wc):
     return get_merged_bam_low_qual_LB(wc)
 
+## get the bam file(s) for the rule mapping_libraries
+def get_all_bam_after_mapDamage_inference():
+    files = [
+        get_bam_4_damage_rescale(Wildcards(fromdict={'folder': RESULT_DIR, 'sm': sm, "lb": lb, 'genome': genome})) 
+        for sm in SAMPLES
+        for lb in SAMPLES[sm]
+        for genome in GENOMES
+    ]
+    #print(files)
+    return files
+
+## get the corresponding folder of get_all_bam_after_mapDamage_inference(): remove ind and lb and in the fornt 'results'
+def get_bam_folder_after_mapDamage_inference():
+    files = get_all_bam_after_mapDamage_inference()
+    folder = files[0].rsplit('/', 2)[0].split('/', 1)[1]
+    # print(folder)
+    return folder
 
 ##########################################################################################
 ##########################################################################################
@@ -444,9 +461,18 @@ def get_bam_file(wc):
 ## sex may be infered at the sample or/and library level
 def get_sex_file(wc):
     if str2bool(get_param(["sex_inference", wc.genome, "run"], ["False", "True"])):
-        return f"{wc.folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{wc.sm}.{wc.genome}_sex.txt"
+        file = f"{wc.folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{wc.sm}.{wc.genome}_sex.txt"
     else:
-        return f"{wc.folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{wc.sm}.{wc.genome}_nosex.txt"
+        file = f"{wc.folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{wc.sm}.{wc.genome}_nosex.txt"
+    return file
+
+def get_sex_file_library(wc):
+    if str2bool(get_param(["sex_inference", wc.genome, "run"], ["False", "True"])):
+        file = f"{wc.folder}/04_stats/01_sparse_stats/{get_bam_folder_after_mapDamage_inference()}/{wc.sm}/{wc.lb}.{wc.genome}_sex.txt"
+    else:
+        file = f"{wc.folder}/04_stats/01_sparse_stats/{get_bam_folder_after_mapDamage_inference()}/{wc.sm}/{wc.lb}.{wc.genome}_nosex.txt"
+    #print(file)
+    return file
 
 
 def get_lb_stats(wc):
@@ -463,7 +489,7 @@ def get_lb_stats(wc):
 def get_final_bam_files():
     final_bam = [
         f"{RESULT_DIR}/03_sample/03_final_sample/01_bam/{sm}.{genome}.bam"
-        for sm in SAMPLES
+        for sm in SAMPLES_FINAL
         for genome in GENOMES
     ]
     return final_bam
@@ -481,36 +507,52 @@ def get_final_external_bam_files():
 def get_final_bam_low_qual_files():
     final_bam_low_qual = [
         f"{RESULT_DIR}/03_sample/03_final_sample/01_bam_low_qual/{sm}.{genome}.bam"
-        for sm in SAMPLES
+        for sm in SAMPLES_FINAL
         for genome in GENOMES
         if save_low_qual
     ]
     return final_bam_low_qual
 
 
-def get_stat_csv_files():
+def get_stat_csv_files(all=True):
     if len(SAMPLES):
-        ll = ["SM", "LB", "FASTQ"]
+        if all:
+            ll = ["SM", "LB", "FASTQ"]
+        else:
+            ll = ["LB", "FASTQ"]
     else:
         ll = ["SM"]
     stat_csv = [f"{RESULT_DIR}/04_stats/03_summary/{level}_stats.csv" for level in ll]
     return stat_csv
 
 
-def get_stat_plot_files():
+def get_stat_plot_files(all=True):
     plots = [
-        f"{RESULT_DIR}/04_stats/04_plots/{plot_type}.svg"
+        f"{RESULT_DIR}/04_stats/04_plots_library/{plot_type}.svg"
         for plot_type in [
             "1_nb_reads",
             "2_mapped",
             "3_endogenous",
             "4_duplication",
-            "5_AvgReadDepth",
+            #"5_AvgReadDepth",
         ]
         if len(SAMPLES)
     ]
-    return plots
 
+    if all:
+        plots = plots + [
+            f"{RESULT_DIR}/04_stats/04_plots_sample/{plot_type}.svg"
+            for plot_type in [
+                "1_nb_reads",
+                "2_mapped",
+                "3_endogenous",
+                "4_duplication",
+                "5_AvgReadDepth",
+            ]
+            if len(SAMPLES)
+        ]
+
+    return plots
 
 def get_fastqc_files():
     fastqc = [
@@ -531,7 +573,46 @@ def get_fastqc_files():
     ]
     return fastqc
 
+def get_fastqc_files2():
+    ## orig
+    fastqc = [
+        f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{sm}/{lb}/{id}_fastqc.zip"
+        for sm, smVals in SAMPLES.items()
+        for lb, lbVals in smVals.items()
+        for id in lbVals
+    ]
 
+    ## adapterremoval
+    prefix=f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_adapterremoval"
+    for sm, smVals in SAMPLES.items():
+        for lb, lbVals in smVals.items():
+            for id in lbVals:
+                wc = Wildcards(fromdict={"id": id, "lb": lb, "sm": sm})
+                if get_paramGrp(["adapterremoval", "run"],["True", "False"], wc):
+                    if is_collapse(wc):
+                        fastqc = fastqc + [f"{prefix}_collapse/{sm}/{lb}/{id}_fastqc.zip"]
+                    elif is_paired_end(wc):
+                        fastqc = fastqc + [f"{prefix}_pe/{wc.sm}/{wc.lb}/{wc.id}_R1.fastq.gz", f"{prefix}_pe/{wc.sm}/{wc.lb}/{wc.id}_R2.fastq.gz"]
+                    else:
+                        fastqc = fastqc + [f"{prefix}_se/{wc.sm}/{wc.lb}/{wc.id}.fastq.gz"]
+    return fastqc
+
+
+def get_samtools_stats_files_library():
+    samtools_stats = [
+        f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}_stats.txt"
+        for genome in GENOMES
+        for sm, smVals in SAMPLES.items()
+        for lb, lbVals in smVals.items()
+        for id in lbVals
+        for file in [
+            f"01_fastq/04_final_fastq/01_bam/{sm}/{lb}/{id}.{genome}",
+            f"{get_bam_folder_after_mapDamage_inference()}/{sm}/{lb}.{genome}"
+        ]
+    ]
+    #print(samtools_stats)
+    return list(set(samtools_stats))  ## remove duplicates
+    
 def get_samtools_stats_files():
     samtools_stats = [
         f"{RESULT_DIR}/04_stats/01_sparse_stats/{file}_stats.txt"
@@ -626,6 +707,24 @@ def get_multiqc_files():
 
 ##########################################################################################
 ## stats on final/external bam file
+def get_sex_files_library():
+    sex_files = []
+    for genome in GENOMES:
+        ext = (
+            "sex"
+            if str2bool(get_param(["sex_inference", genome, "run"], "False"))
+            else "nosex"
+        )
+
+        ## SAMPLES
+        sex_files += [
+            f"{RESULT_DIR}/04_stats/01_sparse_stats/{get_bam_folder_after_mapDamage_inference()}/{sm}/{lb}.{genome}_{ext}.txt"
+            for sm, smVals in SAMPLES.items()
+            for lb in smVals
+        ]
+    #print(sex_files)
+    return list(set(sex_files))  ## remove duplicates
+    
 def get_sex_files():
     sex_files = []
     for genome in GENOMES:
