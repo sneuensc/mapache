@@ -21,7 +21,7 @@ use strict;
 use Getopt::Long;
 
 $Global::progname = "bamdamage";
-$Global::version = "20140602_extended_bySam_20211025_faster_byDiana_20220502";
+$Global::version = "20140602_extended_bySam_20241101";
 
 Getopt::Long::Configure("bundling");
 my @retval = GetOptions
@@ -29,8 +29,10 @@ my @retval = GetOptions
   "verbose|v" => \$opt::verbose,
   "help|h" => \$opt::help,
   "mapquality|m=i" => \$opt::mapq,
+  "ignore_N" => \$opt::ignore_N,
   "basequality|b=i" => \$opt::baseq,
-  "rlength|r=i" => \$opt::rlength,
+  "length_min=i" => \$opt::length_min,
+  "length_max=i" => \$opt::length_max,
   "sample|s=s" => \$opt::sample,
   "version|V" => \$opt::version,
   "outputfile|output|o=s" => \$opt::output,
@@ -52,8 +54,6 @@ my $mapqual_lb = $opt::mapq || 30; # Default minimum mapping quality 30
 my $seqqual_ub = 50; # Ignore qualities > 50
 my $seqqual_os = 33; # quality score offset
 my $seqqual_lb = $opt::baseq || 20; # Default minimum base quality 20
-my $length_lb = 20;
-my $length_ub = $opt::rlength || 100; # Max sequence length
 my $position_ub = 80; # Max position
 my $damage_ub = 20;
 my $outfile = $opt::output;
@@ -85,6 +85,7 @@ if(not defined($outfile_length)) {
 my @out;
 
 
+
 if($file and -r $file) {
   #open(IN,"-|","samtools","view","-h",$file) or error("Cannot read $file\n");
   open(IN,"-|","samtools view -h $file | sed -n '1~$nth_read p' ") or error("Cannot read $file\n");
@@ -99,7 +100,7 @@ if($file and -r $file) {
 }
 
 my %ACGT = ("A" => 0, "C" => 1, "G" => 2, "T" => 3);
-my @count_by_length;
+my %count_by_length; ## hash table
 my @count_by_qual;
 my @count_by_mut5;
 my @count_by_mut3;
@@ -107,10 +108,6 @@ my @count_by_damage;
 
 for(my $i=$seqqual_lb;$i<$seqqual_ub;$i++) {
   $count_by_qual[$i]=0;
-}
-
-for(my $i=$length_lb;$i<$length_ub;$i++) {
-  $count_by_length[$i]=0;
 }
 
 for(my $i=0;$i<$damage_ub;$i++) {
@@ -139,7 +136,7 @@ while ($line=<IN>) {
     next;
   }
   
-  ## take only every xth line (Sam 20.11.2019)
+## take only every xth line (Sam 20.11.2019)
 # commented by Diana (03.05.2022)
 #  if ($linecount % $nth_read != 0) {
 #    $linecount++;
@@ -178,12 +175,23 @@ while ($line=<IN>) {
   if ($mapqual < $mapqual_lb) { next; }
   
   # Count length
-  my $len = length($qual_string);
-  my $hlen = $len;
-  if ($hlen >= $length_ub) { $hlen = $length_ub - 1; }
-  $count_by_length[$hlen]++;
+  # Sam 1.11.2024: Parameter --ignore_N allows to ignore Ns
+  # Sam 1.11.2024: Newly the length dsitribution is not upper bounded. Use parameter --use_length_limits for upper bound (old behaviour)
+  my $len = (defined $opt::ignore_N) ? length($read =~ s/^[Nn]+|[Nn]+$//gr) : length($read);
   
+  if (defined $opt::length_max && $len >= $opt::length_max) { 
+      $count_by_length{$opt::length_max - 1}++; ## initalizes with 0
+  } else {
+      $count_by_length{$len}++; ## initalizes with 0
+  } 
+
+  my $leading_n_count = 0;
+  if(defined $opt::ignore_N){
+    $leading_n_count = ($read =~ /^([Nn]+)/) ? length($1) : 0;
+  }
+
   # Count sequencing quality
+  # Sam 1.11.2024: Parameter --ignore_N allows to ignore Ns
   my @usesite;
   for (my $i = 0; $i<$len; $i++) {
     my $ch = substr($qual_string,$i,1);
@@ -386,6 +394,7 @@ while ($line=<IN>) {
       $pos++;
     }
   }
+
   
   #=== Print New SAM file with Reference ====#
   chomp($line);
@@ -406,8 +415,8 @@ while ($line=<IN>) {
     $nDAM = int($nDAM*100/$count_CG);
     if ($nDAM >= $damage_ub) { $nDAM = $damage_ub-1; }
     $count_by_damage[$nDAM]++;
-  }        
-  
+  }    
+    
   #=== On screen output: how many lines processed ====#
   $linecount++;
   $linecount2++;
@@ -417,6 +426,24 @@ while ($line=<IN>) {
     }
   }
 }
+
+## get the min and max value of read length
+my $length_min;
+if (defined $opt::length_min ){ ## second test has to be added as this otherwise means 
+  $length_min = $opt::length_min;
+} else {
+  my @keys = keys %count_by_length;
+  $length_min = (sort @keys)[0];
+}
+
+my $length_max;
+if (defined $opt::length_max){
+  $length_max = $opt::length_max;
+} else {
+  my @keys = keys %count_by_length;
+  $length_max = (sort @keys)[-1];
+}
+
 
 for (my $i=$seqqual_lb;$i<$seqqual_ub;$i++) {
   print OUT "$i ";
@@ -430,16 +457,18 @@ for (my $i=$seqqual_lb;$i<$seqqual_ub;$i++) {
 }
 print OUT "\n";
 push @out, "\n";
+
 #=== Output Read length Distribution =====#
-for (my $i=$length_lb;$i<$length_ub;$i++) {
+for (my $i=$length_min;$i<$length_max;$i++) {
   print OUT "$i ";
   push @out, "$i ";
 }
 print OUT "\n";
 push @out, "\n";
-for (my $i=$length_lb;$i<$length_ub;$i++) {
-  print OUT "$count_by_length[$i] ";
-  push @out, "$count_by_length[$i] ";
+for (my $i=$length_min;$i<$length_max;$i++) {
+  my $value = exists $count_by_length{$i} ? $count_by_length{$i} : 0;
+  print OUT "$value ";
+  push @out, "$value ";
 }
 print OUT "\n";
 push @out, "\n";
@@ -551,12 +580,15 @@ sub usage {
   print "Arguments\n",
   "  --mapquality|-m=i                        skip reads with mapping quality smaller than qual (30)\n",
   "  --basequality|-b=i                       skip bases with base quality smaller than qual (20)\n",
-  "  --rlength|-r=i                           assumes reads are at most length (100)\n",
+  "  --length_min|=i                          shorter reads are ignared (20)\n",
+  "  --length_max|=i                          longer reads are pilled up at the last bin (100)\n",
+  "  --use_length_limits                      if set, parameters --length_min and --length_max are ignored\n",
+  "  --ignore_N                               if set, forgoing and trailing Ns are ignored\n",
   "  --sample|-s=s                            use name for the legend in plots (default is the file name)\n",
   "  --outputfile|--output|-o=s               filename of damage plot (foo.dam.pdf)\n",
   "  --outputfile_length|--output_length|-O=s filename of length plot (foo.length.pdf)\n",
   "  --nth_read=i                             subsample: consider only every nth alignment (1; each alignment)\n",
-  "  --plot_length=i                          damage plot: number of bases to plot from each end\n",
+  "  --plot_length=i                          damage plot: number of bases to plot from each end (25)\n",
   "  --help|-h                                show this help\n",
   "  --debug|-D                               write debug information\n",
   "  --verbose|-v                             verbose output\n",
@@ -564,6 +596,8 @@ sub usage {
  
   exit($exit);
 }
+
+
 
 sub error {
   my @w = @_;
