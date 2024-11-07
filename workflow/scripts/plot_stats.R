@@ -215,7 +215,8 @@ my_plot <- ggplot(mapped_reads, aes_string(x = x, y = "number_reads",
   theme(axis.text.x=element_text(angle = 90, vjust = 0.5)) +
   scale_alpha_manual(values = c(0.5, 1)) +
   geom_bar(stat = "identity", position = position_dodge(), fill=color) +
-  guides(fill="none", color="none")
+  guides(fill="none", color="none") +
+  xlab('')
 
 ## add numbers if there are not too many columns
 if(nrow(mapped_reads)/2<=show_numbers){
@@ -290,7 +291,8 @@ if('Sex' %in% colnames(sample_stats)){ ## not present (library file)
         scale_fill_manual(values = sex_ribbons, name="Sex range") +
         scale_y_continuous(breaks=seq(0,1,0.25)) +
         theme(legend.position = "top") +
-        theme(axis.text.x=element_text(angle = 90, vjust = 0.5))
+        theme(axis.text.x=element_text(angle = 90, vjust = 0.5)) +
+        xlab('')
       
       ## split figure if multidimensional
       if(n_figures > 1){
