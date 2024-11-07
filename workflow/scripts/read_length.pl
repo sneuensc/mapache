@@ -1,10 +1,12 @@
 #!/usr/bin/perl
 
-# samtools view $bam |length.pl -o ${bam}_length.txt 
+# samtools view $bam |length.pl -o ${bam}_length.txt -all
+# new: by default N's are ignored (use -all to include N's) 1.11.2024
+
 use Getopt::Long;
 my %opts = ();
 
-GetOptions(\%opts, 'o=s', 'type:s');
+GetOptions(\%opts, 'o=s', 'all!');
 
 if(scalar(keys(%opts)) < 1){
    &PrintHelp();
@@ -32,7 +34,12 @@ while(<STDIN>){
   chomp($_);
   @line = split("\t", $_);
 
-  $l = scalar(split("", $line[9]));
+  # Remove 'N' and 'n' from line[9] only if $all is false
+  my $filtered_string = $line[9];
+  $filtered_string =~ s/[Nn]//g if !$opts{all};
+
+  # Count characters
+  my $l = scalar(split("", $filtered_string));
   $total_bases = $total_bases + $l;
 
   if(exists $lengths{$l}){
