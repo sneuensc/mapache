@@ -35,10 +35,10 @@ my @retval = GetOptions
   "length_max=i" => \$opt::length_max,
   "sample|s=s" => \$opt::sample,
   "version|V" => \$opt::version,
-  "outputfile|output|o=s" => \$opt::output,
-  "outputfile_length|output_length|O=s" => \$opt::output_length,
+  "out_damage=s" => \$opt::out_damage,
+  "out_length=s" => \$opt::out_length,
   "nth_read=s" => \$opt::nth_read,
-  "plot_length=s" => \$opt::plot_length,
+  "plot_damage_length=s" => \$opt::plot_damage_length,
 ) or usage(1);
 
 if($opt::help) { usage(0); }
@@ -56,28 +56,28 @@ my $seqqual_os = 33; # quality score offset
 my $seqqual_lb = $opt::baseq || 20; # Default minimum base quality 20
 my $position_ub = 80; # Max position
 my $damage_ub = 20;
-my $outfile = $opt::output;
-my $outfile_length = $opt::output_length;
+my $out_damage = $opt::out_damage;
+my $out_length = $opt::out_length;
 my $nth_read = $opt::nth_read || 1; # by default every read
-my $plot_length = $opt::plot_length || 25; # damage plot: number of bases to plot from each end
+my $plot_damage_length = $opt::plot_damage_length || 25; # damage plot: number of bases to plot from each end
 
 my $file = $ARGV[0];
 
-if(not defined($outfile)) {
-  $outfile = $ARGV[0];
-  $outfile =~ s:.*/::; # Remove full path
-  $outfile =~ s/\.....?$//; # Remove extension if any
-  $outfile .= ".dam.pdf";
-  # print("default filename used: $outfile\n");
+if(not defined($out_damage)) {
+  $out_damage = $ARGV[0];
+  $out_damage =~ s:.*/::; # Remove full path
+  $out_damage =~ s/\.....?$//; # Remove extension if any
+  $out_damage .= "_dam.pdf";
+  # print("default damage filename: $out_damage\n");
   
 }
 
-if(not defined($outfile_length)) {
-  $outfile_length = $ARGV[0];
-  $outfile_length =~ s:.*/::; # Remove full path
-  $outfile_length =~ s/\.....?$//; # Remove extension if any
-  $outfile_length .= ".length.pdf";
-  # print("default filename used: $outfile_length\n");
+if(not defined($out_length)) {
+  $out_length = $ARGV[0];
+  $out_length =~ s:.*/::; # Remove full path
+  $out_length =~ s/\.....?$//; # Remove extension if any
+  $out_length .= "_length.pdf";
+  # print("default length filename: $out_length\n");
   
 }
 
@@ -176,22 +176,23 @@ while ($line=<IN>) {
   
   # Count length
   # Sam 1.11.2024: Parameter --ignore_N allows to ignore Ns
-  # Sam 1.11.2024: Newly the length dsitribution is not upper bounded. Use parameter --use_length_limits for upper bound (old behaviour)
-  my $len = (defined $opt::ignore_N) ? length($read =~ s/^[Nn]+|[Nn]+$//gr) : length($read);
+  # Sam 1.11.2024: Newly the length dsitribution bopunds may be set manually, otherwise the max range is infered 
+  my $len=length($read);
+
+  my $leading_n_count  = (defined $opt::ignore_N && $read =~ /^([Nn]+)/) ? length($1) : 0;
+  my $trailing_n_count = (defined $opt::ignore_N && $read =~ /([Nn]+)$/) ? length($1) : 0;
   
-  if (defined $opt::length_max && $len >= $opt::length_max) { 
+  ## get the length of the read (with or without Ns)
+  my $read_length = $len - $leading_n_count - $trailing_n_count;
+  if (defined $opt::length_max && $read_length >= $opt::length_max) { 
       $count_by_length{$opt::length_max - 1}++; ## initalizes with 0
   } else {
-      $count_by_length{$len}++; ## initalizes with 0
+      $count_by_length{$read_length}++; ## initalizes with 0
   } 
+  #print "Read length (Leading - trailing Ns): $read_length ($leading_n_count - $trailing_n_count)\n";
 
-  my $leading_n_count = 0;
-  if(defined $opt::ignore_N){
-    $leading_n_count = ($read =~ /^([Nn]+)/) ? length($1) : 0;
-  }
 
   # Count sequencing quality
-  # Sam 1.11.2024: Parameter --ignore_N allows to ignore Ns
   my @usesite;
   for (my $i = 0; $i<$len; $i++) {
     my $ch = substr($qual_string,$i,1);
@@ -262,6 +263,7 @@ while ($line=<IN>) {
   my $matchl=$1;
   $pos = 0;
   my $count_CG=0;
+
   
   #print "matchl: $matchl\n";
   #print "mismstr: $mismstr\n\n";
@@ -278,24 +280,24 @@ while ($line=<IN>) {
         my $refno = $ACGT{$curres};
         if ($pos<$position_ub && $refno>=0) {
           unless ($reverseflag) {
-            $count_by_mut5[$refno][$refno][$pos]++;
+            $count_by_mut5[$refno][$refno][$pos-$leading_n_count]++;
           } else {
-            $count_by_mut3[3-$refno][3-$refno][$pos]++;
+            $count_by_mut3[3-$refno][3-$refno][$pos-$trailing_n_count]++;
           }
         }
         my $pos3 = $len-$pos-1;
         if ($pos3<$position_ub && $pos3>=0 && $refno>=0) {
           unless ($reverseflag) {
-            $count_by_mut3[$refno][$refno][$pos3]++;
+            $count_by_mut3[$refno][$refno][$pos3-$trailing_n_count]++;
           } else {
-            $count_by_mut5[3-$refno][3-$refno][$pos3]++;
+            $count_by_mut5[3-$refno][3-$refno][$pos3-$leading_n_count]++;
           }
         }
       }
     }
     $pos++;
   }
-  
+
   #exit(0);
 
   while (length($mismstr)>0) {
@@ -348,17 +350,17 @@ while ($line=<IN>) {
         my $refno = $ACGT{$refres};
         if (defined($refno) and $pos < $position_ub && $refno >= 0 && $readno >= 0) {
           unless ($reverseflag) {
-            $count_by_mut5[$readno][$refno][$pos]++;
+            $count_by_mut5[$readno][$refno][$pos-$leading_n_count]++;
           } else {
-            $count_by_mut3[3-$readno][3-$refno][$pos]++;
+            $count_by_mut3[3-$readno][3-$refno][$pos-$leading_n_count]++;
           }
         }
         my $pos3 = $len-$pos-1;
         if (defined($refno) and $pos3<$position_ub && $pos3>=0 && $refno>=0 && $readno>=0) {
           unless ($reverseflag) {
-            $count_by_mut3[$readno][$refno][$pos3]++;
+            $count_by_mut3[$readno][$refno][$pos3-$leading_n_count]++;
           } else {
-            $count_by_mut5[3-$readno][3-$refno][$pos3]++;
+            $count_by_mut5[3-$readno][3-$refno][$pos3-$leading_n_count]++;
           }
         }
       }		
@@ -376,17 +378,17 @@ while ($line=<IN>) {
           my $refno = $ACGT{$curres};
           if ($pos<$position_ub && $refno>=0) {
             unless ($reverseflag) {
-              $count_by_mut5[$refno][$refno][$pos]++;
+              $count_by_mut5[$refno][$refno][$pos-$leading_n_count]++;
             } else {
-              $count_by_mut3[3-$refno][3-$refno][$pos]++;
+              $count_by_mut3[3-$refno][3-$refno][$pos-$leading_n_count]++;
             }
           }
           my $pos3=$len-$pos-1;
           if ($pos3<$position_ub && $pos3>=0 && $refno>=0) {
             unless ($reverseflag) {
-              $count_by_mut3[$refno][$refno][$pos3]++;
+              $count_by_mut3[$refno][$refno][$pos3-$leading_n_count]++;
             } else {
-              $count_by_mut5[3-$refno][3-$refno][$pos3]++;
+              $count_by_mut5[3-$refno][3-$refno][$pos3-$leading_n_count]++;
             }
           }
         }
@@ -441,7 +443,7 @@ if (defined $opt::length_max){
   $length_max = $opt::length_max;
 } else {
   my @keys = keys %count_by_length;
-  $length_max = (sort @keys)[-1];
+  $length_max = (sort @keys)[-1] + 1;
 }
 
 
@@ -493,7 +495,7 @@ for (my $i=0;$i<4;$i++) {
     for(my $k=0;$k<$position_ub;$k++) {
       my $mutrate;
       my $totalres = $count_by_mut5[0][$j][$k] + $count_by_mut5[1][$j][$k] 
-      + $count_by_mut5[2][$j][$k] + $count_by_mut5[3][$j][$k];
+        + $count_by_mut5[2][$j][$k] + $count_by_mut5[3][$j][$k];
       if ($totalres==0) {
         $mutrate=0;
       } else {
@@ -534,7 +536,7 @@ $file_no_bam =~ s:.*/::; # Remove full path
 $file_no_bam =~ s/\.bam$//i;
 open(R,"|-","R --vanilla > /dev/null") || die;
 print 
-print R R_script($opt::sample||$file_no_bam, $outfile, $outfile_length, $plot_length, @out);
+print R R_script($opt::sample||$file_no_bam, $out_damage, $out_length, $plot_damage_length, @out);
 close R;
 
 sub debug {
@@ -580,15 +582,14 @@ sub usage {
   print "Arguments\n",
   "  --mapquality|-m=i                        skip reads with mapping quality smaller than qual (30)\n",
   "  --basequality|-b=i                       skip bases with base quality smaller than qual (20)\n",
-  "  --length_min|=i                          shorter reads are ignared (20)\n",
-  "  --length_max|=i                          longer reads are pilled up at the last bin (100)\n",
-  "  --use_length_limits                      if set, parameters --length_min and --length_max are ignored\n",
+  "  --length_min=i                           shorter reads are ignored (20)\n",
+  "  --length_max=i                           longer reads are pilled up at the last bin (100)\n",
   "  --ignore_N                               if set, forgoing and trailing Ns are ignored\n",
   "  --sample|-s=s                            use name for the legend in plots (default is the file name)\n",
-  "  --outputfile|--output|-o=s               filename of damage plot (foo.dam.pdf)\n",
-  "  --outputfile_length|--output_length|-O=s filename of length plot (foo.length.pdf)\n",
+  "  --out_damage=s                           filename of damage plot (foo_dam.pdf)\n",
+  "  --out_length=s                           filename of length plot (foo_length.pdf)\n",
   "  --nth_read=i                             subsample: consider only every nth alignment (1; each alignment)\n",
-  "  --plot_length=i                          damage plot: number of bases to plot from each end (25)\n",
+  "  --plot_damage_length=i                   damage plot: number of bases to plot from each end (25)\n",
   "  --help|-h                                show this help\n",
   "  --debug|-D                               write debug information\n",
   "  --verbose|-v                             verbose output\n",
@@ -616,23 +617,23 @@ sub warning {
 
 sub R_script {
   my $sample_name = shift;
-  my $pdffile = shift;
+  my $pdffile_dam = shift;
   my $pdffile_length = shift;
-  my $plot_length = shift;
+  my $plot_damage_length = shift;
   my @values = @_;
   my @script =
     (
       qq(
         sample_name <- "$sample_name"
-        pdfname <- "$pdffile"
+        pdfname_dam <- "$pdffile_dam"
         pdfname_length <- "$pdffile_length"
-        plot_length <- "$plot_length"
+        plot_damage_length <- "$plot_damage_length"
         str <- "@values"),
       q(
-        open_plot_file <- function(damage_file) {
-          width_inches <- 6.26;
-          height_inches <- 3.5;
-          resolution <- 300
+        open_plot_file <- function(damage_file, 
+                                  width_inches = 6.26,
+                                  height_inches = 3.5,
+                                  resolution = 300) {          
           if(grepl(".pdf$", damage_file, ignore.case = T)) {
             pdf(damage_file, height=height_inches, width=width_inches);
           } else if(grepl(".png$", damage_file, ignore.case = T)) {
@@ -667,14 +668,14 @@ sub R_script {
           }
         }
         
-        open_plot_file(pdfname_length);
-        
-        saving=paste("Saved under: ",pdfname_length);
-        write(saving, stderr());
-        
         #-------------------------------------------------------------#
         ##plot of the read length distribution (updated 14.02.2024 to work with new version of R, there were conversion issues to get a numeric vector)
-        par(mfrow=c(1,2),mar=c(2.5, 1.8, 2, 0.5),mgp=c(1,0.,0))
+        open_plot_file(pdfname_length, 3.5, 3.5);
+        
+        saving=paste("Read length distribution saved under: ",pdfname_length);
+        write(saving, stderr());
+        
+        par(mfrow=c(1,1),mar=c(2.5, 1.8, 2, 0.5),mgp=c(1,0.,0))
         ifn1 <- textConnection(str);
         data1<-read.table(ifn1,header=F,nrows=2,skip=2)
         values = as.numeric(data1[1,])
@@ -696,9 +697,10 @@ sub R_script {
         
         
         #--------------------------------------------------------------#
-        open_plot_file(pdfname);
+        ## plot damage
+        open_plot_file(pdfname_dam, 6.26, 3.5);
         
-        saving=paste("Saved under: ",pdfname);
+        saving=paste("Damage pattern saved under: ",pdfname_dam);
         write(saving, stderr());
         
         ## plot damage from 5 end
@@ -711,7 +713,7 @@ sub R_script {
         nda <- dam
         yma <- max(nda[1:25,c(3:6,8:11,13:16)])
         yma <- round(yma*1000+0.5)/1000
-        xmax <- min(nrow(nda), as.numeric(plot_length))
+        xmax <- min(nrow(nda), as.numeric(plot_damage_length))
         
         Colors = c("olivedrab3","deepskyblue1","violetred","olivedrab3","gold","darkorange","deepskyblue1","gold","darkblue","violetred","darkorange","darkblue")
         Linetypes = c(1,1,1,2,1,2,2,2,1,2,1,2)
@@ -721,7 +723,7 @@ sub R_script {
         dd<-nda[,c(3:6,8:11,13:16)]
         colnames(dd)<-Patterns
         rownames(dd)<-1:nrow(dd)
-        write.csv(dd, gsub(".pdf", "_5prime.csv", pdfname), quote=F, row.names = TRUE)
+        write.csv(dd, gsub(".pdf", "_5prime.csv", pdfname_dam), quote=F, row.names = TRUE)
         
         plot(nda[,3], main=paste("damage pattern 5' end",sample_name,sep=" "),xlab="position from 5' end",ylab="frequency",ylim=c(0,yma),col="black",type="l",lwd=0.0,cex.axis=0.6,cex.lab=0.6,cex.main=0.8,xlim=c(0,xmax));
         #points(nda[,4],type="l",col="deepskyblue1",lwd=2);
@@ -748,7 +750,7 @@ sub R_script {
         dd<-nda[,c(3:6,8:11,13:16)]
         colnames(dd)<-Patterns
         rownames(dd)<-1:nrow(dd)
-        write.csv(dd, gsub(".pdf", "_3prime.csv", pdfname), quote=F, row.names = TRUE)
+        write.csv(dd, gsub(".pdf", "_3prime.csv", pdfname_dam), quote=F, row.names = TRUE)
         
         plot(nda[,3], main=paste("damage pattern 3' end",sample_name,sep=" "),xlab="position from 3' end",ylab="frequency",ylim=c(0,yma),col=2,type="l",lwd=1,cex.axis=0.6,cex.lab=0.6,cex.main=0.8,xlim=c(xmax, 0));
         #points(nda[,4],type="l",col="deepskyblue1",lwd=2);
