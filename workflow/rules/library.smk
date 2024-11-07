@@ -141,6 +141,44 @@ rule dedup:
         """
 
 
+rule get_bam_after_rmDup:
+    """
+    Store the bam file after duplication removal
+    """
+    input:
+        get_bam_4_after_rmDup,
+    output:
+        "{folder}/02_library/02_bam_after_rmDup/01_bam/{sm}/{lb}.{genome}.bam",
+    threads: 1
+    log:
+        "{folder}/02_library/02_bam_after_rmDup/01_bam/{sm}/{lb}.{genome}.bam.log",
+    message:
+        "--- GET BAM AFTER DUPLICATE REMOVAL {output}"
+    shell:
+        """
+        cp {input} {output}
+        """
+
+
+rule get_bam_after_rmDup_low_qual:
+    """
+    Store the bam file after duplication removal
+    """
+    input:
+        get_merged_bam_low_qual_LB,
+    output:
+        "{folder}/02_library/02_bam_after_rmDup/01_bam_low_qual/{sm}/{lb}.{genome}.bam",
+    threads: 1
+    log:
+        "{folder}/02_library/02_bam_after_rmDup/01_bam_low_qual/{sm}/{lb}.{genome}.bam.log",
+    message:
+        "--- GET LOW QUAL BAM AFTER DUPLICATE REMOVAL {output}"
+    shell:
+        """
+        cp {input} {output}
+        """
+
+
 rule mapDamage_stats:
     """
     Run mapDamage to quantify the deamination pattern

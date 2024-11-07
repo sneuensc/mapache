@@ -79,11 +79,11 @@ for genome in GENOMES:
 ## SAMPLES (sample file and external bam files)
 ##########################################################################################
 # sample_file="config/SAMPLES.tsv"
-SAMPLES, SAMPLES_FINAL, SAMPLE_FILE = read_sample_file()
+SAMPLES_TABLE, SAMPLES, SAMPLES_FINAL, SAMPLE_FILE = read_sample_file()
 PAIRED_END, COLLAPSE = test_SAMPLES()
 
 
-# print(SAMPLES)
+# print(SAMPLES_FINAL)
 
 
 ## get SAMPLES (bam files) to compute only stats on them
@@ -97,7 +97,7 @@ if len(SAMPLES) + len(EXTERNAL_SAMPLES) == 0:
 
 
 wildcard_constraints:
-    sm="|".join([sm for sm in SAMPLES] + [sm for g in EXTERNAL_SAMPLES.values() for sm in g]),
+    sm="|".join([sm for sm in SAMPLES] + [sm for sm in SAMPLES_FINAL] + [sm for g in EXTERNAL_SAMPLES.values() for sm in g]),
     lb="|".join([lb for sm in SAMPLES.values() for lb in sm]),
     id="|".join([id for sm in SAMPLES.values() for lb in sm.values() for id in lb]),
     genome="|".join([g for g in GENOMES]),
@@ -276,20 +276,9 @@ stat_plot = get_stat_plot_files()
 ## get all stat files which have to be computed during mapping
 fastqc = get_fastqc_files()
 samtools_stats = get_samtools_stats_files()
-lengths = get_length_files()
+lengths = get_length_files('SM')
 idxstats = get_idxstats_files()
-damage_files = get_damage_output()
 
-
-# -----------------------------------------------------------------------------#
-## get the minimal final summary stats
-stats_mapping_checkpoint = (
-    fastqc + samtools_stats + lengths + idxstats + sex_files + damage_files,
-)
-
-final_stats = stat_csv + qualimap_files + multiqc_files
-
-final_stat_figures = (damage_files + stat_plot,)
 
 
 ## --------------------------------------------------------------------------------------------------
@@ -313,10 +302,7 @@ localrules:
 # print(final_bam)
 # print(final_external_bam)
 # print(final_bam_low_qual)
-# print(final_stat_figures)
-# print(final_stats)
 # print(samtools_stats)
-# print(stats_mapping_checkpoint)
 # print(get_imputation_files())
 # print(get_imputation_plots())
 
@@ -332,10 +318,7 @@ rule all:
         final_external_bam,
         final_external_bai,
         final_bam_low_qual,
-        final_stat_figures,
-        final_stats,
         samtools_stats,
-        stats_mapping_checkpoint,
         get_imputation_files(),
         get_imputation_plots(),
         report(
@@ -364,7 +347,6 @@ rule dag:
     message:
         "--- RUNNING DAG"
 
-print(stats_mapping_checkpoint)
 
 rule mapping:
     """
@@ -372,12 +354,13 @@ rule mapping:
     """
     input:
         final_bam,
-        final_bai,
-        final_external_bam,
-        final_bam_low_qual,
-        stats_mapping_checkpoint,
-        get_imputation_files(),
-        final_stat_figures,
+        #final_bai,
+        #final_external_bam,
+        #final_bam_low_qual,
+        #get_imputation_files(),
+        #get_csv_files(['FASTQ', 'LB_rmDup', 'LB', 'SM']),
+        #get_stat_plot_files(['LB_rmDup', 'LB', 'SM']),
+        #get_damage_output(['LB_rmDup', 'LB', 'SM']),
     output:
         f"{RESULT_DIR}/run_report.sh"
     message:
@@ -386,28 +369,21 @@ rule mapping:
         "echo 'snakemake mapping --report report_mapping.html' > {output}"
 
 
-rule mapping_libraries:
+rule mapping_library:
     """
-    Performs the mapping unitl the libraries
+    Performs the mapping unitl and including the duplicate removal
     """
     input:
-        get_all_bam_after_mapDamage_inference(),
-        fastqc,
-        get_stat_csv_files(False),
-        get_stat_plot_files(False),
-        damage_files,
-
-        get_samtools_stats_files_library(),
-        get_sex_files_library(),
-        #lengths,
-        #idxstats,
-        #sex_files,
+        get_all_bam_after_rmDup(),
+        get_csv_files(['FASTQ', 'LB_rmDup']),
+        get_stat_plot_files(['LB_rmDup']),
+        get_damage_output(['LB_rmDup']),
     output:
         f"{RESULT_DIR}/run_report.sh"
     message:
         "--- RUNNING MAPPING UNTIL LIBRARIES"
     shell:
-        "echo 'snakemake mapping_libraries --report report_libraries.html' > {output}"
+        "echo 'snakemake mapping_library --report report_libraries.html' > {output}"
 
 rule version:
     """

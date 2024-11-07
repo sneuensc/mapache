@@ -17,6 +17,9 @@ rule merge_bam_library2sample:
         memory=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24),
     threads: get_threads("merging", 4)
+    params:
+        sm_changed=lambda wildcards: sm_changed(wildcards.sm),
+        nb_input=lambda wildcards, input: len(input),
     log:
         "{folder}/03_sample/00_merged_library/01_bam/{sm}.{genome}.log",
     conda:
@@ -27,7 +30,29 @@ rule merge_bam_library2sample:
         "--- SAMTOOLS MERGE merge_bam_library2sample {output}"
     shell:
         """
-        samtools merge -f --threads {threads} {output} {input} 2> {log};
+        ## multiple bam files: merge them
+        if [[ "{params.nb_input}" != "1" ]]; then    
+            ## merge bam files
+            samtools merge -f --threads {threads} {output} {input} 2> {log};
+
+            ## if sample names changed: overwrite read group
+            if [[ "{params.sm_changed}" == "True" ]]; then
+                samtools view -H {output} \
+                    | sed 's/\<SM:[[:space:]]*[^[:space:]]*\>/SM:{wildcards.sm}/g' \
+                    > header.sam;
+                samtools reheader -P header.sam {output} > {output}.bam;
+                mv {output}.bam {output};
+                rm header.sam;
+            fi
+
+        ## a single bam file: just overwrite read group
+        else        
+            samtools view -H {input} \
+	            | sed 's/\<SM:[[:space:]]*[^[:space:]]*\>/SM:{wildcards.sm}/g' \
+	            > header.sam;
+            samtools reheader -P header.sam {input} > {output};
+            rm header.sam;
+        fi
         """
 
 
@@ -43,6 +68,9 @@ rule merge_bam_low_qual_library2sample:
         memory=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24),
     threads: get_threads("merging", 4)
+    params:
+        sm_changed=lambda wildcards: sm_changed(wildcards.sm),
+        nb_input=lambda wildcards, input: len(input),
     log:
         "{folder}/03_sample/00_merged_library/01_bam_low_qual/{sm}.{genome}.log",
     conda:
@@ -53,10 +81,32 @@ rule merge_bam_low_qual_library2sample:
         "--- SAMTOOLS MERGE merge_bam_library2sample {output}"
     shell:
         """
-        samtools merge -f --threads {threads} {output} {input} 2> {log};
+        ## multiple bam files: merge them
+        if [[ "{params.nb_input}" != "1" ]]; then    
+            ## merge bam files
+            samtools merge -f --threads {threads} {output} {input} 2> {log};
+
+            ## if sample names changed: overwrite read group
+            if [[ "{params.sm_changed}" == "True" ]]; then
+                samtools view -H {output} \
+                    | sed 's/\<SM:[[:space:]]*[^[:space:]]*\>/SM:{wildcards.sm}/g' \
+                    > header.sam;
+                samtools reheader -P header.sam {output} > {output}.bam;
+                mv {output}.bam {output};
+                rm header.sam;
+            fi
+
+        ## a single bam file: just overwrite read group
+        else        
+            samtools view -H {input} \
+	            | sed 's/\<SM:[[:space:]]*[^[:space:]]*\>/SM:{wildcards.sm}/g' \
+	            > header.sam;
+            samtools reheader -P header.sam {input} > {output};
+            rm header.sam;
+        fi
         """
-
-
+        
+        
 rule realign:
     """
     Realign sequence around indels.

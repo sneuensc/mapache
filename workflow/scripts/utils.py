@@ -428,7 +428,7 @@ def read_sample_file():
         ## create nested dict of the final sample name and the libraries (remove duplicates)
         SAMPLES_FINAL = {k: list(set(g["LB"])) for k,g in db.groupby("SM_FINAL")}
 
-    return SAMPLES, SAMPLES_FINAL, input
+    return db, SAMPLES, SAMPLES_FINAL, input
 
 
 def test_SAMPLES():

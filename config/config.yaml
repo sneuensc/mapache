@@ -14,6 +14,7 @@
 # Example samples file. Modify to map to your own samples.
 sample_file: config/samples.tsv
 
+
 # Some statistics (like depth of coverage) can be computed for BAM files that were obtained
 # by other means (e.g., downloaded from public repositories). Note that in that case, mapache
 # assumes that the data were mapped to the first reference genome listed in the config file.
@@ -147,11 +148,10 @@ remove_duplicates:
     mem: 16
     time: 2
 
+## You may run the workflow until here using the command 'snakemake mapping_libraries'.
+## This allows to investigate the mappings and adapt the follow up processes.
 
 # mapDamage2 (optional, not run by default)
-# Do you wish to rescale base qualities in the mapped BAMs with mapDamage2?
-# To compute only damage statistics (read length, deamination rates), 
-# without rescaling qualities, see the entry below under "stats"
 damage_rescale:
     run: False
     params: ''
@@ -159,11 +159,21 @@ damage_rescale:
     mem: 8
     time: 2
 
+# store the bam file before nay filtering
+stats_after_rmDup: 
+    run: True
+## If you want to stop here and inspect the libraries run mapache with the command 'snakemake mapping_libraries'.
+## This allows you to (re)-define the parameters for the outstanding steps, such as
+##  - rescale bam files (mapDamage2)
+##  - trimming the edges (bamutil)
+##  - decide if the sample files should be merged or not (optional column 'SM_FINAL' in the sample file)
+## Attention: if you make any modification don't forget to run snakemake with the parameter '--rerun-triggers mtime'
+## to avoid that everything is recomputed.
 
 ## trim trailing bases
 bamutil:
-    run: False
-    params: ''
+    run: True
+    params: '5'
     threads: 1 ## hardcoded at 1
     time: 2
     mem: 4
@@ -210,6 +220,8 @@ stats:
     qualimap_mem: 8
     
     multiqc: True
+
+    mapping_stats: ['LB_rmDup', 'LB', 'SM']
     
     # specific to plots in the html report
     plots:
@@ -244,7 +256,7 @@ damage:
     # This step can take a lot of time. We recommend to run it on a small subset of the mapped
     # reads in order to get an estimate of the damage. The value can be an integer (number of reads)
     # or a float (fraction of mapped reads)
-    bamdamage_params: ' --rlength 150 --plot_length 30'
+    bamdamage_params: '--ignore_N --plot_damage_length 30 --length_min 0'
     # This parameter indicates that the estimation will be done with the first 100 bp of each read
     # and the plots will include the first and last 30 bp.
 

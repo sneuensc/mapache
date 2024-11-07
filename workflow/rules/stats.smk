@@ -5,8 +5,7 @@
 
 localrules:
     samtools_idxstats,
-    plot_summary_statistics_sample,
-    plot_summary_statistics_library,
+    plot_csv,
     merge_DoC_chr,
     assign_sex,
     assign_no_sex,
@@ -290,6 +289,59 @@ rule merge_stats_per_fastq:
         """
 
 
+rule merge_stats_per_lb_rmDup:
+    input:
+        fastq_stats=lambda wildcards: expand(
+            "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/{id}/fastq_stats.csv",
+            id=SAMPLES[wildcards.sm][wildcards.lb],
+            allow_missing=True,
+        ),
+        stats_unique="{folder}/04_stats/01_sparse_stats/02_library/03_library_after_rmDup/{sm}/{lb}.{genome}_stats.txt",
+        length_unique="{folder}/04_stats/01_sparse_stats/02_library/03_library_after_rmDup/{sm}/{lb}.{genome}_length.txt",
+        idxstats_unique="{folder}/04_stats/01_sparse_stats/02_library/03_library_after_rmDup/{sm}/{lb}.{genome}_idxstats.txt",
+        sex_unique=get_sex_file_library_rmDup,
+    output:
+        "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/library_rmDup_stats.csv",
+    params:
+        chrs_selected=lambda wildcards: ",".join(
+            to_list(
+                get_param(["depth", wildcards.genome, "chromosomes"], "not_requested")
+            )
+        ),
+        script=workflow.source_path("../scripts/merge_stats_per_LB.R"),
+    log:
+        "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/library_rmDup_stats.log",
+    conda:
+        "../envs/r.yaml"
+    envmodules:
+        module_r,
+    message:
+        "--- MERGE LIBRARY LEVEL STATS (after rmDup)"
+    shell:
+        """
+        list_fastq_stats=$(echo {input.fastq_stats} |sed 's/ /,/g');
+
+        if [ {params.chrs_selected} == "not_requested" ] 
+        then
+            chrsSelected=""
+        else
+            chrsSelected="--chrs_selected={params.chrs_selected}"
+        fi
+
+        Rscript {params.script} \
+            --lb={wildcards.lb} \
+            --sm={wildcards.sm} \
+            --genome={wildcards.genome} \
+            --output_file={output} \
+            --path_list_stats_fastq=${{list_fastq_stats}} \
+            --path_stats_unique={input.stats_unique} \
+            --path_length_unique={input.length_unique} \
+            --path_idxstats_unique={input.idxstats_unique} \
+            --path_sex_unique={input.sex_unique} \
+            $chrsSelected
+        """
+
+
 rule merge_stats_per_lb:
     input:
         fastq_stats=lambda wildcards: expand(
@@ -511,34 +563,77 @@ rule merge_DoC_chr:
 ##########################################################################################
 #
 # bamdamage
+def get_bam_4_bamdamage(wc):
+    if wc.cat == "02_library_rmDup":
+        paths = list(pathlib.Path(wc.prefix).parts)
+        file = get_bam_4_after_rmDup(
+            Wildcards(
+                fromdict={
+                    "folder": wc.folder,
+                    "sm": paths[0],
+                    "lb": paths[1],
+                    "genome": wc.genome,
+                }
+            )
+        )
+    elif wc.cat == "02_library_final":
+        paths = list(pathlib.Path(wc.prefix).parts)
+        file = get_final_bam_LB(
+            Wildcards(
+                fromdict={
+                    "folder": wc.folder,
+                    "sm": paths[0],
+                    "lb": paths[1],
+                    "genome": wc.genome,
+                }
+            )
+        )
+    elif wc.cat == "03_sample":
+        file = f"{wc.folder}/03_sample/03_final_sample/01_bam/{wc.prefix}.{wc.genome}.bam"
+    
+    #print(file)
+    return file
+
+
+def get_idxstats_4_bamdamage(wc):
+    if wc.cat == "02_library_rmDup":
+        file = f"results/04_stats/01_sparse_stats/02_library/03_library_after_rmDup/{wc.prefix}.{wc.genome}_idxstats.txt"
+    elif wc.cat == "02_library_final":
+        file = f"results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{wc.prefix}.{wc.genome}_idxstats.txt"
+    elif wc.cat == "03_sample":
+        file = f"results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{wc.prefix}.{wc.genome}_idxstats.txt"
+
+    return file
+
+
 rule bamdamage:
     """
     Run bamdamage to quantify the deamination pattern
     """
     input:
         ref="{folder}/00_reference/{genome}/{genome}.fasta",
-        bam=get_final_bam_LB,
-        idxstats="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{sm}/{lb}.{genome}_idxstats.txt",
+        bam=get_bam_4_bamdamage,
+        idxstats=get_idxstats_4_bamdamage,
     output:
-        damage_pdf="{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}.dam.pdf",
-        length_pdf="{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}.length.pdf",
+        damage_pdf="{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome,[A-Za-z0-9]+}.dam.pdf",
+        length_pdf="{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome,[A-Za-z0-9]+}.length.pdf",
         length_table=report(
-            "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}.length.csv",
-            category="Read length",
+            "{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome,[A-Za-z0-9]+}.length.csv",
+            category="Read length ({cat})",
             subcategory="Tables",
         ),
         dam_5prime_table=report(
-            "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}.dam_5prime.csv",
-            category="Damage pattern",
+            "{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome,[A-Za-z0-9]+}.dam_5prime.csv",
+            category="Damage pattern ({cat})",
             subcategory="Tables",
         ),
         dam_3prime_table=report(
-            "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}.dam_3prime.csv",
-            category="Damage pattern",
+            "{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome,[A-Za-z0-9]+}.dam_3prime.csv",
+            category="Damage pattern ({cat})",
             subcategory="Tables",
         ),
     log:
-        "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}_bamdamage.log",
+        "{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome,[A-Za-z0-9]+}_bamdamage.log",
     threads: 1
     resources:
         memory=lambda wildcards, attempt: get_memory_alloc(["bamdamage"], attempt, 4),
@@ -550,7 +645,7 @@ rule bamdamage:
         fraction=get_param(["damage", "bamdamage_fraction"], 0),
         script=workflow.source_path("../scripts/bamdamage"),
     log:
-        "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}_bamdamage.log",
+        "{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome}_bamdamage.log",
     conda:
         "../envs/bamdamage.yaml"
     envmodules:
@@ -573,8 +668,8 @@ rule bamdamage:
         fi;
 
         perl {params.script} {params.params} \
-            --nth_read $nth_line --output {output.damage_pdf} \
-            --output_length {output.length_pdf} {input.bam} 2>> {log};
+            --nth_read $nth_line --out_damage {output.damage_pdf} \
+            --out_length {output.length_pdf} {input.bam} 2>> {log};
         """
 
 
@@ -583,18 +678,18 @@ rule plot_bamdamage:
     Run bamdamage to quantify the deamination pattern
     """
     input:
-        length_table="{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}.length.csv",
-        dam_5prime_table="{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}.dam_5prime.csv",
-        dam_3prime_table="{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}.dam_3prime.csv",
+        length_table="{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome}.length.csv",
+        dam_5prime_table="{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome}.dam_5prime.csv",
+        dam_3prime_table="{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome}.dam_3prime.csv",
     output:
         length=report(
-            "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}.length.svg",
-            category="Read length",
+            "{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome,[A-Za-z0-9]+}.length.svg",
+            category="Read length ({cat})",
             subcategory="Plots",
         ),
         damage=report(
-            "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}.dam.svg",
-            category="Damage pattern",
+            "{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome,[A-Za-z0-9]+}.dam.svg",
+            category="Damage pattern ({cat})",
             subcategory="Plots",
         ),
     message:
@@ -603,7 +698,7 @@ rule plot_bamdamage:
         script=workflow.source_path("../scripts/plot_bamdamage.R"),
         params=get_param(["stats", "bamdamage_params"], ""),
     log:
-        "{folder}/04_stats/01_sparse_stats/02_library/04_bamdamage/{sm}/{lb}.{genome}_plot.log",
+        "{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome}_plot.log",
     conda:
         "../envs/r.yaml"
     envmodules:
@@ -618,8 +713,7 @@ rule plot_bamdamage:
             --length={input.length_table} \
             --five_prime={input.dam_5prime_table} \
             --three_prime={input.dam_3prime_table} \
-            --sample={wildcards.sm} \
-            --library={wildcards.lb} \
+            --name={wildcards.prefix} \
             --genome={wildcards.genome} \
             --length_svg={output.length} \
             --damage_svg={output.damage} \
@@ -635,136 +729,52 @@ rule plot_bamdamage:
 # -----------------------------------------------------------------------------#
 # plotting
 
-rule plot_summary_statistics_library:
+
+rule plot_csv:
     """
     Plot summary statistics
     """
     input:
-        sample_stats="{folder}/04_stats/03_summary/LB_stats.csv",
+        sample_stats="{folder}/04_stats/03_summary/{type}_stats.csv",
     output:
         plot_1_nb_reads=report(
-            "{folder}/04_stats/04_plots_library/1_nb_reads.svg",
+            "{folder}/04_stats/04_plots_{type}/1_nb_reads.svg",
             caption="../report/1_nb_reads.rst",
             category="Mapping statistics",
-            subcategory="Plots library",
+            subcategory="Plots {type}",
         ),
         plot_2_mapped=report(
-            "{folder}/04_stats/04_plots_library/2_mapped.svg",
+            "{folder}/04_stats/04_plots_{type}/2_mapped.svg",
             caption="../report/2_mapped.rst",
             category="Mapping statistics",
-            subcategory="Plots library",
+            subcategory="Plots {type}",
         ),
         plot_3_endogenous=report(
-            "{folder}/04_stats/04_plots_library/3_endogenous.svg",
+            "{folder}/04_stats/04_plots_{type}/3_endogenous.svg",
             caption="../report/3_endogenous.rst",
             category="Mapping statistics",
-            subcategory="Plots library",
+            subcategory="Plots {type}",
         ),
         plot_4_duplication=report(
-            "{folder}/04_stats/04_plots_library/4_duplication.svg",
+            "{folder}/04_stats/04_plots_{type}/4_duplication.svg",
             caption="../report/4_duplication.rst",
             category="Mapping statistics",
-            subcategory="Plots library",
+            subcategory="Plots {type}",
         ),
         plot_5_AvgReadDepth=report(
-            "{folder}/04_stats/04_plots_library/5_AvgReadDepth.svg",
+            "{folder}/04_stats/04_plots_{type}/5_AvgReadDepth.svg",
             caption="../report/5_AvgReadDepth.rst",
             category="Mapping statistics",
-            subcategory="Plots library",
+            subcategory="Plots {type}",
         ),
         plot_6_Sex=report(
-            "{folder}/04_stats/04_plots_library/6_Sex.svg",
+            "{folder}/04_stats/04_plots_{type}/6_Sex.svg",
             caption="../report/6_Sex.rst",
             category="Mapping statistics",
-            subcategory="Plots library",
-        ),    
-    log:
-        "{folder}/04_stats/04_plots_library/plot_summary_statistics.log",
-    conda:
-        "../envs/r.yaml"
-    envmodules:
-        module_r,
-    message:
-        "--- PLOT SUMMARY STATISTICS"
-    params:
-        script=workflow.source_path("../scripts/plot_stats.R"),
-        x_axis=get_param(["stats", "plots", "x_axis"], "auto"),
-        n_col=get_param(["stats", "plots", "n_col"], 1),
-        width=get_param(["stats", "plots", "width"], 11),
-        height=get_param(["stats", "plots", "height"], 7),
-        color=get_param(["stats", "plots", "color"], "blue"),
-        sex_ribbons=get_param(
-            ["stats", "plots", "sex_ribbons"], 'c("XX"="red","XY"="blue")'
-        ).replace("=", "?"),
-        sex_thresholds=get_sex_threshold_plotting(),
-        show_numbers=get_param(["stats", "plots", "show_numbers"], "10"),
-    shell:
-        """
-        Rscript {params.script} \
-            --sm={input.sample_stats}  \
-            --out_1_reads={output.plot_1_nb_reads} \
-            --out_2_mapped={output.plot_2_mapped} \
-            --out_3_endogenous={output.plot_3_endogenous} \
-            --out_4_duplication={output.plot_4_duplication} \
-            --out_5_AvgReadDepth={output.plot_5_AvgReadDepth} \
-            --out_6_Sex={output.plot_6_Sex} \
-            --x_axis={params.x_axis} \
-            --n_col={params.n_col} \
-            --color={params.color} \
-            --thresholds='{params.sex_thresholds}' \
-            --sex_ribbons='{params.sex_ribbons}' \
-            --width={params.width} \
-            --height={params.height} \
-            --show_numbers={params.show_numbers}
-        """
-
-
-
-rule plot_summary_statistics_sample:
-    """
-    Plot summary statistics
-    """
-    input:
-        sample_stats="{folder}/04_stats/03_summary/SM_stats.csv",
-    output:
-        plot_1_nb_reads=report(
-            "{folder}/04_stats/04_plots_sample/1_nb_reads.svg",
-            caption="../report/1_nb_reads.rst",
-            category="Mapping statistics",
-            subcategory="Plots sample",
-        ),
-        plot_2_mapped=report(
-            "{folder}/04_stats/04_plots_sample/2_mapped.svg",
-            caption="../report/2_mapped.rst",
-            category="Mapping statistics",
-            subcategory="Plots sample",
-        ),
-        plot_3_endogenous=report(
-            "{folder}/04_stats/04_plots_sample/3_endogenous.svg",
-            caption="../report/3_endogenous.rst",
-            category="Mapping statistics",
-            subcategory="Plots sample",
-        ),
-        plot_4_duplication=report(
-            "{folder}/04_stats/04_plots_sample/4_duplication.svg",
-            caption="../report/4_duplication.rst",
-            category="Mapping statistics",
-            subcategory="Plots sample",
-        ),
-        plot_5_AvgReadDepth=report(
-            "{folder}/04_stats/04_plots_sample/5_AvgReadDepth.svg",
-            caption="../report/5_AvgReadDepth.rst",
-            category="Mapping statistics",
-            subcategory="Plots sample",
-        ),
-        plot_6_Sex=report(
-            "{folder}/04_stats/04_plots_sample/6_Sex.svg",
-            caption="../report/6_Sex.rst",
-            category="Mapping statistics",
-            subcategory="Plots sample",
+            subcategory="Plots {type}",
         ),
     log:
-        "{folder}/04_stats/04_plots_sample/plot_summary_statistics.log",
+        "{folder}/04_stats/04_plots_{type}/plot_summary_statistics.log",
     conda:
         "../envs/r.yaml"
     envmodules:
