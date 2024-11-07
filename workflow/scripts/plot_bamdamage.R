@@ -17,8 +17,7 @@ if("--help" %in% args) {
         --length                                     - read length csv filename
         --five_prime                                 - substitution at 5' csv filename
         --three_prime                                - substitution at 3' csv filename
-        --sample                                     - name of the sample
-        --library                                    - name of the library
+        --name                                       - name to plot
         --genome                                     - name of the genome
         --plot_length                                - number of bases to plot from each end (default 25)
         
@@ -62,8 +61,7 @@ three_prime_csv = get_args(argsL, "three_prime")
 length_svg = get_args(argsL, "length_svg")
 damage_svg = get_args(argsL, "damage_svg")
 
-sample = get_args(argsL, "sample", "")
-library = get_args(argsL, "library", "")
+name = paste(rev(strsplit(get_args(argsL, "name", ""), "/")[[1]]), collapse='\n')
 genome = get_args(argsL, "genome", "")
 
 plot_length = as.numeric(get_args(argsL, "plot_length", "25"))
@@ -85,7 +83,7 @@ my_plot <- ggplot(data=length, mapping=aes(x = length, y=frequency)) +
   ylab("frequency") +
   xlab("read length") +
   theme_classic() +
-  ggtitle(paste0("Read length distribution of '", library, "' (sample: ", sample, ")"))
+  ggtitle(paste("Read length distribution", name, sep='\n'))
 
 ggsave(length_svg, my_plot, width = 11, height = 7)
 
@@ -129,6 +127,6 @@ p2 <- ggplot(d, aes(x=X, y=value, group=variable)) +
 
 ## combine plots
 ## grid.arrange always plots a Rplots.pdf...
-my_plot <- grid.arrange(grobs=list(p1, p2), ncol=2, top = paste("Damage pattern", sample, library, sep="\n"))   
+my_plot <- grid.arrange(grobs=list(p1, p2), ncol=2, top = paste("Damage pattern", name, sep="\n"))   
 ggsave(damage_svg, my_plot, width = 11, height = 7)
 
