@@ -2,7 +2,7 @@ channels:
   - bioconda
   - conda-forge
 dependencies:
-  - R = 4.0
+  - R = 4.4
   - r-ggplot2
   - r-rcolorbrewer
   - r-reshape2

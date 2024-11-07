@@ -3,4 +3,4 @@ channels:
   - conda-forge
 dependencies:
   - bamutil = 1.0.15
-  - samtools = 1.14  
+  - samtools 
