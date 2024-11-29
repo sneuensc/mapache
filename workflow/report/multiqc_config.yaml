@@ -39,9 +39,9 @@ long_read_count_desc: "thousands"
 base_count_multiplier: 0.000001
 base_count_prefix: "Mb"
 base_count_desc: "millions"
-output_fn_name: 'multiqc_mapache.html'
-data_dir_name: 'multiqc_mapache_data'
-plots_dir_name: 'multiqc_mapache_plots'
+#output_fn_name: 'multiqc_mapache.html'
+#data_dir_name: 'multiqc_mapache_data'
+#plots_dir_name: 'multiqc_mapache_plots'
 data_format: "tsv"
 module_tag: []
 force: false
@@ -386,8 +386,12 @@ module_order:
           - "*/01_files_orig/*_fastqc.zip"
 
     - adapterRemoval:
+        path_filters:
+            - "*/01_adapterremoval*/*"
 
     - fastp:
+        path_filters:
+            - "*/01_fastp*/*"
 
     - fastqc:
         name: "FastQC (trimmed)"
@@ -395,7 +399,8 @@ module_order:
         info: "This section of the report shows FastQC results after adapter trimming."
         target: ""
         path_filters:
-            - "*/01_adapterremoval*/*_fastqc.zip"
+            - "*/01_adapterremoval*/*"
+            - "*/01_fastp*/*"
     
     # Alignment tool stats
     - bowtie2:
@@ -410,6 +415,23 @@ module_order:
         path_filters:
             - "*/04_final_fastq/*_stats.txt"
 
+    # Post-alignment QC library after rmDup level
+    - samtools:
+        name: "Samtools  (library after rmDup)"
+        anchor: "samtools_library_after_rmDup"
+        info: "This section of the report shows the summary of the bam file of the library level after duplication removal."
+        target: ""
+        path_filters:
+            - "*/02_bam_after_rmDup/*_stats.txt"
+
+    - qualimap:
+        name: "Qualimap (library after_rmDup)"
+        anchor: "qualimap_LB_rmDup"
+        info: "This section of the report shows the qualimap report of the bam after duplication removal (library level)."
+        target: ""
+        path_filters:
+            - "*/02_bam_after_rmDup/01_bam/*/*_qualimap*"
+
     # Post-alignment QC library level
     - samtools:
         name: "Samtools  (library)"
@@ -418,6 +440,14 @@ module_order:
         target: ""
         path_filters:
             - "*/03_final_library/*_stats.txt"
+          
+    - qualimap:
+        name: "Qualimap (library)"
+        anchor: "qualimap_LB"
+        info: "This section of the report shows the qualimap report of the final bam (library level)."
+        target: ""
+        path_filters:
+            - "*/03_final_library/01_bam/*/*_qualimap*"
 
     - dedup:
 
@@ -438,5 +468,10 @@ module_order:
             - "*/03_final_sample/*_stats.txt"
 
     - qualimap:
-
+        name: "Qualimap (sample)"
+        anchor: "qualimap_sample"
+        info: "This section of the report shows the qualimap report of the final bam (sample level)."
+        target: ""
+        path_filters:
+            - "*/03_final_sample/01_bam/*_qualimap*"
 
