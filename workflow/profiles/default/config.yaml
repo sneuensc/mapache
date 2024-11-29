@@ -1,0 +1,10 @@
+jobs: 999
+executor: slurm
+
+conda-prefix: /work/FAC/FBM/DBC/amalaspi/popgen/sneuensc/conda/envs
+use-conda: true
+
+rerun-triggers: mtime
+
+rerun-incomplete: true  # recommended for cluster submissions
+keep-going: false
