@@ -1,11 +1,11 @@
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
+  - nodefaults
 dependencies:
-  - R = 4.4
+  - R=4.4
   - r-ggplot2
   - r-rcolorbrewer
-  - r-reshape2
+  - r-tidyverse
   - r-svglite
   - r-gridextra
-  - r-data.table

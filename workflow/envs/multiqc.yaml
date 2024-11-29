@@ -1,6 +1,6 @@
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
+  - nodefaults
 dependencies:
-  - mulitqc = 1.11
-  
+  - multiqc=1.25.2

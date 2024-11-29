@@ -1,6 +1,6 @@
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
+  - nodefaults
 dependencies:
-  - bowtie2 = 2.4.4
-  
+  - bowtie2=2.5.4

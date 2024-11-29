@@ -1,7 +1,7 @@
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
+  - nodefaults
 dependencies:
-  - R = 4.3
-  - samtools
-  
+  - R=4.4
+  - samtools=1.21
