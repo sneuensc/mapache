@@ -69,7 +69,7 @@ plot_length = as.numeric(get_args(argsL, "plot_length", "25"))
 ############################################################################
 library(ggplot2)
 library(RColorBrewer) 
-library(reshape2)
+library(tidyverse)
 library(gridExtra)
 
 ############################################################################
@@ -101,11 +101,12 @@ p3 <- p3[1:max.x,]
 range.y <- c(0, max(p3[-1],p5[-1]))
 
 ## 5' plot
-d <- melt(p5, 1)
+d <- p5 %>%
+  pivot_longer(-1, names_to='variable')
 p1 <- ggplot(d, aes(x=X, y=value, group=variable)) +
-  geom_line(size=1, color="gray") +
-  geom_line(data=subset(d, variable == 'G..A'), size=1.5, color="blue") +
-  geom_line(data=subset(d, variable == 'C..T'), size=1.5, color="orange") +
+  geom_line(linewidth=1, color="gray") +
+  geom_line(data=subset(d, variable == 'G..A'), linewidth=1.5, color="blue") +
+  geom_line(data=subset(d, variable == 'C..T'), linewidth=1.5, color="orange") +
   xlab("position from 5' end") +
   ylab("frequency") +
   geom_text(x=max.x/2, y=0.95*max(range.y), label="C>T", color="orange", fontface="bold") +
@@ -113,11 +114,12 @@ p1 <- ggplot(d, aes(x=X, y=value, group=variable)) +
   ylim(range.y)
 
 ## 3' plot
-d <- melt(p3, 1)
+d <- p5 %>%
+  pivot_longer(-1, names_to='variable')
 p2 <- ggplot(d, aes(x=X, y=value, group=variable)) +
-  geom_line(size=1, color="gray") +
-  geom_line(data=subset(d, variable == 'C..T'), size=1.5, color="orange") +
-  geom_line(data=subset(d, variable == 'G..A'), size=1.5, color="blue") +
+  geom_line(linewidth=1, color="gray") +
+  geom_line(data=subset(d, variable == 'C..T'), linewidth=1.5, color="orange") +
+  geom_line(data=subset(d, variable == 'G..A'), linewidth=1.5, color="blue") +
   xlab("position from 3' end") +
   ylab("frequency") +
   geom_text(x=-max.x/2, y=0.95*max(range.y), label="G>A", color="blue", fontface="bold") +
