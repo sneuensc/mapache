@@ -11,12 +11,12 @@ rule genome_index_bwa:
     Indexing the genome for bwa
     """
     input:
-        fasta="{folder}/00_reference/{genome}/{genome}.fasta",
+        fasta="{path}/00_reference/{genome}/{genome}.fasta",
         orig=lambda wildcards: get_param(["genome", wildcards.genome], ""),
     output:
         temp(
             multiext(
-                "{folder}/00_reference/{genome}/{genome}.fasta",
+                "{path}/00_reference/{genome}/{genome}.fasta",
                 ".sa",
                 ".amb",
                 ".ann",
@@ -25,13 +25,13 @@ rule genome_index_bwa:
             )
         ),
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
+        mem_mb=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
     params:
         params=get_param(["indexing", "bwa_params"], ""),
         cmd="f'bwa index {snakemake.params[0]} {snakemake.input.fasta} 2> {snakemake.log}'",
     log:
-        "{folder}/00_reference/{genome}/{genome}_bwa_index.log",
+        "{path}/00_reference/{genome}/{genome}_bwa_index.log",
     threads: 1
     conda:
         "../envs/bwa.yaml"
@@ -48,12 +48,12 @@ rule genome_index_bowtie2:
     Indexing the genome for bowtie2
     """
     input:
-        fasta="{folder}/{genome}.fasta",
+        fasta="{path}/{genome}.fasta",
         orig=lambda wildcards: get_param(["genome", wildcards.genome], ""),
     output:
         temp(
             multiext(
-                "{folder}/{genome}.fasta",
+                "{path}/{genome}.fasta",
                 ".1.bt2",
                 ".2.bt2",
                 ".3.bt2",
@@ -63,13 +63,13 @@ rule genome_index_bowtie2:
             )
         ),
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
+        mem_mb=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
     params:
         get_param(["indexing", "bowtie2_params"], ""),
         cmd="f'bowtie2-build {snakemake.params[0]} --threads {snakemake.threads} {snakemake.input.fasta} {snakemake.input.fasta}> {snakemake.log}'",
     log:
-        "{folder}/{genome}_bowtie2_build.log",
+        "{path}/{genome}_bowtie2_build.log",
     threads: get_threads("indexing", 4)
     conda:
         "../envs/bowtie2.yaml"
@@ -86,12 +86,12 @@ rule genome_index_bowtie2_long:
     Indexing the genome for bowtie2
     """
     input:
-        fasta="{folder}/{genome}.fasta",
+        fasta="{path}/{genome}.fasta",
         orig=lambda wildcards: get_param(["genome", wildcards.genome], ""),
     output:
         temp(
             multiext(
-                "{folder}/{genome}.fasta",
+                "{path}/{genome}.fasta",
                 ".1.bt2l",
                 ".2.bt2l",
                 ".3.bt2l",
@@ -101,13 +101,13 @@ rule genome_index_bowtie2_long:
             )
         ),
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
+        mem_mb=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
     params:
         get_param(["indexing", "bowtie2_params"], ""),
         cmd="f'bowtie2-build {snakemake.params[0]} --threads {snakemake.threads} {snakemake.input.fasta} {snakemake.input.fasta} > {snakemake.log}'",
     log:
-        "{folder}/{genome}_bowtie2_build.log",
+        "{path}/{genome}_bowtie2_build.log",
     threads: get_threads("indexing", 4)
     conda:
         "../envs/bowtie2.yaml"
@@ -124,18 +124,18 @@ rule samtools_index_fasta:
     Indexing the genome with samtools faidx
     """
     input:
-        fasta="{folder}/{genome}.fasta",
+        fasta="{path}/{genome}.fasta",
         orig=lambda wildcards: get_param(["genome", wildcards.genome], ""),
     output:
-        temp("{folder}/{genome}.fasta.fai"),
+        temp("{path}/{genome}.fasta.fai"),
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
+        mem_mb=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
     params:
         get_param(["indexing", "samtools_params"], ""),
         cmd="f'samtools faidx {snakemake.params[0]}  {snakemake.input.fasta} > {snakemake.log}'",
     log:
-        "{folder}/{genome}_samtools_faidx.log",
+        "{path}/{genome}_samtools_faidx.log",
     threads: 1
     conda:
         "../envs/samtools.yaml"
@@ -152,20 +152,20 @@ rule genome_index_picard:
     Indexing the genome with Picard CreateSequenceDictionary
     """
     input:
-        fasta="{folder}/{genome}.fasta",
+        fasta="{path}/{genome}.fasta",
         orig=lambda wildcards: get_param(["genome", wildcards.genome], ""),
     output:
-        temp("{folder}/{genome}.dict"),
+        temp("{path}/{genome}.dict"),
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
+        mem_mb=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
     params:
         java_mem_overhead_factor=float(
             get_param(["software", "java_mem_overhead_factor"], 0.2)
         ),
-        cmd="f'picard CreateSequenceDictionary -Xmx{round(snakemake.resources.memory * (1.0 - snakemake.params.java_mem_overhead_factor))}M --REFERENCE {snakemake.input.fasta} --OUTPUT {snakemake.output}'",
+        cmd="f'picard CreateSequenceDictionary -Xmx{round(snakemake.resources.mem_mb * (1.0 - snakemake.params.java_mem_overhead_factor))}M --REFERENCE {snakemake.input.fasta} --OUTPUT {snakemake.output}'",
     log:
-        "{folder}/{genome}_picard_index.log",
+        "{path}/{genome}_picard_index.log",
     threads: 1
     conda:
         "../envs/picard.yaml"
@@ -190,7 +190,7 @@ rule samtools_index_bam_temp:
     output:
         temp("{file}.bai"),
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
+        mem_mb=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 24),
     threads: 1
     log:
@@ -211,15 +211,15 @@ rule samtools_index_bam:
     Index last bam file with samtools (should remain)
     """
     input:
-        "{folder}/03_sample/03_final_sample/{type}/{sm}.{genome}.bam",
+        "{path}/03_sample/03_final_sample/{type}/{sm}.{genome}.bam",
     output:
-        "{folder}/03_sample/03_final_sample/{type}/{sm}.{genome}.bai",
+        "{path}/03_sample/03_final_sample/{type}/{sm}.{genome}.bai",
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
+        mem_mb=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 24),
     threads: 1
     log:
-        "{folder}/03_sample/03_final_sample/{type}/{sm}.{genome}_samtools_index.log",
+        "{path}/03_sample/03_final_sample/{type}/{sm}.{genome}_samtools_index.log",
     conda:
         "../envs/samtools.yaml"
     envmodules:

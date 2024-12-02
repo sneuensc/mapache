@@ -12,7 +12,7 @@ rule merge_bam_fastq2library:
     output:
         temp("{folder}/02_library/00_merged_fastq/01_bam/{sm}/{lb}.{genome}.bam"),
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
+        mem_mb=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24),
     threads: get_threads("merging", 4)
     log:
@@ -40,7 +40,7 @@ rule merge_bam_low_qual_fastq2library:
             "{folder}/02_library/00_merged_fastq/01_bam_low_qual/{sm}/{lb}.{genome}.bam"
         ),
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
+        mem_mb=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24),
     threads: get_threads("merging", 4)
     log:
@@ -70,7 +70,7 @@ rule markduplicates:
         stats="{folder}/02_library/01_duplicated/01_markduplicates/{sm}/{lb}.{genome}.stats",
     resources:
         ## Java: there is an overhead: so reduce slightly the amount of memory given to the tool comapred to the job
-        memory=lambda wildcards, attempt: get_memory_alloc(
+        mem_mb=lambda wildcards, attempt: get_memory_alloc(
             "remove_duplicates", attempt, 4
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc(
@@ -96,7 +96,7 @@ rule markduplicates:
         "--- MARKDUPLICATES {output.bam}"
     shell:
         """
-        mem=$(echo "{resources.memory} * (1.0 - {params.java_mem_overhead_factor}) / 1" | bc);  # /1 is to remove decimals
+        mem=$(echo "{resources.mem_mb} * (1.0 - {params.java_mem_overhead_factor}) / 1" | bc);  # /1 is to remove decimals
         picard MarkDuplicates -Xmx${{mem}}M \
             --INPUT {input} --OUTPUT {output.bam} --METRICS_FILE {output.stats} \
             {params.params} --ASSUME_SORT_ORDER coordinate --VALIDATION_STRINGENCY LENIENT 2> {log};
@@ -115,7 +115,7 @@ rule dedup:
         log="{folder}/02_library/01_duplicated/01_dedup/{sm}/{lb}.{genome}.log",
         bam=temp("{folder}/02_library/01_duplicated/01_dedup/{sm}/{lb}.{genome}.bam"),
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc(
+        mem_mb=lambda wildcards, attempt: get_memory_alloc(
             "remove_duplicates", attempt, 4
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc(
@@ -146,7 +146,10 @@ rule get_bam_after_rmDup:
     Store the bam file after duplication removal
     """
     input:
-        get_bam_4_after_rmDup,
+        #get_stat_csv_files(['FASTQ', 'LB_rmDup']),
+        #get_stat_plot_files(['LB_rmDup']),
+        #get_damage_output(['LB_rmDup']),
+        bam=get_bam_4_after_rmDup,
     output:
         "{folder}/02_library/02_bam_after_rmDup/01_bam/{sm}/{lb}.{genome}.bam",
     threads: 1
@@ -156,7 +159,7 @@ rule get_bam_after_rmDup:
         "--- GET BAM AFTER DUPLICATE REMOVAL {output}"
     shell:
         """
-        cp {input} {output}
+        cp {input.bam} {output}
         """
 
 
@@ -200,7 +203,7 @@ rule mapDamage_stats:
         "{folder}/02_library/02_rescaled/01_mapDamage/{sm}/{lb}.{genome}_stats.log",
     threads: 1
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("mapdamage", attempt, 4),
+        mem_mb=lambda wildcards, attempt: get_memory_alloc("mapdamage", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapdamage", attempt, 24),
     params:
         params=lambda wildcards: get_paramGrp(["mapdamage", "params"], "", wildcards),
@@ -228,7 +231,7 @@ rule mapDamage_rescale:
     output:
         bam=temp("{folder}/02_library/02_rescaled/01_mapDamage/{sm}/{lb}.{genome}.bam"),
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("mapdamage", attempt, 4),
+        mem_mb=lambda wildcards, attempt: get_memory_alloc("mapdamage", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapdamage", attempt, 24),
     log:
         "{folder}/02_library/02_rescaled/01_mapDamage/{sm}/{lb}.{genome}_rescale.log",
@@ -256,7 +259,7 @@ rule bamutil:
     output:
         bam=temp("{folder}/02_library/03_trim/01_bamutil/{sm}/{lb}.{genome}.bam"),
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("bamutil", attempt, 4),
+        mem_mb=lambda wildcards, attempt: get_memory_alloc("bamutil", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("bamutil", attempt, 24),
     log:
         "{folder}/02_library/03_trim/01_bamutil/{sm}/{lb}.{genome}.log",
@@ -283,7 +286,7 @@ rule bamrefine:
     output:
         bam=temp("{folder}/02_library/03_trim/02_bamrefine/{sm}/{lb}.{genome}.bam"),
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc("bamrefine", attempt, 4),
+        mem_mb=lambda wildcards, attempt: get_memory_alloc("bamrefine", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("bamrefine", attempt, 24),
     log:
         "{folder}/02_library/03_trim/02_bamrefine/{sm}/{lb}.{genome}.log",

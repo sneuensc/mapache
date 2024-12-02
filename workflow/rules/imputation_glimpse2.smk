@@ -34,7 +34,7 @@ checkpoint glimpse2_chunk:
     log:
         "{folder}/log/03_sample/04_imputed/04_glimpse2_chunked/{genome}/chunks_chr{chr}.log",
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc2(
+        mem_mb=lambda wildcards, attempt: get_memory_alloc2(
             ["imputation2", wildcards.genome, "glimpse2_chunk"], attempt, 2
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
@@ -75,7 +75,9 @@ rule glimpse2_split_reference:
     message:
         "--- IMPUTATION GLIMPSE2: create binary reference panel (genome {wildcards.genome}; chr {wildcards.chr}; chunk: {wildcards.n})"
     threads: 
-        lambda wildcards: get_threads2(["imputation", wildcards.genome, "glimpse2_split_reference"], 1)
+        lambda wildcards: get_threads2(
+            ["imputation", wildcards.genome, "glimpse2_split_reference"], 1
+        )
     params:
         params=lambda wildcards: get_param(
             ["imputation", wildcards.genome, "GLIMPSE2_split_reference_params"], ""
@@ -83,7 +85,7 @@ rule glimpse2_split_reference:
     log:
         "{folder}/log/03_sample/04_imputed/05_glimpse2_splitted_reference/{genome}/chr{chr}/chunk{n}.log",
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc2(
+        mem_mb=lambda wildcards, attempt: get_memory_alloc2(
             ["imputation2", wildcards.genome, "glimpse2_split_reference"], attempt, 2
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
@@ -135,7 +137,7 @@ rule glimpse2_phase:
         "{folder}/03_sample/04_imputed/05_glimpse2_phased/{sm}.{genome}/chr{chr}/chunk{n}.log",
     threads: lambda wildcards: get_threads2(["imputation", wildcards.genome, "glimpse2_phase"], 1)
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc2(
+        mem_mb=lambda wildcards, attempt: get_memory_alloc2(
             ["imputation", wildcards.genome, "glimpse2_phase"], attempt, 2
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
@@ -189,7 +191,7 @@ rule glimpse2_ligate:
         ),
     threads: lambda wildcards: get_threads2(["imputation", wildcards.genome, "glimpse2_ligate"], 1)
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc2(
+        mem_mb=lambda wildcards, attempt: get_memory_alloc2(
             ["imputation", wildcards.genome, "glimpse2_ligate"], attempt, 4
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(

@@ -3,9 +3,14 @@
 
 # -----------------------------------------------------------------------------#
 for genome in GENOMES:
-    if get_param(["imputation", genome, "run"], ["False", "glimpse1", "glimpse2"]) != "False":
+    if (
+        get_param(["imputation", genome, "run"], ["False", "glimpse1", "glimpse2"])
+        != "False"
+    ):
         # Imputation will be run by default on all chromosomes. The paramter below allow to select a subset of chromosomes.
-        chromosomes = to_str(to_list(get_param(["imputation", genome, "chromosomes"], [])))
+        chromosomes = to_str(
+            to_list(get_param(["imputation", genome, "chromosomes"], []))
+        )
         if not chromosomes:
             chromosomes = get_chromosome_names(genome)
         else:
@@ -124,8 +129,12 @@ rule extract_positions:
         vcf="{folder}/03_sample/04_imputed/01_panel/01_panel/{genome}/chr{chr}.vcf.gz",
         index="{folder}/03_sample/04_imputed/01_panel/01_panel/{genome}/chr{chr}.vcf.gz.csi",
     output:
-        sites=temp("{folder}/03_sample/04_imputed/01_panel/02_sites/{genome}/chr{chr}.vcf.gz"),
-        tsv=temp("{folder}/03_sample/04_imputed/01_panel/02_sites/{genome}/chr{chr}.tsv.gz"),
+        sites=temp(
+            "{folder}/03_sample/04_imputed/01_panel/02_sites/{genome}/chr{chr}.vcf.gz"
+        ),
+        tsv=temp(
+            "{folder}/03_sample/04_imputed/01_panel/02_sites/{genome}/chr{chr}.tsv.gz"
+        ),
         csi=temp(
             "{folder}/03_sample/04_imputed/01_panel/02_sites/{genome}/chr{chr}.vcf.gz.csi"
         ),
@@ -137,7 +146,7 @@ rule extract_positions:
     log:
         "{folder}/log/03_sample/04_imputed/01_panel/02_sites/{genome}/chr{chr}.log",
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc2(
+        mem_mb=lambda wildcards, attempt: get_memory_alloc2(
             ["imputation", wildcards.genome, "extract_positions"], attempt, 4
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
@@ -168,7 +177,9 @@ rule bcftools_mpileup:
         sites="{folder}/03_sample/04_imputed/01_panel/02_sites/{genome}/chr{chr}.vcf.gz",
         tsv="{folder}/03_sample/04_imputed/01_panel/02_sites/{genome}/chr{chr}.tsv.gz",
     output:
-        final_vcf=temp("{folder}/03_sample/04_imputed/03_vcf/{sm}.{genome}_chr{chr}.vcf.gz"),
+        final_vcf=temp(
+            "{folder}/03_sample/04_imputed/03_vcf/{sm}.{genome}_chr{chr}.vcf.gz"
+        ),
         final_csi=temp(
             "{folder}/03_sample/04_imputed/03_vcf/{sm}.{genome}_chr{chr}.vcf.gz.csi"
         ),
@@ -178,7 +189,7 @@ rule bcftools_mpileup:
     message:
         "--- IMPUTATION: bcftools mpileup (sample {wildcards.sm}; chr {wildcards.chr})"
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc2(
+        mem_mb=lambda wildcards, attempt: get_memory_alloc2(
             ["imputation", wildcards.genome, "bcftools_mpileup"], attempt, 4
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
@@ -226,7 +237,7 @@ checkpoint glimpse_chunk:
     log:
         "{folder}/log/03_sample/04_imputed/04_glimpse_chunked/{genome}/chunks_chr{chr}.log",
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc2(
+        mem_mb=lambda wildcards, attempt: get_memory_alloc2(
             ["imputation", wildcards.genome, "glimpse_chunk"], attempt, 2
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
@@ -254,7 +265,9 @@ rule glimpse_phase:
         chunks="{folder}/03_sample/04_imputed/04_glimpse_chunked/{genome}/chunks_chr{chr}.txt",
         vcf_sample="{folder}/03_sample/04_imputed/03_vcf/{sm}.{genome}_chr{chr}.vcf.gz",
         csi_sample="{folder}/03_sample/04_imputed/03_vcf/{sm}.{genome}_chr{chr}.vcf.gz.csi",
-        map=lambda wildcards: get_param(["imputation", wildcards.genome, "path_map"], ""),
+        map=lambda wildcards: get_param(
+            ["imputation", wildcards.genome, "path_map"], ""
+        ),
     output:
         bcf=temp(
             "{folder}/03_sample/04_imputed/05_glimpse_phased/{sm}.{genome}/chr{chr}/chunk{n}.bcf"
@@ -272,7 +285,7 @@ rule glimpse_phase:
         "{folder}/log/03_sample/04_imputed/05_glimpse_phased/{sm}.{genome}/chr{chr}/chunk{n}.log",
     threads: lambda wildcards: get_threads2(["imputation", wildcards.genome, "glimpse_phase"], 1)
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc2(
+        mem_mb=lambda wildcards, attempt: get_memory_alloc2(
             ["imputation", wildcards.genome, "glimpse_phase"], attempt, 2
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
@@ -328,7 +341,7 @@ rule glimpse_ligate:
         "{folder}/log/03_sample/04_imputed/06_glimpse_ligated/{sm}.{genome}/chr{chr}.log",
     threads: lambda wildcards: get_threads2(["imputation", wildcards.genome, "glimpse_ligate"], 1)
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc2(
+        mem_mb=lambda wildcards, attempt: get_memory_alloc2(
             ["imputation", wildcards.genome, "glimpse_ligate"], attempt, 4
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
@@ -403,8 +416,12 @@ rule filter_gp_sm:
         bcf="{folder}/03_sample/04_imputed/06_glimpse_ligated_concat/{sm}.{genome}.bcf",
         index="{folder}/03_sample/04_imputed/06_glimpse_ligated_concat/{sm}.{genome}.bcf.csi",
     output:
-        bcf=temp("{folder}/03_sample/04_imputed/07_gp_filtered/{sm}.{genome}_gp{gp}.bcf"),
-        csi=temp("{folder}/03_sample/04_imputed/07_gp_filtered/{sm}.{genome}_gp{gp}.bcf.csi"),
+        bcf=temp(
+            "{folder}/03_sample/04_imputed/07_gp_filtered/{sm}.{genome}_gp{gp}.bcf"
+        ),
+        csi=temp(
+            "{folder}/03_sample/04_imputed/07_gp_filtered/{sm}.{genome}_gp{gp}.bcf.csi"
+        ),
     message:
         "--- IMPUTATION: GP filtering (sample {wildcards.sm}; genome: {wildcards.genome}; GP {wildcards.gp})"
     log:
@@ -465,7 +482,7 @@ rule plot_gp:
             str2list(get_param(["imputation", wildcards.genome, "gp_filter"], [0.8]))
         ),
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc2(
+        mem_mb=lambda wildcards, attempt: get_memory_alloc2(
             ["imputation", wildcards.genome, "plot_gp"], attempt, 4
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
@@ -502,7 +519,7 @@ rule glimpse_sample:
         "--- IMPUTATION: sample haplotypes (sample {wildcards.sm}; genome {wildcards.genome}; GP {wildcards.gp})"
     threads: lambda wildcards: get_threads2(["imputation", wildcards.genome, "glimpse_sample"], 1)
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc2(
+        mem_mb=lambda wildcards, attempt: get_memory_alloc2(
             ["imputation", wildcards.genome, "glimpse_sample"], attempt, 4
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
