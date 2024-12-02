@@ -4,18 +4,12 @@
 
 
 localrules:
-    samtools_idxstats,
-    plot_csv,
-    merge_DoC_chr,
-    assign_sex,
     assign_no_sex,
     merge_stats_per_fastq,
     merge_stats_per_lb,
     merge_stats_per_sm,
     merge_stats_by_level_and_genome,
     merge_stats_all_genomes,
-    DoC_chr_SM,
-    merge_DoC_chr,
 
 
 # -----------------------------------------------------------------------------#
@@ -32,10 +26,10 @@ rule fastqc:
     log:
         "{folder}/04_stats/01_sparse_stats/01_fastq/{type}/{sm}/{lb}/{id}_fastqc.log",
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc2(
+        mem_mb=lambda wildcards, attempt: get_memory_alloc(
             ["stats", "fastqc"], attempt, 2
         ),
-        runtime=lambda wildcards, attempt: get_runtime_alloc2(
+        runtime=lambda wildcards, attempt: get_runtime_alloc(
             ["stats", "fastqc"], attempt, 1
         ),
     conda:
@@ -68,7 +62,7 @@ rule samtools_flagstat:
     output:
         "{folder}/04_stats/01_sparse_stats/{file}.{genome}_flagstat.txt",
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc2(
+        mem_mb=lambda wildcards, attempt: get_memory_alloc2(
             ["stats", "samtools_flagstat"], attempt, 2
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
@@ -95,7 +89,7 @@ rule samtools_stats:
     output:
         "{folder}/04_stats/01_sparse_stats/{file}.{genome}_stats.txt",
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc2(
+        mem_mb=lambda wildcards, attempt: get_memory_alloc2(
             ["stats", "samtools_stats"], attempt, 2
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
@@ -119,7 +113,7 @@ rule bedtools_genomecov:
     output:
         "{folder}/04_stats/01_sparse_stats/{dir}/{file}_genomecov",
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc2(
+        mem_mb=lambda wildcards, attempt: get_memory_alloc2(
             ["stats", "bedtools_genomecov"], attempt, 2
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
@@ -145,7 +139,7 @@ rule read_length:
     output:
         "{folder}/04_stats/01_sparse_stats/{file}.{genome}_length.txt",
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc2(
+        mem_mb=lambda wildcards, attempt: get_memory_alloc2(
             ["stats", "read_length"], attempt, 2
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
@@ -174,7 +168,7 @@ rule samtools_idxstats:
     output:
         "{folder}/04_stats/01_sparse_stats/{file}.{genome}_idxstats.txt",
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc2(
+        mem_mb=lambda wildcards, attempt: get_memory_alloc2(
             ["stats", "samtools_idxstats"], attempt, 2
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
@@ -200,7 +194,7 @@ rule assign_sex:
     output:
         "{folder}/04_stats/01_sparse_stats/{file}.{genome}_sex.txt",
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc2(
+        mem_mb=lambda wildcards, attempt: get_memory_alloc2(
             ["stats", "assign_sex"], attempt, 2
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
@@ -260,9 +254,9 @@ rule merge_stats_per_fastq:
         stats_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{sm}/{lb}/{id}.{genome}_stats.txt",  # mapped and high-qual reads
         length_fastq_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{sm}/{lb}/{id}.{genome}_length.txt",
     output:
-        "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/{id}/fastq_stats.csv",
+        "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/{id}/FASTQ_stats.csv",
     log:
-        "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/{id}/fastq_stats.log",
+        "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/{id}/FASTQ_stats.log",
     params:
         script=workflow.source_path("../scripts/merge_stats_per_fastq.R"),
         script_parse_fastqc=workflow.source_path("../scripts/parse_fastqc.R"),
@@ -292,16 +286,16 @@ rule merge_stats_per_fastq:
 rule merge_stats_per_lb_rmDup:
     input:
         fastq_stats=lambda wildcards: expand(
-            "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/{id}/fastq_stats.csv",
+            "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/{id}/FASTQ_stats.csv",
             id=SAMPLES[wildcards.sm][wildcards.lb],
             allow_missing=True,
         ),
-        stats_unique="{folder}/04_stats/01_sparse_stats/02_library/03_library_after_rmDup/{sm}/{lb}.{genome}_stats.txt",
-        length_unique="{folder}/04_stats/01_sparse_stats/02_library/03_library_after_rmDup/{sm}/{lb}.{genome}_length.txt",
-        idxstats_unique="{folder}/04_stats/01_sparse_stats/02_library/03_library_after_rmDup/{sm}/{lb}.{genome}_idxstats.txt",
+        stats_unique="{folder}/04_stats/01_sparse_stats/02_library/02_bam_after_rmDup/01_bam/{sm}/{lb}.{genome}_stats.txt",
+        length_unique="{folder}/04_stats/01_sparse_stats/02_library/02_bam_after_rmDup/01_bam/{sm}/{lb}.{genome}_length.txt",
+        idxstats_unique="{folder}/04_stats/01_sparse_stats/02_library/02_bam_after_rmDup/01_bam/{sm}/{lb}.{genome}_idxstats.txt",
         sex_unique=get_sex_file_library_rmDup,
     output:
-        "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/library_rmDup_stats.csv",
+        "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/LB_rmDup_stats.csv",
     params:
         chrs_selected=lambda wildcards: ",".join(
             to_list(
@@ -310,7 +304,7 @@ rule merge_stats_per_lb_rmDup:
         ),
         script=workflow.source_path("../scripts/merge_stats_per_LB.R"),
     log:
-        "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/library_rmDup_stats.log",
+        "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/LB_rmDup_stats.log",
     conda:
         "../envs/r.yaml"
     envmodules:
@@ -345,7 +339,7 @@ rule merge_stats_per_lb_rmDup:
 rule merge_stats_per_lb:
     input:
         fastq_stats=lambda wildcards: expand(
-            "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/{id}/fastq_stats.csv",
+            "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/{id}/FASTQ_stats.csv",
             id=SAMPLES[wildcards.sm][wildcards.lb],
             allow_missing=True,
         ),
@@ -354,7 +348,7 @@ rule merge_stats_per_lb:
         idxstats_unique="{folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{sm}/{lb}.{genome}_idxstats.txt",
         sex_unique=get_sex_file_library,
     output:
-        "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/library_stats.csv",
+        "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/LB_stats.csv",
     params:
         chrs_selected=lambda wildcards: ",".join(
             to_list(
@@ -363,7 +357,7 @@ rule merge_stats_per_lb:
         ),
         script=workflow.source_path("../scripts/merge_stats_per_LB.R"),
     log:
-        "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/library_stats.log",
+        "{folder}/04_stats/02_separate_tables/{genome}/{sm}/{lb}/LB_stats.log",
     conda:
         "../envs/r.yaml"
     envmodules:
@@ -408,9 +402,9 @@ rule merge_stats_per_sm:
         lb_stats=get_lb_stats,
         length_unique="{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{sm}.{genome}_length.txt",
         idxstats_unique="{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{sm}.{genome}_idxstats.txt",
-        sex_unique=lambda wildcards: get_sex_file(wildcards),
+        sex_unique=get_sex_file_sample,
     output:
-        "{folder}/04_stats/02_separate_tables/{genome}/{sm}/sample_stats.csv",
+        "{folder}/04_stats/02_separate_tables/{genome}/{sm}/SM_stats.csv",
     params:
         chrs_selected=lambda wildcards: ",".join(
             to_list(
@@ -420,7 +414,7 @@ rule merge_stats_per_sm:
         #chrs_selected=get_chroms,
         script=workflow.source_path("../scripts/merge_stats_per_SM.R"),
     log:
-        "{folder}/04_stats/02_separate_tables/{genome}/{sm}/sample_stats.log",
+        "{folder}/04_stats/02_separate_tables/{genome}/{sm}/SM_stats.log",
     conda:
         "../envs/r.yaml"
     envmodules:
@@ -459,9 +453,9 @@ rule merge_stats_by_level_and_genome:
     input:
         paths=path_stats_by_level,
     output:
-        "{folder}/04_stats/03_summary/{level}_stats.{genome}.csv",
+        "{folder}/04_stats/02_separate_tables/{genome}/{level,[A-Za-z0-9_]+}_stats.csv",
     log:
-        "{folder}/04_stats/03_summary/{level}_stats.{genome}.log",
+        "{folder}/04_stats/02_separate_tables/{genome}/{level}_stats.log",
     message:
         "--- MERGE STATS by {wildcards.level}"
     run:
@@ -476,18 +470,19 @@ rule merge_stats_by_level_and_genome:
 rule merge_stats_all_genomes:
     input:
         expand(
-            "{folder}/04_stats/03_summary/{level}_stats.{genome}.csv",
+            "{folder}/04_stats/02_separate_tables/{genome}/{level}_stats.csv",
             genome=GENOMES,
             allow_missing=True,
         ),
     output:
         report(
-            "{folder}/04_stats/03_summary/{level}_stats.csv",
+            "{folder}/04_stats/03_summary/{level}/{level}_stats.csv",
             category="Mapping statistics",
-            subcategory="Tables",
+            subcategory=lambda wildcards: get_subcategory(wildcards.level),
+            labels={"model": "0_{level}_stats.csv", "format": "csv"}
         ),
     log:
-        "{folder}/04_stats/03_summary/{level}_stats.log",
+        "{folder}/04_stats/03_summary/{level}/{level}_stats.log",
     message:
         "--- MERGE STATS by {wildcards.level}"
     run:
@@ -516,7 +511,7 @@ rule DoC_chr_SM:
     output:
         "{folder}/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{sm}.{genome}_DoC_chrs.csv",
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc2(
+        mem_mb=lambda wildcards, attempt: get_memory_alloc2(
             ["stats", "DoC_chr_SM"], attempt, 2
         ),
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
@@ -547,9 +542,9 @@ rule merge_DoC_chr:
             allow_missing=True,
         ),
     output:
-        "{folder}/04_stats/03_summary/DoC_by_chrs.{genome}.csv",
+        "{folder}/04_stats/03_summary/SM/DoC_by_chrs.{genome}.csv",
     log:
-        "{folder}/04_stats/03_summary/DoC_by_chrs.{genome}.log",
+        "{folder}/04_stats/03_summary/SM/DoC_by_chrs.{genome}.log",
     run:
         import pandas as pd
 
@@ -564,7 +559,9 @@ rule merge_DoC_chr:
 #
 # bamdamage
 def get_bam_4_bamdamage(wc):
-    if wc.cat == "02_library_rmDup":
+    # print(f"get_bam_4_bamdamage: {wc}")
+    
+    if wc.cat == "02_library/02_bam_after_rmDup":
         paths = list(pathlib.Path(wc.prefix).parts)
         file = get_bam_4_after_rmDup(
             Wildcards(
@@ -576,7 +573,7 @@ def get_bam_4_bamdamage(wc):
                 }
             )
         )
-    elif wc.cat == "02_library_final":
+    elif wc.cat == "02_library/03_final_library":
         paths = list(pathlib.Path(wc.prefix).parts)
         file = get_final_bam_LB(
             Wildcards(
@@ -588,22 +585,14 @@ def get_bam_4_bamdamage(wc):
                 }
             )
         )
-    elif wc.cat == "03_sample":
-        file = f"{wc.folder}/03_sample/03_final_sample/01_bam/{wc.prefix}.{wc.genome}.bam"
-    
-    #print(file)
+    elif wc.cat == "03_sample/03_final_sample":
+        file = (
+            f"{wc.folder}/03_sample/03_final_sample/01_bam/{wc.prefix}.{wc.genome}.bam"
+        )
+
+    # print(file)
     return file
 
-
-def get_idxstats_4_bamdamage(wc):
-    if wc.cat == "02_library_rmDup":
-        file = f"results/04_stats/01_sparse_stats/02_library/03_library_after_rmDup/{wc.prefix}.{wc.genome}_idxstats.txt"
-    elif wc.cat == "02_library_final":
-        file = f"results/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{wc.prefix}.{wc.genome}_idxstats.txt"
-    elif wc.cat == "03_sample":
-        file = f"results/04_stats/01_sparse_stats/03_sample/03_final_sample/01_bam/{wc.prefix}.{wc.genome}_idxstats.txt"
-
-    return file
 
 
 rule bamdamage:
@@ -613,36 +602,39 @@ rule bamdamage:
     input:
         ref="{folder}/00_reference/{genome}/{genome}.fasta",
         bam=get_bam_4_bamdamage,
-        idxstats=get_idxstats_4_bamdamage,
+        idxstats="{folder}/04_stats/01_sparse_stats/{cat}/01_bam/{prefix}.{genome}_idxstats.txt",
     output:
         damage_pdf="{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome,[A-Za-z0-9]+}.dam.pdf",
         length_pdf="{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome,[A-Za-z0-9]+}.length.pdf",
         length_table=report(
             "{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome,[A-Za-z0-9]+}.length.csv",
-            category="Read length ({cat})",
-            subcategory="Tables",
+            category="Read length",
+            subcategory=lambda wildcards: get_subcategory(wildcards.cat),
+            labels=lambda wildcards: get_label(wildcards, {"format": "csv"})
         ),
         dam_5prime_table=report(
             "{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome,[A-Za-z0-9]+}.dam_5prime.csv",
-            category="Damage pattern ({cat})",
-            subcategory="Tables",
+            category="Damage pattern",
+            subcategory=lambda wildcards: get_subcategory(wildcards.cat),
+            labels=lambda wildcards: get_label(wildcards, {"format": "5prime.csv"})
         ),
         dam_3prime_table=report(
             "{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome,[A-Za-z0-9]+}.dam_3prime.csv",
-            category="Damage pattern ({cat})",
-            subcategory="Tables",
+            category="Damage pattern",
+            subcategory=lambda wildcards: get_subcategory(wildcards.cat),
+            labels=lambda wildcards: get_label(wildcards, {"format": "3prime.csv"})
         ),
     log:
         "{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome,[A-Za-z0-9]+}_bamdamage.log",
     threads: 1
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc(["bamdamage"], attempt, 4),
+        mem_mb=lambda wildcards, attempt: get_memory_alloc(["bamdamage"], attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc(["bamdamage"], attempt, 24),
     message:
         "--- RUN BAMDAMAGE {input.bam}"
     params:
-        params=get_param(["damage", "bamdamage_params"], ""),
-        fraction=get_param(["damage", "bamdamage_fraction"], 0),
+        params=get_param(["stats", "damage", "bamdamage_params"], ""),
+        fraction=get_param(["stats", "damage", "bamdamage_fraction"], 0),
         script=workflow.source_path("../scripts/bamdamage"),
     log:
         "{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome}_bamdamage.log",
@@ -684,13 +676,15 @@ rule plot_bamdamage:
     output:
         length=report(
             "{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome,[A-Za-z0-9]+}.length.svg",
-            category="Read length ({cat})",
-            subcategory="Plots",
+            category="Read length",
+            subcategory=lambda wildcards: get_subcategory(wildcards.cat),
+            labels=lambda wildcards: get_label(wildcards, {"format": "svg"})
         ),
         damage=report(
             "{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome,[A-Za-z0-9]+}.dam.svg",
-            category="Damage pattern ({cat})",
-            subcategory="Plots",
+            category="Damage pattern",
+            subcategory=lambda wildcards: get_subcategory(wildcards.cat),
+            labels=lambda wildcards: get_label(wildcards, {"format": "svg"})
         ),
     message:
         "--- PLOT DAMAGE"
@@ -729,52 +723,57 @@ rule plot_bamdamage:
 # -----------------------------------------------------------------------------#
 # plotting
 
-
 rule plot_csv:
     """
     Plot summary statistics
     """
     input:
-        sample_stats="{folder}/04_stats/03_summary/{type}_stats.csv",
+        sample_stats="{folder}/04_stats/03_summary/{type}/{type}_stats.csv",
     output:
         plot_1_nb_reads=report(
-            "{folder}/04_stats/04_plots_{type}/1_nb_reads.svg",
+            "{folder}/04_stats/03_summary/{type}/1_nb_reads.svg",
             caption="../report/1_nb_reads.rst",
             category="Mapping statistics",
-            subcategory="Plots {type}",
+            subcategory=lambda wildcards: get_subcategory(wildcards.type),
+            labels={"model": "1_nb_reads", "format": "svg"}
         ),
         plot_2_mapped=report(
-            "{folder}/04_stats/04_plots_{type}/2_mapped.svg",
+            "{folder}/04_stats/03_summary/{type}/2_mapped.svg",
             caption="../report/2_mapped.rst",
             category="Mapping statistics",
-            subcategory="Plots {type}",
+            subcategory=lambda wildcards: get_subcategory(wildcards.type),
+            labels={"model": "2_mapped", "format": "svg"}
         ),
         plot_3_endogenous=report(
-            "{folder}/04_stats/04_plots_{type}/3_endogenous.svg",
+            "{folder}/04_stats/03_summary/{type}/3_endogenous.svg",
             caption="../report/3_endogenous.rst",
             category="Mapping statistics",
-            subcategory="Plots {type}",
+            subcategory=lambda wildcards: get_subcategory(wildcards.type),
+            labels={"model": "3_endogenous", "format": "svg"}
         ),
         plot_4_duplication=report(
-            "{folder}/04_stats/04_plots_{type}/4_duplication.svg",
+            "{folder}/04_stats/03_summary/{type}/4_duplication.svg",
             caption="../report/4_duplication.rst",
             category="Mapping statistics",
-            subcategory="Plots {type}",
+            subcategory=lambda wildcards: get_subcategory(wildcards.type),
+            labels={"model": "4_duplication", "format": "svg"}
         ),
         plot_5_AvgReadDepth=report(
-            "{folder}/04_stats/04_plots_{type}/5_AvgReadDepth.svg",
+            "{folder}/04_stats/03_summary/{type}/5_AvgReadDepth.svg",
             caption="../report/5_AvgReadDepth.rst",
             category="Mapping statistics",
-            subcategory="Plots {type}",
+            subcategory=lambda wildcards: get_subcategory(wildcards.type),
+            labels={"model": "5_AvgReadDepth", "format": "svg"}
         ),
         plot_6_Sex=report(
-            "{folder}/04_stats/04_plots_{type}/6_Sex.svg",
+            "{folder}/04_stats/03_summary/{type}/6_Sex.svg",
             caption="../report/6_Sex.rst",
             category="Mapping statistics",
-            subcategory="Plots {type}",
+            subcategory=lambda wildcards: get_subcategory(wildcards.type),
+            labels={"model": "6_Sex", "format": "svg"}
         ),
     log:
-        "{folder}/04_stats/04_plots_{type}/plot_summary_statistics.log",
+        "{folder}/04_stats/03_summary/{type}/plot_summary_statistics.log",
     conda:
         "../envs/r.yaml"
     envmodules:
@@ -813,25 +812,62 @@ rule plot_csv:
             --show_numbers={params.show_numbers}
         """
 
+def get_label(wc, elem={}):
+    label = {}    
+    label['genome'] = wc.genome
+        
+    paths = list(pathlib.Path(wc.prefix).parts)
+    if len(paths) > 0:
+        label['sample'] = paths[0]
+    if len(paths) > 1:
+        label['library'] = paths[1]
+    if len(paths) > 2:
+        label['fastq'] = paths[2]
 
+    if len(elem):
+        label.update(elem)
+
+    return label
+
+def get_subcategory(cat):
+    if cat.endswith("04_final_fastq") or cat == "FASTQ":
+        txt = "00_fastq"
+    elif cat.endswith("02_bam_after_rmDup") or cat == "LB_rmDup":
+        txt = "01_library_after_rmDup"
+    elif cat.endswith("03_final_library") or cat == "LB":
+        txt = "02_library"
+    elif cat.endswith("03_final_sample") or cat == "SM":
+        txt = "03_sample"
+    else:
+        LOGGER.error(
+            f"ERROR: def get_subcategory({cat}): should never happen!"
+        )
+        os._exit(1)
+    return txt
+    
 rule qualimap:
     """ 
     Run qualimap
     """
     input:
-        bam="{folder}/{file}.bam",
+        bam=get_bam_4_bamdamage,
     output:
-        directory("{folder}/04_stats/01_sparse_stats/{file}_qualimap"),
+        report(directory("{folder}/04_stats/01_sparse_stats/{cat}/01_bam/{prefix}.{genome,[A-Za-z0-9]+}_qualimap"),
+            category="Qualimap",
+            subcategory=lambda wildcards: get_subcategory(wildcards.cat),
+            htmlindex="qualimapReport.html",
+            labels=get_label,
+        ),
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc2(
+        mem_mb=lambda wildcards, attempt: get_memory_alloc(
             ["stats", "qualimap"], attempt, 4
         ),
-        runtime=lambda wildcards, attempt: get_runtime_alloc2(
+        runtime=lambda wildcards, attempt: get_runtime_alloc(
             ["stats", "qualimap"], attempt, 1
         ),
-    threads: get_threads2(["stats", "qualimap"], 4)
+    threads: get_threads(["stats", "qualimap"], 4)
     log:
-        "{folder}/04_stats/01_sparse_stats/{file}_qualimap.log",
+        "{folder}/04_stats/01_sparse_stats/{cat}/01_bam/{prefix}.{genome}_qualimap.log",
     message:
         "--- QUALIMAP on {input}"
     conda:
@@ -840,9 +876,51 @@ rule qualimap:
         module_qualimap,
     shell:
         """
-        qualimap bamqc -c -bam {input} -outdir {output} -nt {threads} --java-mem-size={resources.memory}M > {log}
+        qualimap bamqc -c -bam {input} -outdir {output} -nt {threads} --java-mem-size={resources.mem_mb}M > {log}
         """
 
+
+rule multiqc_rmDup:
+    """
+    Running multiqc at library_rmDup level
+    """
+    input:
+        files=get_files_4_multiqc_library_rmDup,
+    output:
+        html=report(
+            "{folder}/04_stats/02_separate_tables/{genome}/multiqc_mapache_library_rmDup.html",
+            category="MultiQC",
+            labels={"genome": "{genome}"}
+        ),
+    resources:
+        mem_mb=lambda wildcards, attempt: get_memory_alloc(
+            ["stats", "multiqc"], attempt, 4
+        ),
+        runtime=lambda wildcards, attempt: get_runtime_alloc(
+            ["stats", "multiqc"], attempt, 1
+        ),
+    params:
+        config="workflow/report/multiqc_config.yaml",
+        resultdir=RESULT_DIR,
+    log:
+        "{folder}/04_stats/02_separate_tables/{genome}/multiqc_mapache.log",
+    conda:
+        "../envs/multiqc.yaml"
+    envmodules:
+        module_multiqc,
+    message:
+        "--- MULTIQC of {genome}"
+    shell:
+        """
+        ## run mutliqc
+        multiqc -c {params.config} \
+                -f \
+                -n $(basename {output.html}) \
+                -o $(dirname {output.html}) \
+                --title 'Mapache library report (genome {wildcards.genome})' \
+                --cl-config "extra_fn_clean_trim: ['{params.resultdir}']" \
+                {input.files} 2> {log};
+        """
 
 rule multiqc:
     """
@@ -854,12 +932,13 @@ rule multiqc:
         html=report(
             "{folder}/04_stats/02_separate_tables/{genome}/multiqc_mapache.html",
             category="MultiQC",
+            labels={"genome": "{genome}"}
         ),
     resources:
-        memory=lambda wildcards, attempt: get_memory_alloc2(
+        mem_mb=lambda wildcards, attempt: get_memory_alloc(
             ["stats", "multiqc"], attempt, 4
         ),
-        runtime=lambda wildcards, attempt: get_runtime_alloc2(
+        runtime=lambda wildcards, attempt: get_runtime_alloc(
             ["stats", "multiqc"], attempt, 1
         ),
     params:

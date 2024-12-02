@@ -77,7 +77,7 @@ def write_log():
                 LOGGER.info(f"  - Samples (YAML input) in single-end format:")
             else:
                 LOGGER.info(f"  - Sample file ('{SAMPLE_FILE}') in single-end format:")
-            LOGGER.info(f"    - {len(SAMPLES)} SAMPLES")
+            LOGGER.info(f"    - {len(SAMPLES_FINAL)} SAMPLES")
             LOGGER.info(f"    - {len([l for s in SAMPLES.values() for l in s])} libraries")
             LOGGER.info(
                 f"    - {len([i for s in SAMPLES.values() for l in s.values() for i in l])} single-end fastq files"
@@ -202,7 +202,7 @@ def write_log():
                 f"  - Inferring damage and read length with MapDamage2 on all alignments"
             )
 
-        fraction = get_param(["damage", "bamdamage_fraction"], 0)
+        fraction = get_param(["stats", "damage", "bamdamage_fraction"], 0)
         if fraction == 0:
             LOGGER.info(
                 f"  - Inferring damage and read length with bamdamge on all alignments"
@@ -538,6 +538,10 @@ def get_external_samples():
 
     return samples_stats, EXTERNAL_SAMPLE_FILE
 
+def get_external_samples_of_genome(genome):
+    return EXTERNAL_SAMPLES[genome] if genome in EXTERNAL_SAMPLES else []
+
+
 
 ##########################################################################################
 ## all functions for main snakemake file
@@ -548,7 +552,8 @@ def get_external_samples():
 ## def_value:
 ##     - the default value if the parameter is not specified
 ##     - if a list: possible arguments (throw error if different), first element is default value
-def get_param(keys, def_value, my_dict=config):
+## combination: if arg is a list, may it be a combination of the def_value?
+def get_param(keys, def_value, my_dict=config, combination=False):
     assert type(keys) is list
 
     ## check if only a default value is passed or a list of possible values (first one is default arg)
@@ -564,32 +569,32 @@ def get_param(keys, def_value, my_dict=config):
         arg = get_param(keys[1:], def_valueI, my_dict=my_dict.get(keys[0], {}))
 
     arg = eval_param(arg)
+    #print(arg)
 
     ## check if the arg is within the list of possible values
     if type(def_value) is list and len(def_value) > 1:
-        if str(arg) not in def_value:
+        if not (str(arg) in def_value) and not (combination and type(arg) is list and all(i in def_value for i in arg)):
             LOGGER.error(
                 f"ERROR: The parameter config[{']['.join(keys)}] has no valid argument (currently '{arg}'; available {def_value})!"
             )
             sys.exit(1)
-
     return arg
 
 
 ## same as get_param(), but arguments may be a dict with group specific settings
 ## group names may be specified in the sample file and may be any word,
 ##   except 'default', which allows to define a default argument
-def get_paramGrp(keys, def_value, wc, my_dict=config):
+def get_paramGrp(keys, def_value, wc, my_dict=config, combination=False):
     if type(def_value) is list and len(def_value) > 1:
-        arg = get_param(keys, def_value[0], my_dict)
+        arg = get_param(keys, def_value[0], my_dict, combination)
     else:
-        arg = get_param(keys, def_value, my_dict)
+        arg = get_param(keys, def_value, my_dict, combination)
 
     ## if it is not a dict: return value and stop here
     if type(arg) is not dict:
         ## check if the arg is within the list of possible values
         if type(def_value) is list and len(def_value) > 1:
-            if str(arg) not in def_value:
+            if not (str(arg) in def_value) and not (combination and type(arg) is list and all(i in def_value for i in arg)):
                 LOGGER.error(
                     f"ERROR: The parameter config[{']['.join(keys)}] has no valid argument (currently '{arg}'; available {def_value})!"
                 )
@@ -663,9 +668,9 @@ def get_paramGrp(keys, def_value, wc, my_dict=config):
 ## same as above, but a boolean is returned
 ## if it has a dict (group specific setting) a True is returned
 ## used at teh beginning to get a global view what is used
-def get_param_bool(key, def_value, my_dict=config):
+def get_param_bool(key, def_value, my_dict=config, combination=False):
     arg = get_param(
-        key, def_value[0], my_dict
+        key, def_value[0], my_dict, combination
     )  ## search without predefined list (could be a dict...)
     if type(arg) is dict:
         return True
@@ -995,5 +1000,5 @@ def get_gatk_bin():
     bin = get_param(["software", "gatk3_jar"], "GenomeAnalysisTK.jar")
     if bin[-4:] == ".jar":
         bin = f"java -XX:ParallelGCThreads={{snakemake.threads}} -XX:+UseParallelGC -XX:-UsePerfData \
-            -Xms{{snakemake.resources.memory}}m -Xmx{{snakemake.resources.memory}}m -jar {bin}"
+            -Xms{{snakemake.resources.mem_mb}}m -Xmx{{snakemake.resources.mem_mb}}m -jar {bin}"
     return bin

@@ -14,6 +14,7 @@
 # Example samples file. Modify to map to your own samples.
 sample_file: config/samples.tsv
 
+rerun-triggers: mtime
 
 # Some statistics (like depth of coverage) can be computed for BAM files that were obtained
 # by other means (e.g., downloaded from public repositories). Note that in that case, mapache
@@ -93,7 +94,7 @@ subsampling:
 
 # adapter_removal (optional)
 cleaning:
-    run: 'adapterremoval'   # options: adapterremoval (default), fastp, False
+    run: adapterremoval #'adapterremoval'   # options: adapterremoval (default), fastp, False
     params_adapterremoval: '--minlength 30 --trimns --trimqualities'
     params_fastp: ''
     threads: 4 
@@ -141,7 +142,7 @@ merging:
 
 ## extract_duplicates (optional)
 remove_duplicates:
-    run: markduplicates  # (False (default), markduplicates, dedup)
+    run: False  # (False (default), markduplicates, dedup)
     params_markduplicates: '--REMOVE_DUPLICATES true'
     params_dedup: '-m'
     threads: 4  ## 1 for dedup
@@ -159,7 +160,7 @@ damage_rescale:
     mem: 8
     time: 2
 
-# store the bam file before nay filtering
+# store the bam file before any filtering
 stats_after_rmDup: 
     run: True
 ## If you want to stop here and inspect the libraries run mapache with the command 'snakemake mapping_libraries'.
@@ -213,15 +214,33 @@ compute_md:
 stats:
     # Default: run it for samples in samples file.
     # If intended to compute stats on BAMs downloaded or mapped with other tools, see instructions above
-    fastqc_time: 4
+    fastqc:
+        time: 4
     
-    # Output qualimap and multiqc reports?
-    qualimap: True
-    qualimap_mem: 8
+    # Output qualimap?
+    qualimap: 
+        run: True
+        mem: 32
+        level: ['LB_rmDup', 'LB', 'SM'] # ['SM', 'LB', 'LB_rmDup']
     
-    multiqc: True
+    multiqc: 
+        run: True
+        mem: 4
 
-    mapping_stats: ['LB_rmDup', 'LB', 'SM']
+    mapping_stats: ['LB_rmDup', 'LB', 'SM'] # ['SM', 'LB', 'LB_rmDup', 'FASTQ']
+
+    damage:
+        ## damage statistics (read length, deamination rates)
+        run: 'bamdamage'        # Options: ("False", "bamdamage", "mapDamage")
+        level: ['LB_rmDup', 'LB', 'SM'] # ['SM', 'LB', 'LB_rmDup']
+        bamdamage_fraction: 5000
+        # This step can take a lot of time. We recommend to run it on a small subset of the mapped
+        # reads in order to get an estimate of the damage. The value can be an integer (number of reads)
+        # or a float (fraction of mapped reads)
+        bamdamage_params: '--ignore_N --plot_damage_length 30 --length_min 0'
+        # This parameter indicates that the estimation will be done with the first 100 bp of each read
+        # and the plots will include the first and last 30 bp.
+
     
     # specific to plots in the html report
     plots:
@@ -249,16 +268,6 @@ stats:
 ##########################################################################################  
 ## Analyses
 ##########################################################################################
-damage:
-    ## damage statistics (read length, deamination rates)
-    run: 'bamdamage'        # Options: ("False", "bamdamage", "mapDamage")
-    bamdamage_fraction: 5000
-    # This step can take a lot of time. We recommend to run it on a small subset of the mapped
-    # reads in order to get an estimate of the damage. The value can be an integer (number of reads)
-    # or a float (fraction of mapped reads)
-    bamdamage_params: '--ignore_N --plot_damage_length 30 --length_min 0'
-    # This parameter indicates that the estimation will be done with the first 100 bp of each read
-    # and the plots will include the first and last 30 bp.
 
 depth:
     hg19:
@@ -370,6 +379,9 @@ imputation:
 # 1: doubling after each failure
 memory_increment_ratio: 0.5
 runtime_increment_ratio: 0.5
+
+## get software versions
+software_version: False
 
 
 ##########################################################################################

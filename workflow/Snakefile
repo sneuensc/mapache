@@ -101,6 +101,7 @@ wildcard_constraints:
     lb="|".join([lb for sm in SAMPLES.values() for lb in sm]),
     id="|".join([id for sm in SAMPLES.values() for lb in sm.values() for id in lb]),
     genome="|".join([g for g in GENOMES]),
+    folder="[A-Za-z0-9]+"
 
 
 ##########################################################################################
@@ -171,9 +172,9 @@ if remove_duplicates == "dedup" and not PAIRED_END:
 ## --------------------------------------------------------------------------------------------------
 ## rescaling damage (if run is variable then it is set to true)
 run_damage_rescale = get_param_bool(["damage_rescale", "run"], ["False", "True"])
-if run_damage_rescale and get_param(["damage", "run"], "False") != "mapDamage":
+if run_damage_rescale and get_param(["stats", "damage", "run"], ["False", "bamdamage", "mapDamage"]) != "mapDamage":
     LOGGER.error(
-        "ERROR: To use config[damage_rescale][run] the parameter config[damage][run] has to be set to 'mapDamage'!"
+        "ERROR: To use config[damage_rescale][run] the parameter config[stats][damage][run] has to be set to 'mapDamage'!"
     )
     sys.exit(1)
 
@@ -197,7 +198,7 @@ run_compute_md = get_param_bool(["compute_md", "run"], ["True", "False"])
 ##  ANALYSES
 ##########################################################################################
 ## damage
-run_damage = get_param(["damage", "run"], ["False", "bamdamage", "mapDamage"])
+run_damage = get_param(["stats", "damage", "run"], ["False", "bamdamage", "mapDamage"])
 
 ## sex inference
 run_sex_inference = []
@@ -227,17 +228,20 @@ for genome in GENOMES:
 ##########################################################################################
 ##  STATISTICS
 ##########################################################################################
-## By default he stats are computed on the mapped bam files. However, one can pass pre-computed bam files to use the stats feature of
+## By default tshe stats are computed on the mapped bam files. However, one can pass pre-computed bam files to use the stats feature of
 ## mapache using the paramter 'bam_list'. In this later case only on the specified bam fiels the stats are comouted.
-run_qualimap = str2bool(get_param(["stats", "qualimap"], ["False", "True"]))
+run_qualimap = str2bool(get_param(["stats", "qualimap", "run"], ["False", "True"]))
 
-run_multiqc = str2bool(get_param(["stats", "multiqc"], ["False", "True"]))
+run_multiqc = str2bool(get_param(["stats", "multiqc", "run"], ["False", "True"]))
 
 
 ##########################################################################################
 include: "rules/index.smk"
+include: "rules/stats_bam.smk"
 include: "rules/stats.smk"
-include: "rules/fastq.smk"
+include: "rules/fastq_cleaning.smk"
+include: "rules/fastq_mapping.smk"
+include: "rules/fastq_filtering.smk"
 include: "rules/library.smk"
 include: "rules/sample.smk"
 include: "rules/imputation_glimpse.smk"
@@ -262,24 +266,9 @@ final_bami_low_qual = [bam2bai(w) for w in final_bam_low_qual]
 final_external_bam = get_final_external_bam_files()
 final_external_bai = [bam2bai(w) for w in final_external_bam]
 
-
-# -----------------------------------------------------------------------------#
-## get all final stat files
-qualimap_files = get_qualimap_files()
-multiqc_files = get_multiqc_files()
-sex_files = get_sex_files()
-stat_csv = get_stat_csv_files()
-stat_plot = get_stat_plot_files()
-
-
-# -----------------------------------------------------------------------------#
-## get all stat files which have to be computed during mapping
-fastqc = get_fastqc_files()
-samtools_stats = get_samtools_stats_files()
-lengths = get_length_files('SM')
-idxstats = get_idxstats_files()
-
-
+stat_csv = get_stat_csv_files(['FASTQ', 'LB_rmDup', 'LB', 'SM'])
+qualimap_files = get_qualimap_files(['SM', 'LB', 'LB_rmDup'])
+multiqc_files = get_multiqc_files('SM')
 
 ## --------------------------------------------------------------------------------------------------
 ##########################################################################################
@@ -302,7 +291,6 @@ localrules:
 # print(final_bam)
 # print(final_external_bam)
 # print(final_bam_low_qual)
-# print(samtools_stats)
 # print(get_imputation_files())
 # print(get_imputation_plots())
 
@@ -318,19 +306,21 @@ rule all:
         final_external_bam,
         final_external_bai,
         final_bam_low_qual,
-        samtools_stats,
+        qualimap_files,
+        multiqc_files,
         get_imputation_files(),
         get_imputation_plots(),
-        report(
-            f"{RESULT_DIR}/04_stats/03_summary/software_versions.txt",
-            category="Software",
-        ),
+        stat_csv,
+        get_stat_plot_files(['LB_rmDup', 'LB', 'SM']),
+        get_damage_output(['LB_rmDup', 'LB', 'SM']),
+        get_samtools_stats_files(),
+        #f"{RESULT_DIR}/04_stats/03_summary/software_versions.txt" if str2bool(get_param(["software_version"], ["False", "True"])),
     output:
         f"{RESULT_DIR}/run_report.sh"
     message:
         "--- RUNNING ALL"
     shell:
-        "echo 'snakemake --report report.html' > {output}"
+        "echo 'snakemake --report report.zip' > {output}"
 
 
 ## rules dag (just pipeline)
@@ -350,23 +340,40 @@ rule dag:
 
 rule mapping:
     """
-    Performs the mapping and computes all stats which are not anymore able to be comouted later (if temporal fiels are used)
+    Performs the mapping and computes all stats which are not anymore able to be computed later (if temporal files are used)
     """
     input:
         final_bam,
-        #final_bai,
-        #final_external_bam,
-        #final_bam_low_qual,
-        #get_imputation_files(),
-        #get_csv_files(['FASTQ', 'LB_rmDup', 'LB', 'SM']),
-        #get_stat_plot_files(['LB_rmDup', 'LB', 'SM']),
-        #get_damage_output(['LB_rmDup', 'LB', 'SM']),
+        final_bai,
+        final_external_bam,
+        final_external_bai,
+        final_bam_low_qual,
+        get_imputation_files(),
+        get_imputation_plots(),
+        get_stat_csv_files(['FASTQ', 'LB_rmDup', 'LB', 'SM']),
+        get_stat_plot_files(['LB_rmDup', 'LB', 'SM']),
+        get_damage_output(['LB_rmDup', 'LB', 'SM']),
     output:
         f"{RESULT_DIR}/run_report.sh"
     message:
         "--- RUNNING MAPPING"
     shell:
-        "echo 'snakemake mapping --report report_mapping.html' > {output}"
+        "echo 'snakemake mapping --report report_mapping.zip' > {output}"
+
+
+rule test:
+    """
+    Performs the mapping unitl and including the duplicate removal
+    """
+    input:
+        "results/02_library/03_trim/01_bamutil/ind3/ftp_lib.hg19.bam"
+        #"results/01_fastq/03_filtered/01_bam_filter/ind1/lib1_lb/lib1_R1_001_fq.hg19.bam"
+    output:
+        f"{RESULT_DIR}/test.bam"
+    message:
+        "--- RUNNING MAPPING UNTIL LIBRARIES"
+    shell:
+        "cp {input[0]}  {output}"
 
 
 rule mapping_library:
@@ -375,15 +382,17 @@ rule mapping_library:
     """
     input:
         get_all_bam_after_rmDup(),
-        get_csv_files(['FASTQ', 'LB_rmDup']),
+        get_stat_csv_files(['FASTQ', 'LB_rmDup']),
         get_stat_plot_files(['LB_rmDup']),
         get_damage_output(['LB_rmDup']),
+        get_qualimap_files(['LB_rmDup']),
+        get_multiqc_files('LB_rmDup'),
     output:
         f"{RESULT_DIR}/run_report.sh"
     message:
         "--- RUNNING MAPPING UNTIL LIBRARIES"
     shell:
-        "echo 'snakemake mapping_library --report report_libraries.html' > {output}"
+        "echo 'snakemake mapping_library --report report_libraries.zip' > {output}"
 
 rule version:
     """
@@ -392,10 +401,7 @@ rule version:
     input:
         get_version_file_of_tools(),
     output:
-        report(
-            f"{RESULT_DIR}/04_stats/03_summary/software_versions.txt",
-            category="Software",
-        ),
+        f"{RESULT_DIR}/04_stats/03_summary/software_versions.txt"
     shell:
         """
         cat {input} > {output}
@@ -428,8 +434,7 @@ rule infer_adapter:
 
 rule stats:
     input:
-        get_qualimap_files(),
-        get_sex_files(),
+        get_qualimap_files(['SM', 'LB', 'LB_rmDup']),
         get_imputation_files(),
 
 
