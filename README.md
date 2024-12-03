@@ -1,5 +1,43 @@
 # Mapache
 
+##############################################################################
+## Update:
+This code version is under development. The idea is to achieve:
+- Run with the latest version of snakemake (>8)
+- Allow to stop after duplicate removal to be able to investigate the mapping and to adapt the follow up parameters such as:
+  - Trimming parameters for bamutil 
+  - Re-assignment of libraries to individuals (merge libraries or not)
+- Update tools used in mapache to the latest versions
+- Adapt stats tools to consider correctly 'N's which may be introduced by trimming with bamutil.
+
+
+
+How to tun it:
+```
+## clone repo
+git clone -b sam_dev https://github.com/sneuensc/mapache.git
+
+## activate the snakemake conda environment
+conda activate /work/FAC/FBM/DBC/amalaspi/popgen/sneuensc/conda/envs/snakemake_8.25.4
+
+## 1) run until the libraries (don't forget to use '--nt' to keep all files)
+snakemake mapping_library --nt
+snakemake mapping_library --report report_libraries.zip
+
+## 2) run the second part
+snakemake --nt
+snakemake --report report.zip
+```
+
+Please note, 
+- That for the first step 'temoral files ' (--nt) have to be kept in order to compute the second aprt
+- There is no longer a global conda environment. (There was no satisfying combination of all tools)
+- The workflow specific variables (e.g. conda) are stored in a profile at /workflow/profiles/default/config.yaml
+
+
+
+
+##############################################################################
 **Mapache** ([maˈpa.t͡ʃe]) is a lightweight mapping pipeline for ancient DNA using the workflow manager *Snakemake*.
 
 Visit the [Wiki](https://github.com/sneuensc/mapache/wiki) for extensive documentation on how to use mapache and follow the [tutorial](https://github.com/sneuensc/mapache/wiki/4.-Tutorial:-Running-mapache) to map and impute the test dataset. 
