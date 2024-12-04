@@ -30,13 +30,14 @@ snakemake --report report.zip
 ```
 
 Please note, 
-- That for the first step 'temoral files ' (--nt) have to be kept in order to compute the second aprt
+- That for the first step 'temporal files ' (--nt) have to be kept in order to compute the second part
 - There is no longer a global conda environment. (There was no satisfying combination of all tools)
 - The workflow specific variables (e.g. conda) are stored in a profile at /workflow/profiles/default/config.yaml
 
 
 
 
+##############################################################################
 ##############################################################################
 **Mapache** ([maˈpa.t͡ʃe]) is a lightweight mapping pipeline for ancient DNA using the workflow manager *Snakemake*.
 
