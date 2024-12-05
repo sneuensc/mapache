@@ -7,4 +7,13 @@ use-conda: true
 rerun-triggers: mtime
 
 rerun-incomplete: true  # recommended for cluster submissions
-keep-going: false
+keep-going: true
+
+default-resources:
+    mem_mb: 4000
+    runtime: 2
+#set-threads:
+#    myrule: 5
+#set-resources:
+#    myrule:
+#        mem: 500MB
