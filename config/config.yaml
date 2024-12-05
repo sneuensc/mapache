@@ -14,8 +14,6 @@
 # Example samples file. Modify to map to your own samples.
 sample_file: config/samples.tsv
 
-rerun-triggers: mtime
-
 # Some statistics (like depth of coverage) can be computed for BAM files that were obtained
 # by other means (e.g., downloaded from public repositories). Note that in that case, mapache
 # assumes that the data were mapped to the first reference genome listed in the config file.
