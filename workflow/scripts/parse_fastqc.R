@@ -33,7 +33,7 @@ parse_fastqc <- function(file_name, df_name){
     # function to "read" the content from the lines
     Read <- function(x){
         if(length(x) > 1){
-            t <- read.table(text = x, sep = "\t", fill = TRUE, comment = "x", header = T, skip = 1)
+            t <- read.table(text = x, sep = "\t", fill = TRUE, comment = "X", header = T, skip = 1)
             return(t)
         }else{
             return(data.frame())
