@@ -340,7 +340,7 @@ def sm_final_2_sm(sm_final, lb):
 def sm_final_2_sm_table(sm_final):
     sm = SAMPLES_TABLE[SAMPLES_TABLE["SM_FINAL"] == sm_final][
         ["SM", "LB"]
-    ].reset_index()
+    ].drop_duplicates().reset_index()
     return sm
 
 
@@ -498,11 +498,14 @@ def get_sex_file_library(wc):
 def get_lb_stats(wc):
     df = sm_final_2_sm_table(wc.sm)
     if len(SAMPLES):
-        return [
+        files = [
             f"{wc.folder}/04_stats/02_separate_tables/{wc.genome}/{sm}/{lb}/LB_stats.csv"
             for sm, lb in zip(df["SM"], df["LB"])
         ]
-    return []
+    else:
+        files =[]
+    # prinf(files)
+    return files
 
 
 ##########################################################################################
