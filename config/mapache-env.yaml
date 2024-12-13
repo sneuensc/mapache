@@ -17,7 +17,7 @@ dependencies:
   - bwa=0.7.18
   - dedup=0.12.9
   - fastp=0.24.0
-  - fastqc
+  - fastqc=0.12.1
   - gatk=3.8
   - glimpse-bio=1.1.1
   - glimpse-bio=2.0.1
