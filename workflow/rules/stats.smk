@@ -487,18 +487,8 @@ rule merge_stats_all_genomes:
         "--- MERGE STATS by {wildcards.level}"
     run:
         import pandas as pd
-        import re
 
-
-        def get_csv(file):
-            my_csv = pd.read_csv(file)
-            genome = re.sub(".*_stats.", "", file).replace(".csv", "")
-
-            my_csv["genome"] = genome
-            return my_csv
-
-
-        df_list = [get_csv(file) for file in input]
+        df_list = [pd.read_csv(file) for file in input]
         df = pd.concat(df_list)
         df.to_csv(str(output), index=False)
 
