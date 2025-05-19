@@ -57,7 +57,7 @@ result_dir: 'results'
 genome: 
     hg19: /work/FAC/FBM/DBC/amalaspi/popgen/shared_resources/reference_human/hs.build37.1/hs.build37.1.fa
     #test: /users/sneuensc/work_sneuensc/mapping_pipeline/mapache/test_genome.fa
-    #GRCh38: /work/FAC/FBM/DBC/amalaspi/popgen/shared_resources/reference_human/GCA_000001405.15_GRCh38.p13_onlyChrom/GCA_000001405.15_GRCh38.fa
+    GRCh38: /work/FAC/FBM/DBC/amalaspi/popgen/shared_resources/reference_human/GCA_000001405.15_GRCh38.p13_onlyChrom/GCA_000001405.15_GRCh38.fa
 
 
 ##########################################################################################
@@ -147,7 +147,7 @@ remove_duplicates:
     mem: 16
     time: 2
 
-## You may run the workflow until here using the command 'snakemake mapping_libraries'.
+## You may run the workflow until here using the command 'snakemake mapping_library'.
 ## This allows to investigate the mappings and adapt the follow up processes.
 
 # mapDamage2 (optional, not run by default)
@@ -161,7 +161,7 @@ damage_rescale:
 # store the bam file before any filtering
 stats_after_rmDup: 
     run: True
-## If you want to stop here and inspect the libraries run mapache with the command 'snakemake mapping_libraries'.
+## If you want to stop here and inspect the libraries run mapache with the command 'snakemake mapping_library'.
 ## This allows you to (re)-define the parameters for the outstanding steps, such as
 ##  - rescale bam files (mapDamage2)
 ##  - trimming the edges (bamutil)
