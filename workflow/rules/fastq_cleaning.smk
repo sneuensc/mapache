@@ -163,7 +163,8 @@ rule adapterremoval_collapse:
         ## what should be retained
         options={params.collapsed};
         if [[ "$options" == "only_collapse" ]]; then
-            ln -srf {output.col_R} {output.R};
+            mv {output.col_R} {output.R}; ## symlink is not working with temp(): 'invert' it !!!
+            ln -srf {output.R} {output.col_R};
         elif [[ "$options" == "collapse_trunc" ]]; then
             cat {output.col_R} {output.col_trunc} > {output.R};
         elif [[ "$options" == "all" ]]; then
