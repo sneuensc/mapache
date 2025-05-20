@@ -1,4 +1,4 @@
-jobs: 999
+jobs: 499
 executor: slurm
 
 conda-prefix: /work/FAC/FBM/DBC/amalaspi/popgen/sneuensc/conda/envs
