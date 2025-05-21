@@ -101,7 +101,7 @@ wildcard_constraints:
     lb="|".join([lb for sm in SAMPLES.values() for lb in sm]),
     id="|".join([id for sm in SAMPLES.values() for lb in sm.values() for id in lb]),
     genome="|".join([g for g in GENOMES]),
-    folder="[A-Za-z0-9]+"
+    folder=RESULT_DIR
 
 
 ##########################################################################################
