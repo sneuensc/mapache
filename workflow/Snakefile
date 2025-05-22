@@ -59,6 +59,8 @@ module_bcftools = get_param(["envmodules", "bcftools"], "")
 module_bamutil = get_param(["envmodules", "bamutil"], "")
 module_fastp = get_param(["envmodules", "fastp"], "")
 module_bamrefine = get_param(["envmodules", "bamrefine"], "")
+module_preseq = get_param(["envmodules", "preseq"], "")
+module_pysam = get_param(["envmodules", "pysam"], "")
 
 
 ##########################################################################################
@@ -293,6 +295,7 @@ localrules:
 # print(final_bam_low_qual)
 # print(get_imputation_files())
 # print(get_imputation_plots())
+# print(get_preseq_files('svg'))
 
 
 ## rules all
@@ -314,6 +317,7 @@ rule all:
         get_stat_plot_files(['LB_rmDup', 'LB', 'SM']),
         get_damage_output(['LB_rmDup', 'LB', 'SM']),
         get_samtools_stats_files(),
+        get_preseq_files('svg'),
         #f"{RESULT_DIR}/04_stats/03_summary/software_versions.txt" if str2bool(get_param(["software_version"], ["False", "True"])),
     output:
         f"{RESULT_DIR}/run_report.sh"

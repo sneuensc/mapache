@@ -188,6 +188,34 @@ rule samtools_idxstats:
         """
 
 
+rule depth:
+    input:
+        bam=get_bam_file,
+    output:
+        "{folder}/04_stats/01_sparse_stats/{file}.{genome}_depth.txt",
+    resources:
+        mem_mb=lambda wildcards, attempt: get_memory_alloc2(
+            ["stats", "depth"], attempt, 2
+        ),
+        runtime=lambda wildcards, attempt: get_runtime_alloc2(
+            ["stats", "depth"], attempt, 1
+        ),
+    log:
+        "{folder}/04_stats/01_sparse_stats/{file}.{genome}_depth.log",
+    conda:
+        "../envs/pysam.yaml"
+    params:
+        script=workflow.source_path("../scripts/depth.py"),
+    envmodules:
+        module_pysam,
+    message:
+        "--- DEPTH.py of {input.bam}"
+    shell:
+        """
+        python {params.script} {input.bam} > {output}
+        """
+
+
 rule assign_sex:
     input:
         "{folder}/04_stats/01_sparse_stats/{file}.{genome}_idxstats.txt",
@@ -239,6 +267,125 @@ rule assign_no_sex:
         echo "Sex,Rx,CI,signif_set,reads_autosomes,reads_X" > {output}
         echo "NaN,NaN,NaN,NaN,NaN,NaN" >> {output}
         """
+
+
+rule preseq:
+    input:
+        get_bam_4_markduplicates,
+    output:
+        report(
+            "{folder}/04_stats/01_sparse_stats/02_library/02_bam_before_rmDup/01_preseq/{sm}/{lb}.{genome}_preseq.tsv",
+            category="Preseq",
+            labels=lambda wildcards: get_label2(wildcards, {"format": "tsv"}),
+        ),
+    resources:
+        mem_mb=lambda wildcards, attempt: get_memory_alloc2(
+            ["stats", "preseq"], attempt, 2
+        ),
+        runtime=lambda wildcards, attempt: get_runtime_alloc2(
+            ["stats", "preseq"], attempt, 2
+        ),
+    threads: get_threads("preseq", 1)
+    log:
+        "{folder}/04_stats/01_sparse_stats/02_library/02_bam_before_rmDup/01_preseq/{sm}/{lb}.{genome}_preseq.log",
+    conda:
+        "../envs/preseq.yaml"
+    envmodules:
+        module_preseq,
+    message:
+        "--- PRESEQ {input}"
+    shell:
+        """
+        preseq lc_extrap -B -o {output} {input} 2> {log}
+        """
+
+
+if get_param(["stats", "preseq", "ylab"], ["coverage", "reads"]) == "coverage":
+
+    rule preseq_plot:
+        input:
+            bam=get_bam_4_markduplicates,
+            tsv="{folder}/04_stats/01_sparse_stats/02_library/02_bam_before_rmDup/01_preseq/{sm}/{lb}.{genome}_preseq.tsv",
+            depth=lambda wildcards: get_bam_4_markduplicates(wildcards).replace(".bam", "_depth.txt").replace(wildcards.folder, f"{wildcards.folder}/04_stats/01_sparse_stats"),
+        output:
+            report(
+                "{folder}/04_stats/01_sparse_stats/02_library/02_bam_before_rmDup/01_preseq/{sm}/{lb}.{genome}_preseq.svg",
+                category="Preseq",
+                labels= lambda wildcards: get_label2(wildcards, {"format": "svg"}),
+            ),
+        resources:
+            mem_mb=lambda wildcards, attempt: get_memory_alloc2(
+                ["stats", "preseq"], attempt, 2
+            ),
+            runtime=lambda wildcards, attempt: get_runtime_alloc2(
+                ["stats", "preseq"], attempt, 2
+            ),
+        threads: get_threads("preseq", 1)
+        params:
+            xmax=get_param(["stats", "preseq", "xmax"], 0.8),
+            ylab=get_param(["stats", "preseq", "ylab"], ["coverage", "reads"]),
+            script=workflow.source_path("../scripts/plot_preseq.R"),
+        log:
+            "{folder}/04_stats/01_sparse_stats/02_library/02_bam_before_rmDup/01_preseq/{sm}/{lb}.{genome}_preseq_plot.log",
+        conda:
+            "../envs/r.yaml"
+        envmodules:
+            module_r,
+        message:
+            "--- PRESEQ {input.bam}"
+        shell:
+            """
+            Rscript {params.script} \
+                --input={input.tsv} \
+                --output={output} \
+                --name='{wildcards.sm}_{wildcards.lb} ({wildcards.genome})' \
+                --libSize=$(samtools view {input.bam} | awk '{{print $1}}' | sort -u | wc -l) \
+                --xmax={params.xmax} \
+                --depth={input.depth}
+            """
+
+else:
+
+    rule preseq_plot:
+        input:
+            tsv="{folder}/04_stats/01_sparse_stats/02_library/02_bam_before_rmDup/01_preseq/{sm}/{lb}.{genome}_preseq.tsv",
+            bam=get_bam_4_markduplicates,
+        output:
+            report(
+                "{folder}/04_stats/01_sparse_stats/02_library/02_bam_before_rmDup/01_preseq/{sm}/{lb}.{genome}_preseq.svg",
+                category="Preseq",
+                labels=lambda wildcards: get_label2(wildcards, {"format": "svg"}),
+            ),
+        resources:
+            mem_mb=lambda wildcards, attempt: get_memory_alloc2(
+                ["stats", "preseq"], attempt, 2
+            ),
+            runtime=lambda wildcards, attempt: get_runtime_alloc2(
+                ["stats", "preseq"], attempt, 2
+            ),
+        threads: get_threads("preseq", 1)
+        params:
+            xmax=get_param(["stats", "preseq", "xmax"], 0.8),
+            ylab=get_param(["stats", "preseq", "ylab"], ["coverage", "reads"]),
+            script=workflow.source_path("../scripts/plot_preseq.R"),
+        log:
+            "{folder}/04_stats/01_sparse_stats/02_library/02_bam_before_rmDup/01_preseq/{sm}/{lb}.{genome}_preseq.log",
+        conda:
+            "../envs/r.yaml"
+        envmodules:
+            module_r,
+        message:
+            "--- PRESEQ {input.bam}"
+        shell:
+            """
+            Rscript {params.script} \
+                --input={input.tsv} \
+                --output={output} \
+                --name='{wildcards.file} ({wildcards.genome})' \
+                --libSize=$(samtools view {input.bam} | awk '{print $1}' | sort -u | wc -l) \
+                --xmax={params.xmax} \
+                --depth=NA
+            """
 
 
 # -----------------------------------------------------------------------------#
@@ -479,7 +626,7 @@ rule merge_stats_all_genomes:
             "{folder}/04_stats/03_summary/{level}/{level}_stats.csv",
             category="Mapping statistics",
             subcategory=lambda wildcards: get_subcategory(wildcards.level),
-            labels={"model": "0_{level}_stats.csv", "format": "csv"}
+            labels={"model": "0_{level}_stats.csv", "format": "csv"},
         ),
     log:
         "{folder}/04_stats/03_summary/{level}/{level}_stats.log",
@@ -550,7 +697,7 @@ rule merge_DoC_chr:
 # bamdamage
 def get_bam_4_bamdamage(wc):
     # print(f"get_bam_4_bamdamage: {wc}")
-    
+
     if wc.cat == "02_library/02_bam_after_rmDup":
         paths = list(pathlib.Path(wc.prefix).parts)
         file = get_bam_4_after_rmDup(
@@ -584,7 +731,6 @@ def get_bam_4_bamdamage(wc):
     return file
 
 
-
 rule bamdamage:
     """
     Run bamdamage to quantify the deamination pattern
@@ -600,19 +746,19 @@ rule bamdamage:
             "{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome,[A-Za-z0-9]+}.length.csv",
             category="Read length",
             subcategory=lambda wildcards: get_subcategory(wildcards.cat),
-            labels=lambda wildcards: get_label(wildcards, {"format": "csv"})
+            labels=lambda wildcards: get_label(wildcards, {"format": "csv"}),
         ),
         dam_5prime_table=report(
             "{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome,[A-Za-z0-9]+}.dam_5prime.csv",
             category="Damage pattern",
             subcategory=lambda wildcards: get_subcategory(wildcards.cat),
-            labels=lambda wildcards: get_label(wildcards, {"format": "5prime.csv"})
+            labels=lambda wildcards: get_label(wildcards, {"format": "5prime.csv"}),
         ),
         dam_3prime_table=report(
             "{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome,[A-Za-z0-9]+}.dam_3prime.csv",
             category="Damage pattern",
             subcategory=lambda wildcards: get_subcategory(wildcards.cat),
-            labels=lambda wildcards: get_label(wildcards, {"format": "3prime.csv"})
+            labels=lambda wildcards: get_label(wildcards, {"format": "3prime.csv"}),
         ),
     log:
         "{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome,[A-Za-z0-9]+}_bamdamage.log",
@@ -668,13 +814,13 @@ rule plot_bamdamage:
             "{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome,[A-Za-z0-9]+}.length.svg",
             category="Read length",
             subcategory=lambda wildcards: get_subcategory(wildcards.cat),
-            labels=lambda wildcards: get_label(wildcards, {"format": "svg"})
+            labels=lambda wildcards: get_label(wildcards, {"format": "svg"}),
         ),
         damage=report(
             "{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome,[A-Za-z0-9]+}.dam.svg",
             category="Damage pattern",
             subcategory=lambda wildcards: get_subcategory(wildcards.cat),
-            labels=lambda wildcards: get_label(wildcards, {"format": "svg"})
+            labels=lambda wildcards: get_label(wildcards, {"format": "svg"}),
         ),
     message:
         "--- PLOT DAMAGE"
@@ -713,6 +859,7 @@ rule plot_bamdamage:
 # -----------------------------------------------------------------------------#
 # plotting
 
+
 rule plot_csv:
     """
     Plot summary statistics
@@ -725,42 +872,42 @@ rule plot_csv:
             caption="../report/1_nb_reads.rst",
             category="Mapping statistics",
             subcategory=lambda wildcards: get_subcategory(wildcards.type),
-            labels={"model": "1_nb_reads", "format": "svg"}
+            labels={"model": "1_nb_reads", "format": "svg"},
         ),
         plot_2_mapped=report(
             "{folder}/04_stats/03_summary/{type}/2_mapped.svg",
             caption="../report/2_mapped.rst",
             category="Mapping statistics",
             subcategory=lambda wildcards: get_subcategory(wildcards.type),
-            labels={"model": "2_mapped", "format": "svg"}
+            labels={"model": "2_mapped", "format": "svg"},
         ),
         plot_3_endogenous=report(
             "{folder}/04_stats/03_summary/{type}/3_endogenous.svg",
             caption="../report/3_endogenous.rst",
             category="Mapping statistics",
             subcategory=lambda wildcards: get_subcategory(wildcards.type),
-            labels={"model": "3_endogenous", "format": "svg"}
+            labels={"model": "3_endogenous", "format": "svg"},
         ),
         plot_4_duplication=report(
             "{folder}/04_stats/03_summary/{type}/4_duplication.svg",
             caption="../report/4_duplication.rst",
             category="Mapping statistics",
             subcategory=lambda wildcards: get_subcategory(wildcards.type),
-            labels={"model": "4_duplication", "format": "svg"}
+            labels={"model": "4_duplication", "format": "svg"},
         ),
         plot_5_AvgReadDepth=report(
             "{folder}/04_stats/03_summary/{type}/5_AvgReadDepth.svg",
             caption="../report/5_AvgReadDepth.rst",
             category="Mapping statistics",
             subcategory=lambda wildcards: get_subcategory(wildcards.type),
-            labels={"model": "5_AvgReadDepth", "format": "svg"}
+            labels={"model": "5_AvgReadDepth", "format": "svg"},
         ),
         plot_6_Sex=report(
             "{folder}/04_stats/03_summary/{type}/6_Sex.svg",
             caption="../report/6_Sex.rst",
             category="Mapping statistics",
             subcategory=lambda wildcards: get_subcategory(wildcards.type),
-            labels={"model": "6_Sex", "format": "svg"}
+            labels={"model": "6_Sex", "format": "svg"},
         ),
     log:
         "{folder}/04_stats/03_summary/{type}/plot_summary_statistics.log",
@@ -802,22 +949,37 @@ rule plot_csv:
             --show_numbers={params.show_numbers}
         """
 
+
 def get_label(wc, elem={}):
-    label = {}    
-    label['genome'] = wc.genome
-        
+    label = {}
+    if hasattr(wc, "genome"):
+        label["genome"] = wc.genome
     paths = list(pathlib.Path(wc.prefix).parts)
     if len(paths) > 0:
-        label['sample'] = paths[0]
+        label["sample"] = paths[0]
     if len(paths) > 1:
-        label['library'] = paths[1]
+        label["library"] = paths[1]
     if len(paths) > 2:
-        label['fastq'] = paths[2]
-
+        label["fastq"] = paths[2]
     if len(elem):
         label.update(elem)
-
     return label
+
+
+def get_label2(wc, elem={}):
+    label = {}
+    if hasattr(wc, "genome"):
+        label["genome"] = wc.genome
+    if hasattr(wc, "sm"):
+        label["sample"] = wc.sm
+    if hasattr(wc, "lb"):
+        label["library"] = wc.lb
+    if hasattr(wc, "id"):
+        label["fastq"] = wc.id
+    if len(elem):
+        label.update(elem)
+    return label
+
 
 def get_subcategory(cat):
     if cat.endswith("04_final_fastq") or cat == "FASTQ":
@@ -829,12 +991,11 @@ def get_subcategory(cat):
     elif cat.endswith("03_final_sample") or cat == "SM":
         txt = "03_sample"
     else:
-        LOGGER.error(
-            f"ERROR: def get_subcategory({cat}): should never happen!"
-        )
+        LOGGER.error(f"ERROR: def get_subcategory({cat}): should never happen!")
         os._exit(1)
     return txt
-    
+
+
 rule qualimap:
     """ 
     Run qualimap
@@ -842,7 +1003,10 @@ rule qualimap:
     input:
         bam=get_bam_4_bamdamage,
     output:
-        report(directory("{folder}/04_stats/01_sparse_stats/{cat}/01_bam/{prefix}.{genome,[A-Za-z0-9]+}_qualimap"),
+        report(
+            directory(
+                "{folder}/04_stats/01_sparse_stats/{cat}/01_bam/{prefix}.{genome,[A-Za-z0-9]+}_qualimap"
+            ),
             category="Qualimap",
             subcategory=lambda wildcards: get_subcategory(wildcards.cat),
             htmlindex="qualimapReport.html",
@@ -880,7 +1044,7 @@ rule multiqc_rmDup:
         html=report(
             "{folder}/04_stats/02_separate_tables/{genome}/multiqc_mapache_library_rmDup.html",
             category="MultiQC",
-            labels={"genome": "{genome}"}
+            labels={"genome": "{genome}"},
         ),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc(
@@ -912,6 +1076,7 @@ rule multiqc_rmDup:
                 {input.files} 2> {log};
         """
 
+
 rule multiqc:
     """
     Running multiqc
@@ -922,7 +1087,7 @@ rule multiqc:
         html=report(
             "{folder}/04_stats/02_separate_tables/{genome}/multiqc_mapache.html",
             category="MultiQC",
-            labels={"genome": "{genome}"}
+            labels={"genome": "{genome}"},
         ),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc(

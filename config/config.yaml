@@ -235,9 +235,17 @@ stats:
         # This step can take a lot of time. We recommend to run it on a small subset of the mapped
         # reads in order to get an estimate of the damage. The value can be an integer (number of reads)
         # or a float (fraction of mapped reads)
-        bamdamage_params: '--ignore_N --plot_damage_length 30 --length_min 0'
+        bamdamage_params: '--ignore_N --plot_damage_length 30 --length_min 0 --length_max 300'
         # This parameter indicates that the estimation will be done with the first 100 bp of each read
         # and the plots will include the first and last 30 bp.
+
+    preseq:
+        run: True
+        ylab: coverage # coverage(default) or reads
+        xmax: 0.8 # <=1: relative to the max value (0.8 is default; 1: all values are shown)
+                  # >1: absolute value
+        time: 2
+        mem: 4
 
     
     # specific to plots in the html report

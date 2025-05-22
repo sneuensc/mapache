@@ -209,19 +209,19 @@ def get_bam_4_merge_bam_low_qual_fastq2library(wc):
 ## get the (merged) bam file
 def get_merged_bam_LB(wc):
     bam = get_bam_4_merge_bam_fastq2library(wc)
-    ## library consits of more than one fastq file: return 00_merged_fastq
+    ## library consists of more than one fastq file: return 00_merged_fastq
     if len(bam) > 1:
         return f"{wc.folder}/02_library/00_merged_fastq/01_bam/{wc.sm}/{wc.lb}.{wc.genome}.bam"
-    else:  ## library consits of one fastq file: return return the location of the final library bam file
+    else:  ## library consists of one fastq file: return return the location of the final library bam file
         return bam[0]
 
 
 def get_merged_bam_low_qual_LB(wc):
     bam = get_bam_4_merge_bam_low_qual_fastq2library(wc)
-    ## library consits of more than one fastq file: return 00_merged_fastq
+    ## library consists of more than one fastq file: return 00_merged_fastq
     if len(bam) > 1:
         return f"{wc.folder}/02_library/00_merged_fastq/01_bam_low_qual/{wc.sm}/{wc.lb}.{wc.genome}.bam"
-    else:  ## library consits of one fastq file: return return the location of the final library bam file
+    else:  ## library consists of one fastq file: return return the location of the final library bam file
         return bam[0]
 
 
@@ -231,7 +231,7 @@ def get_bam_4_markduplicates(wc):
 
 
 ##-------------------------------------------------------------------------------------------------------------------------------
-## get the bam file after duplicate removale
+## get the bam file after duplicate removal
 def get_bam_4_after_rmDup(wc):
     rm_duplicates = get_paramGrp(
         ["remove_duplicates", "run"], ["markduplicates", "dedup", "False"], wc
@@ -338,9 +338,11 @@ def sm_final_2_sm(sm_final, lb):
 
 ## return all lines of the given sample as 'SM-LB' table
 def sm_final_2_sm_table(sm_final):
-    sm = SAMPLES_TABLE[SAMPLES_TABLE["SM_FINAL"] == sm_final][
-        ["SM", "LB"]
-    ].drop_duplicates().reset_index()
+    sm = (
+        SAMPLES_TABLE[SAMPLES_TABLE["SM_FINAL"] == sm_final][["SM", "LB"]]
+        .drop_duplicates()
+        .reset_index()
+    )
     return sm
 
 
@@ -420,8 +422,6 @@ def get_bam_4_final_bam_low_qual(wc):
 ##########################################################################################
 
 
-
-
 ##########################################################################################
 ## STATS
 ## get all individual stat table files to concatenate
@@ -466,8 +466,6 @@ def path_stats_by_level(wc):
     return paths
 
 
-
-
 ## sex may be inferred at the sample or/and library level
 def get_sex_file_sample(wc):
     if str2bool(get_param(["sex_inference", wc.genome, "run"], ["False", "True"])):
@@ -503,7 +501,7 @@ def get_lb_stats(wc):
             for sm, lb in zip(df["SM"], df["LB"])
         ]
     else:
-        files =[]
+        files = []
     # prinf(files)
     return files
 
@@ -591,24 +589,23 @@ def get_fastqc_files2():
                         ]
     return fastqc
 
-def get_multiqc_files(level='SM'):
+
+def get_multiqc_files(level="SM"):
     if not str2bool(get_param(["stats", "multiqc", "run"], ["False", "True"])):
         return []
 
-    if level == 'SM':
+    if level == "SM":
         files = [
             f"{RESULT_DIR}/04_stats/02_separate_tables/{genome}/multiqc_mapache.html"
             for genome in GENOMES + list(EXTERNAL_SAMPLES.keys())
         ]
-    elif level == 'LB_rmDup':
+    elif level == "LB_rmDup":
         files = [
             f"{RESULT_DIR}/04_stats/02_separate_tables/{genome}/multiqc_mapache_library_rmDup.html"
             for genome in GENOMES
         ]
     else:
-        LOGGER.error(
-            f"ERROR: def get_multiqc_files({level}): should never happen!"
-        )
+        LOGGER.error(f"ERROR: def get_multiqc_files({level}): should never happen!")
         os._exit(1)
 
     # print(files)
@@ -700,7 +697,7 @@ def get_files_4_multiqc_library_rmDup(wc):
 
         ## adapterremoval
         files += [
-            f"{RESULT_DIR}/01_fastq/01_trimmed/01_adapterremoval_{get_cleaning_folder_extension(Wildcards(fromdict = {'id': id , 'lb': lb , 'sm': sm}))}/{sm}/{lb}/{id}.settings"
+            f"{RESULT_DIR}/01_fastq/01_trimmed/01_adapterremoval_{get_cleaning_folder_extension(Wildcards(fromdict={'id': id, 'lb': lb, 'sm': sm}))}/{sm}/{lb}/{id}.settings"
             for sm, smVals in SAMPLES.items()
             for lb, lbVals in smVals.items()
             for id in lbVals
@@ -714,7 +711,7 @@ def get_files_4_multiqc_library_rmDup(wc):
 
         ## fastp
         files += [
-            f"{RESULT_DIR}/01_fastq/01_trimmed/01_fastp_{get_cleaning_folder_extension(Wildcards(fromdict = {'id': id , 'lb': lb , 'sm': sm}))}/{sm}/{lb}/{id}.json"
+            f"{RESULT_DIR}/01_fastq/01_trimmed/01_fastp_{get_cleaning_folder_extension(Wildcards(fromdict={'id': id, 'lb': lb, 'sm': sm}))}/{sm}/{lb}/{id}.json"
             for sm, smVals in SAMPLES.items()
             for lb, lbVals in smVals.items()
             for id in lbVals
@@ -728,7 +725,7 @@ def get_files_4_multiqc_library_rmDup(wc):
 
         ## fastqc trim
         files += [
-            f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_adapterremoval_{get_cleaning_folder_extension(Wildcards(fromdict = {'id': id , 'lb': lb , 'sm': sm}))}/{sm}/{lb}/{id}_fastqc.zip"
+            f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_adapterremoval_{get_cleaning_folder_extension(Wildcards(fromdict={'id': id, 'lb': lb, 'sm': sm}))}/{sm}/{lb}/{id}_fastqc.zip"
             for sm, smVals in SAMPLES.items()
             for lb, lbVals in smVals.items()
             for id in lbVals
@@ -739,7 +736,7 @@ def get_files_4_multiqc_library_rmDup(wc):
             )
             == "adapterremoval"
         ] + [
-            f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_fastp_{get_cleaning_folder_extension(Wildcards(fromdict = {'id': id , 'lb': lb , 'sm': sm}))}/{sm}/{lb}/{id}_fastqc.zip"
+            f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_fastp_{get_cleaning_folder_extension(Wildcards(fromdict={'id': id, 'lb': lb, 'sm': sm}))}/{sm}/{lb}/{id}_fastqc.zip"
             for sm, smVals in SAMPLES.items()
             for lb, lbVals in smVals.items()
             for id in lbVals
@@ -760,6 +757,9 @@ def get_files_4_multiqc_library_rmDup(wc):
         ]
 
         ## LIBRARY ################################################
+        ## preseq
+        files += get_preseq_files_genome("tsv", wc.genome)
+
         ## picard markduplicates
         files += [
             f"{RESULT_DIR}/02_library/01_duplicated/01_markduplicates/{sm}/{lb}.{wc.genome}.stats"
@@ -800,7 +800,7 @@ def get_files_4_multiqc_library_rmDup(wc):
             f"{RESULT_DIR}/04_stats/02_separate_tables/{wc.genome}/FASTQ_stats.csv",
         ]
 
-    #print(list(set(files)))
+    # print(list(set(files)))
     return list(set(files))  ## remove duplicates
 
 
@@ -844,9 +844,8 @@ def get_files_4_multiqc(wc):
             f"{RESULT_DIR}/04_stats/02_separate_tables/{wc.genome}/LB_stats.csv",
         ]
 
-    #print(list(set(files)))
+    # print(list(set(files)))
     return list(set(files))  ## remove duplicates
-
 
 
 ## return all files containing version information
