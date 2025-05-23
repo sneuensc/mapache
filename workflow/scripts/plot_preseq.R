@@ -76,7 +76,7 @@ p1 <- ggplot(data, aes(x=TOTAL_READS, y=EXPECTED_DISTINCT)) +
   geom_line() +
   theme_bw() +
   ggtitle(paste("Expected distinct reads", name, sep='\n')) +
-  geom_abline(intercept=0, slope=libSizeExpt/libSize, color = "grey", linetype = "longdash") +
+  geom_abline(intercept=0, slope=1, color = "grey", linetype = "longdash") +
   geom_segment(x = libSize, xend = libSize, y = -Inf, yend = libSizeExpt,
                color = "blue", linetype = "dotted") +
   geom_segment(x = -Inf, xend = libSize, y = libSizeExpt, yend = libSizeExpt,
