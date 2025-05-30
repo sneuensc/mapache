@@ -274,7 +274,7 @@ rule preseq:
         get_bam_4_markduplicates,
     output:
         report(
-            "{folder}/04_stats/01_sparse_stats/02_library/02_bam_before_rmDup/01_preseq/{sm}/{lb}.{genome}_preseq.tsv",
+            "{folder}/04_stats/01_sparse_stats/02_library/02_bam_before_rmDup/01_bam/{sm}/{lb}.{genome}_preseq.tsv",
             category="Preseq",
             labels=lambda wildcards: get_label2(wildcards, {"format": "tsv"}),
         ),
@@ -287,7 +287,7 @@ rule preseq:
         ),
     threads: get_threads("preseq", 1)
     log:
-        "{folder}/04_stats/01_sparse_stats/02_library/02_bam_before_rmDup/01_preseq/{sm}/{lb}.{genome}_preseq.log",
+        "{folder}/04_stats/01_sparse_stats/02_library/02_bam_before_rmDup/01_bam/{sm}/{lb}.{genome}_preseq.log",
     conda:
         "../envs/preseq.yaml"
     envmodules:
@@ -300,92 +300,48 @@ rule preseq:
         """
 
 
-if get_param(["stats", "preseq", "ylab"], ["coverage", "reads"]) == "coverage":
+rule preseq_plot:
+    input:
+        tsv="{folder}/04_stats/01_sparse_stats/02_library/02_bam_before_rmDup/01_bam/{sm}/{lb}.{genome}_preseq.tsv",
+        length=lambda wildcards: get_bam_4_markduplicates(wildcards).replace(".bam", "_length.txt").replace(wildcards.folder, f"{wildcards.folder}/04_stats/01_sparse_stats"),
+        idxstats=lambda wildcards: get_bam_4_markduplicates(wildcards).replace(".bam", "_idxstats.txt").replace(wildcards.folder, f"{wildcards.folder}/04_stats/01_sparse_stats"),
+    output:
+        report(
+            "{folder}/04_stats/01_sparse_stats/02_library/02_bam_before_rmDup/01_bam/{sm}/{lb}.{genome}_preseq.svg",
+            category="Preseq",
+            labels= lambda wildcards: get_label2(wildcards, {"format": "svg"}),
+        ),
+    resources:
+        mem_mb=lambda wildcards, attempt: get_memory_alloc2(
+            ["stats", "preseq"], attempt, 2
+        ),
+        runtime=lambda wildcards, attempt: get_runtime_alloc2(
+            ["stats", "preseq"], attempt, 2
+        ),
+    threads: get_threads("preseq", 1)
+    params:
+        xmax=get_param(["stats", "preseq", "xmax"], 0.8),
+        ylab=get_param(["stats", "preseq", "ylab"], ["coverage", "reads"]),
+        script=workflow.source_path("../scripts/plot_preseq.R"),
+    log:
+        "{folder}/04_stats/01_sparse_stats/02_library/02_bam_before_rmDup/01_bam/{sm}/{lb}.{genome}_preseq_plot.log",
+    conda:
+        "../envs/r.yaml"
+    envmodules:
+        module_r,
+    message:
+        "--- PRESEQ {input.tsv}"
+    shell:
+        """
+        Rscript {params.script} \
+            --input={input.tsv} \
+            --output={output} \
+            --name='{wildcards.sm}_{wildcards.lb} ({wildcards.genome})' \
+            --idxstats={input.idxstats} \
+            --length={input.length} \
+            --xmax={params.xmax} 
+        """
 
-    rule preseq_plot:
-        input:
-            bam=get_bam_4_markduplicates,
-            tsv="{folder}/04_stats/01_sparse_stats/02_library/02_bam_before_rmDup/01_preseq/{sm}/{lb}.{genome}_preseq.tsv",
-            depth=lambda wildcards: get_bam_4_markduplicates(wildcards).replace(".bam", "_depth.txt").replace(wildcards.folder, f"{wildcards.folder}/04_stats/01_sparse_stats"),
-        output:
-            report(
-                "{folder}/04_stats/01_sparse_stats/02_library/02_bam_before_rmDup/01_preseq/{sm}/{lb}.{genome}_preseq.svg",
-                category="Preseq",
-                labels= lambda wildcards: get_label2(wildcards, {"format": "svg"}),
-            ),
-        resources:
-            mem_mb=lambda wildcards, attempt: get_memory_alloc2(
-                ["stats", "preseq"], attempt, 2
-            ),
-            runtime=lambda wildcards, attempt: get_runtime_alloc2(
-                ["stats", "preseq"], attempt, 2
-            ),
-        threads: get_threads("preseq", 1)
-        params:
-            xmax=get_param(["stats", "preseq", "xmax"], 0.8),
-            ylab=get_param(["stats", "preseq", "ylab"], ["coverage", "reads"]),
-            script=workflow.source_path("../scripts/plot_preseq.R"),
-        log:
-            "{folder}/04_stats/01_sparse_stats/02_library/02_bam_before_rmDup/01_preseq/{sm}/{lb}.{genome}_preseq_plot.log",
-        conda:
-            "../envs/r.yaml"
-        envmodules:
-            module_r,
-        message:
-            "--- PRESEQ {input.bam}"
-        shell:
-            """
-            Rscript {params.script} \
-                --input={input.tsv} \
-                --output={output} \
-                --name='{wildcards.sm}_{wildcards.lb} ({wildcards.genome})' \
-                --libSize=$(samtools view {input.bam} | awk '{{print $1}}' | sort -u | wc -l) \
-                --xmax={params.xmax} \
-                --depth={input.depth}
-            """
-
-else:
-
-    rule preseq_plot:
-        input:
-            tsv="{folder}/04_stats/01_sparse_stats/02_library/02_bam_before_rmDup/01_preseq/{sm}/{lb}.{genome}_preseq.tsv",
-            bam=get_bam_4_markduplicates,
-        output:
-            report(
-                "{folder}/04_stats/01_sparse_stats/02_library/02_bam_before_rmDup/01_preseq/{sm}/{lb}.{genome}_preseq.svg",
-                category="Preseq",
-                labels=lambda wildcards: get_label2(wildcards, {"format": "svg"}),
-            ),
-        resources:
-            mem_mb=lambda wildcards, attempt: get_memory_alloc2(
-                ["stats", "preseq"], attempt, 2
-            ),
-            runtime=lambda wildcards, attempt: get_runtime_alloc2(
-                ["stats", "preseq"], attempt, 2
-            ),
-        threads: get_threads("preseq", 1)
-        params:
-            xmax=get_param(["stats", "preseq", "xmax"], 0.8),
-            ylab=get_param(["stats", "preseq", "ylab"], ["coverage", "reads"]),
-            script=workflow.source_path("../scripts/plot_preseq.R"),
-        log:
-            "{folder}/04_stats/01_sparse_stats/02_library/02_bam_before_rmDup/01_preseq/{sm}/{lb}.{genome}_preseq.log",
-        conda:
-            "../envs/r.yaml"
-        envmodules:
-            module_r,
-        message:
-            "--- PRESEQ {input.bam}"
-        shell:
-            """
-            Rscript {params.script} \
-                --input={input.tsv} \
-                --output={output} \
-                --name='{wildcards.file} ({wildcards.genome})' \
-                --libSize=$(samtools view {input.bam} | awk '{print $1}' | sort -u | wc -l) \
-                --xmax={params.xmax} \
-                --depth=NA
-            """
 
 
 # -----------------------------------------------------------------------------#

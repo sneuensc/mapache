@@ -18,7 +18,8 @@ if("--help" %in% args) {
         --input                                    - input csv filename
         --output                                   - output svg filename
         --name                                     - name to plot
-        --libSize                                  - number of reads (library size)
+        --idxstats                                 - idxstats file (lib size and coverage)
+        --length                                   - length table
         --xmax                                     - plotting: max x
         --help                                     - print this text
  
@@ -51,12 +52,28 @@ get_args <- function(argsL, name, default){
 input = get_args(argsL, "input")
 output = get_args(argsL, "output", gsub('.txt', '.svg', input))
 name = get_args(argsL, "name", basename(gsub('.txt', '', input)))
-libSize = as.numeric(get_args(argsL, "libSize"))
+idxstats_file = get_args(argsL, "idxstats")
+length_file = get_args(argsL, "length")
 xmax = as.numeric(get_args(argsL, "xmax"), 0.8)
 depth = get_args(argsL, "depth", 'NA')
 
 ############################################################################
 library(tidyverse)
+
+## read idxstats
+idxstats = read.table(
+  idxstats_file, 
+  header=F,
+  col.names=c("chr", "length", "mapped", "unmapped")
+)
+genomeSize <- sum(idxstats$length)
+libSize <- sum(idxstats$mapped)
+
+## read length file
+calc_avg_len <- function(l){ sum(l$n_reads * l$length) / sum(l$n_reads) }
+length_table = read.table(length_file, header = T, sep = "\t", colClasses = c("numeric", "numeric"))
+cov <- libSize * calc_avg_len(length_table) / genomeSize
+
 
 ## read preseq results
 data <- read_tsv(input, show_col_types=FALSE)
@@ -81,31 +98,15 @@ p1 <- ggplot(data, aes(x=TOTAL_READS, y=EXPECTED_DISTINCT)) +
                color = "blue", linetype = "dotted") +
   geom_segment(x = -Inf, xend = libSize, y = libSizeExpt, yend = libSizeExpt,
                color = "blue", linetype = "dotted") +
-  geom_point(aes(x=libSize, y=libSizeExpt))
+  geom_point(aes(x=libSize, y=libSizeExpt)) +
+  scale_y_continuous(sec.axis = sec_axis(transform=~./libSizeExpt*cov, name="COVERAGE")) +
+  geom_hline(yintercept=libSizeExpt, color = "blue", linetype = "dotted") +
+  geom_segment(x = libSize, xend = Inf, y = libSizeExpt, yend = libSizeExpt,
+               color = "blue", linetype = "dotted") +
+  geom_text(aes(x=libSize+0.01*data$TOTAL_READS[nrow(data)], y=libSizeExpt, 
+                label=paste0('x: ', formatC(libSize, format = "e", digits = 2), '\ny: ', formatC(libSizeExpt, format = "e", digits = 2), ' / ', round(cov,2), 'x')), 
+            hjust=0, vjust=1.1, color="blue")
 
-
-if(depth != 'NA'){
-  ## add coverage
-  d <- read.table(depth, skip=3, header=T)
-  cov <- d$SumReadLength[d$Chrom=='Total:']/d$ChromLength[d$Chrom=='Total:']
-  
-  p1 <- p1 +
-    scale_y_continuous(sec.axis = sec_axis(transform=~./libSizeExpt*cov, name="COVERAGE")
-    ) +
-    geom_hline(yintercept=libSizeExpt, color = "blue", linetype = "dotted") +
-    geom_segment(x = libSize, xend = Inf, y = libSizeExpt, yend = libSizeExpt,
-                 color = "blue", linetype = "dotted") +
-    geom_text(aes(x=libSize+0.01*data$TOTAL_READS[nrow(data)], y=libSizeExpt, 
-                  label=paste0('x: ', formatC(libSize, format = "e", digits = 2), '\ny: ', formatC(libSizeExpt, format = "e", digits = 2), ' / ', round(cov,2), 'x')), 
-              hjust=0, vjust=1.1, color="blue")
-  
-  
-} else{
-  p1 <- p1 +
-    geom_text(aes(x=libSize+0.01*data$TOTAL_READS[nrow(data)], y=libSizeExpt, 
-                  label=paste0('x: ', formatC(libSize, format = "e", digits = 2), '\ny: ', formatC(libSizeExpt, format = "e", digits = 2))), 
-              hjust=-0.1, vjust=1.1, color="blue")
-}
 
 
 ggsave(output, p1, width = 11, height = 7)

@@ -207,7 +207,7 @@ def get_length_files(level=["SM"]):
 ## preseq ####################################################################################################
 def get_preseq_files_genome(ext, genome):
     files = [
-        f"{RESULT_DIR}/04_stats/01_sparse_stats/02_library/02_bam_before_rmDup/01_preseq/{sm}/{lb}.{genome}_preseq.{ext}"
+        f"{RESULT_DIR}/04_stats/01_sparse_stats/02_library/02_bam_before_rmDup/01_bam/{sm}/{lb}.{genome}_preseq.{ext}"
         for sm in SAMPLES
         for lb in SAMPLES[sm]
     ]

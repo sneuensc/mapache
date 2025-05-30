@@ -391,6 +391,7 @@ rule mapping_library:
         get_damage_output(['LB_rmDup']),
         get_qualimap_files(['LB_rmDup']),
         get_multiqc_files('LB_rmDup'),
+        get_preseq_files('svg'),
     output:
         f"{RESULT_DIR}/run_report.sh"
     message:

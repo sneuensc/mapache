@@ -57,7 +57,7 @@ result_dir: 'results'
 genome: 
     hg19: /work/FAC/FBM/DBC/amalaspi/popgen/shared_resources/reference_human/hs.build37.1/hs.build37.1.fa
     #test: /users/sneuensc/work_sneuensc/mapping_pipeline/mapache/test_genome.fa
-    GRCh38: /work/FAC/FBM/DBC/amalaspi/popgen/shared_resources/reference_human/GCA_000001405.15_GRCh38.p13_onlyChrom/GCA_000001405.15_GRCh38.fa
+    #GRCh38: /work/FAC/FBM/DBC/amalaspi/popgen/shared_resources/reference_human/GCA_000001405.15_GRCh38.p13_onlyChrom/GCA_000001405.15_GRCh38.fa
 
 
 ##########################################################################################
@@ -241,8 +241,7 @@ stats:
 
     preseq:
         run: True
-        ylab: coverage # coverage(default) or reads
-        xmax: 0.8 # <=1: relative to the max value (0.8 is default; 1: all values are shown)
+        max: 0.6 # <=1: relative to the max value (0.8 is default; 1: all values are shown)
                   # >1: absolute value
         time: 2
         mem: 4
