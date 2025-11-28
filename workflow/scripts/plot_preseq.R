@@ -2,7 +2,7 @@
 # to parse arguments
 args <- commandArgs(TRUE)
 
-# args <-c('--input=/Users/sneuensc/Documents/Vital-IT/Sapfo/lucas/EUB01_381-s1-d1-d2-e1-L1_expexted_yield.txt', '--libSize=100000000', '--xmax=1e9', '--depth=/Users/sneuensc/Documents/Vital-IT/Sapfo/lucas/depth.txt')
+# args <-c('--input=/Users/sneuensc/Documents/Vital-IT/Sapfo/lucas/EUB01_381-s1-d1-d2-e1-L1_expexted_yield.txt', '--idxstats=/Users/sneuensc/Documents/Vital-IT/Sapfo/lucas/381-s1-d1-d2-e1-L1-i1.hg19_idxstats.txt', '--length=/Users/sneuensc/Documents/Vital-IT/Sapfo/lucas/381-s1-d1-d2-e1-L1-i1.hg19_length.txt', '--xmax=0.8')
 
 ## Default setting when no arguments passed
 if(length(args) < 1) {
@@ -98,15 +98,16 @@ p1 <- ggplot(data, aes(x=TOTAL_READS, y=EXPECTED_DISTINCT)) +
                color = "blue", linetype = "dotted") +
   geom_segment(x = -Inf, xend = libSize, y = libSizeExpt, yend = libSizeExpt,
                color = "blue", linetype = "dotted") +
-  geom_point(aes(x=libSize, y=libSizeExpt)) +
+  annotate('point', x=libSize, y=libSizeExpt) +
   scale_y_continuous(sec.axis = sec_axis(transform=~./libSizeExpt*cov, name="COVERAGE")) +
   geom_hline(yintercept=libSizeExpt, color = "blue", linetype = "dotted") +
   geom_segment(x = libSize, xend = Inf, y = libSizeExpt, yend = libSizeExpt,
                color = "blue", linetype = "dotted") +
-  geom_text(aes(x=libSize+0.01*data$TOTAL_READS[nrow(data)], y=libSizeExpt, 
-                label=paste0('x: ', formatC(libSize, format = "e", digits = 2), '\ny: ', formatC(libSizeExpt, format = "e", digits = 2), ' / ', round(cov,2), 'x')), 
+  annotate('text', x=libSize+0.01*data$TOTAL_READS[nrow(data)], y=libSizeExpt, 
+                label=paste0('x: ', formatC(libSize, format = "e", digits = 2), '\ny: ', formatC(libSizeExpt, format = "e", digits = 2), ' / ', round(cov,2), 'x'), 
             hjust=0, vjust=1.1, color="blue")
 
 
 
 ggsave(output, p1, width = 11, height = 7)
+
