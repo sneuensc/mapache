@@ -259,3 +259,63 @@ rule mapping_bowtie2:
         "--- BOWTIE2 {input.fastq}"
     script:
         "../scripts/mapping_bowtie2.py"
+
+
+rule mapping_vg_giraffe:
+    """
+    Map reads to variation graph using vg giraffe
+    """
+    input:
+        gbz="{folder}/00_reference/{genome}/{genome}.fasta.graph.gbz",
+        dist="{folder}/00_reference/{genome}/{genome}.fasta.graph.dist",
+        min="{folder}/00_reference/{genome}/{genome}.fasta.graph.min",
+        xg="{folder}/00_reference/{genome}/{genome}.fasta.graph.xg",
+        dict="{folder}/00_reference/{genome}/{genome}.dict",
+        fastq=get_fastq_4_mapping,
+    output:
+        temp("{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.bam"),
+    resources:
+        mem_mb=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
+    params:
+        PL=lambda wildcards: get_paramGrp(
+            ["mapping", "platform"], "ILLUMINA", wildcards
+        ),
+        params=lambda wildcards: get_paramGrp(
+            ["mapping", "giraffe_params"], "", wildcards
+        ),
+        bin = get_param(["software", "vg"], "vg")
+    log:
+        "{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.log",
+    threads: get_threads("mapping", 4)
+    message:
+        "--- VG GIRAFFE {input.fastq}"
+    shell:
+        """
+        set -o pipefail
+        (
+            {params.bin} giraffe \
+                -Z {input.gbz} \
+                -d {input.dist} \
+                -m {input.min} \
+                -x {input.xg} \
+                {params.params} \
+                -t {threads} \
+                -f {input.fastq} \
+                -o BAM \
+            | samtools addreplacerg \
+                -O BAM \
+                -r "@RG\\tID:{wildcards.id}\\tLB:{wildcards.lb}\\tSM:{wildcards.sm}\\tPL:{params.PL}" \
+                -o - \
+                - \
+        ) 2> {log} > {output}.tmp;
+
+        ## correct the order of the chromosomes (a bug in vg giraffe)
+        samtools view -H {output}.tmp | grep '^@HD' > {output}.header;
+        grep '^@SQ' {input.dict} | cut -f-3 >> {output}.header;
+        samtools view -H {output}.tmp | grep  -Ev '^@(HD|SQ)' >> {output}.header;
+
+        samtools reheader {output}.header {output}.tmp > {output};
+
+        rm -f {output}.tmp {output}.header;
+        """

@@ -176,7 +176,7 @@ while ($line=<IN>) {
   
   # Count length
   # Sam 1.11.2024: Parameter --ignore_N allows to ignore Ns
-  # Sam 1.11.2024: Newly the length dsitribution bopunds may be set manually, otherwise the max range is infered 
+  # Sam 1.11.2024: Newly the length distribution bounds may be set manually, otherwise the max range is inferred 
   my $len=length($read);
 
   my $leading_n_count  = (defined $opt::ignore_N && $read =~ /^([Nn]+)/) ? length($1) : 0;
@@ -185,11 +185,12 @@ while ($line=<IN>) {
   ## get the length of the read (with or without Ns)
   my $read_length = $len - $leading_n_count - $trailing_n_count;
   if (defined $opt::length_max && $read_length >= $opt::length_max) { 
-      $count_by_length{$opt::length_max - 1}++; ## initalizes with 0
+      $count_by_length{$opt::length_max - 1}++; ## initializes with 0
   } else {
-      $count_by_length{$read_length}++; ## initalizes with 0
+      $count_by_length{$read_length}++; ## initializes with 0
   } 
   #print "Read length (Leading - trailing Ns): $read_length ($leading_n_count - $trailing_n_count)\n";
+  #print "Read: $read\n";
 
 
   # Count sequencing quality
@@ -253,11 +254,18 @@ while ($line=<IN>) {
   #print "cigar_expanded: $cigar_expanded\n";
 
 
+
+
   #==== Pharse MD string to reverse mutation back to create final reference ======#
   #==== and counting the number of all matches/mismatches and damages ====#	
-  $line =~ /MD:Z:(.*?)[\s\n]/;
-  my $mismstr = $1;
-  my $mismstrbk = $1;
+  my ($mismstr, $mismstrbk);
+  if ($line =~ /MD:Z:(.*?)(?:\s|$)/) {
+      $mismstr = $1;
+      $mismstrbk = $1;
+      #print "MD extracted: $mismstr\n";
+  } else {
+      die "ERROR: No MD tag found in SAM/BAM line:\n    $line\n";
+  }
   
   $mismstr=~s/^(\d+)//;
   my $matchl=$1;
@@ -397,6 +405,7 @@ while ($line=<IN>) {
     }
   }
 
+  #print "After first matchl processing, pos: $pos\n";
   
   #=== Print New SAM file with Reference ====#
   chomp($line);

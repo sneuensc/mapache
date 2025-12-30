@@ -13,11 +13,13 @@ orig_prefix = os.path.splitext(orig_fasta)[0]
 ## get the extensions
 out_files = list(snakemake.output)
 in_fasta = snakemake.input.fasta
-ext = [s.replace(in_fasta, "") for s in out_files]
+in_fasta_prefix = os.path.splitext(in_fasta)[0]
+ext = [s.replace(in_fasta, "").replace(in_fasta_prefix, "") for s in out_files]
 
-## check if the indexes are present
+## check if the indexes are present (in the original folder)
 files1 = [orig_fasta + s for s in ext]  ## foo.fasta.ext
 files2 = [orig_prefix + s for s in ext]  ## foo.ext
+
 if all([os.path.isfile(f) for f in files1]):  ## foo.fasta.ext
     for idx, item in enumerate(files1):
         os.symlink(item, out_files[idx])
