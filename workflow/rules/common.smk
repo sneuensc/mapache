@@ -173,7 +173,7 @@ def get_bam_4_sorting(wc):
         folder = "02_bwa_mem"
     elif mapper == "bowtie2" or mapper == "bowtie2l":
         folder = "02_bowtie2"
-    elif mapper == "vg_giraffe":
+    elif mapper == "vg_giraffe" or mapper == "vg_giraffe_gam":
         folder = "02_vg_giraffe"
     else:
         LOGGER.error(

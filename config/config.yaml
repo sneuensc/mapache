@@ -102,7 +102,7 @@ cleaning:
 
 # mapping (compulsory)
 mapping:
-    mapper: 'vg_giraffe' # options: bwa_aln, bwa_mem, bowtie2, bowtie2l, vg_giraffe
+    mapper: 'vg_giraffe_gam' # options: bwa_aln, bwa_mem, bowtie2, bowtie2l, vg_giraffe, vg_giraffe_gam
     bwa_aln_params: '-l 1024'   
     bwa_samse_params: '-n 3'
     bwa_sampe_params: ''

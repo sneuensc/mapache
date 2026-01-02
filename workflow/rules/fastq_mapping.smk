@@ -261,6 +261,12 @@ rule mapping_bowtie2:
         "../scripts/mapping_bowtie2.py"
 
 
+if config["mapping"]["mapper"] == "vg_giraffe":
+    ruleorder: mapping_vg_giraffe > mapping_vg_giraffe_gam
+else:
+    ruleorder: mapping_vg_giraffe_gam > mapping_vg_giraffe
+
+
 rule mapping_vg_giraffe:
     """
     Map reads to variation graph using vg giraffe
@@ -318,4 +324,65 @@ rule mapping_vg_giraffe:
         samtools reheader {output}.header {output}.tmp > {output};
 
         rm -f {output}.tmp {output}.header;
+        """
+
+rule mapping_vg_giraffe_gam:
+    """
+    Map reads to variation graph using vg giraffe (via gam file)
+    """
+    input:
+        gbz="{folder}/00_reference/{genome}/{genome}.fasta.graph.gbz",
+        dist="{folder}/00_reference/{genome}/{genome}.fasta.graph.dist",
+        min="{folder}/00_reference/{genome}/{genome}.fasta.graph.min",
+        xg="{folder}/00_reference/{genome}/{genome}.fasta.graph.xg",
+        dict="{folder}/00_reference/{genome}/{genome}.dict",
+        fastq=get_fastq_4_mapping,
+    output:
+        gam=temp("{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.gam"),
+        bam=temp("{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.bam")
+    resources:
+        mem_mb=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
+    params:
+        PL=lambda wildcards: get_paramGrp(
+            ["mapping", "platform"], "ILLUMINA", wildcards
+        ),
+        params=lambda wildcards: get_paramGrp(
+            ["mapping", "giraffe_params"], "", wildcards
+        ),
+        bin = get_param(["software", "vg"], "vg")
+    log:
+        "{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.log",
+    threads: get_threads("mapping", 4)
+    message:
+        "--- VG GIRAFFE {input.fastq}"
+    shell:
+        """
+        set -euo pipefail
+
+        exec > {log} 2>&1
+
+        {params.bin} giraffe \
+            -Z {input.gbz} \
+            -d {input.dist} \
+            -m {input.min} \
+            -x {input.xg} \
+            {params.params} \
+            -t {threads} \
+            -f {input.fastq} > {output.gam};
+
+        {params.bin} surject -b -x {input.xg} {output.gam} \
+        | samtools addreplacerg \
+            -O BAM \
+            -r "@RG\\tID:{wildcards.id}\\tLB:{wildcards.lb}\\tSM:{wildcards.sm}\\tPL:{params.PL}" \
+            -o {output.bam}.tmp \
+            -;
+
+        ## correct the order of the chromosomes (a bug in vg giraffe)
+        samtools view -H {output.bam}.tmp | grep '^@HD' > {output.bam}.header;
+        grep '^@SQ' {input.dict} | cut -f-3 >> {output.bam}.header;
+        samtools view -H {output.bam}.tmp | grep  -Ev '^@(HD|SQ)' >> {output.bam}.header;
+
+        samtools reheader {output.bam}.header {output.bam}.tmp > {output.bam};
+        rm -f {output.bam}.tmp {output.bam}.header;
         """
