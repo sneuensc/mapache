@@ -76,7 +76,7 @@ rule genome_index_bowtie2:
     envmodules:
         module_bowtie2,
     message:
-        "--- BOWTIE2-BUILD {input.fasta}"
+        "--- BOWTIE2-BUILD {input.fasta} {input.fasta}"
     script:
         "../scripts/fasta_indexing.py"
 
@@ -114,43 +114,9 @@ rule genome_index_bowtie2_long:
     envmodules:
         module_bowtie2,
     message:
-        "--- BOWTIE2-BUILD {input.fasta}"
+        "--- BOWTIE2-BUILD {input.fasta} {input.fasta}"
     script:
         "../scripts/fasta_indexing.py"
-
-
-rule genome_index_vg_giraffe:
-    """
-    Indexing the genome for vg giraffe 
-    Currently no indexing; just symlinking the gbz file
-    """
-    input:
-        fasta="{path}/{genome}.fasta",  
-        orig=lambda wildcards: get_param(["genome", wildcards.genome], ""),
-    output:
-        temp(
-            multiext(
-                "{path}/{genome}.fasta",
-                ".graph.gbz",
-                ".graph.dist",
-                ".graph.min",
-                ".graph.xg",
-            )
-        ),
-    resources:
-        mem_mb=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
-    params:
-        get_param(["indexing", "vg_giraffe_params"], ""),
-        cmd="VG graffe indexing not implemented: too heavy for a workflow. Please generate the indexes externally and place them next to the fasta file.",
-    log:
-        "{path}/{genome}_vg_giraffe.log",
-    threads: get_threads("indexing", 4)
-
-    message:
-        "--- VG GIRAFFE index copy {input.fasta}"
-    script:
-         "../scripts/fasta_indexing.py"
 
 
 rule samtools_index_fasta:

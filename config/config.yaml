@@ -55,8 +55,7 @@ result_dir: 'results'
 # Include meaningful names for each genome. Final BAM(s) file will be named after it 
 # (e.g., ind1.hg19.bam)
 genome: 
-    #hg19: /work/FAC/FBM/DBC/amalaspi/popgen/shared_resources/reference_human/hs.build37.1/hs.build37.1.fa
-    GRCh38graph: /work/FAC/FBM/DBC/amalaspi/popgen/shared_resources/reference_human/GCA_000001405.15_GRCh38_graph_genome/GCA_000001405.15_GRCh38.fa
+    hg19: /work/FAC/FBM/DBC/amalaspi/popgen/shared_resources/reference_human/hs.build37.1/hs.build37.1.fa
     #test: /users/sneuensc/work_sneuensc/mapping_pipeline/mapache/test_genome.fa
     #GRCh38: /work/FAC/FBM/DBC/amalaspi/popgen/shared_resources/reference_human/GCA_000001405.15_GRCh38.p13_onlyChrom/GCA_000001405.15_GRCh38.fa
 
@@ -102,16 +101,15 @@ cleaning:
 
 # mapping (compulsory)
 mapping:
-    mapper: 'vg_giraffe' # options: bwa_aln, bwa_mem, bowtie2, bowtie2l, vg_giraffe
+    mapper: 'bwa_aln' # options: bwa_aln, bwa_mem, bowtie2
     bwa_aln_params: '-l 1024'   
     bwa_samse_params: '-n 3'
     bwa_sampe_params: ''
     bwa_mem_params: ''
     bowtie2_params: ''
-    giraffe_params: ''
     pl: 'ILLUMINA'
     threads: 4
-    mem: 64
+    mem: 16
     time: 30
 
 ## samtools_sort
@@ -397,7 +395,6 @@ software_version: False
 software:
     java_mem_overhead_factor: 0.2
     gatk3_jar: 'GenomeAnalysisTK'
-    vg: '/work/FAC/FBM/DBC/amalaspi/popgen/shared_resources/reference_human/GCA_000001405.15_GRCh38_graph_genome/vg_v1.62.0'  # path to vg executable if needed
 
 # By default, mapache uses the software installed with the conda environment. Thus, no need
 # to modify this section. 
