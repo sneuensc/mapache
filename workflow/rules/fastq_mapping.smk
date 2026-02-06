@@ -275,7 +275,8 @@ rule mapping_vg_giraffe:
         gbz="{folder}/00_reference/{genome}/{genome}.fasta.graph.gbz",
         dist="{folder}/00_reference/{genome}/{genome}.fasta.graph.dist",
         min="{folder}/00_reference/{genome}/{genome}.fasta.graph.min",
-        xg="{folder}/00_reference/{genome}/{genome}.fasta.graph.xg",
+        zipcode="{folder}/00_reference/{genome}/{genome}.fasta.graph.zipcodes",
+        #xg="{folder}/00_reference/{genome}/{genome}.fasta.graph.xg",
         dict="{folder}/00_reference/{genome}/{genome}.dict",
         fastq=get_fastq_4_mapping,
     output:
@@ -304,7 +305,7 @@ rule mapping_vg_giraffe:
                 -Z {input.gbz} \
                 -d {input.dist} \
                 -m {input.min} \
-                -x {input.xg} \
+                -z {input.zipcode} \
                 {params.params} \
                 -t {threads} \
                 -f {input.fastq} \
@@ -334,6 +335,7 @@ rule mapping_vg_giraffe_gam:
         gbz="{folder}/00_reference/{genome}/{genome}.fasta.graph.gbz",
         dist="{folder}/00_reference/{genome}/{genome}.fasta.graph.dist",
         min="{folder}/00_reference/{genome}/{genome}.fasta.graph.min",
+        zipcode="{folder}/00_reference/{genome}/{genome}.fasta.graph.zipcodes",
         xg="{folder}/00_reference/{genome}/{genome}.fasta.graph.xg",
         dict="{folder}/00_reference/{genome}/{genome}.dict",
         fastq=get_fastq_4_mapping,
@@ -366,12 +368,14 @@ rule mapping_vg_giraffe_gam:
             -Z {input.gbz} \
             -d {input.dist} \
             -m {input.min} \
-            -x {input.xg} \
+            -z {input.zipcode} \
             {params.params} \
             -t {threads} \
             -f {input.fastq} > {output.gam};
 
-        {params.bin} surject -b -x {input.xg} {output.gam} \
+        {params.bin} surject -b \
+            -x {input.xg} \
+            {output.gam} \
         | samtools addreplacerg \
             -O BAM \
             -r "@RG\\tID:{wildcards.id}\\tLB:{wildcards.lb}\\tSM:{wildcards.sm}\\tPL:{params.PL}" \
