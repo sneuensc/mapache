@@ -134,6 +134,7 @@ rule genome_index_vg_giraffe:
                 ".graph.gbz",
                 ".graph.dist",
                 ".graph.min",
+                ".graph.zipcodes",
                 ".graph.xg",
             )
         ),
