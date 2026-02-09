@@ -295,6 +295,8 @@ rule mapping_vg_giraffe:
     log:
         "{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.log",
     threads: get_threads("mapping", 4)
+    conda:
+        "../envs/samtools.yaml"
     message:
         "--- VG GIRAFFE {input.fastq}"
     shell:
@@ -356,6 +358,8 @@ rule mapping_vg_giraffe_gam:
     log:
         "{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.log",
     threads: get_threads("mapping", 4)
+    conda:
+        "../envs/samtools.yaml"
     message:
         "--- VG GIRAFFE {input.fastq}"
     shell:
