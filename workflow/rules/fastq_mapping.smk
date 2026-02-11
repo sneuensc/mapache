@@ -262,9 +262,9 @@ rule mapping_bowtie2:
 
 
 if config["mapping"]["mapper"] == "vg_giraffe":
-    ruleorder: mapping_vg_giraffe > mapping_vg_giraffe_gam
+    ruleorder: mapping_vg_giraffe > convert_gam2bam
 else:
-    ruleorder: mapping_vg_giraffe_gam > mapping_vg_giraffe
+    ruleorder: convert_gam2bam > mapping_vg_giraffe
 
 
 rule mapping_vg_giraffe:
@@ -343,7 +343,6 @@ rule mapping_vg_giraffe_gam:
         fastq=get_fastq_4_mapping,
     output:
         gam=temp("{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.gam"),
-        bam=temp("{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.bam")
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
@@ -358,16 +357,10 @@ rule mapping_vg_giraffe_gam:
     log:
         "{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.log",
     threads: get_threads("mapping", 4)
-    conda:
-        "../envs/samtools.yaml"
     message:
         "--- VG GIRAFFE {input.fastq}"
     shell:
         """
-        set -euo pipefail
-
-        exec > {log} 2>&1
-
         {params.bin} giraffe \
             -Z {input.gbz} \
             -d {input.dist} \
@@ -376,10 +369,45 @@ rule mapping_vg_giraffe_gam:
             {params.params} \
             -t {threads} \
             -f {input.fastq} > {output.gam};
+        """
+
+
+rule convert_gam2bam:
+    """
+    Convert gam to bam
+    """
+    input:
+        xg="{folder}/00_reference/{genome}/{genome}.fasta.graph.xg",
+        gam="{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.gam"
+    output:
+        bam=temp("{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.bam")
+    resources:
+        mem_mb=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
+    params:
+        PL=lambda wildcards: get_paramGrp(
+            ["mapping", "platform"], "ILLUMINA", wildcards
+        ),
+        params=lambda wildcards: get_paramGrp(
+            ["mapping", "giraffe_params"], "", wildcards
+        ),
+        bin = get_param(["software", "vg"], "vg")
+    log:
+        "{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}_convert.log",
+    threads: get_threads("mapping", 4)
+    conda:
+        "../envs/samtools.yaml"
+    message:
+        "--- CONVERTING GAM TO BAM {input.gam}"
+    shell:
+        """
+        set -euo pipefail
+
+        exec > {log} 2>&1
 
         {params.bin} surject -b \
             -x {input.xg} \
-            {output.gam} \
+            {input.gam} \
         | samtools addreplacerg \
             -O BAM \
             -r "@RG\\tID:{wildcards.id}\\tLB:{wildcards.lb}\\tSM:{wildcards.sm}\\tPL:{params.PL}" \
