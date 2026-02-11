@@ -220,6 +220,10 @@ for genome in GENOMES:
         read_depth(genome)
 
 
+## preseq
+run_preseq = str2bool(get_param(["stats", "preseq", "run"], ["False", "True"]))
+
+
 ## imputation (is assumed to be run ONLY on the first specified reference GENOMES!!!)
 run_imputation = []
 for genome in GENOMES:

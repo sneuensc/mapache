@@ -216,6 +216,10 @@ def write_log():
                 f"  - Inferring damage and read length with bamdamge on {fraction} alignments"
             )
 
+    if run_preseq:
+        LOGGER.info(f"  - Run preseq")
+
+
     if len(run_imputation):
         if len(genome) > 1:
             LOGGER.info(f"  - Imputing {run_imputation}")
