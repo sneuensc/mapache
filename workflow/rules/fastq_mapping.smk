@@ -378,6 +378,7 @@ rule convert_gam2bam:
     """
     input:
         xg="{folder}/00_reference/{genome}/{genome}.fasta.graph.xg",
+        dict="{folder}/00_reference/{genome}/{genome}.dict",
         gam="{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.gam"
     output:
         bam=temp("{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.bam")
