@@ -102,13 +102,14 @@ cleaning:
 
 # mapping (compulsory)
 mapping:
-    mapper: 'vg_giraffe' # options: bwa_aln, bwa_mem, bowtie2, bowtie2l, vg_giraffe, vg_giraffe_gam
+    mapper: 'vg_giraffe_gam' # options: bwa_aln, bwa_mem, bowtie2, bowtie2l, vg_giraffe, vg_giraffe_gam
     bwa_aln_params: '-l 1024'   
     bwa_samse_params: '-n 3'
     bwa_sampe_params: ''
     bwa_mem_params: ''
     bowtie2_params: ''
     giraffe_params: ''
+    keep_gam: True
     pl: 'ILLUMINA'
     threads: 4
     mem: 64
@@ -242,7 +243,7 @@ stats:
         # and the plots will include the first and last 30 bp.
 
     preseq:
-        run: True
+        run: False
         max: 0.6 # <=1: relative to the max value (0.8 is default; 1: all values are shown)
                   # >1: absolute value
         time: 2

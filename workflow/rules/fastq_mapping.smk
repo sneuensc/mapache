@@ -329,6 +329,10 @@ rule mapping_vg_giraffe:
         rm -f {output}.tmp {output}.header;
         """
 
+
+GAM_PATH = "{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.gam"
+GAM_OUTPUT = GAM_PATH if get_param_bool(["mapping", "keep_gam"], ["False", "True"]) else temp(GAM_PATH)
+
 rule mapping_vg_giraffe_gam:
     """
     Map reads to variation graph using vg giraffe (via gam file)
@@ -342,7 +346,7 @@ rule mapping_vg_giraffe_gam:
         dict="{folder}/00_reference/{genome}/{genome}.dict",
         fastq=get_fastq_4_mapping,
     output:
-        gam=temp("{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.gam"),
+        gam=GAM_OUTPUT
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
@@ -361,14 +365,19 @@ rule mapping_vg_giraffe_gam:
         "--- VG GIRAFFE {input.fastq}"
     shell:
         """
+        ## add '-f' bwetween each fastq file (for PE reads)
+        fq=$(printf -- "-f %s " {input.fastq:q})
+
         {params.bin} giraffe \
             -Z {input.gbz} \
             -d {input.dist} \
             -m {input.min} \
             -z {input.zipcode} \
+            -x {input.xg} \
+            -p \
             {params.params} \
             -t {threads} \
-            -f {input.fastq} > {output.gam};
+            $fq > {output.gam};
         """
 
 
