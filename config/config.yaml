@@ -146,6 +146,7 @@ remove_duplicates:
     run: False  # (False (default), markduplicates, dedup)
     params_markduplicates: '--REMOVE_DUPLICATES true'
     params_dedup: '-m'
+    save_duplicates: True  # whether to save the duplicate reads in a separate bam file (only for markduplicates)
     threads: 4  ## 1 for dedup
     mem: 16
     time: 2

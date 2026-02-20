@@ -104,6 +104,11 @@ rule merge_gam_low_qual_fastq2library:
         """
 
 
+if get_param_bool(["remove_duplicates", "save_duplicates"], ['False', 'True']):
+    ruleorder: markduplicates_keep_duplicates > markduplicates 
+else:
+    ruleorder: markduplicates > markduplicates_keep_duplicates
+
 rule markduplicates:
     """
     Remove duplicated mappings with pricards markduplicates
@@ -147,6 +152,57 @@ rule markduplicates:
         picard MarkDuplicates -Xmx${{mem}}M \
             --INPUT {input} --OUTPUT {output.bam} --METRICS_FILE {output.stats} \
             {params.params} --ASSUME_SORT_ORDER coordinate --VALIDATION_STRINGENCY LENIENT 2> {log};
+        """
+
+
+rule markduplicates_keep_duplicates:
+    """
+    Remove duplicated mappings with pricards markduplicates
+    """
+    input:
+        get_bam_4_markduplicates,
+    output:
+        bam=temp(
+            "{folder}/02_library/01_duplicated/01_markduplicates/{sm}/{lb}.{genome}.bam"
+        ),
+        duplicate="{folder}/02_library/01_duplicated/01_markduplicates/{sm}/{lb}.{genome}_duplicates.bam",
+        stats="{folder}/02_library/01_duplicated/01_markduplicates/{sm}/{lb}.{genome}.stats",
+    resources:
+        ## Java: there is an overhead: so reduce slightly the amount of memory given to the tool compared to the job
+        mem_mb=lambda wildcards, attempt: get_memory_alloc(
+            "remove_duplicates", attempt, 4
+        ),
+        runtime=lambda wildcards, attempt: get_runtime_alloc(
+            "remove_duplicates", attempt, 24
+        ),
+    params:
+        params=lambda wildcards: get_paramGrp(
+            ["remove_duplicates", "params_markduplicates"],
+            "--REMOVE_DUPLICATES true",
+            wildcards,
+        ),
+        java_mem_overhead_factor=float(
+            get_param(["software", "java_mem_overhead_factor"], 0.2)
+        ),
+    threads: get_threads("remove_duplicates", 4)
+    log:
+        "{folder}/02_library/01_duplicated/01_markduplicates/{sm}/{lb}.{genome}.log",
+    conda:
+        "../envs/picard2.yaml"
+    envmodules:
+        module_picard,
+        module_samtools
+    message:
+        "--- MARKDUPLICATES {output.bam}"
+    shell:
+        """
+        mem=$(echo "{resources.mem_mb} * (1.0 - {params.java_mem_overhead_factor}) / 1" | bc);  # /1 is to remove decimals
+        picard MarkDuplicates -Xmx${{mem}}M \
+            --INPUT {input} --OUTPUT {output.bam}.temp --METRICS_FILE {output.stats} \
+            {params.params} --ASSUME_SORT_ORDER coordinate --VALIDATION_STRINGENCY LENIENT 2> {log}
+        samtools view -b -F 1024 -U {output.duplicate} {output.bam}.temp > {output.bam}
+        samtools index {output.duplicate}
+        rm {output.bam}.temp
         """
 
 
