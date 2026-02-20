@@ -85,7 +85,7 @@ if save_low_qual:
             ),
         params:
             lambda wildcards: get_paramGrp(
-                ["filtering", "params"], "-q 30", wildcards
+                ["filtering", "params_gam"], "-q 30", wildcards
             ),
             bin = get_param(["software", "vg"], "vg")
         resources:
