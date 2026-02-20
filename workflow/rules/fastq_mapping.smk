@@ -365,7 +365,7 @@ rule mapping_vg_giraffe_gam:
         "--- VG GIRAFFE {input.fastq}"
     shell:
         """
-        ## add '-f' bwetween each fastq file (for PE reads)
+        ## add '-f' between each fastq file (for PE reads)
         fq=$(printf -- "-f %s " {input.fastq:q})
 
         {params.bin} giraffe \
