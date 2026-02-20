@@ -197,6 +197,19 @@ def get_final_bam_low_qual_FASTQ(wc):
     return f"{wc.folder}/01_fastq/03_filtered/01_bam_filter_low_qual/{wc.sm}/{wc.lb}/{wc.id}.{wc.genome}.bam"
 
 
+def get_final_gam_FASTQ(wc):
+    if str2bool(get_paramGrp(["filtering", "run"], ["True", "False"], wc)):
+        file = f"{wc.folder}/01_fastq/03_filtered/01_gam_filter/{wc.sm}/{wc.lb}/{wc.id}.{wc.genome}.gam"
+    else:
+        file = f"{wc.folder}/01_fastq/02_mapped/02_vg_giraffe/{wc.sm}/{wc.lb}/{wc.id}.{wc.genome}.gam"
+    # print(f"get_gam_4_final_fastq: {file}")
+    return file
+
+
+def get_final_gam_low_qual_FASTQ(wc):
+    return f"{wc.folder}/01_fastq/03_filtered/01_gam_filter_low_qual/{wc.sm}/{wc.lb}/{wc.id}.{wc.genome}.gam"
+
+
 ##########################################################################################
 ##########################################################################################
 ## LIBRARY LEVEL
@@ -208,10 +221,22 @@ def get_bam_4_merge_bam_fastq2library(wc):
         get_final_bam_FASTQ(Wildcards(wc, {"id": id})) for id in SAMPLES[wc.sm][wc.lb]
     ]
 
+def get_gam_4_merge_gam_fastq2library(wc):
+    return [
+        get_final_gam_FASTQ(Wildcards(wc, {"id": id})) for id in SAMPLES[wc.sm][wc.lb]
+    ]
+
 
 def get_bam_4_merge_bam_low_qual_fastq2library(wc):
     return [
         get_final_bam_low_qual_FASTQ(Wildcards(wc, {"id": id}))
+        for id in SAMPLES[wc.sm][wc.lb]
+    ]
+
+
+def get_gam_4_merge_gam_low_qual_fastq2library(wc):
+    return [
+        get_final_gam_low_qual_FASTQ(Wildcards(wc, {"id": id}))
         for id in SAMPLES[wc.sm][wc.lb]
     ]
 
@@ -233,6 +258,25 @@ def get_merged_bam_low_qual_LB(wc):
         return f"{wc.folder}/02_library/00_merged_fastq/01_bam_low_qual/{wc.sm}/{wc.lb}.{wc.genome}.bam"
     else:  ## library consists of one fastq file: return return the location of the final library bam file
         return bam[0]
+
+
+## get the (merged) gam file
+def get_merged_gam_LB(wc):
+    gam = get_gam_4_merge_gam_fastq2library(wc)
+    ## library consists of more than one fastq file: return 00_merged_fastq
+    if len(gam) > 1:
+        return f"{wc.folder}/02_library/00_merged_fastq/01_gam/{wc.sm}/{wc.lb}.{wc.genome}.gam"
+    else:  ## library consists of one fastq file: return return the location of the final library gam file
+        return gam[0]
+        
+
+def get_merged_gam_low_qual_LB(wc):
+    gam = get_gam_4_merge_gam_low_qual_fastq2library(wc)
+    ## library consists of more than one fastq file: return 00_merged_fastq
+    if len(gam) > 1:
+        return f"{wc.folder}/02_library/00_merged_fastq/01_gam_low_qual/{wc.sm}/{wc.lb}.{wc.genome}.gam"
+    else:  ## library consists of one fastq file: return the location of the final library gam file
+        return gam[0]
 
 
 ## get the bam file used to remove duplicates
@@ -273,6 +317,15 @@ def get_all_bam_after_rmDup():
     return files
 
 
+def get_all_gam_after_rmDup():
+    files = [
+        f"{RESULT_DIR}/02_library/02_gam_after_rmDup/01_gam/{sm}/{lb}.{genome}.gam"
+        for sm in SAMPLES
+        for lb in SAMPLES[sm]
+        for genome in GENOMES
+    ]
+    # print(files)
+    return files
 ##-------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -328,6 +381,14 @@ def get_final_bam_low_qual_LB(wc):
         return get_merged_bam_low_qual_LB(wc)
 
 
+def get_final_gam_LB(wc):
+    return get_merged_gam_LB(wc)
+
+
+def get_final_gam_low_qual_LB(wc):
+    return get_merged_gam_low_qual_LB(wc)
+
+
 ##########################################################################################
 ##########################################################################################
 ##########################################################################################
@@ -379,6 +440,22 @@ def get_bam_4_merge_bam_low_qual_library2sample(wc):
     ]
 
 
+def get_gam_4_merge_gam_library2sample(wc):
+    # print([Wildcards(wc, {"sm": sm_final_2_sm(wc.sm, lb), "lb": lb}) for lb in SAMPLES_FINAL[wc.sm]])
+    return [
+        get_final_gam_LB(Wildcards(wc, {"sm": sm_final_2_sm(wc.sm, lb), "lb": lb}))
+        for lb in SAMPLES_FINAL[wc.sm]
+    ]
+
+
+def get_gam_4_merge_gam_low_qual_library2sample(wc):
+    df = sm_final_2_sm_table(wc.sm)
+    return [
+        get_final_gam_low_qual_LB(Wildcards(wc, {"sm": sm, "lb": lb}))
+        for sm, lb in zip(df["SM"], df["LB"])
+    ]
+
+
 ## get the (merged) bam file
 def get_merged_bam_SM(wc):
     bam = get_bam_4_merge_bam_library2sample(wc)
@@ -400,6 +477,28 @@ def get_merged_bam_low_qual_SM(wc):
         return f"{wc.folder}/03_sample/00_merged_library/01_bam_low_qual/{wc.sm}.{wc.genome}.bam"
     else:  ## library consits of one fastq file: return return the location of the final library bam file
         return bam[0]
+
+
+def get_merged_gam_SM(wc):
+    gam = get_gam_4_merge_gam_library2sample(wc)
+    # print(gam)
+    if len(gam) > 1 or sm_changed(
+        wc.sm
+    ):  ## sample consits of more than one library return 00_merged_library
+        return f"{wc.folder}/03_sample/00_merged_library/01_gam/{wc.sm}.{wc.genome}.gam"
+    else:  ## library consits of one fastq file: return return the location of the final library gam file
+        return gam[0]
+
+
+def get_merged_gam_low_qual_SM(wc):
+    # print(f"get_merged_gam_low_qual_SM: {wc}")
+    gam = get_gam_4_merge_gam_low_qual_library2sample(wc)
+    if (
+        len(gam) > 1
+    ):  ## sample consits of more than one library return 00_merged_library
+        return f"{wc.folder}/03_sample/00_merged_library/01_gam_low_qual/{wc.sm}.{wc.genome}.gam"
+    else:  ## library consits of one fastq file: return return the location of the final library gam file
+        return gam[0]
 
 
 ## get the bam file used to realign indels
@@ -426,6 +525,14 @@ def get_bam_4_final_bam(wc):
 
 def get_bam_4_final_bam_low_qual(wc):
     return get_merged_bam_low_qual_SM(wc)
+
+
+def get_gam_4_final_gam(wc):
+    return get_merged_gam_SM(wc)
+
+
+def get_gam_4_final_gam_low_qual(wc):
+    return get_merged_gam_low_qual_SM(wc)
 
 
 ##########################################################################################
@@ -527,6 +634,15 @@ def get_final_bam_files():
     return final_bam
 
 
+def get_final_gam_files():
+    final_gam = [
+        f"{RESULT_DIR}/03_sample/03_final_sample/01_gam/{sm}.{genome}.gam"
+        for sm in SAMPLES_FINAL
+        for genome in GENOMES
+    ]
+    return final_gam
+
+
 def get_final_external_bam_files():
     final_bam = [
         f"{RESULT_DIR}/03_sample/03_final_sample/01_bam/{sm}.{genome}.bam"
@@ -545,6 +661,16 @@ def get_final_bam_low_qual_files():
     ]
     return final_bam_low_qual
 
+
+def get_final_gam_low_qual_files():
+    final_gam_low_qual = [
+        f"{RESULT_DIR}/03_sample/03_final_sample/01_gam_low_qual/{sm}.{genome}.gam"
+        for sm in SAMPLES_FINAL
+        for genome in GENOMES
+        if save_low_qual
+    ]
+    return final_gam_low_qual
+    
 
 def get_fastqc_files():
     fastqc = [

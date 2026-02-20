@@ -57,6 +57,53 @@ rule merge_bam_low_qual_fastq2library:
         """
 
 
+
+rule merge_gam_fastq2library:
+    """
+    Merge the gam files of the fastq step
+    """
+    input:
+        get_gam_4_merge_gam_fastq2library,
+    output:
+        temp("{folder}/02_library/00_merged_fastq/01_gam/{sm}/{lb}.{genome}.gam"),
+    resources:
+        mem_mb=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24),
+    threads: get_threads("merging", 4)
+    log:
+        "{folder}/02_library/00_merged_fastq/01_gam/{sm}/{lb}.{genome}.log",
+    message:
+        "--- VG MERGE {output}"
+    shell:
+        """
+        cat {input} > {output} 2> {log};
+        """
+
+
+rule merge_gam_low_qual_fastq2library:
+    """
+    Merge the gam files of the fastq step
+    """
+    input:
+        get_gam_4_merge_gam_low_qual_fastq2library,
+    output:
+        temp(
+            "{folder}/02_library/00_merged_fastq/01_gam_low_qual/{sm}/{lb}.{genome}.gam"
+        ),
+    resources:
+        mem_mb=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24),
+    threads: get_threads("merging", 4)
+    log:
+        "{folder}/02_library/00_merged_fastq/01_gam_low_qual/{sm}/{lb}.{genome}.log",
+    message:
+        "--- VG MERGE {output}"
+    shell:
+        """
+        cat {input} > {output} 2> {log};
+        """
+
+
 rule markduplicates:
     """
     Remove duplicated mappings with pricards markduplicates

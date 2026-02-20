@@ -269,6 +269,12 @@ final_bai = [bam2bai(w) for w in final_bam]
 final_bam_low_qual = get_final_bam_low_qual_files()
 final_bami_low_qual = [bam2bai(w) for w in final_bam_low_qual]
 
+final_gam = []
+final_gam_low_qual = []
+if mapper == "vg_giraffe_gam" and get_param_bool(["mapping", "keep_gam"], ["True", "False"]):
+    final_gam = get_final_gam_files()
+    final_gam_low_qual = get_final_gam_low_qual_files()
+
 final_external_bam = get_final_external_bam_files()
 final_external_bai = [bam2bai(w) for w in final_external_bam]
 
@@ -313,6 +319,8 @@ rule all:
         final_external_bam,
         final_external_bai,
         final_bam_low_qual,
+        final_gam,
+        final_gam_low_qual,
         qualimap_files,
         multiqc_files,
         get_imputation_files(),
@@ -341,6 +349,8 @@ rule dag:
         final_bai,
         final_external_bam,
         final_bam_low_qual,
+        final_gam,
+        final_gam_low_qual,
         get_imputation_files(),
     message:
         "--- RUNNING DAG"
@@ -356,6 +366,8 @@ rule mapping:
         final_external_bam,
         final_external_bai,
         final_bam_low_qual,
+        final_gam,
+        final_gam_low_qual,
         get_imputation_files(),
         get_imputation_plots(),
         get_stat_csv_files(['FASTQ', 'LB_rmDup', 'LB', 'SM']),
@@ -390,6 +402,7 @@ rule mapping_library:
     """
     input:
         get_all_bam_after_rmDup(),
+        get_all_gam_after_rmDup(),
         get_stat_csv_files(['FASTQ', 'LB_rmDup']),
         get_stat_plot_files(['LB_rmDup']),
         get_damage_output(['LB_rmDup']),

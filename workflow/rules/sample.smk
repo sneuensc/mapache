@@ -57,6 +57,56 @@ rule merge_bam_low_qual_library2sample:
         "../scripts/merge_bam.py"
 
 
+rule merge_gam_library2sample:
+    """
+    Merge the gam files of the library step
+    """
+    input:
+        get_gam_4_merge_gam_library2sample,
+    output:
+        temp("{folder}/03_sample/00_merged_library/01_gam/{sm}.{genome}.gam"),
+    resources:
+        mem_mb=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24),
+    threads: get_threads("merging", 4)
+    params:
+        sm_changed=lambda wildcards: sm_changed(wildcards.sm),
+    log:
+        "{folder}/03_sample/00_merged_library/01_gam/{sm}.{genome}.log",
+    message:
+        "--- VG MERGE merge_gam_library2sample {output}"
+    shell:
+        """
+        cat {input} > {output} 2> {log};
+        """
+
+
+
+rule merge_gam_low_qual_library2sample:
+    """
+    Merge the gam files of the library step
+    """
+    input:
+        get_gam_4_merge_gam_low_qual_library2sample,
+    output:
+        temp("{folder}/03_sample/00_merged_library/01_gam_low_qual/{sm}.{genome}.gam"),
+    resources:
+        mem_mb=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24),
+    threads: get_threads("merging", 4)
+    params:
+        sm_changed=lambda wildcards: sm_changed(wildcards.sm),
+    log:
+        "{folder}/03_sample/00_merged_library/01_gam_low_qual/{sm}.{genome}.log",
+    message:
+        "--- VG MERGE merge_gam_low_qual_library2sample {output}"
+    shell:
+        """
+        cat {input} > {output} 2> {log};
+        """
+
+
+
 rule realign:
     """
     Realign sequence around indels.
@@ -160,5 +210,43 @@ rule get_final_bam_low_qual:
         cp {input} {output}
         """
 
+
+rule get_final_gam:
+    """
+    Get the final gam files 
+    """
+    input:
+        get_gam_4_final_gam,
+    output:
+        "{folder}/03_sample/03_final_sample/01_gam/{sm}.{genome}.gam",
+    threads: 1
+    log:
+        "{folder}/03_sample/03_final_sample/01_gam/{sm}.{genome}.gam.log",
+    message:
+        "--- GET FINAL GAM {output}"
+    run:
+        if is_external_sample(wildcards.sm, wildcards.genome):
+            shell("ln -srf {input} {output}")
+        else:
+            shell("cp {input} {output}")
+
+
+rule get_final_gam_low_qual:
+    """
+    Get the final gam files 
+    """
+    input:
+        get_gam_4_final_gam_low_qual,
+    output:
+        "{folder}/03_sample/03_final_sample/01_gam_low_qual/{sm}.{genome}.gam",
+    threads: 1
+    log:
+        "{folder}/03_sample/03_final_sample/01_gam_low_qual/{sm}.{genome}.gam.log",
+    message:
+        "--- GET FINAL LOW_QUAL GAM {output}"
+    shell:
+        """
+        cp {input} {output}
+        """
 
 ##########################################################################################
