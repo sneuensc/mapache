@@ -756,7 +756,7 @@ def get_imputation_files():
         run_imputation = get_param(
             ["imputation", genome, "run"], ["False", "glimpse1", "glimpse2"]
         )
-        if run_imputation != "False":
+        if str(run_imputation) != "False":
             if run_imputation == "glimpse1":
                 folder = "08_glimpse_sampled"
             else:
@@ -799,7 +799,7 @@ def get_imputation_plots():
         run_imputation = get_param(
             ["imputation", genome, "run"], ["False", "glimpse1", "glimpse2"]
         )
-        if run_imputation != "False":
+        if str(run_imputation) != "False":
             ## SAMPLES
             files += [
                 f"{RESULT_DIR}/03_sample/04_imputed/07_gp_filtered/{sm}.{genome}_gp.svg"

@@ -6,7 +6,37 @@ import pathlib
 import re
 import subprocess, os.path
 
-from snakemake.io import Wildcards
+try:
+    from snakemake.io import Wildcards
+except ImportError:
+    # Snakemake >=9 no longer exports Wildcards from snakemake.io.
+    # Fallback keeps compatibility for helper calls like Wildcards(wc, {...})
+    # and Wildcards(fromdict={...}) used across sourced rule files.
+    class Wildcards(dict):
+        def __init__(self, wildcards=None, fromdict=None):
+            data = {}
+
+            if wildcards is not None:
+                if isinstance(wildcards, dict):
+                    data.update(wildcards)
+                elif hasattr(wildcards, "keys"):
+                    data.update({k: getattr(wildcards, k) for k in wildcards.keys()})
+                else:
+                    data.update(vars(wildcards))
+
+            if fromdict is not None:
+                data.update(fromdict)
+
+            super().__init__(data)
+
+        def __getattr__(self, name):
+            try:
+                return self[name]
+            except KeyError as e:
+                raise AttributeError(name) from e
+
+        def __setattr__(self, name, value):
+            self[name] = value
 
 
 ##########################################################################################

@@ -29,7 +29,7 @@ rule genome_index_bwa:
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
     params:
         params=get_param(["indexing", "bwa_params"], ""),
-        cmd="f'bwa index {snakemake.params[0]} {snakemake.input.fasta} 2> {snakemake.log}'",
+        cmd=lambda wildcards: "f'bwa index {snakemake.params[0]} {snakemake.input.fasta} 2> {snakemake.log}'",
     log:
         "{path}/00_reference/{genome}/{genome}_bwa_index.log",
     threads: 1
@@ -67,7 +67,7 @@ rule genome_index_bowtie2:
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
     params:
         get_param(["indexing", "bowtie2_params"], ""),
-        cmd="f'bowtie2-build {snakemake.params[0]} --threads {snakemake.threads} {snakemake.input.fasta} {snakemake.input.fasta}> {snakemake.log}'",
+        cmd=lambda wildcards: "f'bowtie2-build {snakemake.params[0]} --threads {snakemake.threads} {snakemake.input.fasta} {snakemake.input.fasta}> {snakemake.log}'",
     log:
         "{path}/{genome}_bowtie2_build.log",
     threads: get_threads("indexing", 4)
@@ -105,7 +105,7 @@ rule genome_index_bowtie2_long:
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
     params:
         get_param(["indexing", "bowtie2_params"], ""),
-        cmd="f'bowtie2-build {snakemake.params[0]} --threads {snakemake.threads} {snakemake.input.fasta} {snakemake.input.fasta} > {snakemake.log}'",
+        cmd=lambda wildcards: "f'bowtie2-build {snakemake.params[0]} --threads {snakemake.threads} {snakemake.input.fasta} {snakemake.input.fasta} > {snakemake.log}'",
     log:
         "{path}/{genome}_bowtie2_build.log",
     threads: get_threads("indexing", 4)
@@ -168,7 +168,7 @@ rule samtools_index_fasta:
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
     params:
         get_param(["indexing", "samtools_params"], ""),
-        cmd="f'samtools faidx {snakemake.params[0]}  {snakemake.input.fasta} > {snakemake.log}'",
+        cmd=lambda wildcards: "f'samtools faidx {snakemake.params[0]}  {snakemake.input.fasta} > {snakemake.log}'",
     log:
         "{path}/{genome}_samtools_faidx.log",
     threads: 1
@@ -198,7 +198,7 @@ rule genome_index_picard:
         java_mem_overhead_factor=float(
             get_param(["software", "java_mem_overhead_factor"], 0.2)
         ),
-        cmd="f'picard CreateSequenceDictionary -Xmx{round(snakemake.resources.mem_mb * (1.0 - snakemake.params.java_mem_overhead_factor))}M --REFERENCE {snakemake.input.fasta} --OUTPUT {snakemake.output}'",
+        cmd=lambda wildcards: "f'picard CreateSequenceDictionary -Xmx{round(snakemake.resources.mem_mb * (1.0 - snakemake.params.java_mem_overhead_factor))}M --REFERENCE {snakemake.input.fasta} --OUTPUT {snakemake.output}'",
     log:
         "{path}/{genome}_picard_index.log",
     threads: 1

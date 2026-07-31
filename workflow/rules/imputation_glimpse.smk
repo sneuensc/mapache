@@ -4,7 +4,7 @@
 # -----------------------------------------------------------------------------#
 for genome in GENOMES:
     if (
-        get_param(["imputation", genome, "run"], ["False", "glimpse1", "glimpse2"])
+        str(get_param(["imputation", genome, "run"], ["False", "glimpse1", "glimpse2"]))
         != "False"
     ):
         # Imputation will be run by default on all chromosomes. The paramter below allow to select a subset of chromosomes.
@@ -366,16 +366,24 @@ rule glimpse_ligate:
 
 
 def get_ligated_bcf(wc):
-    txt = get_param(["imputation", wc.genome, "run"], ["False", "glimpse1", "glimpse2"])
+    txt = str(get_param(["imputation", wc.genome, "run"], ["False", "glimpse1", "glimpse2"]))
     if txt == "glimpse1":
         folder = "06_glimpse_ligated"
     elif txt == "glimpse2":
         folder = "06_glimpse2_ligated"
+    elif txt == "False":
+        return []
     else:
         LOGGER.error(
             f"ERROR: The parameter config[imputation][{wc.genome}][run] is not correctly specified: {txt} is unknown!"
         )
         os._exit(1)
+
+    chromosomes = to_str(
+        to_list(get_param(["imputation", wc.genome, "chromosomes"], []))
+    )
+    if not chromosomes:
+        chromosomes = get_chromosome_names(wc.genome)
 
     return [
         f"{wc.folder}/03_sample/04_imputed/{folder}/{wc.sm}.{wc.genome}/chr{chr}.bcf"

@@ -227,7 +227,7 @@ run_preseq = str2bool(get_param(["stats", "preseq", "run"], ["False", "True"]))
 ## imputation (is assumed to be run ONLY on the first specified reference GENOMES!!!)
 run_imputation = []
 for genome in GENOMES:
-    if get_param(["imputation", genome, "run"], ["False", "glimpse1", "glimpse2"]) != "False":
+    if str(get_param(["imputation", genome, "run"], ["False", "glimpse1", "glimpse2"])) != "False":
         run_imputation = run_imputation + [genome]
 
 
