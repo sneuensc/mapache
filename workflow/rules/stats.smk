@@ -792,7 +792,7 @@ rule plot_bamdamage:
     shell:
         """
         ## extract the plot_length
-        plot_length=$(echo {params.params} | sed 's/=/ /g' | awk -F '--plot_length' '{{print $2}}'  | awk '{{print $1}}')
+        plot_length=$(echo {params.params}["bamdamage_params"] | sed 's/=/ /g' | awk -F '--plot_length' '{{print $2}}'  | awk '{{print $1}}')
         if [ "$plot_length" != "" ]; then plot_length=--plot_length=$plot_length; fi
 
         Rscript {params.script} \
