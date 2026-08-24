@@ -782,7 +782,7 @@ rule plot_bamdamage:
         "--- PLOT DAMAGE"
     params:
         script=workflow.source_path("../scripts/plot_bamdamage.R"),
-        params=get_param(["stats", "bamdamage_params"], ""),
+        params=get_param(["stats", "damage", "bamdamage_params"], ""),
     log:
         "{folder}/04_stats/01_sparse_stats/{cat}/bamdamage/{prefix}.{genome}_plot.log",
     conda:
@@ -792,7 +792,7 @@ rule plot_bamdamage:
     shell:
         """
         ## extract the plot_length
-        plot_length=$(echo {params.params} | sed 's/=/ /g' | awk -F '--plot_length' '{{print $2}}'  | awk '{{print $1}}')
+        plot_length=$(echo {params.params} | sed 's/=/ /g' | awk -F '--plot_damage_length' '{{print $2}}'  | awk '{{print $1}}')
         if [ "$plot_length" != "" ]; then plot_length=--plot_length=$plot_length; fi
 
         Rscript {params.script} \
