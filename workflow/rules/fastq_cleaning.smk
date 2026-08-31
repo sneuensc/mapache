@@ -4,10 +4,9 @@
 ## get/rename reference and fastq files
 
 
-localrules:
-    get_fastq,
-    get_fasta,  ## executed locally on a cluster
 
+
+             
 
 ## all rules for fastq files
 rule get_fastq_remote:
@@ -15,18 +14,20 @@ rule get_fastq_remote:
     Download a remote fastq file from an anonymous ftp server and check the md5sum
     """
     output:
-        "{folder}/01_fastq/00_reads/00_files_remote/{sm}/{lb}/{idd}.fastq.gz",
+        temp("{folder}/01_fastq/00_reads/00_files_orig/{sm}/{lb}/{idd}.fastq.gz"),
+    wildcard_constraints:
+        idd="({})".format("|".join(remote_idd))
     threads: 1
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("download", attempt, 2),
         runtime=lambda wildcards, attempt: get_runtime_alloc("download", attempt, 10),
     params:
-        ftp=get_fastq_of_ID_0,
+        ftp=get_fastq_name_original,
         md5=get_md5_of_ID,
     message:
-        "--- GET FASTQ FILES REMOTELY {input}"
+        "--- GET REMOTE FASTQ FILE {input}"
     log:
-        "{folder}/01_fastq/00_reads/00_files_remote/{sm}/{lb}/{idd}.fastq.gz.log",
+        "{folder}/01_fastq/00_reads/00_files_orig/{sm}/{lb}/{idd}.fastq.gz.log",
     shell:
         """
         ## download file
@@ -44,35 +45,26 @@ rule get_fastq_remote:
         """
 
 
-## all rules for fastq files
-rule get_fastq:
+rule get_fastq_local:
     """
-    Subsample or symlink and rename all fastq files to a common folder (makes the DAG readable)
+    Symlink and rename local fastq file
     """
     input:
-        get_fastq_of_ID,
+        get_fastq_name_original,
     output:
-        temp("{folder}/01_fastq/00_reads/01_files_orig/{sm}/{lb}/{idd}.fastq.gz"),
+        temp("{folder}/01_fastq/00_reads/00_files_orig/{sm}/{lb}/{idd}.fastq.gz"),
+    wildcard_constraints:
+        idd="({})".format("|".join(local_idd))
+    localrule: True
     threads: 1
-    params:
-        run=lambda wildcards: get_paramGrp(["subsampling", "run"], False, wildcards),
-        number=lambda wildcards: get_paramGrp(
-            ["subsampling", "number"], 1000, wildcards
-        ),
-        params=lambda wildcards: get_paramGrp(
-            ["subsampling", "params"], "-s1", wildcards
-        ),
-        ftp=lambda wildcards: get_fastq_of_ID_0(wildcards),
-    conda:
-        "../envs/seqtk.yaml"
-    envmodules:
-        module_seqtk,
     message:
-        "--- GET FASTQ FILES  {input}"
+        "--- GET LOCAL FASTQ FILE  {input}"
     log:
-        "{folder}/01_fastq/00_reads/01_files_orig/{sm}/{lb}/{idd}.fastq.gz.log",
-    script:
-        "../scripts/subsample_fastq.py"
+        "{folder}/01_fastq/00_reads/00_files_orig/{sm}/{lb}/{idd}.fastq.gz.log",
+    shell:
+        """
+        ln -srf {input} {output}
+        """
 
 
 ## all rules for fastq files
@@ -84,6 +76,7 @@ rule get_fasta:
         lambda wildcards: get_param(["genome", wildcards.genome], ""),
     output:
         temp("{folder}/00_reference/{genome}/{genome}.fasta"),
+    localrule: True
     threads: 1
     message:
         "--- GET REFERENCE  {input}"
@@ -92,6 +85,39 @@ rule get_fasta:
     shell:
         """
         ln -srf {input} {output}
+        """
+
+##########################################################################################
+## subsampling
+
+rule fastq_subsample:
+    """
+    Subsample fastq
+    """
+    input:
+        "{folder}/01_fastq/00_reads/00_files_orig/{sm}/{lb}/{idd}.fastq.gz"
+    output:
+        temp("{folder}/01_fastq/00_reads/01_subsample/{sm}/{lb}/{idd}.fastq.gz"),
+    threads: 1
+    params:
+        run=lambda wildcards: get_paramGrp(["subsampling", "run"], False, wildcards),
+        number=lambda wildcards: get_paramGrp(
+            ["subsampling", "number"], 1000, wildcards
+        ),
+        params=lambda wildcards: get_paramGrp(
+            ["subsampling", "params"], "-s1", wildcards
+        ),
+    conda:
+        "../envs/seqtk.yaml"
+    envmodules:
+        module_seqtk,
+    message:
+        "--- SUBSAMPLE FASTQ FILE  {input}"
+    log:
+        "{folder}/01_fastq/00_reads/01_subsample/{sm}/{lb}/{idd}.fastq.gz.log",
+    shell:
+        """
+        seqtk sample {params.params} {input} {params.number} | gzip > {output}
         """
 
 

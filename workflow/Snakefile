@@ -105,7 +105,22 @@ wildcard_constraints:
     genome="|".join([g for g in GENOMES]),
     folder=RESULT_DIR
 
+## paired-end libraries are split into "{id}_R1"/"{id}_R2" wildcards downstream, so the
+## remote/local classification must be done on those suffixed names too, not just on the raw id
+def get_idd_variants(sm, lb, idd):
+    if is_paired_end(Wildcards(fromdict={"sm": sm, "lb": lb, "id": idd})):
+        return [f"{idd}_R1", f"{idd}_R2"]
+    return [idd]
 
+all_idd_variants = [
+    (sm, lb, variant)
+    for sm in SAMPLES for lb in SAMPLES[sm] for idd in SAMPLES[sm][lb]
+    for variant in get_idd_variants(sm, lb, idd)
+]
+remote_idd = [variant for sm, lb, variant in all_idd_variants
+              if idd_is_remote(sm, lb, variant)]
+local_idd  = [variant for sm, lb, variant in all_idd_variants
+              if not idd_is_remote(sm, lb, variant)]
 ##########################################################################################
 ##  WORKFLOW
 ##########################################################################################

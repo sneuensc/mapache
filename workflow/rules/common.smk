@@ -1,10 +1,8 @@
 ##########################################################################################
 ## FASTQ LEVEL
 
-
-## get the path to the fastq file given sm, lb and id
-def get_fastq_of_ID_0(wc):
-    # print(f"get_fastq_of_ID: {wc}")
+def get_fastq_name_original(wc):
+    ## single or paired?
     if "_R1" == wc.idd[-3:]:
         filename = SAMPLES[wc.sm][wc.lb][wc.idd[:-3]]["Data1"]
     elif "_R2" == wc.idd[-3:]:
@@ -17,61 +15,72 @@ def get_fastq_of_ID_0(wc):
 
     return filename
 
+    
+def idd_is_remote(sm, lb, idd):
+    filename = get_fastq_name_original(Wildcards(fromdict={"sm": sm, "lb": lb, "idd": idd}))
+    return not os.path.exists(filename) and filename.startswith(("ftp", "http://", "https://")) 
 
-## return the file, but only if it is present (not remote file)
-def get_fastq_of_ID(wc):
-    filename = get_fastq_of_ID_0(wc)
 
-    if filename[:3] == "ftp":  ## if it is a remote file return nothing
-        file = f"{wc.folder}/01_fastq/00_reads/00_files_remote/{wc.sm}/{wc.lb}/{wc.idd}.fastq.gz"
-    else:
-        file = filename
-    # print(file)
-    return file
+
+## check if the string as a valuable md5string 
+def test_md5(md5, wc):
+    MD5_RE = re.compile(r'^[a-fA-F0-9]{32}$')
+    if bool(MD5_RE.match(md5)):
+        return md5
+    
+    if  md5 != "" and md5 != "NA" and md5 != "NULL":
+        LOGGER.warning(
+            f"ERROR: The md5sum of {wc.sm}/{wc.lb}/{wc.idd} is not valid!"
+        )
+        os._exit(1)
+
+    return ""
 
 
 ## get the md5 of the given ID (if available, otherwise return '')
 def get_md5_of_ID(wc):
-    # print(f"get_fastq_of_ID: {wc}")
     if "_R1" == wc.idd[-3:]:
-        md5 = (
-            SAMPLES[wc.sm][wc.lb][wc.idd[:-3]]["MD5_1"]
-            if "MD5_1" in SAMPLES[wc.sm][wc.lb][wc.idd]
-            else ""
-        )
+        if "MD5_1" in SAMPLES[wc.sm][wc.lb][wc.idd[:-3]]:
+            md5 =   (SAMPLES[wc.sm][wc.lb][wc.idd[:-3]]["MD5_1"], wc)
+        else:
+            md5 = ""
     elif "_R2" == wc.idd[-3:]:
-        md5 = (
-            SAMPLES[wc.sm][wc.lb][wc.idd[:-3]]["MD5_2"]
-            if "MD5_2" in SAMPLES[wc.sm][wc.lb][wc.idd]
-            else ""
-        )
+        if "MD5_2" in SAMPLES[wc.sm][wc.lb][wc.idd[:-3]]:
+            md5 = test_md5(SAMPLES[wc.sm][wc.lb][wc.idd[:-3]]["MD5_2"], wc)
+        else:
+            md5 = ""
     elif PAIRED_END:
         # elif PAIRED_END != 0:  ## SE library in a paired-end sample file
-        md5 = (
-            SAMPLES[wc.sm][wc.lb][wc.idd]["MD5_1"]
-            if "MD5_1" in SAMPLES[wc.sm][wc.lb][wc.idd]
-            else ""
-        )
+        if "MD5_1" in SAMPLES[wc.sm][wc.lb][wc.idd]:
+            md5 = test_md5(SAMPLES[wc.sm][wc.lb][wc.idd]["MD5_1"], wc)
+        else:
+            md5 = ""    
     else:
-        md5 = (
-            SAMPLES[wc.sm][wc.lb][wc.idd]["MD5"]
-            if "MD5" in SAMPLES[wc.sm][wc.lb][wc.idd]
-            else ""
-        )
-
+        if "MD5" in SAMPLES[wc.sm][wc.lb][wc.idd]:
+            md5 = test_md5(SAMPLES[wc.sm][wc.lb][wc.idd]["MD5"], wc)
+        else:
+            md5 = ""
+    
+    #print(md5)
     return md5
 
 
 def get_fastq_4_cleaning(wc):
-    folder = f"{wc.folder}/01_fastq/00_reads/01_files_orig/{wc.sm}/{wc.lb}"
+    if run_subsampling:
+        folder = f"{wc.folder}/01_fastq/00_reads/00_files_subsample/{wc.sm}/{wc.lb}"
+    else:
+        folder = f"{wc.folder}/01_fastq/00_reads/00_files_orig/{wc.sm}/{wc.lb}"
+
     if is_paired_end(wc):
         filename = [
             f"{folder}/{wc.id}_R1.fastq.gz",
-            f"{folder}/{wc.id}_R2.fastq.gz",
+            f"{folder}/{wc.id}_R2.fastq.gz"
         ]
     else:
         filename = [f"{folder}/{wc.id}.fastq.gz"]
+    
     return filename
+
 
 
 def get_cleaning_folder_extension(wc):
