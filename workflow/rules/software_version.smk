@@ -256,7 +256,7 @@ rule version_glimpse:
         module_glimpse,
     shell:
         """
-        GLIMPSE_chunk --help | grep Version | sed 's/  \* Version       :/glimpse version/g' > {output} || echo glimpse not available > {output}
+        GLIMPSE_chunk --help | grep Version | sed 's/  \\* Version       :/glimpse version/g' > {output} || echo glimpse not available > {output}
         """
 
 

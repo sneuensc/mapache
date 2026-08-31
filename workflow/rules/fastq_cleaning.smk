@@ -31,7 +31,7 @@ rule get_fastq_remote:
     shell:
         """
         ## download file
-        wget -O {output} {params.ftp} > {log};
+        wget -c --tries=3 -O {output} {params.ftp} > {log} 2>&1;
 
         ## test md5sum if available
         if [ "{params.md5}" == "''" ] || [ "{params.md5}" == "nan" ] ; then

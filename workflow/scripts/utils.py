@@ -1,4 +1,3 @@
-from tkinter import E
 import pandas as pd
 import numpy as np
 import itertools
@@ -406,7 +405,6 @@ def is_collapse(wc):
 ## read sample file
 def read_sample_file():
     file = get_param(["sample_file"], "")
-    # print(file)
     if file == "":
         return {}, ""
 
@@ -472,7 +470,6 @@ def test_SAMPLES():
     ## test all fastq files
     if PAIRED_END:
         ## forward reads
-        # print(get_sample_column("Data1"))
         for fq in get_sample_column("Data1"):
             if not os.path.isfile(fq) and fq[:3] != "ftp":
                 LOGGER.error(f"ERROR: Fastq file '{fq}' does not exist!")
@@ -603,7 +600,6 @@ def get_param(keys, def_value, my_dict=config, combination=False):
         arg = get_param(keys[1:], def_valueI, my_dict=my_dict.get(keys[0], {}))
 
     arg = eval_param(arg)
-    #print(arg)
 
     ## check if the arg is within the list of possible values
     if type(def_value) is list and len(def_value) > 1:
@@ -694,8 +690,6 @@ def get_paramGrp(keys, def_value, wc, my_dict=config, combination=False):
                 )
                 sys.exit(1)
 
-        # print(f"{param} <= {keys}  of  {grpList} | {grpName}")
-    # print(f"{param} <= {keys}")
     return param
 
 
@@ -762,7 +756,7 @@ def eval_elem(x):
             return eval(x, globals=None, locals=None)
         else:
             return x
-    except:
+    except Exception:
         return x
 
 
@@ -860,13 +854,13 @@ def set_sex_inference(genome):
                 LOGGER.error(
                     f"ERROR: Sex chromosome specified in config[sex_inference][{genome}][sex_chr] ({sex_chr}) does not exist in the reference genome."
                 )
-                os._exit(1)
+                sys.exit(1)
             config = update_value(["chromosome", genome, "sex_chr"], sex_chr)
         else:
             LOGGER.error(
                 f"ERROR: No sex chromosome specified in config[sex_inference][{genome}][sex_chr]!"
             )
-            os._exit(1)
+            sys.exit(1)
 
         # autosomes
         if len(autosomes):
@@ -874,13 +868,13 @@ def set_sex_inference(genome):
                 LOGGER.error(
                     f"ERROR: In config[sex_inference][{genome}][autosomes], the following chromosome names are not recognized: {valid_chromosome_names(genome , autosomes)}!"
                 )
-                os._exit(1)
+                sys.exit(1)
             config = update_value(["chromosome", genome, "autosomes"], autosomes)
         else:
             LOGGER.error(
                 f"ERROR: No autosomes specified in config[sex_inference][{genome}][autosomes]!"
             )
-            os._exit(1)
+            sys.exit(1)
     else:  ## if they are not set, try to infer the genome (hg19 or GRCh38)
         hg19 = list(map(str, list(range(1, 23)) + ["X", "Y", "MT"]))
         GRCh38 = [f"chr{x}" for x in list(range(1, 23)) + ["X", "Y", "M"]]
@@ -896,7 +890,7 @@ def set_sex_inference(genome):
             LOGGER.error(
                 f"ERROR: For sex inference the parameters config[sex_inference][{genome}][sex_chr] and config[sex_inference][{genome}][autosomes] are required!"
             )
-            os._exit(1)
+            sys.exit(1)
 
         ## write the sex and autosome names
         config = update_value(["chromosome", genome, "name"], name)
@@ -913,7 +907,7 @@ def read_depth(genome):
         LOGGER.error(
             f"ERROR: config[depth][{genome}][chromosomes] contains unrecognized chromosome names ({valid_chromosome_names(genome , depth)})!"
         )
-        os._exit(1)
+        sys.exit(1)
     config = update_value(["chromosome", genome, "depth"], depth)
 
 

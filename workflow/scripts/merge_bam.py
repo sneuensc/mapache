@@ -2,6 +2,7 @@
 
 import subprocess
 import os
+import sys
 
 ## change sample name in RG
 def reheader_bam(in_file, out_file, sm):
@@ -32,4 +33,4 @@ else:
     LOGGER.error(
         f"ERROR: Script merge_bam.py should never pass here!"
     )
-    os._exit(1)
+    sys.exit(1)

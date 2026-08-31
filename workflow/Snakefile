@@ -70,7 +70,7 @@ module_pysam = get_param(["envmodules", "pysam"], "")
 GENOMES = list(get_param(["genome"], ""))
 if len(GENOMES) == 0:
     LOGGER.error("ERROR: Reference genome is not specified (parameter config[genome])!")
-    os._exit(1)
+    sys.exit(1)
 
 ## get all chromosome names and store them in the dict config[chromosomes][genome][all] for later use
 for genome in GENOMES:
@@ -85,17 +85,12 @@ SAMPLES_TABLE, SAMPLES, SAMPLES_FINAL, SAMPLE_FILE = read_sample_file()
 PAIRED_END, COLLAPSE = test_SAMPLES()
 
 
-# print(SAMPLES_FINAL)
-
-
 ## get SAMPLES (bam files) to compute only stats on them
 EXTERNAL_SAMPLES, EXTERNAL_SAMPLE_FILE = get_external_samples()
 
 if len(SAMPLES) + len(EXTERNAL_SAMPLES) == 0:
     LOGGER.error(f"ERROR: No samples are specified)!")
     sys.exit(1)
-
-# print(EXTERNAL_SAMPLES)
 
 
 wildcard_constraints:
@@ -313,13 +308,6 @@ localrules:
     all,
     dag,
     mapping,  ## executed locally on a cluster
-
-
-# print(final_bam)
-# print(final_external_bam)
-# print(final_bam_low_qual)
-# print(get_imputation_files())
-# print(get_imputation_plots())
 # print(get_preseq_files('svg'))
 
 
@@ -394,21 +382,6 @@ rule mapping:
         "--- RUNNING MAPPING"
     shell:
         "echo 'snakemake mapping --report report_mapping.zip' > {output}"
-
-
-rule test:
-    """
-    Performs the mapping unitl and including the duplicate removal
-    """
-    input:
-        "results/02_library/03_trim/01_bamutil/ind3/ftp_lib.hg19.bam"
-        #"results/01_fastq/03_filtered/01_bam_filter/ind1/lib1_lb/lib1_R1_001_fq.hg19.bam"
-    output:
-        f"{RESULT_DIR}/test.bam"
-    message:
-        "--- RUNNING MAPPING UNTIL LIBRARIES"
-    shell:
-        "cp {input[0]}  {output}"
 
 
 rule mapping_library:

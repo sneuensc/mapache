@@ -32,7 +32,7 @@ def test_md5(md5, wc):
         LOGGER.warning(
             f"ERROR: The md5sum of {wc.sm}/{wc.lb}/{wc.idd} is not valid!"
         )
-        os._exit(1)
+        sys.exit(1)
 
     return ""
 
@@ -61,7 +61,6 @@ def get_md5_of_ID(wc):
         else:
             md5 = ""
     
-    #print(md5)
     return md5
 
 
@@ -95,7 +94,6 @@ def get_cleaning_folder_extension(wc):
 
 ## get the fastq file(s) used for mapping (output is a list)
 def get_fastq_4_mapping(wc):
-    # print(wc)
     cleaning = get_paramGrp(
         ["cleaning", "run"], ["adapterremoval", "fastp", "False"], wc
     )
@@ -125,7 +123,6 @@ def get_fastq_4_mapping(wc):
 
     else:  ## no cleaning
         filename = get_fastq_4_cleaning(wc)
-    # print(filename)
     return filename
 
 
@@ -140,7 +137,7 @@ def inputs_fastqc(wc):
 ## get the needed index files
 def get_fasta_index(wc):
     ref = f"{wc.folder}/00_reference/{wc.genome}/{wc.genome}.fasta"
-    if mapper == "bwa_aln" or mapper == "bwa_mem" or mapper == "bwa_mem":
+    if mapper == "bwa_aln" or mapper == "bwa_mem":
         ext = ["", ".sa", ".amb", ".ann", ".bwt", ".pac"]
     elif mapper == "bowtie2":
         ext = ["", ".1.bt2", ".2.bt2", ".3.bt2", ".4.bt2", ".rev.1.bt2", ".rev.2.bt2"]
@@ -154,25 +151,18 @@ def get_fasta_index(wc):
             ".rev.1.bt2l",
             ".rev.2.bt2l",
         ]
-    elif mapper == "giraffe":
-        ext = [
-            #".min",
-            #".dist",
-            ".gbz",
-            #".min.gbz",
-            #".dist.gbz",
-        ]
+    elif mapper == "vg_giraffe" or mapper == "vg_giraffe_gam":
+        ext = [".gbz"]
     else:
         LOGGER.error(
             f"ERROR: The parameter config[mapping][mapper] is not correctly specified: {mapper} is unknown!"
         )
-        os._exit(1)
+        sys.exit(1)
     return [ref + x for x in ext]
 
 
 ## get the bam file used for sorting
 def get_bam_4_sorting(wc):
-    # print(f"get_bam_for_sorting: {wc}")
     if mapper == "bwa_aln":
         if is_paired_end(wc) and not is_collapse(wc):
             folder = "02_bwa_sampe"
@@ -188,7 +178,7 @@ def get_bam_4_sorting(wc):
         LOGGER.error(
             f"ERROR: The parameter config[mapping][mapper] is not correctly specified: {mapper} is unknown!"
         )
-        os._exit(1)
+        sys.exit(1)
     return f"{wc.folder}/01_fastq/02_mapped/{folder}/{wc.sm}/{wc.lb}/{wc.id}.{wc.genome}.bam"
 
 
@@ -198,7 +188,6 @@ def get_final_bam_FASTQ(wc):
         file = f"{wc.folder}/01_fastq/03_filtered/01_bam_filter/{wc.sm}/{wc.lb}/{wc.id}.{wc.genome}.bam"
     else:
         file = f"{wc.folder}/01_fastq/02_mapped/03_bam_sort/{wc.sm}/{wc.lb}/{wc.id}.{wc.genome}.bam"
-    # print(f"get_bam_4_final_fastq: {file}")
     return file
 
 
@@ -211,7 +200,6 @@ def get_final_gam_FASTQ(wc):
         file = f"{wc.folder}/01_fastq/03_filtered/01_gam_filter/{wc.sm}/{wc.lb}/{wc.id}.{wc.genome}.gam"
     else:
         file = f"{wc.folder}/01_fastq/02_mapped/02_vg_giraffe/{wc.sm}/{wc.lb}/{wc.id}.{wc.genome}.gam"
-    # print(f"get_gam_4_final_fastq: {file}")
     return file
 
 
@@ -310,7 +298,6 @@ def get_bam_4_after_rmDup(wc):
         bam = f"{wc.folder}/02_library/01_duplicated/01_dedup/{wc.sm}/{wc.lb}.{wc.genome}.bam"
     else:
         bam = get_bam_4_markduplicates(wc)
-    # print(bam)
     return bam
 
 
@@ -322,7 +309,6 @@ def get_all_bam_after_rmDup():
         for lb in SAMPLES[sm]
         for genome in GENOMES
     ]
-    # print(files)
     return files
 
 
@@ -333,7 +319,6 @@ def get_all_gam_after_rmDup():
         for lb in SAMPLES[sm]
         for genome in GENOMES
     ]
-    # print(files)
     return files
 ##-------------------------------------------------------------------------------------------------------------------------------
 
@@ -348,7 +333,6 @@ def get_bam_4_damage_rescale(wc):
         file = f"{wc.folder}/02_library/02_bam_after_rmDup/01_bam/{wc.sm}/{wc.lb}.{wc.genome}.bam"
     else:
         file = get_bam_4_after_rmDup(wc)
-    # print(file)
     return file
 
 
@@ -358,7 +342,6 @@ def get_bam_4_bamutil(wc):
         file = f"{wc.folder}/02_library/02_rescaled/01_mapDamage/{wc.sm}/{wc.lb}.{wc.genome}.bam"
     else:
         file = get_bam_4_damage_rescale(wc)
-    # print(file)
     return file
 
 
@@ -370,7 +353,6 @@ def get_bam_4_bamrefine(wc):
         )
     else:
         file = get_bam_4_bamutil(wc)
-    # print(file)
     return file
 
 
@@ -412,7 +394,6 @@ def sm_final_2_sm(sm_final, lb):
         ].first_valid_index(),
         "SM",
     ]
-    # print(f"{sm_final}/{lb} => {sm}/{lb}")
     return sm
 
 
@@ -434,7 +415,6 @@ def sm_changed(sm_final):
 
 ## get the bam file(s) to be merged
 def get_bam_4_merge_bam_library2sample(wc):
-    # print([Wildcards(wc, {"sm": sm_final_2_sm(wc.sm, lb), "lb": lb}) for lb in SAMPLES_FINAL[wc.sm]])
     return [
         get_final_bam_LB(Wildcards(wc, {"sm": sm_final_2_sm(wc.sm, lb), "lb": lb}))
         for lb in SAMPLES_FINAL[wc.sm]
@@ -450,7 +430,6 @@ def get_bam_4_merge_bam_low_qual_library2sample(wc):
 
 
 def get_gam_4_merge_gam_library2sample(wc):
-    # print([Wildcards(wc, {"sm": sm_final_2_sm(wc.sm, lb), "lb": lb}) for lb in SAMPLES_FINAL[wc.sm]])
     return [
         get_final_gam_LB(Wildcards(wc, {"sm": sm_final_2_sm(wc.sm, lb), "lb": lb}))
         for lb in SAMPLES_FINAL[wc.sm]
@@ -468,7 +447,6 @@ def get_gam_4_merge_gam_low_qual_library2sample(wc):
 ## get the (merged) bam file
 def get_merged_bam_SM(wc):
     bam = get_bam_4_merge_bam_library2sample(wc)
-    # print(bam)
     if len(bam) > 1 or sm_changed(
         wc.sm
     ):  ## sample consits of more than one library return 00_merged_library
@@ -478,7 +456,6 @@ def get_merged_bam_SM(wc):
 
 
 def get_merged_bam_low_qual_SM(wc):
-    # print(f"get_merged_bam_low_qual_SM: {wc}")
     bam = get_bam_4_merge_bam_low_qual_library2sample(wc)
     if (
         len(bam) > 1
@@ -490,7 +467,6 @@ def get_merged_bam_low_qual_SM(wc):
 
 def get_merged_gam_SM(wc):
     gam = get_gam_4_merge_gam_library2sample(wc)
-    # print(gam)
     if len(gam) > 1 or sm_changed(
         wc.sm
     ):  ## sample consits of more than one library return 00_merged_library
@@ -500,7 +476,6 @@ def get_merged_gam_SM(wc):
 
 
 def get_merged_gam_low_qual_SM(wc):
-    # print(f"get_merged_gam_low_qual_SM: {wc}")
     gam = get_gam_4_merge_gam_low_qual_library2sample(wc)
     if (
         len(gam) > 1
@@ -552,7 +527,6 @@ def get_gam_4_final_gam_low_qual(wc):
 ## STATS
 ## get all individual stat table files to concatenate
 def path_stats_by_level(wc):
-    # print(wc)
     if wc.level == "FASTQ":
         paths = [
             f"{wc.folder}/04_stats/02_separate_tables/{wc.genome}/{sm}/{lb}/{id}/FASTQ_stats.csv"
@@ -586,9 +560,7 @@ def path_stats_by_level(wc):
         LOGGER.error(
             f"ERROR: def path_stats_by_level({wc.level}): should never happen!"
         )
-        os._exit(1)
-    # print(wc)
-    # print(paths)
+        sys.exit(1)
     return paths
 
 
@@ -606,7 +578,6 @@ def get_sex_file_library_rmDup(wc):
         file = f"{wc.folder}/04_stats/01_sparse_stats/02_library/02_bam_after_rmDup/01_bam/{wc.sm}/{wc.lb}.{wc.genome}_sex.txt"
     else:
         file = f"{wc.folder}/04_stats/01_sparse_stats/02_library/02_bam_after_rmDup/01_bam/{wc.sm}/{wc.lb}.{wc.genome}_nosex.txt"
-    # print(file)
     return file
 
 
@@ -615,7 +586,6 @@ def get_sex_file_library(wc):
         file = f"{wc.folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{wc.sm}/{wc.lb}.{wc.genome}_sex.txt"
     else:
         file = f"{wc.folder}/04_stats/01_sparse_stats/02_library/03_final_library/01_bam/{wc.sm}/{wc.lb}.{wc.genome}_nosex.txt"
-    # print(file)
     return file
 
 
@@ -628,7 +598,6 @@ def get_lb_stats(wc):
         ]
     else:
         files = []
-    # prinf(files)
     return files
 
 
@@ -751,9 +720,8 @@ def get_multiqc_files(level="SM"):
         ]
     else:
         LOGGER.error(f"ERROR: def get_multiqc_files({level}): should never happen!")
-        os._exit(1)
+        sys.exit(1)
 
-    # print(files)
     return files
 
 
@@ -945,7 +913,6 @@ def get_files_4_multiqc_library_rmDup(wc):
             f"{RESULT_DIR}/04_stats/02_separate_tables/{wc.genome}/FASTQ_stats.csv",
         ]
 
-    # print(list(set(files)))
     return list(set(files))  ## remove duplicates
 
 
@@ -989,7 +956,6 @@ def get_files_4_multiqc(wc):
             f"{RESULT_DIR}/04_stats/02_separate_tables/{wc.genome}/LB_stats.csv",
         ]
 
-    # print(list(set(files)))
     return list(set(files))  ## remove duplicates
 
 

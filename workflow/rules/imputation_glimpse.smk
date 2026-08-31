@@ -18,7 +18,7 @@ for genome in GENOMES:
                 LOGGER.error(
                     f"ERROR: In config[imputation][{genome}][chromosomes], the following chromosome names are not recognized: {valid_chromosome_names(genome , chromosomes)}!"
                 )
-                os._exit(1)
+                sys.exit(1)
 
         # This string contains a wildcard where we will place the name of the chromosome
         # something like "path/to/my/panel_chr{chr}.vcf.gz"
@@ -377,7 +377,7 @@ def get_ligated_bcf(wc):
         LOGGER.error(
             f"ERROR: The parameter config[imputation][{wc.genome}][run] is not correctly specified: {txt} is unknown!"
         )
-        os._exit(1)
+        sys.exit(1)
 
     chromosomes = to_str(
         to_list(get_param(["imputation", wc.genome, "chromosomes"], []))

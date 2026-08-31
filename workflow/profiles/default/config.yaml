@@ -4,7 +4,9 @@ executor: slurm
 conda-prefix: /work/FAC/FBM/DBC/amalaspi/popgen/sneuensc/conda/envs
 use-conda: true
 
-rerun-triggers: mtime
+rerun-triggers: mtime  # NOTE: only file mtime triggers reruns; changing rule code/params
+                       # without touching inputs will NOT trigger a rerun (use 'mtime params'
+                       # if you want param changes to also be detected)
 
 rerun-incomplete: true  # recommended for cluster submissions
 keep-going: true

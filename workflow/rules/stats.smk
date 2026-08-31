@@ -948,7 +948,7 @@ def get_subcategory(cat):
         txt = "03_sample"
     else:
         LOGGER.error(f"ERROR: def get_subcategory({cat}): should never happen!")
-        os._exit(1)
+        sys.exit(1)
     return txt
 
 
