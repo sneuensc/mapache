@@ -134,6 +134,10 @@ else:
         log:
             "{folder}/01_fastq/03_filtered/01_bam_filter/{sm}/{lb}/{id}.{genome}.log",
         threads: get_threads("filtering", 4)
+        conda:
+            "../envs/samtools.yaml"
+        envmodules:
+            module_samtools,
         message:
             "--- SAMTOOLS FILTER {input}"
         shell:
