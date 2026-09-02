@@ -112,7 +112,7 @@ mapping:
     keep_gam: True
     pl: 'ILLUMINA'
     threads: 4
-    mem: 64
+    mem: 16
     time: 30
 
 ## samtools_sort
@@ -143,7 +143,7 @@ merging:
 
 ## extract_duplicates (optional)
 remove_duplicates:
-    run: False  # (False (default), markduplicates, dedup)
+    run: markduplicates  # (False (default), markduplicates, dedup)
     params_markduplicates: '--REMOVE_DUPLICATES true'
     params_dedup: '-m'
     save_duplicates: True  # whether to save the duplicate reads in a separate bam file (only for markduplicates)
@@ -175,8 +175,8 @@ stats_after_rmDup:
 
 ## trim trailing bases
 bamutil:
-    run: True
-    params: '5'
+    run: False
+    params: ''
     threads: 1 ## hardcoded at 1
     time: 2
     mem: 4
