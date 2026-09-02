@@ -1,0 +1,40 @@
+name: Sync wiki from docs/
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "docs/**"
+  workflow_dispatch: {}
+
+jobs:
+  sync-wiki:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main repo
+        uses: actions/checkout@v4
+        with:
+          path: main
+
+      - name: Checkout wiki repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}.wiki
+          path: wiki
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Mirror docs/ into wiki
+        run: rsync -av --delete --exclude ".git" main/docs/ wiki/
+
+      - name: Commit and push if changed
+        working-directory: wiki
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Wiki already up to date with docs/."
+            exit 0
+          fi
+          git commit -m "Sync wiki from docs/"
+          git push
