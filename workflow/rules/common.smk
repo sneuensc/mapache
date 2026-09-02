@@ -39,29 +39,22 @@ def test_md5(md5, wc):
 
 ## get the md5 of the given ID (if available, otherwise return '')
 def get_md5_of_ID(wc):
+    file = ""
     if "_R1" == wc.idd[-3:]:
         if "MD5_1" in SAMPLES[wc.sm][wc.lb][wc.idd[:-3]]:
-            md5 =   (SAMPLES[wc.sm][wc.lb][wc.idd[:-3]]["MD5_1"], wc)
-        else:
-            md5 = ""
+            file = SAMPLES[wc.sm][wc.lb][wc.idd[:-3]]["MD5_1"]
     elif "_R2" == wc.idd[-3:]:
         if "MD5_2" in SAMPLES[wc.sm][wc.lb][wc.idd[:-3]]:
-            md5 = test_md5(SAMPLES[wc.sm][wc.lb][wc.idd[:-3]]["MD5_2"], wc)
-        else:
-            md5 = ""
+            file = SAMPLES[wc.sm][wc.lb][wc.idd[:-3]]["MD5_2"]
     elif PAIRED_END:
         # elif PAIRED_END != 0:  ## SE library in a paired-end sample file
         if "MD5_1" in SAMPLES[wc.sm][wc.lb][wc.idd]:
-            md5 = test_md5(SAMPLES[wc.sm][wc.lb][wc.idd]["MD5_1"], wc)
-        else:
-            md5 = ""    
+            file = SAMPLES[wc.sm][wc.lb][wc.idd]["MD5_1"]
     else:
         if "MD5" in SAMPLES[wc.sm][wc.lb][wc.idd]:
-            md5 = test_md5(SAMPLES[wc.sm][wc.lb][wc.idd]["MD5"], wc)
-        else:
-            md5 = ""
+            file = SAMPLES[wc.sm][wc.lb][wc.idd]["MD5"]
     
-    return md5
+    return test_md5(file, wc) if file!= "" else ""
 
 
 def get_fastq_4_cleaning(wc):

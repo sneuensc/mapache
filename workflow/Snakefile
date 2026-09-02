@@ -25,7 +25,7 @@ include: "rules/common.smk"
 RESULT_DIR = get_param(["result_dir"], "results")
 
 ## the file is executed for each session: be verbose only in the first one (use a file as flag)
-fileVerbose = pathlib.Path(f"{RESULT_DIR}/verbose.touch")
+fileVerbose = pathlib.Path(".snakemake/verbose.touch")
 if not fileVerbose.is_file():
     fileVerbose.parent.mkdir(parents=True, exist_ok=True)
     fileVerbose.touch()
@@ -296,9 +296,14 @@ multiqc_files = get_multiqc_files('SM')
 ##########################################################################################
 ## VERBOSE LOG
 ##########################################################################################
-## print a summary of the contents
+## print a summary of the contents (and also persist it into a run-info file that is kept after the run)
 if VERBOSE:
+    info_handler = logging.FileHandler(f"{RESULT_DIR}/RUN_INFO.txt", mode="w")
+    info_handler.setFormatter(logging.Formatter("%(message)s"))
+    LOGGER.addHandler(info_handler)
     write_log()
+    LOGGER.removeHandler(info_handler)
+    info_handler.close()
 
 
 ##########################################################################################
@@ -464,8 +469,8 @@ onsuccess:
 
     shell("cat {log} > snakemake.run.log")
     email = get_param(["email"], "")
-    if os.path.exists(f"{RESULT_DIR}/verbose.touch"):
-        os.remove(f"{RESULT_DIR}/verbose.touch")
+    if fileVerbose.exists():
+        fileVerbose.unlink()
     if email != "":
         Logger.info(f"Sending email to {email}")
         shell("mail -s \"'Mapache' finished successfully\" {email} < {log}")
@@ -477,8 +482,8 @@ onerror:
     email = get_param(["email"], "")
     if os.path.exists(f"{RESULT_DIR}/run_report.sh"):
         os.remove(f"{RESULT_DIR}/run_report.sh")
-    if os.path.exists(f"{RESULT_DIR}/verbose.touch"):
-        os.remove(f"{RESULT_DIR}/verbose.touch")
+    if fileVerbose.exists():
+        fileVerbose.unlink()
     if email != "":
         LOGGER.info(f"Sending email to {email}")
         shell("mail -s \"'Mapache' finished with error(s)\" {email} < {log}")

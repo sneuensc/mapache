@@ -111,7 +111,7 @@ else:
 
 rule markduplicates:
     """
-    Remove duplicated mappings with pricards markduplicates
+    Remove duplicated mappings with picards markduplicates
     """
     input:
         get_bam_4_markduplicates,
@@ -157,7 +157,7 @@ rule markduplicates:
 
 rule markduplicates_keep_duplicates:
     """
-    Remove duplicated mappings with pricards markduplicates
+    Remove duplicated mappings with picards markduplicates
     """
     input:
         get_bam_4_markduplicates,

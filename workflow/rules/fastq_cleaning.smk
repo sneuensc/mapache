@@ -24,6 +24,9 @@ rule get_fastq_remote:
     params:
         ftp=get_fastq_name_original,
         md5=get_md5_of_ID,
+        tries=lambda wildcards: get_paramGrp(
+            ["download", "tries"], "3", wildcards
+        ),
     message:
         "--- GET REMOTE FASTQ FILE {input}"
     log:
@@ -31,14 +34,15 @@ rule get_fastq_remote:
     shell:
         """
         ## download file
-        wget -c --tries=3 -O {output} {params.ftp} > {log} 2>&1;
+        wget -c --tries={params.tries} -O {output} {params.ftp} > {log} 2>&1;
 
         ## test md5sum if available
-        if [ "{params.md5}" == "''" ] || [ "{params.md5}" == "nan" ] ; then
-            echo "WARNING: Downloaded fastq file '{params.ftp}' has no md5sum to verify the download!";
+        if [ "{params.md5}" == "''" ] ; then
+            echo "WARNING: Downloaded fastq file '{params.ftp}' has no md5sum to verify the download!" | tee -a {log};
         else
-            if [ $(md5sum {output} | cut -d' ' -f1) != "{params.md5}" ]; then
-                echo "ERROR: Downloaded fastq file '{params.ftp}' has a wrong md5sum!";
+            md5_actual=$(md5sum {output} | cut -d' ' -f1);
+            if [ "$md5_actual" != "{params.md5}" ]; then
+                echo "ERROR: Downloaded fastq file '{params.ftp}' has a wrong md5sum ($md5_actual != {params.md5})!" | tee -a {log};
                 exit 1;
             fi
         fi
