@@ -1,0 +1,1 @@
+Welcome to Mapache's wiki! Got any question? Found a bug? Please open an issue.
