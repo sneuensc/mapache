@@ -9,7 +9,7 @@ rule samtools_sort:
     input:
         get_bam_4_sorting,
     output:
-        temp("{folder}/01_fastq/02_mapped/03_bam_sort/{sm}/{lb}/{id}.{genome}.bam"),
+        maybe_temp("{folder}/01_fastq/02_mapped/03_bam_sort/{sm}/{lb}/{id}.{genome}.bam", "sorting"),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("sorting", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("sorting", attempt, 24),
@@ -40,11 +40,11 @@ if save_low_qual:
         input:
             "{folder}/01_fastq/02_mapped/03_bam_sort/{sm}/{lb}/{id}.{genome}.bam",
         output:
-            mapped=temp(
-                "{folder}/01_fastq/03_filtered/01_bam_filter/{sm}/{lb}/{id}.{genome}.bam"
+            mapped=maybe_temp(
+                "{folder}/01_fastq/03_filtered/01_bam_filter/{sm}/{lb}/{id}.{genome}.bam", "filtering"
             ),
-            low_qual=temp(
-                "{folder}/01_fastq/03_filtered/01_bam_filter_low_qual/{sm}/{lb}/{id}.{genome}.bam"
+            low_qual=maybe_temp(
+                "{folder}/01_fastq/03_filtered/01_bam_filter_low_qual/{sm}/{lb}/{id}.{genome}.bam", "filtering"
             ),
         params:
             lambda wildcards: get_paramGrp(
@@ -77,11 +77,11 @@ if save_low_qual:
         input:
             "{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.gam"
         output:
-            mapped=temp(
-                "{folder}/01_fastq/03_filtered/01_gam_filter/{sm}/{lb}/{id}.{genome}.gam"
+            mapped=maybe_temp(
+                "{folder}/01_fastq/03_filtered/01_gam_filter/{sm}/{lb}/{id}.{genome}.gam", "filtering"
             ),
-            low_qual=temp(
-                "{folder}/01_fastq/03_filtered/01_gam_filter_low_qual/{sm}/{lb}/{id}.{genome}.gam"
+            low_qual=maybe_temp(
+                "{folder}/01_fastq/03_filtered/01_gam_filter_low_qual/{sm}/{lb}/{id}.{genome}.gam", "filtering"
             ),
         params:
             lambda wildcards: get_paramGrp(
@@ -119,8 +119,8 @@ else:
         input:
             "{folder}/01_fastq/02_mapped/03_bam_sort/{sm}/{lb}/{id}.{genome}.bam",
         output:
-            mapped=temp(
-                "{folder}/01_fastq/03_filtered/01_bam_filter/{sm}/{lb}/{id}.{genome}.bam"
+            mapped=maybe_temp(
+                "{folder}/01_fastq/03_filtered/01_bam_filter/{sm}/{lb}/{id}.{genome}.bam", "filtering"
             ),
         params:
             lambda wildcards: get_paramGrp(
@@ -152,8 +152,8 @@ else:
         input:
             "{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.gam"
         output:
-            mapped=temp(
-                "{folder}/01_fastq/03_filtered/01_gam_filter/{sm}/{lb}/{id}.{genome}.gam"
+            mapped=maybe_temp(
+                "{folder}/01_fastq/03_filtered/01_gam_filter/{sm}/{lb}/{id}.{genome}.gam", "filtering"
             ),
         params:
             lambda wildcards: get_paramGrp(

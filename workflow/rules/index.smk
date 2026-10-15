@@ -14,7 +14,7 @@ rule genome_index_bwa:
         fasta="{path}/00_reference/{genome}/{genome}.fasta",
         orig=lambda wildcards: get_param(["genome", wildcards.genome], ""),
     output:
-        temp(
+        maybe_temp(
             multiext(
                 "{path}/00_reference/{genome}/{genome}.fasta",
                 ".sa",
@@ -22,7 +22,7 @@ rule genome_index_bwa:
                 ".ann",
                 ".bwt",
                 ".pac",
-            )
+            ), "indexing"
         ),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
@@ -51,7 +51,7 @@ rule genome_index_bowtie2:
         fasta="{path}/{genome}.fasta",
         orig=lambda wildcards: get_param(["genome", wildcards.genome], ""),
     output:
-        temp(
+        maybe_temp(
             multiext(
                 "{path}/{genome}.fasta",
                 ".1.bt2",
@@ -60,7 +60,7 @@ rule genome_index_bowtie2:
                 ".4.bt2",
                 ".rev.1.bt2",
                 ".rev.2.bt2",
-            )
+            ), "indexing"
         ),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
@@ -89,7 +89,7 @@ rule genome_index_bowtie2_long:
         fasta="{path}/{genome}.fasta",
         orig=lambda wildcards: get_param(["genome", wildcards.genome], ""),
     output:
-        temp(
+        maybe_temp(
             multiext(
                 "{path}/{genome}.fasta",
                 ".1.bt2l",
@@ -98,7 +98,7 @@ rule genome_index_bowtie2_long:
                 ".4.bt2l",
                 ".rev.1.bt2l",
                 ".rev.2.bt2l",
-            )
+            ), "indexing"
         ),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
@@ -128,7 +128,7 @@ rule genome_index_vg_giraffe:
         fasta="{path}/{genome}.fasta",  
         orig=lambda wildcards: get_param(["genome", wildcards.genome], ""),
     output:
-        temp(
+        maybe_temp(
             multiext(
                 "{path}/{genome}.fasta",
                 ".graph.gbz",
@@ -136,7 +136,7 @@ rule genome_index_vg_giraffe:
                 ".graph.min",
                 ".graph.zipcodes",
                 ".graph.xg",
-            )
+            ), "indexing"
         ),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
@@ -162,7 +162,7 @@ rule samtools_index_fasta:
         fasta="{path}/{genome}.fasta",
         orig=lambda wildcards: get_param(["genome", wildcards.genome], ""),
     output:
-        temp("{path}/{genome}.fasta.fai"),
+        maybe_temp("{path}/{genome}.fasta.fai", "indexing"),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
@@ -190,7 +190,7 @@ rule genome_index_picard:
         fasta="{path}/{genome}.fasta",
         orig=lambda wildcards: get_param(["genome", wildcards.genome], ""),
     output:
-        temp("{path}/{genome}.dict"),
+        maybe_temp("{path}/{genome}.dict", "indexing"),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 12),
@@ -223,7 +223,7 @@ rule samtools_index_bam_temp:
     input:
         "{file}.bam",
     output:
-        temp("{file}.bai"),
+        maybe_temp("{file}.bai", "indexing"),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 24),

@@ -14,7 +14,7 @@ rule get_fastq_remote:
     Download a remote fastq file from an anonymous ftp server and check the md5sum
     """
     output:
-        temp("{folder}/01_fastq/00_reads/00_files_orig/{sm}/{lb}/{idd}.fastq.gz"),
+        maybe_temp("{folder}/01_fastq/00_reads/00_files_orig/{sm}/{lb}/{idd}.fastq.gz", "download"),
     wildcard_constraints:
         idd="({})".format("|".join(remote_idd))
     threads: 1
@@ -56,7 +56,7 @@ rule get_fastq_local:
     input:
         get_fastq_name_original,
     output:
-        temp("{folder}/01_fastq/00_reads/00_files_orig/{sm}/{lb}/{idd}.fastq.gz"),
+        maybe_temp("{folder}/01_fastq/00_reads/00_files_orig/{sm}/{lb}/{idd}.fastq.gz"),
     wildcard_constraints:
         idd="({})".format("|".join(local_idd))
     localrule: True
@@ -79,7 +79,7 @@ rule get_fasta:
     input:
         lambda wildcards: get_param(["genome", wildcards.genome], ""),
     output:
-        temp("{folder}/00_reference/{genome}/{genome}.fasta"),
+        maybe_temp("{folder}/00_reference/{genome}/{genome}.fasta"),
     localrule: True
     threads: 1
     message:
@@ -101,7 +101,7 @@ rule fastq_subsample:
     input:
         "{folder}/01_fastq/00_reads/00_files_orig/{sm}/{lb}/{idd}.fastq.gz"
     output:
-        temp("{folder}/01_fastq/00_reads/01_subsample/{sm}/{lb}/{idd}.fastq.gz"),
+        maybe_temp("{folder}/01_fastq/00_reads/01_subsample/{sm}/{lb}/{idd}.fastq.gz", "subsampling"),
     threads: 1
     params:
         run=lambda wildcards: get_paramGrp(["subsampling", "run"], False, wildcards),
@@ -128,7 +128,6 @@ rule fastq_subsample:
 ##########################################################################################
 ## trimming
 
-
 rule adapterremoval_collapse:
     """
     Remove adapter and low quality bases at the edges and collapse paired-end reads
@@ -136,27 +135,13 @@ rule adapterremoval_collapse:
     input:
         get_fastq_4_cleaning,
     output:
-        R=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}.fastq.gz"
-        ),
-        col_R=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}_collapsed.fastq.gz"
-        ),
-        col_trunc=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}_collapsed_truncated.fastq.gz"
-        ),
-        R1=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}_R1.fastq.gz"
-        ),
-        R2=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}_R2.fastq.gz"
-        ),
-        strunc=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}.singleton.truncated.gz"
-        ),
-        disc=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}.discarded.gz"
-        ),
+        R=maybe_temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}.fastq.gz", "cleaning"),
+        col_R=maybe_temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}_collapsed.fastq.gz", "cleaning"),
+        col_trunc=maybe_temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}_collapsed_truncated.fastq.gz", "cleaning"),
+        R1=maybe_temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}_R1.fastq.gz", "cleaning"),
+        R2=maybe_temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}_R2.fastq.gz", "cleaning"),
+        strunc=maybe_temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}.singleton.truncated.gz", "cleaning"),
+        disc=maybe_temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}.discarded.gz", "cleaning"),
         settings="{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}.settings",
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("cleaning", attempt, 4),
@@ -210,17 +195,17 @@ rule adapterremoval_pe:
     input:
         get_fastq_4_cleaning,
     output:
-        R1=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}_R1.fastq.gz"
+        R1=maybe_temp(
+            "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}_R1.fastq.gz", "cleaning"
         ),
-        R2=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}_R2.fastq.gz"
+        R2=maybe_temp(
+            "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}_R2.fastq.gz", "cleaning"
         ),
-        singleton=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}.singleton.truncated.gz"
+        singleton=maybe_temp(
+            "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}.singleton.truncated.gz", "cleaning"
         ),
-        discarded=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}.discarded.gz"
+        discarded=maybe_temp(
+            "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}.discarded.gz", "cleaning"
         ),
         settings="{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}.settings",
     resources:
@@ -257,11 +242,11 @@ rule adapterremoval_se:
     input:
         get_fastq_4_cleaning,
     output:
-        R=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapterremoval_se/{sm}/{lb}/{id}.fastq.gz"
+        R=maybe_temp(
+            "{folder}/01_fastq/01_trimmed/01_adapterremoval_se/{sm}/{lb}/{id}.fastq.gz", "cleaning"
         ),
-        discard=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapterremoval_se/{sm}/{lb}/{id}.discarded.gz"
+        discard=maybe_temp(
+            "{folder}/01_fastq/01_trimmed/01_adapterremoval_se/{sm}/{lb}/{id}.discarded.gz", "cleaning"
         ),
         settings="{folder}/01_fastq/01_trimmed/01_adapterremoval_se/{sm}/{lb}/{id}.settings",
     resources:
@@ -340,12 +325,12 @@ rule fastp_collapse:
     input:
         get_fastq_4_cleaning,
     output:
-        R=temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}.fastq.gz"),
-        R_merged=temp(
-            "{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_merged.fastq.gz"
+        R=maybe_temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}.fastq.gz", "cleaning"),
+        R_merged=maybe_temp(
+            "{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_merged.fastq.gz", "cleaning"
         ),
-        R1=temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_R1.fastq.gz"),
-        R2=temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_R2.fastq.gz"),
+        R1=maybe_temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_R1.fastq.gz", "cleaning"),
+        R2=maybe_temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_R2.fastq.gz", "cleaning"),
         json="{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}.json",
         html="{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}.html",
     resources:
@@ -390,8 +375,8 @@ rule fastp_pe:
     input:
         get_fastq_4_cleaning,
     output:
-        R1=temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_R1.fastq.gz"),
-        R2=temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_R2.fastq.gz"),
+        R1=maybe_temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_R1.fastq.gz", "cleaning"),
+        R2=maybe_temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_R2.fastq.gz", "cleaning"),
         json="{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}.json",
         html="{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}.html",
     resources:
@@ -427,7 +412,7 @@ rule fastp_se:
     input:
         get_fastq_4_cleaning,
     output:
-        R=temp("{folder}/01_fastq/01_trimmed/01_fastp_se/{sm}/{lb}/{id}.fastq.gz"),
+        R=maybe_temp("{folder}/01_fastq/01_trimmed/01_fastp_se/{sm}/{lb}/{id}.fastq.gz", "cleaning"),
         json="{folder}/01_fastq/01_trimmed/01_fastp_se/{sm}/{lb}/{id}.json",
         html="{folder}/01_fastq/01_trimmed/01_fastp_se/{sm}/{lb}/{id}.html",
     resources:

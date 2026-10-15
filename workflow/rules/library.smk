@@ -116,8 +116,8 @@ rule markduplicates:
     input:
         get_bam_4_markduplicates,
     output:
-        bam=temp(
-            "{folder}/02_library/01_duplicated/01_markduplicates/{sm}/{lb}.{genome}.bam"
+        bam=maybe_temp(
+            "{folder}/02_library/01_duplicated/01_markduplicates/{sm}/{lb}.{genome}.bam", "remove_duplicates"
         ),
         stats="{folder}/02_library/01_duplicated/01_markduplicates/{sm}/{lb}.{genome}.stats",
     resources:
@@ -162,8 +162,8 @@ rule markduplicates_keep_duplicates:
     input:
         get_bam_4_markduplicates,
     output:
-        bam=temp(
-            "{folder}/02_library/01_duplicated/01_markduplicates/{sm}/{lb}.{genome}.bam"
+        bam=maybe_temp(
+            "{folder}/02_library/01_duplicated/01_markduplicates/{sm}/{lb}.{genome}.bam", "remove_duplicates"
         ),
         duplicate="{folder}/02_library/01_duplicated/01_markduplicates/{sm}/{lb}.{genome}_duplicates.bam",
         stats="{folder}/02_library/01_duplicated/01_markduplicates/{sm}/{lb}.{genome}.stats",
@@ -216,7 +216,7 @@ rule dedup:
         json="{folder}/02_library/01_duplicated/01_dedup/{sm}/{lb}.{genome}.dedup.json",
         hist="{folder}/02_library/01_duplicated/01_dedup/{sm}/{lb}.{genome}.hist",
         log="{folder}/02_library/01_duplicated/01_dedup/{sm}/{lb}.{genome}.log",
-        bam=temp("{folder}/02_library/01_duplicated/01_dedup/{sm}/{lb}.{genome}.bam"),
+        bam=maybe_temp("{folder}/02_library/01_duplicated/01_dedup/{sm}/{lb}.{genome}.bam", "remove_duplicates"),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc(
             "remove_duplicates", attempt, 4
@@ -332,7 +332,7 @@ rule mapDamage_rescale:
         bam=get_bam_4_damage_rescale,
         deamination="{folder}/02_library/02_rescaled/01_mapDamage/{sm}/{lb}.{genome}_results_mapDamage/Fragmisincorporation_plot.pdf",
     output:
-        bam=temp("{folder}/02_library/02_rescaled/01_mapDamage/{sm}/{lb}.{genome}.bam"),
+        bam=maybe_temp("{folder}/02_library/02_rescaled/01_mapDamage/{sm}/{lb}.{genome}.bam", "mapdamage"),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("mapdamage", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapdamage", attempt, 24),
@@ -360,7 +360,7 @@ rule bamutil:
     input:
         bam=get_bam_4_bamutil,
     output:
-        bam=temp("{folder}/02_library/03_trim/01_bamutil/{sm}/{lb}.{genome}.bam"),
+        bam=maybe_temp("{folder}/02_library/03_trim/01_bamutil/{sm}/{lb}.{genome}.bam", "bamutil"),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("bamutil", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("bamutil", attempt, 24),
@@ -387,7 +387,7 @@ rule bamrefine:
     input:
         bam=get_bam_4_bamrefine,
     output:
-        bam=temp("{folder}/02_library/03_trim/02_bamrefine/{sm}/{lb}.{genome}.bam"),
+        bam=maybe_temp("{folder}/02_library/03_trim/02_bamrefine/{sm}/{lb}.{genome}.bam", "bamrefine"),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("bamrefine", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("bamrefine", attempt, 24),

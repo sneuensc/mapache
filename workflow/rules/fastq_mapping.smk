@@ -99,7 +99,7 @@ rule mapping_bwa_samse:
         fastq=get_fastq_4_mapping,
         sai="{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}.{genome}.sai",
     output:
-        temp("{folder}/01_fastq/02_mapped/02_bwa_samse/{sm}/{lb}/{id}.{genome}.bam"),
+        maybe_temp("{folder}/01_fastq/02_mapped/02_bwa_samse/{sm}/{lb}/{id}.{genome}.bam", "mapping"),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
@@ -147,7 +147,7 @@ rule mapping_bwa_sampe:
         sai1="{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}.{genome}_R1.sai",
         sai2="{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}.{genome}_R2.sai",
     output:
-        temp("{folder}/01_fastq/02_mapped/02_bwa_sampe/{sm}/{lb}/{id}.{genome}.bam"),
+        maybe_temp("{folder}/01_fastq/02_mapped/02_bwa_sampe/{sm}/{lb}/{id}.{genome}.bam", "mapping"),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
@@ -193,7 +193,7 @@ rule mapping_bwa_mem:
         ref="{folder}/00_reference/{genome}/{genome}.fasta",
         fastq=get_fastq_4_mapping,
     output:
-        temp("{folder}/01_fastq/02_mapped/02_bwa_mem/{sm}/{lb}/{id}.{genome}.bam"),
+        maybe_temp("{folder}/01_fastq/02_mapped/02_bwa_mem/{sm}/{lb}/{id}.{genome}.bam", "mapping"),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
@@ -239,7 +239,7 @@ rule mapping_bowtie2:
         ref="{folder}/00_reference/{genome}/{genome}.fasta",
         fastq=get_fastq_4_mapping,
     output:
-        temp("{folder}/01_fastq/02_mapped/02_bwa_bowtie2/{sm}/{lb}/{id}.{genome}.bam"),
+        maybe_temp("{folder}/01_fastq/02_mapped/02_bwa_bowtie2/{sm}/{lb}/{id}.{genome}.bam", "mapping"),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
@@ -280,7 +280,7 @@ rule mapping_vg_giraffe:
         dict="{folder}/00_reference/{genome}/{genome}.dict",
         fastq=get_fastq_4_mapping,
     output:
-        temp("{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.bam"),
+        maybe_temp("{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.bam", "mapping"),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
@@ -331,7 +331,7 @@ rule mapping_vg_giraffe:
 
 
 GAM_PATH = "{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.gam"
-GAM_OUTPUT = GAM_PATH if get_param_bool(["mapping", "keep_gam"], ["False", "True"]) else temp(GAM_PATH)
+GAM_OUTPUT = GAM_PATH if get_param_bool(["mapping", "keep_gam"], ["False", "True"]) else maybe_temp(GAM_PATH, "mapping")
 
 rule mapping_vg_giraffe_gam:
     """
@@ -390,7 +390,7 @@ rule convert_gam2bam:
         dict="{folder}/00_reference/{genome}/{genome}.dict",
         gam="{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.gam"
     output:
-        bam=temp("{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.bam")
+        bam=maybe_temp("{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.bam", "mapping")
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),

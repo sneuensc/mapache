@@ -12,7 +12,7 @@
 # Samples 
 ##########################################################################################
 # Example samples file. Modify to map to your own samples.
-sample_file: config/samples.tsv
+sample_file: config/sample_andes_eduardo.tsv
 
 # Some statistics (like depth of coverage) can be computed for BAM files that were obtained
 # by other means (e.g., downloaded from public repositories). Note that in that case, mapache
@@ -55,8 +55,8 @@ result_dir: 'results'
 # Include meaningful names for each genome. Final BAM(s) file will be named after it 
 # (e.g., ind1.hg19.bam)
 genome: 
-    #hg19: /work/FAC/FBM/DBC/amalaspi/popgen/shared_resources/reference_human/hs.build37.1/hs.build37.1.fa
-    GRCh38graph: /work/FAC/FBM/DBC/amalaspi/popgen/shared_resources/reference_human/GCA_000001405.15_GRCh38_graph_genome/GCA_000001405.15_GRCh38.fa
+    hg19: /work/FAC/FBM/DBC/amalaspi/popgen/shared_resources/reference_human/hs.build37.1/hs.build37.1.fa
+    #GRCh38graph: /work/FAC/FBM/DBC/amalaspi/popgen/shared_resources/reference_human/GCA_000001405.15_GRCh38_graph_genome/GCA_000001405.15_GRCh38.fa
     #test: /users/sneuensc/work_sneuensc/mapping_pipeline/mapache/test_genome.fa
     #GRCh38: /work/FAC/FBM/DBC/amalaspi/popgen/shared_resources/reference_human/GCA_000001405.15_GRCh38.p13_onlyChrom/GCA_000001405.15_GRCh38.fa
 
@@ -82,37 +82,39 @@ indexing:
 
 ## only used when remote files form an ftp server are downloaded
 download:
+    tries: 3
     mem: 2 ## in GB
     time: 10    
 
 ## subsampling (optional)
 subsampling:
     run: False
-    params: '-s1'
+    params: '-s1' ## if you want to subsample a paired-end fastq file, you need to specify the same seed for both files (or all)
     number: 1000
 
 # adapter_removal (optional)
 cleaning:
     run: adapterremoval #'adapterremoval'   # options: adapterremoval (default), fastp, False
-    params_adapterremoval: '--minlength 30 --trimns --trimqualities'
+    params_adapterremoval: '--minlength 30 --trimns --trimqualities --collapse'
     params_fastp: ''
+    keep_temp: True  ## keep the temp files nevertheless (otherwise they are deleted if --nt is nto set)
     threads: 4 
     mem: 4 ## in GB
-    time: 2
+    time: 6
 
 # mapping (compulsory)
 mapping:
     mapper: 'bwa_aln' # options: bwa_aln, bwa_mem, bowtie2, bowtie2l, vg_giraffe, vg_giraffe_gam
     bwa_aln_params: '-l 1024'   
-    bwa_samse_params: '-n 3'
+    bwa_samse_params: ''
     bwa_sampe_params: ''
     bwa_mem_params: ''
     bowtie2_params: ''
     giraffe_params: ''
     keep_gam: True
     pl: 'ILLUMINA'
-    threads: 4
-    mem: 16
+    threads: 8
+    mem: 64
     time: 30
 
 ## samtools_sort
@@ -149,7 +151,7 @@ remove_duplicates:
     save_duplicates: True  # whether to save the duplicate reads in a separate bam file (only for markduplicates)
     threads: 4  ## 1 for dedup
     mem: 16
-    time: 2
+    time: 3
 
 ## You may run the workflow until here using the command 'snakemake mapping_library'.
 ## This allows to investigate the mappings and adapt the follow up processes.
@@ -164,7 +166,7 @@ damage_rescale:
 
 # store the bam file before any filtering
 stats_after_rmDup: 
-    run: True
+    run: False
 ## If you want to stop here and inspect the libraries run mapache with the command 'snakemake mapping_library'.
 ## This allows you to (re)-define the parameters for the outstanding steps, such as
 ##  - rescale bam files (mapDamage2)
@@ -176,7 +178,7 @@ stats_after_rmDup:
 ## trim trailing bases
 bamutil:
     run: False
-    params: ''
+    params: '5'
     threads: 1 ## hardcoded at 1
     time: 2
     mem: 4
@@ -194,7 +196,7 @@ bamrefine:
 
 # realign around indels with GATK 
 realign:
-    run: True
+    run: False
     threads: 4
     mem: 16
     time: 4
@@ -245,6 +247,7 @@ stats:
 
     preseq:
         run: False
+        params: ''
         max: 0.6 # <=1: relative to the max value (0.8 is default; 1: all values are shown)
                   # >1: absolute value
         time: 2

@@ -572,13 +572,16 @@ def get_external_samples():
 def get_external_samples_of_genome(genome):
     return EXTERNAL_SAMPLES[genome] if genome in EXTERNAL_SAMPLES else []
 
+## function to allow to use a parameterized temp() function
+def maybe_temp(path, rulename = ""):
+    return path if bool(get_param([rulename, "keep_temp"], False)) else temp(path)
 
 
 ##########################################################################################
 ## all functions for main snakemake file
 
 
-## get the argument of the keys (recursively acorss teh keays)
+## get the argument of the keys (recursively across the keys)
 ## keys: list of keys
 ## def_value:
 ##     - the default value if the parameter is not specified

@@ -118,11 +118,11 @@ rule realign:
         bam=get_bam_4_realign,
         bai=lambda wildcards: bam2bai(get_bam_4_realign(wildcards)),
     output:
-        bam=temp("{folder}/03_sample/01_realigned/01_realign/{sm}.{genome}.bam"),
-        intervals=temp(
-            "{folder}/03_sample/01_realigned/01_realign/{sm}.{genome}.intervals"
+        bam=maybe_temp("{folder}/03_sample/01_realigned/01_realign/{sm}.{genome}.bam", "realign"),
+        intervals=maybe_temp(
+            "{folder}/03_sample/01_realigned/01_realign/{sm}.{genome}.intervals", "realign"
         ),
-        bai=temp("{folder}/03_sample/01_realigned/01_realign/{sm}.{genome}.bai"),
+        bai=maybe_temp("{folder}/03_sample/01_realigned/01_realign/{sm}.{genome}.bai", "realign"),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("realign", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("realign", attempt, 24),
@@ -153,7 +153,7 @@ rule samtools_calmd:
         ref="{folder}/00_reference/{genome}/{genome}.fasta",
         bam=get_bam_4_samtools_calmd,
     output:
-        temp("{folder}/03_sample/02_md_flag/01_md_flag/{sm}.{genome}.bam"),
+        maybe_temp("{folder}/03_sample/02_md_flag/01_md_flag/{sm}.{genome}.bam", "calmd"),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("calmd", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("calmd", attempt, 24),
