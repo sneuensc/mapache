@@ -285,6 +285,10 @@ rule preseq:
         runtime=lambda wildcards, attempt: get_runtime_alloc2(
             ["stats", "preseq"], attempt, 2
         ),
+    params:
+        params=lambda wildcards: get_paramGrp(
+            ["stats", "preseq", "params"], "", wildcards
+        ),
     threads: get_threads("preseq", 1)
     log:
         "{folder}/04_stats/01_sparse_stats/02_library/02_bam_before_rmDup/01_bam/{sm}/{lb}.{genome}_preseq.log",
@@ -296,7 +300,7 @@ rule preseq:
         "--- PRESEQ {input}"
     shell:
         """
-        preseq lc_extrap -B -o {output} {input} 2> {log}
+        preseq lc_extrap -B {params.params} -o {output} {input} 2> {log}
         """
 
 
