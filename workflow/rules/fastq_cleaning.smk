@@ -136,12 +136,12 @@ rule adapterremoval_collapse:
         get_fastq_4_cleaning,
     output:
         R=maybe_temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}.fastq.gz", "cleaning"),
-        col_R=maybe_temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}_collapsed.fastq.gz", "cleaning"),
-        col_trunc=maybe_temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}_collapsed_truncated.fastq.gz", "cleaning"),
-        R1=maybe_temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}_R1.fastq.gz", "cleaning"),
-        R2=maybe_temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}_R2.fastq.gz", "cleaning"),
-        strunc=maybe_temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}.singleton.truncated.gz", "cleaning"),
-        disc=maybe_temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}.discarded.gz", "cleaning"),
+        col_R=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}_collapsed.fastq.gz"),
+        col_trunc=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}_collapsed_truncated.fastq.gz"),
+        R1=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}_R1.fastq.gz"),
+        R2=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}_R2.fastq.gz"),
+        strunc=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}.singleton.truncated.gz"),
+        disc=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}.discarded.gz"),
         settings="{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}.settings",
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("cleaning", attempt, 4),
@@ -201,11 +201,11 @@ rule adapterremoval_pe:
         R2=maybe_temp(
             "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}_R2.fastq.gz", "cleaning"
         ),
-        singleton=maybe_temp(
-            "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}.singleton.truncated.gz", "cleaning"
+        singleton=temp(
+            "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}.singleton.truncated.gz"
         ),
-        discarded=maybe_temp(
-            "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}.discarded.gz", "cleaning"
+        discarded=temp(
+            "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}.discarded.gz"
         ),
         settings="{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}.settings",
     resources:
@@ -245,8 +245,8 @@ rule adapterremoval_se:
         R=maybe_temp(
             "{folder}/01_fastq/01_trimmed/01_adapterremoval_se/{sm}/{lb}/{id}.fastq.gz", "cleaning"
         ),
-        discard=maybe_temp(
-            "{folder}/01_fastq/01_trimmed/01_adapterremoval_se/{sm}/{lb}/{id}.discarded.gz", "cleaning"
+        discard=temp(
+            "{folder}/01_fastq/01_trimmed/01_adapterremoval_se/{sm}/{lb}/{id}.discarded.gz"
         ),
         settings="{folder}/01_fastq/01_trimmed/01_adapterremoval_se/{sm}/{lb}/{id}.settings",
     resources:
@@ -326,11 +326,11 @@ rule fastp_collapse:
         get_fastq_4_cleaning,
     output:
         R=maybe_temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}.fastq.gz", "cleaning"),
-        R_merged=maybe_temp(
-            "{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_merged.fastq.gz", "cleaning"
+        R_merged=temp(
+            "{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_merged.fastq.gz"
         ),
-        R1=maybe_temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_R1.fastq.gz", "cleaning"),
-        R2=maybe_temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_R2.fastq.gz", "cleaning"),
+        R1=temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_R1.fastq.gz"),
+        R2=temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_R2.fastq.gz"),
         json="{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}.json",
         html="{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}.html",
     resources:
