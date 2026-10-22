@@ -98,6 +98,7 @@ wildcard_constraints:
     lb="|".join([lb for sm in SAMPLES.values() for lb in sm]),
     id="|".join([id for sm in SAMPLES.values() for lb in sm.values() for id in lb]),
     genome="|".join([g for g in GENOMES]),
+    chunk="|_chunk[0-9]+",      ## used if the fastq files are split into chunks (e.g. for parallelization)
     folder=RESULT_DIR
 
 ## paired-end libraries are split into "{id}_R1"/"{id}_R2" wildcards downstream, so the
@@ -298,6 +299,7 @@ multiqc_files = get_multiqc_files('SM')
 ##########################################################################################
 ## print a summary of the contents (and also persist it into a run-info file that is kept after the run)
 if VERBOSE:
+    pathlib.Path(RESULT_DIR).mkdir(parents=True, exist_ok=True)   ## not yet existing on a first run
     info_handler = logging.FileHandler(f"{RESULT_DIR}/RUN_INFO.txt", mode="w")
     info_handler.setFormatter(logging.Formatter("%(message)s"))
     LOGGER.addHandler(info_handler)

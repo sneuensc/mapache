@@ -54,7 +54,7 @@ rule get_fastq_local:
     Symlink and rename local fastq file
     """
     input:
-        get_fastq_name_original,
+        lambda wildcards: ancient(get_fastq_name_original(wildcards)),   ## raw data: rerun only if missing, ignore its time stamp
     output:
         maybe_temp("{folder}/01_fastq/00_reads/00_files_orig/{sm}/{lb}/{idd}.fastq.gz"),
     wildcard_constraints:
@@ -99,9 +99,9 @@ rule fastq_subsample:
     Subsample fastq
     """
     input:
-        "{folder}/01_fastq/00_reads/00_files_orig/{sm}/{lb}/{idd}.fastq.gz"
+        ancient("{folder}/01_fastq/00_reads/00_files_orig/{sm}/{lb}/{idd}.fastq.gz"),   ## symlink to the raw data: ignore its time stamp
     output:
-        maybe_temp("{folder}/01_fastq/00_reads/01_subsample/{sm}/{lb}/{idd}.fastq.gz", "subsampling"),
+        maybe_temp("{folder}/01_fastq/00_reads/01_files_subsample/{sm}/{lb}/{idd}.fastq.gz", "subsampling"),
     threads: 1
     params:
         run=lambda wildcards: get_paramGrp(["subsampling", "run"], False, wildcards),
@@ -118,11 +118,63 @@ rule fastq_subsample:
     message:
         "--- SUBSAMPLE FASTQ FILE  {input}"
     log:
-        "{folder}/01_fastq/00_reads/01_subsample/{sm}/{lb}/{idd}.fastq.gz.log",
+        "{folder}/01_fastq/00_reads/01_files_subsample/{sm}/{lb}/{idd}.fastq.gz.log",
     shell:
         """
         seqtk sample {params.params} {input} {params.number} | gzip > {output}
         """
+
+##########################################################################################
+# Split fastq into chunks
+## checkpoint: output may not be temporal!
+checkpoint fastq_split:
+    """
+    Split a single fastq file into chunks of 'nb_reads' reads to be separately computed in parallel.
+    R1 and R2 of paired-end data are split in separate jobs; as both use the same 'nb_reads', chunks stay in sync.
+    Output: {idd}/{id}_chunk0000_R1.fastq.gz, chunk0001..., (nb_reads <= 0: a single chunk symlinked to the input)
+    """
+    input:
+        get_fastq_4_splitting,
+    output:
+        dir=temp(directory(
+            "{folder}/01_fastq/00_reads/01_files_split/{sm}/{lb}/{idd}"
+        )),
+        chunks="{folder}/01_fastq/00_reads/01_files_split/{sm}/{lb}/{idd}_chunks.txt",
+    params:
+        nb_reads=lambda wildcards: int(
+            get_paramGrp(["fastq_split", "nb_reads"], 0, wildcards)
+        ),
+    threads: get_threads("fastq_split", 1)
+    resources:
+        mem_mb=lambda wildcards, attempt: get_memory_alloc("fastq_split", attempt, 2),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("fastq_split", attempt, 4),
+    message:
+        "--- SPLIT FASTQ FILE(S) {input}"
+    log:
+        "{folder}/01_fastq/00_reads/01_files_split/{sm}/{lb}/{idd}.log",
+    shell:
+        """
+        mkdir -p {output.dir}
+        if [ {params.nb_reads} -le 0 ]; then
+            echo {input} > {output.chunks}
+        else
+            ext=$(echo {wildcards.idd} | sed -n 's/.*\\(_R[12]\\)$/\\1/p')
+            id=$(echo {wildcards.idd} | sed 's/_R[12]$//')
+            zcat {input} | split -l $(( 4 * {params.nb_reads} )) -d -a 4 \
+                --additional-suffix=$ext.fastq.gz \
+                --filter='gzip > $FILE' - {output.dir}/${{id}}_chunk 2> {log}
+
+            ## list of chunk files (one per line)
+            (cd {output.dir} && ls -1 *_chunk*.fastq.gz) | sed 's/.*_chunk\\([0-9]*\\).*/\\1/' > {output.chunks}
+        fi
+        """
+
+
+def get_fastq_split_files(wildcards):
+    chunk_file = checkpoints.fastq_split.get(**wildcards).output.chunks
+    with open(chunk_file) as f:
+        files = [os.path.basename(file) for file in f.read().splitlines()]
+    return files
 
 
 ##########################################################################################
@@ -135,14 +187,14 @@ rule adapterremoval_collapse:
     input:
         get_fastq_4_cleaning,
     output:
-        R=maybe_temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}.fastq.gz", "cleaning"),
-        col_R=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}_collapsed.fastq.gz"),
-        col_trunc=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}_collapsed_truncated.fastq.gz"),
-        R1=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}_R1.fastq.gz"),
-        R2=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}_R2.fastq.gz"),
-        strunc=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}.singleton.truncated.gz"),
-        disc=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}.discarded.gz"),
-        settings="{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}.settings",
+        R=maybe_temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}{chunk}.fastq.gz", "cleaning"),
+        col_R=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}{chunk}_collapsed.fastq.gz"),
+        col_trunc=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}{chunk}_collapsed_truncated.fastq.gz"),
+        R1=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}{chunk}_R1.fastq.gz"),
+        R2=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}{chunk}_R2.fastq.gz"),
+        strunc=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}{chunk}.singleton.truncated.gz"),
+        disc=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}{chunk}.discarded.gz"),
+        settings="{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}{chunk}.settings",
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("cleaning", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("cleaning", attempt, 24),
@@ -158,7 +210,7 @@ rule adapterremoval_collapse:
             wildcards,
         ),
     log:
-        "{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}.log",
+        "{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}{chunk}.log",
     threads: get_threads("cleaning", 4)
     conda:
         "../envs/adapterremoval.yaml"
@@ -196,18 +248,18 @@ rule adapterremoval_pe:
         get_fastq_4_cleaning,
     output:
         R1=maybe_temp(
-            "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}_R1.fastq.gz", "cleaning"
+            "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}{chunk}_R1.fastq.gz", "cleaning"
         ),
         R2=maybe_temp(
-            "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}_R2.fastq.gz", "cleaning"
+            "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}{chunk}_R2.fastq.gz", "cleaning"
         ),
         singleton=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}.singleton.truncated.gz"
+            "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}{chunk}.singleton.truncated.gz"
         ),
         discarded=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}.discarded.gz"
+            "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}{chunk}.discarded.gz"
         ),
-        settings="{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}.settings",
+        settings="{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}{chunk}.settings",
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("cleaning", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("cleaning", attempt, 24),
@@ -218,7 +270,7 @@ rule adapterremoval_pe:
             wildcards,
         ),
     log:
-        "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}.log",
+        "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}{chunk}.log",
     threads: get_threads("cleaning", 4)
     conda:
         "../envs/adapterremoval.yaml"
@@ -243,12 +295,12 @@ rule adapterremoval_se:
         get_fastq_4_cleaning,
     output:
         R=maybe_temp(
-            "{folder}/01_fastq/01_trimmed/01_adapterremoval_se/{sm}/{lb}/{id}.fastq.gz", "cleaning"
+            "{folder}/01_fastq/01_trimmed/01_adapterremoval_se/{sm}/{lb}/{id}{chunk}.fastq.gz", "cleaning"
         ),
         discard=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapterremoval_se/{sm}/{lb}/{id}.discarded.gz"
+            "{folder}/01_fastq/01_trimmed/01_adapterremoval_se/{sm}/{lb}/{id}{chunk}.discarded.gz"
         ),
-        settings="{folder}/01_fastq/01_trimmed/01_adapterremoval_se/{sm}/{lb}/{id}.settings",
+        settings="{folder}/01_fastq/01_trimmed/01_adapterremoval_se/{sm}/{lb}/{id}{chunk}.settings",
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("cleaning", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("cleaning", attempt, 24),
@@ -258,8 +310,7 @@ rule adapterremoval_se:
             "--minlength 30 --trimns --trimqualities",
             wildcards,
         ),
-    log:
-        "{folder}/01_fastq/01_trimmed/01_adapterremoval_se/{sm}/{lb}/{id}.log",
+    log: "{folder}/01_fastq/01_trimmed/01_adapterremoval_se/{sm}/{lb}/{id}{chunk}.log",
     threads: get_threads("cleaning", 4)
     conda:
         "../envs/adapterremoval.yaml"
@@ -286,7 +337,7 @@ rule adapterremoval_infer_adapters:
     input:
         get_fastq_4_cleaning,
     output:
-        adapters="{folder}/01_fastq/01_trimmed/01_adapterremoval_infer_adapters/{sm}/{lb}/{id}.txt",
+        adapters="{folder}/01_fastq/01_trimmed/01_adapterremoval_infer_adapters/{sm}/{lb}/{id}{chunk}.txt",
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("cleaning", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("cleaning", attempt, 24),
@@ -302,7 +353,7 @@ rule adapterremoval_infer_adapters:
             wildcards,
         ),
     log:
-        "{folder}/01_fastq/01_trimmed/01_adapterremoval_infer_adapters/{sm}/{lb}/{id}.log",
+        "{folder}/01_fastq/01_trimmed/01_adapterremoval_infer_adapters/{sm}/{lb}/{id}{chunk}.log",
     threads: get_threads("cleaning", 1)
     conda:
         "../envs/adapterremoval.yaml"
@@ -325,14 +376,14 @@ rule fastp_collapse:
     input:
         get_fastq_4_cleaning,
     output:
-        R=maybe_temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}.fastq.gz", "cleaning"),
+        R=maybe_temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}{chunk}.fastq.gz", "cleaning"),
         R_merged=temp(
-            "{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_merged.fastq.gz"
+            "{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}{chunk}_merged.fastq.gz"
         ),
-        R1=temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_R1.fastq.gz"),
-        R2=temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_R2.fastq.gz"),
-        json="{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}.json",
-        html="{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}.html",
+        R1=temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}{chunk}_R1.fastq.gz"),
+        R2=temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}{chunk}_R2.fastq.gz"),
+        json="{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}{chunk}.json",
+        html="{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}{chunk}.html",
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("cleaning", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("cleaning", attempt, 24),
@@ -343,7 +394,7 @@ rule fastp_collapse:
             wildcards,
         ),
     log:
-        "{folder}/01_fastq/01_trimmed/02_fastp_pe/{sm}/{lb}/{id}.log",
+        "{folder}/01_fastq/01_trimmed/02_fastp_pe/{sm}/{lb}/{id}{chunk}.log",
     threads: get_threads("cleaning", 4)
     conda:
         "../envs/fastp.yaml"
@@ -375,10 +426,10 @@ rule fastp_pe:
     input:
         get_fastq_4_cleaning,
     output:
-        R1=maybe_temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_R1.fastq.gz", "cleaning"),
-        R2=maybe_temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}_R2.fastq.gz", "cleaning"),
-        json="{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}.json",
-        html="{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}.html",
+        R1=maybe_temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}{chunk}_R1.fastq.gz", "cleaning"),
+        R2=maybe_temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}{chunk}_R2.fastq.gz", "cleaning"),
+        json="{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}{chunk}.json",
+        html="{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}{chunk}.html",
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("cleaning", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("cleaning", attempt, 24),
@@ -389,7 +440,7 @@ rule fastp_pe:
             wildcards,
         ),
     log:
-        "{folder}/01_fastq/01_trimmed/02_fastp_pe/{sm}/{lb}/{id}.log",
+        "{folder}/01_fastq/01_trimmed/02_fastp_pe/{sm}/{lb}/{id}{chunk}.log",
     threads: get_threads("cleaning", 4)
     conda:
         "../envs/fastp.yaml"
@@ -412,9 +463,9 @@ rule fastp_se:
     input:
         get_fastq_4_cleaning,
     output:
-        R=maybe_temp("{folder}/01_fastq/01_trimmed/01_fastp_se/{sm}/{lb}/{id}.fastq.gz", "cleaning"),
-        json="{folder}/01_fastq/01_trimmed/01_fastp_se/{sm}/{lb}/{id}.json",
-        html="{folder}/01_fastq/01_trimmed/01_fastp_se/{sm}/{lb}/{id}.html",
+        R=maybe_temp("{folder}/01_fastq/01_trimmed/01_fastp_se/{sm}/{lb}/{id}{chunk}.fastq.gz", "cleaning"),
+        json="{folder}/01_fastq/01_trimmed/01_fastp_se/{sm}/{lb}/{id}{chunk}.json",
+        html="{folder}/01_fastq/01_trimmed/01_fastp_se/{sm}/{lb}/{id}{chunk}.html",
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("cleaning", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("cleaning", attempt, 24),
@@ -425,7 +476,7 @@ rule fastp_se:
             wildcards,
         ),
     log:
-        "{folder}/01_fastq/01_trimmed/01_fastp_se/{sm}/{lb}/{id}.log",
+        "{folder}/01_fastq/01_trimmed/01_fastp_se/{sm}/{lb}/{id}{chunk}.log",
     threads: get_threads("cleaning", 4)
     conda:
         "../envs/fastp.yaml"

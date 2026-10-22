@@ -3,104 +3,38 @@
 ##########################################################################################
 
 
-rule merge_bam_fastq2library:
+rule merge_fastq2library:
     """
-    Merge the bam files of the fastq step
+    Merge the bam/gam files of the fastq step
+    {kind}: bam, bam_low_qual, gam or gam_low_qual; 
+    {ext}: bam (samtools merge) or gam (cat)
     """
     input:
-        get_bam_4_merge_bam_fastq2library,
+        get_files_4_merge_fastq2library,
     output:
-        temp("{folder}/02_library/00_merged_fastq/01_bam/{sm}/{lb}.{genome}.bam"),
+        temp("{folder}/02_library/00_merged_fastq/01_{kind}/{sm}/{lb}.{genome}.{ext}"),
+    wildcard_constraints:
+        kind="bam|bam_low_qual|gam|gam_low_qual",
+        ext="bam|gam",
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24),
     threads: get_threads("merging", 4)
     log:
-        "{folder}/02_library/00_merged_fastq/01_bam/{sm}/{lb}.{genome}.log",
+        "{folder}/02_library/00_merged_fastq/01_{kind}/{sm}/{lb}.{genome}.{ext}.log",
     conda:
         "../envs/samtools.yaml"
     envmodules:
         module_samtools,
     message:
-        "--- SAMTOOLS MERGE {output}"
+        "--- MERGE {output}"
     shell:
         """
-        samtools merge -f --threads {threads} {output} {input} 2> {log};
-        """
-
-
-rule merge_bam_low_qual_fastq2library:
-    """
-    Merge the bam files of the fastq step
-    """
-    input:
-        get_bam_4_merge_bam_low_qual_fastq2library,
-    output:
-        temp(
-            "{folder}/02_library/00_merged_fastq/01_bam_low_qual/{sm}/{lb}.{genome}.bam"
-        ),
-    resources:
-        mem_mb=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24),
-    threads: get_threads("merging", 4)
-    log:
-        "{folder}/02_library/00_merged_fastq/01_bam_low_qual/{sm}/{lb}.{genome}.log",
-    conda:
-        "../envs/samtools.yaml"
-    envmodules:
-        module_samtools,
-    message:
-        "--- SAMTOOLS MERGE {output}"
-    shell:
-        """
-        samtools merge -f --threads {threads} {output} {input} 2> {log};
-        """
-
-
-
-rule merge_gam_fastq2library:
-    """
-    Merge the gam files of the fastq step
-    """
-    input:
-        get_gam_4_merge_gam_fastq2library,
-    output:
-        temp("{folder}/02_library/00_merged_fastq/01_gam/{sm}/{lb}.{genome}.gam"),
-    resources:
-        mem_mb=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24),
-    threads: get_threads("merging", 4)
-    log:
-        "{folder}/02_library/00_merged_fastq/01_gam/{sm}/{lb}.{genome}.log",
-    message:
-        "--- VG MERGE {output}"
-    shell:
-        """
-        cat {input} > {output} 2> {log};
-        """
-
-
-rule merge_gam_low_qual_fastq2library:
-    """
-    Merge the gam files of the fastq step
-    """
-    input:
-        get_gam_4_merge_gam_low_qual_fastq2library,
-    output:
-        temp(
-            "{folder}/02_library/00_merged_fastq/01_gam_low_qual/{sm}/{lb}.{genome}.gam"
-        ),
-    resources:
-        mem_mb=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24),
-    threads: get_threads("merging", 4)
-    log:
-        "{folder}/02_library/00_merged_fastq/01_gam_low_qual/{sm}/{lb}.{genome}.log",
-    message:
-        "--- VG MERGE {output}"
-    shell:
-        """
-        cat {input} > {output} 2> {log};
+        if [ {wildcards.ext} = bam ]; then
+            samtools merge -f --threads {threads} {output} {input} 2> {log};
+        else
+            cat {input} > {output} 2> {log};
+        fi
         """
 
 
@@ -271,12 +205,14 @@ rule get_bam_after_rmDup_low_qual:
     Store the bam file after duplication removal
     """
     input:
-        get_merged_bam_low_qual_LB,
+        get_merged_LB,
     output:
-        "{folder}/02_library/02_bam_after_rmDup/01_bam_low_qual/{sm}/{lb}.{genome}.bam",
+        "{folder}/02_library/02_bam_after_rmDup/01_{kind}/{sm}/{lb}.{genome}.bam",
+    wildcard_constraints:
+        kind="bam_low_qual",
     threads: 1
     log:
-        "{folder}/02_library/02_bam_after_rmDup/01_bam_low_qual/{sm}/{lb}.{genome}.bam.log",
+        "{folder}/02_library/02_bam_after_rmDup/01_{kind}/{sm}/{lb}.{genome}.bam.log",
     message:
         "--- GET LOW QUAL BAM AFTER DUPLICATE REMOVAL {output}"
     shell:

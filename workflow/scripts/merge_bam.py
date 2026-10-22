@@ -14,8 +14,13 @@ def reheader_bam(in_file, out_file, sm):
 
 out_file = snakemake.output[0]
 
+## gam files: just concatenate them (no read group to adapt)
+if out_file.endswith(".gam"):
+    cmd = f"cat {snakemake.input} > {out_file} 2> {snakemake.log};"
+    subprocess.run(cmd, shell=True, check=True)
+
 ## multiple bam files: merge them
-if len(list(snakemake.input)) > 1:
+elif len(list(snakemake.input)) > 1:
     cmd = f"samtools merge -f --threads {snakemake.threads} {out_file} {snakemake.input} 2> {snakemake.log};"
     subprocess.run(cmd, shell=True)
 

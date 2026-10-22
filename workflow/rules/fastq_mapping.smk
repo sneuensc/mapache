@@ -18,7 +18,7 @@ rule mapping_bwa_aln_se:
         ref="{folder}/00_reference/{genome}/{genome}.fasta",
         fastq=get_fastq_4_mapping,
     output:
-        temp("{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}.{genome}.sai"),
+        temp("{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}{chunk}.{genome}.sai"),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
@@ -27,7 +27,7 @@ rule mapping_bwa_aln_se:
             ["mapping", "bwa_aln_params"], "-l 1024", wildcards
         ),
     log:
-        "{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}.{genome}.log",
+        "{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}{chunk}.{genome}.log",
     threads: get_threads("mapping", 4)
     conda:
         "../envs/bwa.yaml"
@@ -58,7 +58,7 @@ rule mapping_bwa_aln_pe:
         fastq=get_fastq_4_mapping,
     output:
         temp(
-            "{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}.{genome}_R{id_read}.sai"
+            "{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}{chunk}.{genome}_R{id_read}.sai"
         ),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
@@ -68,7 +68,7 @@ rule mapping_bwa_aln_pe:
             ["mapping", "bwa_aln_params"], "-l 1024", wildcards
         ),
     log:
-        "{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}.{genome}_R{id_read}.log",
+        "{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}{chunk}.{genome}_R{id_read}.log",
     threads: get_threads("mapping", 4)
     conda:
         "../envs/bwa.yaml"
@@ -97,9 +97,9 @@ rule mapping_bwa_samse:
         ),
         ref="{folder}/00_reference/{genome}/{genome}.fasta",
         fastq=get_fastq_4_mapping,
-        sai="{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}.{genome}.sai",
+        sai="{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}{chunk}.{genome}.sai",
     output:
-        maybe_temp("{folder}/01_fastq/02_mapped/02_bwa_samse/{sm}/{lb}/{id}.{genome}.bam", "mapping"),
+        maybe_temp("{folder}/01_fastq/02_mapped/02_bwa_samse/{sm}/{lb}/{id}{chunk}.{genome}.bam", "mapping"),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
@@ -111,7 +111,7 @@ rule mapping_bwa_samse:
             ["mapping", "bwa_samse_params"], "-n 3", wildcards
         ),
     log:
-        "{folder}/01_fastq/02_mapped/02_bwa_samse/{sm}/{lb}/{id}.{genome}.log",
+        "{folder}/01_fastq/02_mapped/02_bwa_samse/{sm}/{lb}/{id}{chunk}.{genome}.log",
     threads: 1
     conda:
         "../envs/bwa.yaml"
@@ -144,10 +144,10 @@ rule mapping_bwa_sampe:
         ref="{folder}/00_reference/{genome}/{genome}.fasta",
         fastq=get_fastq_4_mapping,
         ## should get both pairs
-        sai1="{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}.{genome}_R1.sai",
-        sai2="{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}.{genome}_R2.sai",
+        sai1="{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}{chunk}.{genome}_R1.sai",
+        sai2="{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}{chunk}.{genome}_R2.sai",
     output:
-        maybe_temp("{folder}/01_fastq/02_mapped/02_bwa_sampe/{sm}/{lb}/{id}.{genome}.bam", "mapping"),
+        maybe_temp("{folder}/01_fastq/02_mapped/02_bwa_sampe/{sm}/{lb}/{id}{chunk}.{genome}.bam", "mapping"),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
@@ -159,7 +159,7 @@ rule mapping_bwa_sampe:
             ["mapping", "bwa_sampe_params"], "-n 3", wildcards
         ),
     log:
-        "{folder}/01_fastq/02_mapped/02_bwa_sampe/{sm}/{lb}/{id}.{genome}.log",
+        "{folder}/01_fastq/02_mapped/02_bwa_sampe/{sm}/{lb}/{id}{chunk}.{genome}.log",
     threads: 1
     conda:
         "../envs/bwa.yaml"
@@ -193,7 +193,7 @@ rule mapping_bwa_mem:
         ref="{folder}/00_reference/{genome}/{genome}.fasta",
         fastq=get_fastq_4_mapping,
     output:
-        maybe_temp("{folder}/01_fastq/02_mapped/02_bwa_mem/{sm}/{lb}/{id}.{genome}.bam", "mapping"),
+        maybe_temp("{folder}/01_fastq/02_mapped/02_bwa_mem/{sm}/{lb}/{id}{chunk}.{genome}.bam", "mapping"),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
@@ -205,7 +205,7 @@ rule mapping_bwa_mem:
             ["mapping", "bwa_mem_params"], "", wildcards
         ),
     log:
-        "{folder}/01_fastq/02_mapped/02_bwa_mem/{sm}/{lb}/{id}.{genome}.log",
+        "{folder}/01_fastq/02_mapped/02_bwa_mem/{sm}/{lb}/{id}{chunk}.{genome}.log",
     threads: get_threads("mapping", 4)
     conda:
         "../envs/bwa.yaml"
@@ -239,7 +239,7 @@ rule mapping_bowtie2:
         ref="{folder}/00_reference/{genome}/{genome}.fasta",
         fastq=get_fastq_4_mapping,
     output:
-        maybe_temp("{folder}/01_fastq/02_mapped/02_bwa_bowtie2/{sm}/{lb}/{id}.{genome}.bam", "mapping"),
+        maybe_temp("{folder}/01_fastq/02_mapped/02_bwa_bowtie2/{sm}/{lb}/{id}{chunk}.{genome}.bam", "mapping"),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
@@ -248,7 +248,7 @@ rule mapping_bowtie2:
             ["mapping", "bowtie2_params"], "", wildcards
         ),
     log:
-        "{folder}/01_fastq/02_mapped/02_bwa_bowtie2/{sm}/{lb}/{id}.{genome}.log",
+        "{folder}/01_fastq/02_mapped/02_bwa_bowtie2/{sm}/{lb}/{id}{chunk}.{genome}.log",
     threads: get_threads("mapping", 4)
     conda:
         "../envs/bowtie2.yaml"
@@ -280,7 +280,7 @@ rule mapping_vg_giraffe:
         dict="{folder}/00_reference/{genome}/{genome}.dict",
         fastq=get_fastq_4_mapping,
     output:
-        maybe_temp("{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.bam", "mapping"),
+        maybe_temp("{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}{chunk}.{genome}.bam", "mapping"),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
@@ -293,7 +293,7 @@ rule mapping_vg_giraffe:
         ),
         bin = get_param(["software", "vg"], "vg")
     log:
-        "{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.log",
+        "{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}{chunk}.{genome}.log",
     threads: get_threads("mapping", 4)
     conda:
         "../envs/samtools.yaml"
@@ -330,7 +330,8 @@ rule mapping_vg_giraffe:
         """
 
 
-GAM_PATH = "{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.gam"
+
+GAM_PATH = "{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}{chunk}.{genome}.gam"
 GAM_OUTPUT = GAM_PATH if get_param_bool(["mapping", "keep_gam"], ["False", "True"]) else maybe_temp(GAM_PATH, "mapping")
 
 rule mapping_vg_giraffe_gam:
@@ -359,7 +360,7 @@ rule mapping_vg_giraffe_gam:
         ),
         bin = get_param(["software", "vg"], "vg")
     log:
-        "{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.log",
+        "{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}{chunk}.{genome}.log",
     threads: get_threads("mapping", 4)
     message:
         "--- VG GIRAFFE {input.fastq}"
@@ -388,9 +389,9 @@ rule convert_gam2bam:
     input:
         xg="{folder}/00_reference/{genome}/{genome}.fasta.graph.xg",
         dict="{folder}/00_reference/{genome}/{genome}.dict",
-        gam="{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.gam"
+        gam="{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}{chunk}.{genome}.gam"
     output:
-        bam=maybe_temp("{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}.bam", "mapping")
+        bam=maybe_temp("{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}{chunk}.{genome}.bam", "mapping")
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
@@ -403,7 +404,7 @@ rule convert_gam2bam:
         ),
         bin = get_param(["software", "vg"], "vg")
     log:
-        "{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}.{genome}_convert.log",
+        "{folder}/01_fastq/02_mapped/02_vg_giraffe/{sm}/{lb}/{id}{chunk}.{genome}_convert.log",
     threads: get_threads("mapping", 4)
     conda:
         "../envs/samtools.yaml"

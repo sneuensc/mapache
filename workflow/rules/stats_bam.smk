@@ -4,9 +4,10 @@
 def get_bam_file(wc):
     paths = list(pathlib.Path(wc.file).parts)
     if paths[1] == "04_final_fastq":  ## fastq
-        file = get_final_bam_FASTQ(
+        file = get_final_FASTQ(
             Wildcards(
                 fromdict={
+                    "kind": "bam",
                     "folder": wc.folder,
                     "sm": paths[3],
                     "lb": paths[4],

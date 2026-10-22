@@ -5,14 +5,19 @@ localrules:
     get_final_bam,
 
 
-rule merge_bam_library2sample:
+rule merge_library2sample:
     """
-    Merge the bam files of the library step
+    Merge the bam/gam files of the library step
+    {kind}: bam, bam_low_qual, gam or gam_low_qual; 
+    {ext}: bam (samtools merge + RG renaming) or gam (cat)
     """
     input:
-        get_bam_4_merge_bam_library2sample,
+        get_files_4_merge_library2sample,
     output:
-        temp("{folder}/03_sample/00_merged_library/01_bam/{sm}.{genome}.bam"),
+        temp("{folder}/03_sample/00_merged_library/01_{kind}/{sm}.{genome}.{ext}"),
+    wildcard_constraints:
+        kind="bam|bam_low_qual|gam|gam_low_qual",
+        ext="bam|gam",
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24),
@@ -20,90 +25,15 @@ rule merge_bam_library2sample:
     params:
         sm_changed=lambda wildcards: sm_changed(wildcards.sm),
     log:
-        "{folder}/03_sample/00_merged_library/01_bam/{sm}.{genome}.log",
+        "{folder}/03_sample/00_merged_library/01_{kind}/{sm}.{genome}.{ext}.log",
     conda:
         "../envs/samtools.yaml"
     envmodules:
         module_samtools,
     message:
-        "--- SAMTOOLS MERGE merge_bam_library2sample {output}"
+        "--- MERGE merge_library2sample {output}"
     script:
         "../scripts/merge_bam.py"
-
-
-rule merge_bam_low_qual_library2sample:
-    """
-    Merge the bam files of the library step
-    """
-    input:
-        get_bam_4_merge_bam_low_qual_library2sample,
-    output:
-        temp("{folder}/03_sample/00_merged_library/01_bam_low_qual/{sm}.{genome}.bam"),
-    resources:
-        mem_mb=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24),
-    threads: get_threads("merging", 4)
-    params:
-        sm_changed=lambda wildcards: sm_changed(wildcards.sm),
-    log:
-        "{folder}/03_sample/00_merged_library/01_bam_low_qual/{sm}.{genome}.log",
-    conda:
-        "../envs/samtools.yaml"
-    envmodules:
-        module_samtools,
-    message:
-        "--- SAMTOOLS MERGE merge_bam_library2sample {output}"
-    script:
-        "../scripts/merge_bam.py"
-
-
-rule merge_gam_library2sample:
-    """
-    Merge the gam files of the library step
-    """
-    input:
-        get_gam_4_merge_gam_library2sample,
-    output:
-        temp("{folder}/03_sample/00_merged_library/01_gam/{sm}.{genome}.gam"),
-    resources:
-        mem_mb=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24),
-    threads: get_threads("merging", 4)
-    params:
-        sm_changed=lambda wildcards: sm_changed(wildcards.sm),
-    log:
-        "{folder}/03_sample/00_merged_library/01_gam/{sm}.{genome}.log",
-    message:
-        "--- VG MERGE merge_gam_library2sample {output}"
-    shell:
-        """
-        cat {input} > {output} 2> {log};
-        """
-
-
-
-rule merge_gam_low_qual_library2sample:
-    """
-    Merge the gam files of the library step
-    """
-    input:
-        get_gam_4_merge_gam_low_qual_library2sample,
-    output:
-        temp("{folder}/03_sample/00_merged_library/01_gam_low_qual/{sm}.{genome}.gam"),
-    resources:
-        mem_mb=lambda wildcards, attempt: get_memory_alloc("merging", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("merging", attempt, 24),
-    threads: get_threads("merging", 4)
-    params:
-        sm_changed=lambda wildcards: sm_changed(wildcards.sm),
-    log:
-        "{folder}/03_sample/00_merged_library/01_gam_low_qual/{sm}.{genome}.log",
-    message:
-        "--- VG MERGE merge_gam_low_qual_library2sample {output}"
-    shell:
-        """
-        cat {input} > {output} 2> {log};
-        """
 
 
 
@@ -153,11 +83,11 @@ rule samtools_calmd:
         ref="{folder}/00_reference/{genome}/{genome}.fasta",
         bam=get_bam_4_samtools_calmd,
     output:
-        maybe_temp("{folder}/03_sample/02_md_flag/01_md_flag/{sm}.{genome}.bam", "calmd"),
+        maybe_temp("{folder}/03_sample/02_md_flag/01_md_flag/{sm}.{genome}.bam", "compute_md"),
     resources:
-        mem_mb=lambda wildcards, attempt: get_memory_alloc("calmd", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("calmd", attempt, 24),
-    threads: get_threads("calmd", 4)
+        mem_mb=lambda wildcards, attempt: get_memory_alloc("compute_md", attempt, 4),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("compute_md", attempt, 24),
+    threads: get_threads("compute_md", 4)
     log:
         "{folder}/03_sample/02_md_flag/01_md_flag/{sm}.{genome}.log",
     conda:

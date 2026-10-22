@@ -57,21 +57,32 @@ def get_md5_of_ID(wc):
     return test_md5(file, wc) if file!= "" else ""
 
 
-def get_fastq_4_cleaning(wc):
+def get_fastq_4_splitting(wc):
     if run_subsampling:
-        folder = f"{wc.folder}/01_fastq/00_reads/00_files_subsample/{wc.sm}/{wc.lb}"
+        filename = f"{wc.folder}/01_fastq/00_reads/01_files_subsample/{wc.sm}/{wc.lb}/{wc.idd}.fastq.gz"
     else:
-        folder = f"{wc.folder}/01_fastq/00_reads/00_files_orig/{wc.sm}/{wc.lb}"
+        ## symlink to the raw data: ignore its time stamp
+        filename = ancient(f"{wc.folder}/01_fastq/00_reads/00_files_orig/{wc.sm}/{wc.lb}/{wc.idd}.fastq.gz")
 
-    if is_paired_end(wc):
-        filename = [
-            f"{folder}/{wc.id}_R1.fastq.gz",
-            f"{folder}/{wc.id}_R2.fastq.gz"
-        ]
-    else:
-        filename = [f"{folder}/{wc.id}.fastq.gz"]
-    
     return filename
+
+
+def get_fastq_4_cleaning(wc):
+    R = ["_R1", "_R2"] if is_paired_end(wc) else [""]
+    chunk = getattr(wc, "chunk", "")   ## not all rules (e.g. fastqc) have the wildcard {chunk}
+
+    ## fastq was split: {idd}/{id}_chunk0000_R1.fastq.gz
+    if chunk:
+        folder = f"{wc.folder}/01_fastq/00_reads/01_files_split/{wc.sm}/{wc.lb}"
+        return [f"{folder}/{wc.id}{r}/{wc.id}{chunk}{r}.fastq.gz" for r in R]
+
+    if run_subsampling:
+        folder = f"{wc.folder}/01_fastq/00_reads/01_files_subsample/{wc.sm}/{wc.lb}"
+        return [f"{folder}/{wc.id}{r}.fastq.gz" for r in R]
+
+    ## symlinks to the raw data: ignore their time stamp
+    folder = f"{wc.folder}/01_fastq/00_reads/00_files_orig/{wc.sm}/{wc.lb}"
+    return [ancient(f"{folder}/{wc.id}{r}.fastq.gz") for r in R]
 
 
 
@@ -90,29 +101,30 @@ def get_fastq_4_mapping(wc):
     cleaning = get_paramGrp(
         ["cleaning", "run"], ["adapterremoval", "fastp", "False"], wc
     )
+    id = f"{wc.id}{getattr(wc, 'chunk', '')}"   ## not all rules (e.g. fastqc) have the wildcard {chunk}
     if cleaning == "adapterremoval":
         folder = f"{wc.folder}/01_fastq/01_trimmed/01_adapterremoval"
         if is_collapse(wc):
-            filename = [f"{folder}_collapse/{wc.sm}/{wc.lb}/{wc.id}.fastq.gz"]
+            filename = [f"{folder}_collapse/{wc.sm}/{wc.lb}/{id}.fastq.gz"]
         elif is_paired_end(wc):
             filename = [
-                f"{folder}_pe/{wc.sm}/{wc.lb}/{wc.id}_R1.fastq.gz",
-                f"{folder}_pe/{wc.sm}/{wc.lb}/{wc.id}_R2.fastq.gz",
+                f"{folder}_pe/{wc.sm}/{wc.lb}/{id}_R1.fastq.gz",
+                f"{folder}_pe/{wc.sm}/{wc.lb}/{id}_R2.fastq.gz",
             ]
         else:
-            filename = [f"{folder}_se/{wc.sm}/{wc.lb}/{wc.id}.fastq.gz"]
+            filename = [f"{folder}_se/{wc.sm}/{wc.lb}/{id}.fastq.gz"]
 
     elif cleaning == "fastp":
         folder = f"{wc.folder}/01_fastq/01_trimmed/02_fastp"
         if is_collapse(wc):
-            filename = [f"{folder}_collapse/{wc.sm}/{wc.lb}/{wc.id}.fastq.gz"]
+            filename = [f"{folder}_collapse/{wc.sm}/{wc.lb}/{id}.fastq.gz"]
         elif is_paired_end(wc):
             filename = [
-                f"{folder}_pe/{wc.sm}/{wc.lb}/{wc.id}_R1.fastq.gz",
-                f"{folder}_pe/{wc.sm}/{wc.lb}/{wc.id}_R2.fastq.gz",
+                f"{folder}_pe/{wc.sm}/{wc.lb}/{id}_R1.fastq.gz",
+                f"{folder}_pe/{wc.sm}/{wc.lb}/{id}_R2.fastq.gz",
             ]
         else:
-            filename = [f"{folder}_se/{wc.sm}/{wc.lb}/{wc.id}.fastq.gz"]
+            filename = [f"{folder}_se/{wc.sm}/{wc.lb}/{id}.fastq.gz"]
 
     else:  ## no cleaning
         filename = get_fastq_4_cleaning(wc)
@@ -120,11 +132,32 @@ def get_fastq_4_mapping(wc):
 
 
 ## fastqc may be run on the original or trimmed fastq files
+## only the first file (SE, R1 or collapsed) is used; if the fastq was split, the corresponding file of all chunks
 def inputs_fastqc(wc):
-    if "trim" in wc.type:
-        return get_fastq_4_mapping(wc)
-    else:
-        return get_fastq_4_cleaning(wc)
+    if "trim" not in wc.type:
+        return get_fastq_4_cleaning(wc)[:1]
+
+    ## trimmed fastq files exist only per chunk if the fastq was split
+    return [
+        get_fastq_4_mapping(Wildcards(wc, {"chunk": chunk}))[0]
+        for chunk in get_chunk_suffixes(wc)
+    ]
+
+
+## fastqc report of the trimmed reads (same path as used for multiqc); if not trimmed, the one of the raw reads
+def get_fastqc_trim_4_stats(wc):
+    cleaning = get_paramGrp(["cleaning", "run"], ["adapterremoval", "fastp", "False"], wc)
+    if str(cleaning) == "False":
+        return f"{wc.folder}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{wc.sm}/{wc.lb}/{wc.id}_fastqc.zip"
+    return f"{wc.folder}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_{cleaning}_{get_cleaning_folder_extension(wc)}/{wc.sm}/{wc.lb}/{wc.id}_fastqc.zip"
+
+
+## value(s) of the wildcard {chunk} of a fastq file: '_chunk0000', '_chunk0001', ... if split, otherwise ''
+def get_chunk_suffixes(wc):
+    if int(get_paramGrp(["fastq_split", "nb_reads"], "0", wc)) > 0:
+        R = "_R1" if is_paired_end(wc) else ""   ## chunks of R1 and R2 are identical
+        return [f"_chunk{chunk}" for chunk in get_fastq_split_files(Wildcards(wc, {"idd": f"{wc.id}{R}"}))]
+    return [""]
 
 
 ## get the needed index files
@@ -172,32 +205,51 @@ def get_bam_4_sorting(wc):
             f"ERROR: The parameter config[mapping][mapper] is not correctly specified: {mapper} is unknown!"
         )
         sys.exit(1)
-    return f"{wc.folder}/01_fastq/02_mapped/{folder}/{wc.sm}/{wc.lb}/{wc.id}.{wc.genome}.bam"
+    return f"{wc.folder}/01_fastq/02_mapped/{folder}/{wc.sm}/{wc.lb}/{wc.id}{wc.chunk}.{wc.genome}.bam"
 
 
-## get the final bam file of at the FASTQ level
-def get_final_bam_FASTQ(wc):
-    if str2bool(get_paramGrp(["filtering", "run"], ["True", "False"], wc)):
-        file = f"{wc.folder}/01_fastq/03_filtered/01_bam_filter/{wc.sm}/{wc.lb}/{wc.id}.{wc.genome}.bam"
+## only used if fastq is split
+def get_chunk_filename_of_fastq_split(wc):
+    if is_paired_end(wc):
+        R = "_R1"   ## chunk of R1 and R2 are identical
     else:
-        file = f"{wc.folder}/01_fastq/02_mapped/03_bam_sort/{wc.sm}/{wc.lb}/{wc.id}.{wc.genome}.bam"
-    return file
+        R = ""
+    return f"{wc.folder}/01_fastq/00_reads/01_files_split/{wc.sm}/{wc.lb}/{wc.id}{R}_chunks.txt"
 
 
-def get_final_bam_low_qual_FASTQ(wc):
-    return f"{wc.folder}/01_fastq/03_filtered/01_bam_filter_low_qual/{wc.sm}/{wc.lb}/{wc.id}.{wc.genome}.bam"
-
-
-def get_final_gam_FASTQ(wc):
+## folder of the bam/gam files (or their chunks) at the end of the FASTQ step, before merging the chunks
+## {kind}: bam, bam_low_qual, gam or gam_low_qual
+def get_folder_4_final_FASTQ(wc):
+    ext = wc.kind.split("_")[0]
+    if wc.kind.endswith("_low_qual"):
+        return f"{wc.folder}/01_fastq/03_filtered/01_{ext}_filter_low_qual/{wc.sm}/{wc.lb}"
     if str2bool(get_paramGrp(["filtering", "run"], ["True", "False"], wc)):
-        file = f"{wc.folder}/01_fastq/03_filtered/01_gam_filter/{wc.sm}/{wc.lb}/{wc.id}.{wc.genome}.gam"
-    else:
-        file = f"{wc.folder}/01_fastq/02_mapped/02_vg_giraffe/{wc.sm}/{wc.lb}/{wc.id}.{wc.genome}.gam"
-    return file
+        return f"{wc.folder}/01_fastq/03_filtered/01_{ext}_filter/{wc.sm}/{wc.lb}"
+    mapped = {"bam": "03_bam_sort", "gam": "02_vg_giraffe"}[ext]
+    return f"{wc.folder}/01_fastq/02_mapped/{mapped}/{wc.sm}/{wc.lb}"
 
 
-def get_final_gam_low_qual_FASTQ(wc):
-    return f"{wc.folder}/01_fastq/03_filtered/01_gam_filter_low_qual/{wc.sm}/{wc.lb}/{wc.id}.{wc.genome}.gam"
+## chunk files to be merged into 04_final (only used if fastq is split)
+def get_split_4_final(wc):
+    ext = wc.kind.split("_")[0]
+    folder = get_folder_4_final_FASTQ(wc)
+    R = "_R1" if is_paired_end(wc) else ""   ## chunks of R1 and R2 are identical
+    files = [
+        f"{folder}/{wc.id}_chunk{chunk}.{wc.genome}.{ext}"
+        for chunk in get_fastq_split_files(Wildcards(wc, {"idd": f"{wc.id}{R}"}))
+    ]
+
+    #print(f"DEBUG: get_split_4_final: {files}")
+
+    return files
+
+
+## get the final bam/gam file at the FASTQ level
+def get_final_FASTQ(wc):
+    ext = wc.kind.split("_")[0]
+    if int(get_paramGrp(["fastq_split", "nb_reads"], "0", wc)) > 0:
+        return f"{wc.folder}/01_fastq/04_final/01_{wc.kind}/{wc.sm}/{wc.lb}/{wc.id}.{wc.genome}.{ext}"
+    return f"{get_folder_4_final_FASTQ(wc)}/{wc.id}.{wc.genome}.{ext}"
 
 
 ##########################################################################################
@@ -205,68 +257,37 @@ def get_final_gam_low_qual_FASTQ(wc):
 ## LIBRARY LEVEL
 
 
-## get the bam file(s) to be merged
-def get_bam_4_merge_bam_fastq2library(wc):
+## get the bam/gam file(s) to be merged
+def get_files_4_merge_fastq2library(wc):
+    if not wc.kind.startswith(wc.ext):
+        raise ValueError(f"merge_fastq2library: kind '{wc.kind}' does not match extension '{wc.ext}'")
     return [
-        get_final_bam_FASTQ(Wildcards(wc, {"id": id})) for id in SAMPLES[wc.sm][wc.lb]
-    ]
-
-def get_gam_4_merge_gam_fastq2library(wc):
-    return [
-        get_final_gam_FASTQ(Wildcards(wc, {"id": id})) for id in SAMPLES[wc.sm][wc.lb]
+        get_final_FASTQ(Wildcards(wc, {"id": id})) for id in SAMPLES[wc.sm][wc.lb]
     ]
 
 
-def get_bam_4_merge_bam_low_qual_fastq2library(wc):
-    return [
-        get_final_bam_low_qual_FASTQ(Wildcards(wc, {"id": id}))
-        for id in SAMPLES[wc.sm][wc.lb]
-    ]
+## get the (merged) bam/gam file
+def get_merged_LB(wc):
+    ext = wc.kind.split("_")[0]
+    files = get_files_4_merge_fastq2library(Wildcards(wc, {"ext": ext}))
+    ## library consists of more than one fastq file: return 00_merged_fastq
+    if len(files) > 1:
+        return f"{wc.folder}/02_library/00_merged_fastq/01_{wc.kind}/{wc.sm}/{wc.lb}.{wc.genome}.{ext}"
+    else:  ## library consists of one fastq file: return the location of the final library file
+        return files[0]
 
 
-def get_gam_4_merge_gam_low_qual_fastq2library(wc):
-    return [
-        get_final_gam_low_qual_FASTQ(Wildcards(wc, {"id": id}))
-        for id in SAMPLES[wc.sm][wc.lb]
-    ]
-
-
-## get the (merged) bam file
 def get_merged_bam_LB(wc):
-    bam = get_bam_4_merge_bam_fastq2library(wc)
-    ## library consists of more than one fastq file: return 00_merged_fastq
-    if len(bam) > 1:
-        return f"{wc.folder}/02_library/00_merged_fastq/01_bam/{wc.sm}/{wc.lb}.{wc.genome}.bam"
-    else:  ## library consists of one fastq file: return return the location of the final library bam file
-        return bam[0]
+    return get_merged_LB(Wildcards(wc, {"kind": "bam"}))
 
 
-def get_merged_bam_low_qual_LB(wc):
-    bam = get_bam_4_merge_bam_low_qual_fastq2library(wc)
-    ## library consists of more than one fastq file: return 00_merged_fastq
-    if len(bam) > 1:
-        return f"{wc.folder}/02_library/00_merged_fastq/01_bam_low_qual/{wc.sm}/{wc.lb}.{wc.genome}.bam"
-    else:  ## library consists of one fastq file: return return the location of the final library bam file
-        return bam[0]
 
-
-## get the (merged) gam file
 def get_merged_gam_LB(wc):
-    gam = get_gam_4_merge_gam_fastq2library(wc)
-    ## library consists of more than one fastq file: return 00_merged_fastq
-    if len(gam) > 1:
-        return f"{wc.folder}/02_library/00_merged_fastq/01_gam/{wc.sm}/{wc.lb}.{wc.genome}.gam"
-    else:  ## library consists of one fastq file: return return the location of the final library gam file
-        return gam[0]
-        
+    return get_merged_LB(Wildcards(wc, {"kind": "gam"}))
+
 
 def get_merged_gam_low_qual_LB(wc):
-    gam = get_gam_4_merge_gam_low_qual_fastq2library(wc)
-    ## library consists of more than one fastq file: return 00_merged_fastq
-    if len(gam) > 1:
-        return f"{wc.folder}/02_library/00_merged_fastq/01_gam_low_qual/{wc.sm}/{wc.lb}.{wc.genome}.gam"
-    else:  ## library consists of one fastq file: return the location of the final library gam file
-        return gam[0]
+    return get_merged_LB(Wildcards(wc, {"kind": "gam_low_qual"}))
 
 
 ## get the bam file used to remove duplicates
@@ -359,10 +380,11 @@ def get_final_bam_LB(wc):
 
 
 def get_final_bam_low_qual_LB(wc):
+    wc = Wildcards(wc, {"kind": "bam_low_qual"})
     if str2bool(get_paramGrp(["stats_after_rmDup", "run"], ["False", "True"], wc)):
-        return f"{wc.folder}/02_library/02_bam_after_rmDup/01_bam_low_qual/{wc.sm}/{wc.lb}.{wc.genome}.bam"
+        return f"{wc.folder}/02_library/02_bam_after_rmDup/01_{wc.kind}/{wc.sm}/{wc.lb}.{wc.genome}.bam"
     else:
-        return get_merged_bam_low_qual_LB(wc)
+        return get_merged_LB(wc)
 
 
 def get_final_gam_LB(wc):
@@ -406,76 +428,54 @@ def sm_changed(sm_final):
     return not all(element == sm_final for element in sm)
 
 
-## get the bam file(s) to be merged
-def get_bam_4_merge_bam_library2sample(wc):
+## final file of the library step per kind
+FINAL_LB = {
+    "bam": get_final_bam_LB,
+    "bam_low_qual": get_final_bam_low_qual_LB,
+    "gam": get_final_gam_LB,
+    "gam_low_qual": get_final_gam_low_qual_LB,
+}
+
+
+## get the bam/gam file(s) to be merged
+def get_files_4_merge_library2sample(wc):
+    if not wc.kind.startswith(wc.ext):
+        raise ValueError(f"merge_library2sample: kind '{wc.kind}' does not match extension '{wc.ext}'")
+    if wc.kind.endswith("_low_qual"):
+        df = sm_final_2_sm_table(wc.sm)
+        sm_lb = zip(df["SM"], df["LB"])
+    else:
+        sm_lb = [(sm_final_2_sm(wc.sm, lb), lb) for lb in SAMPLES_FINAL[wc.sm]]
     return [
-        get_final_bam_LB(Wildcards(wc, {"sm": sm_final_2_sm(wc.sm, lb), "lb": lb}))
-        for lb in SAMPLES_FINAL[wc.sm]
+        FINAL_LB[wc.kind](Wildcards(wc, {"sm": sm, "lb": lb})) for sm, lb in sm_lb
     ]
 
 
-def get_bam_4_merge_bam_low_qual_library2sample(wc):
-    df = sm_final_2_sm_table(wc.sm)
-    return [
-        get_final_bam_low_qual_LB(Wildcards(wc, {"sm": sm, "lb": lb}))
-        for sm, lb in zip(df["SM"], df["LB"])
-    ]
+## get the (merged) bam/gam file
+def get_merged_SM(wc):
+    ext = wc.kind.split("_")[0]
+    files = get_files_4_merge_library2sample(Wildcards(wc, {"ext": ext}))
+    ## sample consists of more than one library (or the sample name changed): return 00_merged_library
+    if len(files) > 1 or (not wc.kind.endswith("_low_qual") and sm_changed(wc.sm)):
+        return f"{wc.folder}/03_sample/00_merged_library/01_{wc.kind}/{wc.sm}.{wc.genome}.{ext}"
+    else:  ## sample consists of one library: return the location of the final library file
+        return files[0]
 
 
-def get_gam_4_merge_gam_library2sample(wc):
-    return [
-        get_final_gam_LB(Wildcards(wc, {"sm": sm_final_2_sm(wc.sm, lb), "lb": lb}))
-        for lb in SAMPLES_FINAL[wc.sm]
-    ]
-
-
-def get_gam_4_merge_gam_low_qual_library2sample(wc):
-    df = sm_final_2_sm_table(wc.sm)
-    return [
-        get_final_gam_low_qual_LB(Wildcards(wc, {"sm": sm, "lb": lb}))
-        for sm, lb in zip(df["SM"], df["LB"])
-    ]
-
-
-## get the (merged) bam file
 def get_merged_bam_SM(wc):
-    bam = get_bam_4_merge_bam_library2sample(wc)
-    if len(bam) > 1 or sm_changed(
-        wc.sm
-    ):  ## sample consits of more than one library return 00_merged_library
-        return f"{wc.folder}/03_sample/00_merged_library/01_bam/{wc.sm}.{wc.genome}.bam"
-    else:  ## library consits of one fastq file: return return the location of the final library bam file
-        return bam[0]
+    return get_merged_SM(Wildcards(wc, {"kind": "bam"}))
 
 
 def get_merged_bam_low_qual_SM(wc):
-    bam = get_bam_4_merge_bam_low_qual_library2sample(wc)
-    if (
-        len(bam) > 1
-    ):  ## sample consits of more than one library return 00_merged_library
-        return f"{wc.folder}/03_sample/00_merged_library/01_bam_low_qual/{wc.sm}.{wc.genome}.bam"
-    else:  ## library consits of one fastq file: return return the location of the final library bam file
-        return bam[0]
+    return get_merged_SM(Wildcards(wc, {"kind": "bam_low_qual"}))
 
 
 def get_merged_gam_SM(wc):
-    gam = get_gam_4_merge_gam_library2sample(wc)
-    if len(gam) > 1 or sm_changed(
-        wc.sm
-    ):  ## sample consits of more than one library return 00_merged_library
-        return f"{wc.folder}/03_sample/00_merged_library/01_gam/{wc.sm}.{wc.genome}.gam"
-    else:  ## library consits of one fastq file: return return the location of the final library gam file
-        return gam[0]
+    return get_merged_SM(Wildcards(wc, {"kind": "gam"}))
 
 
 def get_merged_gam_low_qual_SM(wc):
-    gam = get_gam_4_merge_gam_low_qual_library2sample(wc)
-    if (
-        len(gam) > 1
-    ):  ## sample consits of more than one library return 00_merged_library
-        return f"{wc.folder}/03_sample/00_merged_library/01_gam_low_qual/{wc.sm}.{wc.genome}.gam"
-    else:  ## library consits of one fastq file: return return the location of the final library gam file
-        return gam[0]
+    return get_merged_SM(Wildcards(wc, {"kind": "gam_low_qual"}))
 
 
 ## get the bam file used to realign indels
@@ -801,9 +801,9 @@ def get_files_4_multiqc_library_rmDup(wc):
             for id in lbVals
         ]
 
-        ## adapterremoval
+        ## adapterremoval (one file per chunk if the fastq was split)
         files += [
-            f"{RESULT_DIR}/01_fastq/01_trimmed/01_adapterremoval_{get_cleaning_folder_extension(Wildcards(fromdict={'id': id, 'lb': lb, 'sm': sm}))}/{sm}/{lb}/{id}.settings"
+            f"{RESULT_DIR}/01_fastq/01_trimmed/01_adapterremoval_{get_cleaning_folder_extension(Wildcards(fromdict={'id': id, 'lb': lb, 'sm': sm}))}/{sm}/{lb}/{id}{chunk}.settings"
             for sm, smVals in SAMPLES.items()
             for lb, lbVals in smVals.items()
             for id in lbVals
@@ -813,11 +813,12 @@ def get_files_4_multiqc_library_rmDup(wc):
                 Wildcards(fromdict={"id": id, "lb": lb, "sm": sm}),
             )
             == "adapterremoval"
+            for chunk in get_chunk_suffixes(Wildcards(fromdict={"folder": RESULT_DIR, "id": id, "lb": lb, "sm": sm}))
         ]
 
-        ## fastp
+        ## fastp (one file per chunk if the fastq was split)
         files += [
-            f"{RESULT_DIR}/01_fastq/01_trimmed/01_fastp_{get_cleaning_folder_extension(Wildcards(fromdict={'id': id, 'lb': lb, 'sm': sm}))}/{sm}/{lb}/{id}.json"
+            f"{RESULT_DIR}/01_fastq/01_trimmed/01_fastp_{get_cleaning_folder_extension(Wildcards(fromdict={'id': id, 'lb': lb, 'sm': sm}))}/{sm}/{lb}/{id}{chunk}.json"
             for sm, smVals in SAMPLES.items()
             for lb, lbVals in smVals.items()
             for id in lbVals
@@ -827,6 +828,7 @@ def get_files_4_multiqc_library_rmDup(wc):
                 Wildcards(fromdict={"id": id, "lb": lb, "sm": sm}),
             )
             == "fastp"
+            for chunk in get_chunk_suffixes(Wildcards(fromdict={"folder": RESULT_DIR, "id": id, "lb": lb, "sm": sm}))
         ]
 
         ## fastqc trim

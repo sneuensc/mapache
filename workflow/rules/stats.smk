@@ -40,16 +40,21 @@ rule fastqc:
         "--- FASTQC {output.html}"
     shell:
         """
-        ## symlink file to remove '_R1' of paired reads
+        ## single file: symlink it to remove '_R1' of paired reads
+        ## multiple files (chunks): concatenate them (gz files can be concatenated directly)
         html={output.html}
-        symlink=${{html%%_fastqc.html}}.fastq.gz
-        ln -srf {input.fastq[0]} $symlink
+        fq=${{html%%_fastqc.html}}.fastq.gz
+        if [ $(echo {input.fastq} | wc -w) -eq 1 ]; then
+            ln -srf {input.fastq} $fq
+        else
+            cat {input.fastq} > $fq
+        fi
 
-        ## run fastqc (-t 2 is a trick to increase the memory allocation / multitreathing is per file, so still only 1CPU used)
-        fastqc --quiet -t 2 --outdir $(dirname $html) $symlink 2> {log};
+        ## run fastqc (-t 2 is a trick to increase the memory allocation / multithreading is per file, so still only 1CPU used)
+        fastqc --quiet -t 2 --outdir $(dirname $html) $fq 2> {log};
 
-        ## remove symlink again
-        rm $symlink
+        ## remove symlink/concatenated file again
+        rm $fq
         """
 
 
@@ -353,11 +358,7 @@ rule preseq_plot:
 rule merge_stats_per_fastq:
     input:
         fastqc_orig="{folder}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{sm}/{lb}/{id}_fastqc.zip",  # raw sequenced reads
-        fastqc_trim=lambda wildcards: (
-            "{folder}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_adapterremoval/{sm}/{lb}/{id}_fastqc.zip"
-            if get_paramGrp(["adapterremoval", "run"], ["True", "False"], wildcards)
-            else "{folder}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{sm}/{lb}/{id}_fastqc.zip"
-        ),
+        fastqc_trim=get_fastqc_trim_4_stats,  # trimmed reads (raw reads if not trimmed)
         stats_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{sm}/{lb}/{id}.{genome}_stats.txt",  # mapped and high-qual reads
         length_fastq_mapped_highQ="{folder}/04_stats/01_sparse_stats/01_fastq/04_final_fastq/01_bam/{sm}/{lb}/{id}.{genome}_length.txt",
     output:
