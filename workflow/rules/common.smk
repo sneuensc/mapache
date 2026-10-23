@@ -86,6 +86,15 @@ def get_fastq_4_cleaning(wc):
 
 
 
+## split directory (or nothing if the fastq is not split): only listed as input to keep the temp() directory
+## of the checkpoint 'fastq_split' until all its chunks are cleaned
+def get_split_dir_4_cleaning(wc):
+    if not getattr(wc, "chunk", ""):
+        return []
+    R = ["_R1", "_R2"] if is_paired_end(wc) else [""]
+    return [f"{wc.folder}/01_fastq/00_reads/01_files_split/{wc.sm}/{wc.lb}/{wc.id}{r}" for r in R]
+
+
 def get_cleaning_folder_extension(wc):
     if is_collapse(wc):
         folder = "collapse"
@@ -94,6 +103,18 @@ def get_cleaning_folder_extension(wc):
     else:
         folder = "se"
     return folder
+
+
+## ids of the given cleaning mode ('collapse', 'pe' or 'se'): makes the cleaning rules unambiguous in a single folder
+def get_ids_of_cleaning_mode(mode):
+    ids = [
+        id
+        for sm, lbs in SAMPLES.items()
+        for lb, ids_lb in lbs.items()
+        for id in ids_lb
+        if get_cleaning_folder_extension(Wildcards(fromdict={"sm": sm, "lb": lb, "id": id})) == mode
+    ]
+    return "|".join(ids) if ids else "(?!)"   ## '(?!)' never matches: rule unused
 
 
 ## the single fastq file to align with bwa aln: R1 or R2 of paired-end reads, otherwise the only one
@@ -107,34 +128,15 @@ def get_fastq_4_mapping(wc):
     cleaning = get_paramGrp(
         ["cleaning", "run"], ["adapterremoval", "fastp", "False"], wc
     )
+    if str(cleaning) == "False":  ## no cleaning
+        return get_fastq_4_cleaning(wc)
+
+    ## a single folder per cleaning tool (01_adapterremoval or 01_fastp)
     id = f"{wc.id}{getattr(wc, 'chunk', '')}"   ## not all rules (e.g. fastqc) have the wildcard {chunk}
-    if cleaning == "adapterremoval":
-        folder = f"{wc.folder}/01_fastq/01_trimmed/01_adapterremoval"
-        if is_collapse(wc):
-            filename = [f"{folder}_collapse/{wc.sm}/{wc.lb}/{id}.fastq.gz"]
-        elif is_paired_end(wc):
-            filename = [
-                f"{folder}_pe/{wc.sm}/{wc.lb}/{id}_R1.fastq.gz",
-                f"{folder}_pe/{wc.sm}/{wc.lb}/{id}_R2.fastq.gz",
-            ]
-        else:
-            filename = [f"{folder}_se/{wc.sm}/{wc.lb}/{id}.fastq.gz"]
-
-    elif cleaning == "fastp":
-        folder = f"{wc.folder}/01_fastq/01_trimmed/02_fastp"
-        if is_collapse(wc):
-            filename = [f"{folder}_collapse/{wc.sm}/{wc.lb}/{id}.fastq.gz"]
-        elif is_paired_end(wc):
-            filename = [
-                f"{folder}_pe/{wc.sm}/{wc.lb}/{id}_R1.fastq.gz",
-                f"{folder}_pe/{wc.sm}/{wc.lb}/{id}_R2.fastq.gz",
-            ]
-        else:
-            filename = [f"{folder}_se/{wc.sm}/{wc.lb}/{id}.fastq.gz"]
-
-    else:  ## no cleaning
-        filename = get_fastq_4_cleaning(wc)
-    return filename
+    folder = f"{wc.folder}/01_fastq/01_trimmed/01_{cleaning}/{wc.sm}/{wc.lb}"
+    if is_paired_end(wc) and not is_collapse(wc):
+        return [f"{folder}/{id}_R1.fastq.gz", f"{folder}/{id}_R2.fastq.gz"]
+    return [f"{folder}/{id}.fastq.gz"]   ## collapsed or single-end
 
 
 ## fastqc may be run on the original or trimmed fastq files
@@ -155,7 +157,7 @@ def get_fastqc_trim_4_stats(wc):
     cleaning = get_paramGrp(["cleaning", "run"], ["adapterremoval", "fastp", "False"], wc)
     if str(cleaning) == "False":
         return f"{wc.folder}/04_stats/01_sparse_stats/01_fastq/00_reads/01_files_orig/{wc.sm}/{wc.lb}/{wc.id}_fastqc.zip"
-    return f"{wc.folder}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_{cleaning}_{get_cleaning_folder_extension(wc)}/{wc.sm}/{wc.lb}/{wc.id}_fastqc.zip"
+    return f"{wc.folder}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_{cleaning}/{wc.sm}/{wc.lb}/{wc.id}_fastqc.zip"
 
 
 ## value(s) of the wildcard {chunk} of a fastq file: '_chunk0000', '_chunk0001', ... if split, otherwise ''
@@ -810,7 +812,7 @@ def get_files_4_multiqc_library_rmDup(wc):
 
         ## adapterremoval (one file per chunk if the fastq was split)
         files += [
-            f"{RESULT_DIR}/01_fastq/01_trimmed/01_adapterremoval_{get_cleaning_folder_extension(Wildcards(fromdict={'id': id, 'lb': lb, 'sm': sm}))}/{sm}/{lb}/{id}{chunk}.settings"
+            f"{RESULT_DIR}/01_fastq/01_trimmed/01_adapterremoval/{sm}/{lb}/{id}{chunk}.settings"
             for sm, smVals in SAMPLES.items()
             for lb, lbVals in smVals.items()
             for id in lbVals
@@ -825,7 +827,7 @@ def get_files_4_multiqc_library_rmDup(wc):
 
         ## fastp (one file per chunk if the fastq was split)
         files += [
-            f"{RESULT_DIR}/01_fastq/01_trimmed/01_fastp_{get_cleaning_folder_extension(Wildcards(fromdict={'id': id, 'lb': lb, 'sm': sm}))}/{sm}/{lb}/{id}{chunk}.json"
+            f"{RESULT_DIR}/01_fastq/01_trimmed/01_fastp/{sm}/{lb}/{id}{chunk}.json"
             for sm, smVals in SAMPLES.items()
             for lb, lbVals in smVals.items()
             for id in lbVals
@@ -840,7 +842,7 @@ def get_files_4_multiqc_library_rmDup(wc):
 
         ## fastqc trim
         files += [
-            f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_adapterremoval_{get_cleaning_folder_extension(Wildcards(fromdict={'id': id, 'lb': lb, 'sm': sm}))}/{sm}/{lb}/{id}_fastqc.zip"
+            f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_adapterremoval/{sm}/{lb}/{id}_fastqc.zip"
             for sm, smVals in SAMPLES.items()
             for lb, lbVals in smVals.items()
             for id in lbVals
@@ -851,7 +853,7 @@ def get_files_4_multiqc_library_rmDup(wc):
             )
             == "adapterremoval"
         ] + [
-            f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_fastp_{get_cleaning_folder_extension(Wildcards(fromdict={'id': id, 'lb': lb, 'sm': sm}))}/{sm}/{lb}/{id}_fastqc.zip"
+            f"{RESULT_DIR}/04_stats/01_sparse_stats/01_fastq/01_trimmed/01_fastp/{sm}/{lb}/{id}_fastqc.zip"
             for sm, smVals in SAMPLES.items()
             for lb, lbVals in smVals.items()
             for id in lbVals

@@ -185,16 +185,19 @@ rule adapterremoval_collapse:
     Remove adapter and low quality bases at the edges and collapse paired-end reads
     """
     input:
-        get_fastq_4_cleaning,
+        fastq=get_fastq_4_cleaning,
+        split_dir=get_split_dir_4_cleaning,   ## keeps the temp() split directory until all chunks are cleaned
     output:
-        R=maybe_temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}{chunk}.fastq.gz", "cleaning"),
-        col_R=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}{chunk}_collapsed.fastq.gz"),
-        col_trunc=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}{chunk}_collapsed_truncated.fastq.gz"),
-        R1=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}{chunk}_R1.fastq.gz"),
-        R2=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}{chunk}_R2.fastq.gz"),
-        strunc=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}{chunk}.singleton.truncated.gz"),
-        disc=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}{chunk}.discarded.gz"),
-        settings="{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}{chunk}.settings",
+        R=maybe_temp("{folder}/01_fastq/01_trimmed/01_adapterremoval/{sm}/{lb}/{id}{chunk}.fastq.gz", "cleaning"),
+        col_R=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval/{sm}/{lb}/{id}{chunk}_collapsed.fastq.gz"),
+        col_trunc=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval/{sm}/{lb}/{id}{chunk}_collapsed_truncated.fastq.gz"),
+        R1=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval/{sm}/{lb}/{id}{chunk}_R1.fastq.gz"),
+        R2=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval/{sm}/{lb}/{id}{chunk}_R2.fastq.gz"),
+        strunc=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval/{sm}/{lb}/{id}{chunk}.singleton.truncated.gz"),
+        disc=temp("{folder}/01_fastq/01_trimmed/01_adapterremoval/{sm}/{lb}/{id}{chunk}.discarded.gz"),
+        settings="{folder}/01_fastq/01_trimmed/01_adapterremoval/{sm}/{lb}/{id}{chunk}.settings",
+    wildcard_constraints:
+        id=get_ids_of_cleaning_mode("collapse"),   ## same folder for collapse/pe/se: the id defines the rule
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("cleaning", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("cleaning", attempt, 24),
@@ -210,7 +213,7 @@ rule adapterremoval_collapse:
             wildcards,
         ),
     log:
-        "{folder}/01_fastq/01_trimmed/01_adapterremoval_collapse/{sm}/{lb}/{id}{chunk}.log",
+        "{folder}/01_fastq/01_trimmed/01_adapterremoval/{sm}/{lb}/{id}{chunk}.log",
     threads: get_threads("cleaning", 4)
     conda:
         "../envs/adapterremoval.yaml"
@@ -245,21 +248,24 @@ rule adapterremoval_pe:
     Remove adapter and low quality bases at the edges
     """
     input:
-        get_fastq_4_cleaning,
+        fastq=get_fastq_4_cleaning,
+        split_dir=get_split_dir_4_cleaning,   ## keeps the temp() split directory until all chunks are cleaned
     output:
         R1=maybe_temp(
-            "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}{chunk}_R1.fastq.gz", "cleaning"
+            "{folder}/01_fastq/01_trimmed/01_adapterremoval/{sm}/{lb}/{id}{chunk}_R1.fastq.gz", "cleaning"
         ),
         R2=maybe_temp(
-            "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}{chunk}_R2.fastq.gz", "cleaning"
+            "{folder}/01_fastq/01_trimmed/01_adapterremoval/{sm}/{lb}/{id}{chunk}_R2.fastq.gz", "cleaning"
         ),
         singleton=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}{chunk}.singleton.truncated.gz"
+            "{folder}/01_fastq/01_trimmed/01_adapterremoval/{sm}/{lb}/{id}{chunk}.singleton.truncated.gz"
         ),
         discarded=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}{chunk}.discarded.gz"
+            "{folder}/01_fastq/01_trimmed/01_adapterremoval/{sm}/{lb}/{id}{chunk}.discarded.gz"
         ),
-        settings="{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}{chunk}.settings",
+        settings="{folder}/01_fastq/01_trimmed/01_adapterremoval/{sm}/{lb}/{id}{chunk}.settings",
+    wildcard_constraints:
+        id=get_ids_of_cleaning_mode("pe"),   ## same folder for collapse/pe/se: the id defines the rule
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("cleaning", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("cleaning", attempt, 24),
@@ -270,7 +276,7 @@ rule adapterremoval_pe:
             wildcards,
         ),
     log:
-        "{folder}/01_fastq/01_trimmed/01_adapterremoval_pe/{sm}/{lb}/{id}{chunk}.log",
+        "{folder}/01_fastq/01_trimmed/01_adapterremoval/{sm}/{lb}/{id}{chunk}.log",
     threads: get_threads("cleaning", 4)
     conda:
         "../envs/adapterremoval.yaml"
@@ -292,15 +298,18 @@ rule adapterremoval_se:
     Remove adapter and low quality bases at the edges
     """
     input:
-        get_fastq_4_cleaning,
+        fastq=get_fastq_4_cleaning,
+        split_dir=get_split_dir_4_cleaning,   ## keeps the temp() split directory until all chunks are cleaned
     output:
         R=maybe_temp(
-            "{folder}/01_fastq/01_trimmed/01_adapterremoval_se/{sm}/{lb}/{id}{chunk}.fastq.gz", "cleaning"
+            "{folder}/01_fastq/01_trimmed/01_adapterremoval/{sm}/{lb}/{id}{chunk}.fastq.gz", "cleaning"
         ),
         discard=temp(
-            "{folder}/01_fastq/01_trimmed/01_adapterremoval_se/{sm}/{lb}/{id}{chunk}.discarded.gz"
+            "{folder}/01_fastq/01_trimmed/01_adapterremoval/{sm}/{lb}/{id}{chunk}.discarded.gz"
         ),
-        settings="{folder}/01_fastq/01_trimmed/01_adapterremoval_se/{sm}/{lb}/{id}{chunk}.settings",
+        settings="{folder}/01_fastq/01_trimmed/01_adapterremoval/{sm}/{lb}/{id}{chunk}.settings",
+    wildcard_constraints:
+        id=get_ids_of_cleaning_mode("se"),   ## same folder for collapse/pe/se: the id defines the rule
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("cleaning", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("cleaning", attempt, 24),
@@ -310,21 +319,21 @@ rule adapterremoval_se:
             "--minlength 30 --trimns --trimqualities",
             wildcards,
         ),
-    log: "{folder}/01_fastq/01_trimmed/01_adapterremoval_se/{sm}/{lb}/{id}{chunk}.log",
+    log: "{folder}/01_fastq/01_trimmed/01_adapterremoval/{sm}/{lb}/{id}{chunk}.log",
     threads: get_threads("cleaning", 4)
     conda:
         "../envs/adapterremoval.yaml"
     envmodules:
         module_adapterremoval,
     message:
-        "--- ADAPTERREMOVAL SINGLE-END {input}"
+        "--- ADAPTERREMOVAL SINGLE-END {input.fastq}"
     shell:
         """
         ## remove --collapse from $params (needed for SE libs in a paired-end setting)
         params=$(echo {params} | sed  's/ --collapse[^ ]*//g')
 
         out={output.R};
-        AdapterRemoval --threads {threads} $params --file1 {input} \
+        AdapterRemoval --threads {threads} $params --file1 {input.fastq} \
                 --basename ${{out%%.fastq.gz}} --gzip \
                 --output1 {output.R} 2> {log};
         """
@@ -335,7 +344,8 @@ rule adapterremoval_infer_adapters:
     Remove adapter and low quality bases at the edges and collapse paired-end reads
     """
     input:
-        get_fastq_4_cleaning,
+        fastq=get_fastq_4_cleaning,
+        split_dir=get_split_dir_4_cleaning,   ## keeps the temp() split directory until all chunks are cleaned
     output:
         adapters="{folder}/01_fastq/01_trimmed/01_adapterremoval_infer_adapters/{sm}/{lb}/{id}{chunk}.txt",
     resources:
@@ -360,7 +370,7 @@ rule adapterremoval_infer_adapters:
     envmodules:
         module_adapterremoval,
     message:
-        "--- ADAPTERREMOVAL INFER ADAPTERTS {input}"
+        "--- ADAPTERREMOVAL INFER ADAPTERTS {input.fastq}"
     shell:
         """
         set +e;
@@ -374,47 +384,56 @@ rule fastp_collapse:
     Clean fastq files with fastp (collapse paired-end)
     """
     input:
-        get_fastq_4_cleaning,
+        fastq=get_fastq_4_cleaning,
+        split_dir=get_split_dir_4_cleaning,   ## keeps the temp() split directory until all chunks are cleaned
     output:
-        R=maybe_temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}{chunk}.fastq.gz", "cleaning"),
+        R=maybe_temp("{folder}/01_fastq/01_trimmed/01_fastp/{sm}/{lb}/{id}{chunk}.fastq.gz", "cleaning"),
         R_merged=temp(
-            "{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}{chunk}_merged.fastq.gz"
+            "{folder}/01_fastq/01_trimmed/01_fastp/{sm}/{lb}/{id}{chunk}_merged.fastq.gz"
         ),
-        R1=temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}{chunk}_R1.fastq.gz"),
-        R2=temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}{chunk}_R2.fastq.gz"),
-        json="{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}{chunk}.json",
-        html="{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}{chunk}.html",
+        R1=temp("{folder}/01_fastq/01_trimmed/01_fastp/{sm}/{lb}/{id}{chunk}_R1.fastq.gz"),
+        R2=temp("{folder}/01_fastq/01_trimmed/01_fastp/{sm}/{lb}/{id}{chunk}_R2.fastq.gz"),
+        json="{folder}/01_fastq/01_trimmed/01_fastp/{sm}/{lb}/{id}{chunk}.json",
+        html="{folder}/01_fastq/01_trimmed/01_fastp/{sm}/{lb}/{id}{chunk}.html",
+    wildcard_constraints:
+        id=get_ids_of_cleaning_mode("collapse"),   ## same folder for collapse/pe/se: the id defines the rule
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("cleaning", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("cleaning", attempt, 24),
     params:
-        lambda wildcards: get_paramGrp(
+        params=lambda wildcards: get_paramGrp(
             ["cleaning", "params_fastp"],
             "",
             wildcards,
         ),
+        collapsed=lambda wildcards: get_paramGrp(
+            ["cleaning", "collapse_opt"],
+            ["only_collapse", "collapse_trunc", "all"],
+            wildcards,
+        ),
     log:
-        "{folder}/01_fastq/01_trimmed/02_fastp_pe/{sm}/{lb}/{id}{chunk}.log",
+        "{folder}/01_fastq/01_trimmed/01_fastp/{sm}/{lb}/{id}{chunk}.log",
     threads: get_threads("cleaning", 4)
     conda:
         "../envs/fastp.yaml"
     envmodules:
         module_fastp,
     message:
-        "--- FASTP PAIRED-END {input}"
+        "--- FASTP PAIRED-END {input.fastq}"
     shell:
         """
         fastp --in1 {input[0]} --in2 {input[1]} --out1 {output.R1} --out2 {output.R2} \
               --merged_out {output.R_merged} \
-              --json {output.json} --html {output.html} --thread {threads} {params} \
+              --json {output.json} --html {output.html} --thread {threads} {params.params} \
               -R "Fastp report of {wildcards.sm}/{wildcards.lb}/{wildcards.id}" 2> {log};
 
-        ## what should be retained
+        ## what should be retained (fastp has no truncated collapsed reads: 'collapse_trunc' = 'only_collapse')
         options={params.collapsed};
-        if [[ "$options" == "only_collapse" ]]; then
-            ln -srf {output.R_merged} {output.R};
-        elif [[ "$options" == "all" ]]; then
+        if [[ "$options" == "all" ]]; then
             cat {output.R_merged} {output.R1} {output.R2} > {output.R};
+        else
+            mv {output.R_merged} {output.R}; ## symlink is not working with temp(): 'invert' it !!!
+            ln -srf {output.R} {output.R_merged};
         fi;
         """
 
@@ -424,12 +443,15 @@ rule fastp_pe:
     Clean fastq files with fastp (paired-end)
     """
     input:
-        get_fastq_4_cleaning,
+        fastq=get_fastq_4_cleaning,
+        split_dir=get_split_dir_4_cleaning,   ## keeps the temp() split directory until all chunks are cleaned
     output:
-        R1=maybe_temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}{chunk}_R1.fastq.gz", "cleaning"),
-        R2=maybe_temp("{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}{chunk}_R2.fastq.gz", "cleaning"),
-        json="{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}{chunk}.json",
-        html="{folder}/01_fastq/01_trimmed/01_fastp_pe/{sm}/{lb}/{id}{chunk}.html",
+        R1=maybe_temp("{folder}/01_fastq/01_trimmed/01_fastp/{sm}/{lb}/{id}{chunk}_R1.fastq.gz", "cleaning"),
+        R2=maybe_temp("{folder}/01_fastq/01_trimmed/01_fastp/{sm}/{lb}/{id}{chunk}_R2.fastq.gz", "cleaning"),
+        json="{folder}/01_fastq/01_trimmed/01_fastp/{sm}/{lb}/{id}{chunk}.json",
+        html="{folder}/01_fastq/01_trimmed/01_fastp/{sm}/{lb}/{id}{chunk}.html",
+    wildcard_constraints:
+        id=get_ids_of_cleaning_mode("pe"),   ## same folder for collapse/pe/se: the id defines the rule
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("cleaning", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("cleaning", attempt, 24),
@@ -440,14 +462,14 @@ rule fastp_pe:
             wildcards,
         ),
     log:
-        "{folder}/01_fastq/01_trimmed/02_fastp_pe/{sm}/{lb}/{id}{chunk}.log",
+        "{folder}/01_fastq/01_trimmed/01_fastp/{sm}/{lb}/{id}{chunk}.log",
     threads: get_threads("cleaning", 4)
     conda:
         "../envs/fastp.yaml"
     envmodules:
         module_fastp,
     message:
-        "--- FASTP PAIRED-END {input}"
+        "--- FASTP PAIRED-END {input.fastq}"
     shell:
         """
         fastp --in1 {input[0]} --in2 {input[1]} --out1 {output.R1} --out2 {output.R2} \
@@ -461,11 +483,14 @@ rule fastp_se:
     Clean fastq files with fastp (single-end)
     """
     input:
-        get_fastq_4_cleaning,
+        fastq=get_fastq_4_cleaning,
+        split_dir=get_split_dir_4_cleaning,   ## keeps the temp() split directory until all chunks are cleaned
     output:
-        R=maybe_temp("{folder}/01_fastq/01_trimmed/01_fastp_se/{sm}/{lb}/{id}{chunk}.fastq.gz", "cleaning"),
-        json="{folder}/01_fastq/01_trimmed/01_fastp_se/{sm}/{lb}/{id}{chunk}.json",
-        html="{folder}/01_fastq/01_trimmed/01_fastp_se/{sm}/{lb}/{id}{chunk}.html",
+        R=maybe_temp("{folder}/01_fastq/01_trimmed/01_fastp/{sm}/{lb}/{id}{chunk}.fastq.gz", "cleaning"),
+        json="{folder}/01_fastq/01_trimmed/01_fastp/{sm}/{lb}/{id}{chunk}.json",
+        html="{folder}/01_fastq/01_trimmed/01_fastp/{sm}/{lb}/{id}{chunk}.html",
+    wildcard_constraints:
+        id=get_ids_of_cleaning_mode("se"),   ## same folder for collapse/pe/se: the id defines the rule
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("cleaning", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("cleaning", attempt, 24),
@@ -476,17 +501,23 @@ rule fastp_se:
             wildcards,
         ),
     log:
-        "{folder}/01_fastq/01_trimmed/01_fastp_se/{sm}/{lb}/{id}{chunk}.log",
+        "{folder}/01_fastq/01_trimmed/01_fastp/{sm}/{lb}/{id}{chunk}.log",
     threads: get_threads("cleaning", 4)
     conda:
         "../envs/fastp.yaml"
     envmodules:
         module_fastp,
     message:
-        "--- FASTP SINGLE-END {input}"
+        "--- FASTP SINGLE-END {input.fastq}"
     shell:
         """
-        fastp --in1 {input} --out1 {output.R} \
-               --json {output.json} --html {output.html} --thread {threads} {params} \
+        ## remove --merge/-m from $params (needed for SE libs in a paired-end setting)
+        params=""
+        for p in {params}; do
+            [[ "$p" == "--merge" || "$p" == "-m" ]] || params="$params $p"
+        done
+
+        fastp --in1 {input.fastq} --out1 {output.R} \
+               --json {output.json} --html {output.html} --thread {threads} $params \
               -R "Fastp report of {wildcards.sm}/{wildcards.lb}/{wildcards.id}" 2> {log};
         """

@@ -380,7 +380,8 @@ def is_collapse(wc):
     if not paired:
         return False
 
-    ## does the cleaning collapses the paired reads?: check if collapse is mentioned in the param
+    ## does the cleaning collapses the paired reads?: check if collapse is one of the options
+    ## (compare whole options, e.g. '-m' must not match '--max_len1' or '--merged_out')
     run_cleaning = get_paramGrp(["cleaning", "run"], ["adapterremoval", "fastp", "False"], wc)
     if run_cleaning == "adapterremoval":
         params = get_paramGrp(
@@ -388,17 +389,13 @@ def is_collapse(wc):
             "--minlength 30 --trimns --trimqualities",
             wc,
         )
-        return any(
-            ext in params
-            for ext in ["--collapse", "--collapse-deterministic", "--collapse-conservatively"]
-        )
+        options = ["--collapse", "--collapse-deterministic", "--collapse-conservatively"]
     elif run_cleaning == "fastp":
-        params = get_paramGrp(
-            ["cleaning", "params_fastp"], "--minlength 30 --trimns --trimqualities", wc
-        )
-        return any(ext in params for ext in ["--merge", "-m"])
+        params = get_paramGrp(["cleaning", "params_fastp"], "", wc)
+        options = ["--merge", "-m"]
     else:
         return False
+    return any(opt in options for opt in str(params).split())
 
 
 #######################################################################################################################
