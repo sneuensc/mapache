@@ -96,6 +96,12 @@ def get_cleaning_folder_extension(wc):
     return folder
 
 
+## the single fastq file to align with bwa aln: R1 or R2 of paired-end reads, otherwise the only one
+def get_fastq_4_bwa_aln(wc):
+    fastq = get_fastq_4_mapping(wc)
+    return fastq[1] if wc.R == "_R2" else fastq[0]
+    
+
 ## get the fastq file(s) used for mapping (output is a list)
 def get_fastq_4_mapping(wc):
     cleaning = get_paramGrp(
@@ -163,7 +169,7 @@ def get_chunk_suffixes(wc):
 ## get the needed index files
 def get_fasta_index(wc):
     ref = f"{wc.folder}/00_reference/{wc.genome}/{wc.genome}.fasta"
-    if mapper == "bwa_aln" or mapper == "bwa_mem":
+    if mapper == "bwa_aln" or mapper == "bwa_mem" or mapper == "galn":
         ext = ["", ".sa", ".amb", ".ann", ".bwt", ".pac"]
     elif mapper == "bowtie2":
         ext = ["", ".1.bt2", ".2.bt2", ".3.bt2", ".4.bt2", ".rev.1.bt2", ".rev.2.bt2"]
@@ -189,11 +195,12 @@ def get_fasta_index(wc):
 
 ## get the bam file used for sorting
 def get_bam_4_sorting(wc):
-    if mapper == "bwa_aln":
+    if mapper == "bwa_aln" or mapper == "galn":
+        tool = "bwa" if mapper == "bwa_aln" else "galn"
         if is_paired_end(wc) and not is_collapse(wc):
-            folder = "02_bwa_sampe"
+            folder = f"02_{tool}_sampe"
         else:
-            folder = "02_bwa_samse"
+            folder = f"02_{tool}_samse"
     elif mapper == "bwa_mem":
         folder = "02_bwa_mem"
     elif mapper == "bowtie2" or mapper == "bowtie2l":

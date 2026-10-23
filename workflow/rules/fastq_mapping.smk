@@ -1,10 +1,10 @@
-## mapping
-ruleorder: mapping_bwa_aln_pe > mapping_bwa_aln_se
+##########################################################################################
+## bwa
 
-
-rule mapping_bwa_aln_se:
+rule mapping_bwa_aln:
     """
     Align reads to the reference
+    {R}: '' (single-end or collapsed reads), '_R1' or '_R2' (paired-end reads)
     """
     input:
         multiext(
@@ -16,9 +16,11 @@ rule mapping_bwa_aln_se:
             ".pac",
         ),
         ref="{folder}/00_reference/{genome}/{genome}.fasta",
-        fastq=get_fastq_4_mapping,
+        fastq=get_fastq_4_bwa_aln,
     output:
-        temp("{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}{chunk}.{genome}.sai"),
+        temp("{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}{chunk}.{genome}{R}.sai"),
+    wildcard_constraints:
+        R="|_R1|_R2",
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
@@ -27,48 +29,7 @@ rule mapping_bwa_aln_se:
             ["mapping", "bwa_aln_params"], "-l 1024", wildcards
         ),
     log:
-        "{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}{chunk}.{genome}.log",
-    threads: get_threads("mapping", 4)
-    conda:
-        "../envs/bwa.yaml"
-    envmodules:
-        module_bwa,
-    message:
-        "--- BWA ALN  {input.fastq}"
-    shell:
-        """
-        bwa aln {params} -t {threads} {input.ref} -f {output} {input.fastq} 2> {log}
-        """
-
-
-rule mapping_bwa_aln_pe:
-    """
-    Align reads to the reference
-    """
-    input:
-        multiext(
-            "{folder}/00_reference/{genome}/{genome}.fasta",
-            ".sa",
-            ".amb",
-            ".ann",
-            ".bwt",
-            ".pac",
-        ),
-        ref="{folder}/00_reference/{genome}/{genome}.fasta",
-        fastq=get_fastq_4_mapping,
-    output:
-        temp(
-            "{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}{chunk}.{genome}_R{id_read}.sai"
-        ),
-    resources:
-        mem_mb=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
-        runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
-    params:
-        lambda wildcards: get_paramGrp(
-            ["mapping", "bwa_aln_params"], "-l 1024", wildcards
-        ),
-    log:
-        "{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}{chunk}.{genome}_R{id_read}.log",
+        "{folder}/01_fastq/02_mapped/01_bwa_aln/{sm}/{lb}/{id}{chunk}.{genome}{R}.log",
     threads: get_threads("mapping", 4)
     conda:
         "../envs/bwa.yaml"
@@ -222,6 +183,147 @@ rule mapping_bwa_mem:
         """
 
 
+##########################################################################################
+## galn
+
+## slurm option to request the GPU(s) of 'galn aln' (empty if no GPU is requested)
+def get_galn_slurm_extra():
+    nb_gpu = int(get_param(["mapping", "galn_gpu"], 1))
+    return f"'--gres=gpu:{nb_gpu}'" if nb_gpu > 0 else ""
+
+
+rule mapping_galn_aln:
+    """
+    Align reads to the reference
+    {R}: '' (single-end or collapsed reads), '_R1' or '_R2' (paired-end reads)
+    """
+    input:
+        multiext(
+            "{folder}/00_reference/{genome}/{genome}.fasta",
+            ".sa",
+            ".amb",
+            ".ann",
+            ".bwt",
+            ".pac",
+        ),
+        ref="{folder}/00_reference/{genome}/{genome}.fasta",
+        fastq=get_fastq_4_bwa_aln,
+    output:
+        temp("{folder}/01_fastq/02_mapped/01_galn_aln/{sm}/{lb}/{id}{chunk}.{genome}{R}.sai"),
+    wildcard_constraints:
+        R="|_R1|_R2",
+    resources:
+        mem_mb=lambda wildcards, attempt: get_memory_alloc2(["mapping", "galn"], attempt, 16),
+        runtime=lambda wildcards, attempt: get_runtime_alloc2(["mapping", "galn"], attempt, 4),
+        ## GPU (see config: mapping: galn_gpu, galn_partition); 'gpu' allows to limit parallel jobs with '--resources gpu=N'
+        gpu=int(get_param(["mapping", "galn_gpu"], 1)),
+        slurm_partition=get_param(["mapping", "galn_partition"], "gpu"),
+        slurm_extra=get_galn_slurm_extra(),
+    params:
+        params=lambda wildcards: get_paramGrp(
+            ["mapping", "bwa_aln_params"], "-l 1024", wildcards
+        ),
+        galn_bin=get_param(["software", "galn"], "galn"),
+    log:
+        "{folder}/01_fastq/02_mapped/01_galn_aln/{sm}/{lb}/{id}{chunk}.{genome}{R}.log",
+    threads: get_threads2(["mapping", "galn"], 1)
+    message:
+        "--- GALN ALN  {input.fastq}"
+    shell:
+        """
+        {params.galn_bin} aln {params.params} -t {threads} {input.ref} -f {output} {input.fastq} 2> {log}
+        """
+
+
+rule mapping_galn_samse:
+    """
+    Creates bam file from sai file for SE reads
+    """
+    input:
+        multiext(
+            "{folder}/00_reference/{genome}/{genome}.fasta",
+            ".sa",
+            ".amb",
+            ".ann",
+            ".bwt",
+            ".pac",
+        ),
+        ref="{folder}/00_reference/{genome}/{genome}.fasta",
+        fastq=get_fastq_4_mapping,
+        sai="{folder}/01_fastq/02_mapped/01_galn_aln/{sm}/{lb}/{id}{chunk}.{genome}.sai",
+    output:
+        maybe_temp("{folder}/01_fastq/02_mapped/02_galn_samse/{sm}/{lb}/{id}{chunk}.{genome}.bam", "mapping"),
+    resources:
+        mem_mb=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
+    params:
+        PL=lambda wildcards: get_paramGrp(
+            ["mapping", "platform"], "ILLUMINA", wildcards
+        ),
+        params=lambda wildcards: get_paramGrp(
+            ["mapping", "bwa_samse_params"], "-n 3", wildcards
+        ),
+        galn_bin=get_param(["software", "galn"], "galn"),
+    log:
+        "{folder}/01_fastq/02_mapped/02_galn_samse/{sm}/{lb}/{id}{chunk}.{genome}.log",
+    threads: 1
+    message:
+        "--- GALN SAMSE  {input.fastq}"
+    shell:
+        """
+        {params.galn_bin} samse {params.params} \
+         -r \"@RG\\tID:{wildcards.id}\\tLB:{wildcards.lb}\\tSM:{wildcards.sm}\\tPL:{params.PL}\" \
+         {input.ref} {input.sai} {input.fastq} > {output} 2> {log}
+        """
+
+
+rule mapping_galn_sampe:
+    """
+    Creates bam file from sai file for PE reads
+    """
+    input:
+        multiext(
+            "{folder}/00_reference/{genome}/{genome}.fasta",
+            ".sa",
+            ".amb",
+            ".ann",
+            ".bwt",
+            ".pac",
+        ),
+        ref="{folder}/00_reference/{genome}/{genome}.fasta",
+        fastq=get_fastq_4_mapping,
+        ## should get both pairs
+        sai1="{folder}/01_fastq/02_mapped/01_galn_aln/{sm}/{lb}/{id}{chunk}.{genome}_R1.sai",
+        sai2="{folder}/01_fastq/02_mapped/01_galn_aln/{sm}/{lb}/{id}{chunk}.{genome}_R2.sai",
+    output:
+        maybe_temp("{folder}/01_fastq/02_mapped/02_galn_sampe/{sm}/{lb}/{id}{chunk}.{genome}.bam", "mapping"),
+    resources:
+        mem_mb=lambda wildcards, attempt: get_memory_alloc("mapping", attempt, 4),
+        runtime=lambda wildcards, attempt: get_runtime_alloc("mapping", attempt, 24),
+    params:
+        PL=lambda wildcards: get_paramGrp(
+            ["mapping", "platform"], "ILLUMINA", wildcards
+        ),
+        params=lambda wildcards: get_paramGrp(
+            ["mapping", "bwa_sampe_params"], "-n 3", wildcards
+        ),
+        galn_bin=get_param(["software", "galn"], "galn"),
+    log:
+        "{folder}/01_fastq/02_mapped/02_galn_sampe/{sm}/{lb}/{id}{chunk}.{genome}.log",
+    threads: 1
+    message:
+        "--- GALN SAMPE {input.fastq}"
+    shell:
+        """
+        {params.galn_bin} sampe {params.params} \
+             -r \"@RG\\tID:{wildcards.id}\\tLB:{wildcards.lb}\\tSM:{wildcards.sm}\\tPL:{params.PL}\" \
+             {input.ref} {input.sai1} {input.sai2} {input.fastq} > {output} 2> {log}
+        """
+
+
+##########################################################################################
+## bowtie2
+
 rule mapping_bowtie2:
     """
     Map reads to GENOMES using bowtie2
@@ -266,6 +368,9 @@ if config["mapping"]["mapper"] == "vg_giraffe":
 else:
     ruleorder: convert_gam2bam > mapping_vg_giraffe
 
+
+##########################################################################################
+## vg
 
 rule mapping_vg_giraffe:
     """

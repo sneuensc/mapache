@@ -110,7 +110,7 @@ cleaning:
 
 # mapping (compulsory)
 mapping:
-    mapper: 'bwa_aln' # options: bwa_aln, bwa_mem, bowtie2, bowtie2l, vg_giraffe, vg_giraffe_gam
+    mapper: 'bwa_aln' # options: bwa_aln, bwa_mem, galn, bowtie2, bowtie2l, vg_giraffe, vg_giraffe_gam
     bwa_aln_params: '-l 1024'   
     bwa_samse_params: ''
     bwa_sampe_params: ''
@@ -122,6 +122,12 @@ mapping:
     threads: 4
     mem: 8
     time: 10
+    ## resources of 'galn aln' (GPU); 'galn samse/sampe' use the resources above
+    galn_threads: 1
+    galn_mem: 16
+    galn_time: 4
+    galn_gpu: 1               ## number of GPUs per job (0: no GPU requested)
+    galn_partition: 'gpu'     ## slurm partition with GPU nodes
 
 ## samtools_sort
 sorting:
@@ -409,7 +415,8 @@ software_version: False
 software:
     java_mem_overhead_factor: 0.2
     gatk3_jar: 'GenomeAnalysisTK'
-    vg: '/work/FAC/FBM/DBC/amalaspi/popgen/shared_resources/reference_human/GCA_000001405.15_GRCh38_graph_genome/vg_v1.72.0'  # path to vg executable if needed
+    vg: '/work/FAC/FBM/DBC/amalaspi/popgen/shared_resources/software/vg/vg_v1.72.0'  # path to vg executable if needed
+    galn: '/work/FAC/FBM/DBC/amalaspi/popgen/shared_resources/software/galn-0.2.4/build/galn'  # path to galn executable if needed
 
 # By default, mapache uses the software installed with the conda environment. Thus, no need
 # to modify this section. 
