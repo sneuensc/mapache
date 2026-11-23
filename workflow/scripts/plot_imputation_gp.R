@@ -1,6 +1,4 @@
-library(ggplot2)
 library(tidyverse)
-#library(data.table)
 
 args <- commandArgs(TRUE)
 
@@ -59,8 +57,11 @@ height              = as.numeric( get_args(argsL, "height", 12 ) )
 width               = as.numeric( get_args(argsL, "width", 18 ) )
 
 ## read data
-d <- fread(input, sep='\t', h=F)
-d[, c('X1', 'X2', 'X3') :=tstrsplit(V2, ',')]
+d <- read_tsv(input, col_names = c("V1", "V2"), col_types = "cc") %>%
+  separate(V2, into = c("X1", "X2", "X3"), sep = ",", remove = FALSE)
+d1 <- d %>%
+  filter(V1 != "0/0") %>%
+  select(X1, X2, X3)
 
 ## get non-reference sites
 d1 <- d[d$V1 != '0/0',][,-(1:2)]

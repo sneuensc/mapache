@@ -4,4 +4,4 @@ channels:
   - nodefaults
 dependencies:
   - glimpse-bio=1.1.1
-  - bcftools=1.21
+  - bcftools
