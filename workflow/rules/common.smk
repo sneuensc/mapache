@@ -729,70 +729,88 @@ def get_multiqc_files(level="SM"):
 
 ##########################################################################################
 ## stats on final/external bam file
-def get_imputation_files():
+def get_genotype_files():
     files = []
     for genome in GENOMES:
-        run_imputation = get_param(
-            ["imputation", genome, "run"], ["False", "glimpse1", "glimpse2"]
+
+        ## get the genotype method
+        method = get_param(
+            ["genotype", genome, "run"], ["False", "glimpse1", "glimpse2", "bcftools"]
         )
-        if str(run_imputation) != "False":
-            if run_imputation == "glimpse1":
-                folder = "08_glimpse_sampled"
+
+        if str(method) == "False":
+            return []
+
+        ## get the combined samples
+        samples = list(SAMPLES_FINAL) + list(EXTERNAL_SAMPLES.get(genome, []))
+
+        if str(method) == "glimpse1" or str(method) == "glimpse2":
+            files += [
+                f"{RESULT_DIR}/03_sample/04_genotype/{method}/09_concat/{sm}.{genome}_gp{GP}.{ext}"
+                for sm in samples
+                for GP in str2list(
+                    get_param(["genotype", genome, "gp_filter"], "[0.8]")
+                )
+                for ext in ["bcf", "bcf.csi"]
+            ]
+        elif str(method) == "bcftools":
+            ## SAMPLES
+            files += [
+                f"{RESULT_DIR}/03_sample/04_genotype/bcftools/{sm}.{genome}.{ext}"
+                for sm in samples
+                for ext in ["bcf", "bcf.csi"]
+            ]
+
+    return files
+
+
+def get_genotype_plots():
+    files = []
+    for genome in GENOMES:
+        method = get_param(
+            ["genotype", genome, "run"], ["False", "glimpse1", "glimpse2", "bcftools"]
+        )
+        if str(method) == "glimpse1" or str(method) == "glimpse2":
+            if str(method) == "glimpse1":
+                folder = f"{RESULT_DIR}/03_sample/04_genotype/glimpse1"
             else:
-                folder = "07_gp_filtered"
+                folder = f"{RESULT_DIR}/03_sample/04_genotype/glimpse2"
 
             ## SAMPLES
+            samples = list(SAMPLES_FINAL) + list(EXTERNAL_SAMPLES.get(genome, []))
             files += [
-                f"{RESULT_DIR}/03_sample/04_imputed/{folder}/{sm}.{genome}_gp{GP}.{ext}"
-                for sm in SAMPLES_FINAL
-                for GP in str2list(
-                    get_param(["imputation", genome, "gp_filter"], "[0.8]")
-                )
-                for ext in ["bcf", "bcf.csi"]
-            ] + [
-                f"{RESULT_DIR}/03_sample/04_imputed/07_gp_filtered/{sm}.{genome}_gp.txt"
-                for sm in SAMPLES_FINAL
+                f"{folder}/07_gp_filtered/{sm}.{genome}_gp.svg"
+                for sm in samples
             ]
 
-            files += [
-                f"{RESULT_DIR}/03_sample/04_imputed/{folder}/{sm}.{genome}_gp{GP}.{ext}"
-                for g, gVal in EXTERNAL_SAMPLES.items()
-                if g == genome
-                for sm in gVal
-                for GP in str2list(
-                    get_param(["imputation", genome, "gp_filter"], "[0.8]")
-                )
-                for ext in ["bcf", "bcf.csi"]
-            ] + [
-                f"{RESULT_DIR}/03_sample/04_imputed/07_gp_filtered/{sm}.{genome}_gp.txt"
-                for g, gVal in EXTERNAL_SAMPLES.items()
-                if g == genome
-                for sm in gVal
-            ]
     return files
 
+# validate the chromosomes and if empty pass all chromosomes of this genome to the list of chromosomes
+def get_chromosomes(genome, chromosomes = []):
+    if not chromosomes:
+        chromosomes = get_chromosome_names(genome)
+    else:
+        mismatch = valid_chromosome_names(genome, chromosomes)
+        if mismatch:
+            avail = get_chromosome_names(genome)
+            LOGGER.error(
+                f"ERROR: The following chromosome names are not recognized for genome {genome} ({avail},...): {mismatch}!"
+            )
+            sys.exit(1)
 
-def get_imputation_plots():
-    files = []
-    for genome in GENOMES:
-        run_imputation = get_param(
-            ["imputation", genome, "run"], ["False", "glimpse1", "glimpse2"]
-        )
-        if str(run_imputation) != "False":
-            ## SAMPLES
-            files += [
-                f"{RESULT_DIR}/03_sample/04_imputed/07_gp_filtered/{sm}.{genome}_gp.svg"
-                for sm in SAMPLES_FINAL
-            ]
+    return chromosomes
 
-            ## EXTERNAL_SAMPLES
-            files += [
-                f"{RESULT_DIR}/03_sample/04_imputed/07_gp_filtered/{sm}.{genome}_gp.svg"
-                for g, gVal in EXTERNAL_SAMPLES.items()
-                if g == genome
-                for sm in gVal
-            ]
-    return files
+
+# Check fi the given na,e This string contains a wildcard {chr} where we will place the name of the chromosome
+# something like "path/to/my/panel_chr{chr}.vcf.gz"
+def validate_files_per_chr(genome, chromosomes, file):
+    for chr in chromosomes: 
+        file = file.format(chr=chr)
+        if not os.path.isfile(file):
+            LOGGER.error(
+                f"ERROR: File {file} does not exist for 'chr={chr}'!"
+            )
+            sys.exit(1)
 
 
 #################################################################################################################
