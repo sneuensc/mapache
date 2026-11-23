@@ -235,11 +235,20 @@ for genome in GENOMES:
 run_preseq = str2bool(get_param(["stats", "preseq", "run"], ["False", "True"]))
 
 
-## imputation (is assumed to be run ONLY on the first specified reference GENOMES!!!)
-run_imputation = []
+## genotype
+genotype_genomes = {} ## genotype_genomes[genome] = [chr1, chr2, ...]
 for genome in GENOMES:
-    if str(get_param(["imputation", genome, "run"], ["False", "glimpse1", "glimpse2"])) != "False":
-        run_imputation = run_imputation + [genome]
+    method = get_param(["genotype", genome, "run"], ["False", "glimpse1", "glimpse2", "bcftools"])
+    if method != "False":
+        genotype_genomes[genome] = get_chromosomes(genome, to_str(to_list(get_param(["genotype", genome, "chromosomes"], []))))
+        
+        ## validate that the specified panel and map files exist for the specified genomes and chromosomes
+        validate_files_per_chr(genome, genotype_genomes[genome], get_param(["genotype", genome, "path_panel"], ""))
+        if method == "glimpse1" or method == "glimpse2":
+            validate_files_per_chr(genome, genotype_genomes[genome], get_param(["genotype", genome, "path_map"], ""))
+
+
+
 
 
 ##########################################################################################
@@ -261,8 +270,9 @@ include: "rules/fastq_mapping.smk"
 include: "rules/fastq_filtering.smk"
 include: "rules/library.smk"
 include: "rules/sample.smk"
-include: "rules/imputation_glimpse.smk"
-include: "rules/imputation_glimpse2.smk"
+include: "rules/genotype_bcftools.smk"
+include: "rules/genotype_glimpse.smk"
+include: "rules/genotype_glimpse2.smk"
 include: "rules/software_version.smk"
 
 
@@ -275,10 +285,10 @@ report: "report/workflow.rst"
 # -----------------------------------------------------------------------------#
 ## get all final bam and bai files
 final_bam = get_final_bam_files()
-final_bai = [bam2bai(w) for w in final_bam]
+final_bai = [f"{w}.bai" for w in final_bam]
 
 final_bam_low_qual = get_final_bam_low_qual_files()
-final_bami_low_qual = [bam2bai(w) for w in final_bam_low_qual]
+final_bami_low_qual = [f"{w}.bai" for w in final_bam_low_qual]
 
 final_gam = []
 final_gam_low_qual = []
@@ -287,7 +297,7 @@ if mapper == "vg_giraffe_gam" and get_param_bool(["mapping", "keep_gam"], ["True
     final_gam_low_qual = get_final_gam_low_qual_files()
 
 final_external_bam = get_final_external_bam_files()
-final_external_bai = [bam2bai(w) for w in final_external_bam]
+final_external_bai = [f"{w}.bai" for w in final_external_bam]
 
 stat_csv = get_stat_csv_files(['FASTQ', 'LB_rmDup', 'LB', 'SM'])
 qualimap_files = get_qualimap_files(['SM', 'LB', 'LB_rmDup'])
@@ -318,6 +328,10 @@ localrules:
 # print(get_preseq_files('svg'))
 
 
+## command to generate the report; set by the target rule that ran (all/mapping/mapping_library)
+REPORT_CMD = None
+
+
 ## rules all
 rule all:
     """
@@ -333,20 +347,19 @@ rule all:
         final_gam_low_qual,
         qualimap_files,
         multiqc_files,
-        get_imputation_files(),
-        get_imputation_plots(),
+        get_genotype_files(),
+        get_genotype_plots(),
         stat_csv,
         get_stat_plot_files(['LB_rmDup', 'LB', 'SM']),
         get_damage_output(['LB_rmDup', 'LB', 'SM']),
         get_samtools_stats_files(),
         get_preseq_files('svg'),
         #f"{RESULT_DIR}/04_stats/03_summary/software_versions.txt" if str2bool(get_param(["software_version"], ["False", "True"])),
-    output:
-        f"{RESULT_DIR}/run_report.sh"
     message:
         "--- RUNNING ALL"
-    shell:
-        "echo 'snakemake --report report.zip' > {output}"
+    run:
+        global REPORT_CMD
+        REPORT_CMD = "snakemake --report report.zip"
 
 
 ## rules dag (just pipeline)
@@ -361,7 +374,7 @@ rule dag:
         final_bam_low_qual,
         final_gam,
         final_gam_low_qual,
-        get_imputation_files(),
+        get_genotype_files(),
     message:
         "--- RUNNING DAG"
 
@@ -378,17 +391,16 @@ rule mapping:
         final_bam_low_qual,
         final_gam,
         final_gam_low_qual,
-        get_imputation_files(),
-        get_imputation_plots(),
+        get_genotype_files(),
+        get_genotype_plots(),
         get_stat_csv_files(['FASTQ', 'LB_rmDup', 'LB', 'SM']),
         get_stat_plot_files(['LB_rmDup', 'LB', 'SM']),
         get_damage_output(['LB_rmDup', 'LB', 'SM']),
-    output:
-        f"{RESULT_DIR}/run_report.sh"
     message:
         "--- RUNNING MAPPING"
-    shell:
-        "echo 'snakemake mapping --report report_mapping.zip' > {output}"
+    run:
+        global REPORT_CMD
+        REPORT_CMD = "snakemake mapping --report report_mapping.zip"
 
 
 rule mapping_library:
@@ -404,12 +416,11 @@ rule mapping_library:
         get_qualimap_files(['LB_rmDup']),
         get_multiqc_files('LB_rmDup'),
         get_preseq_files('svg'),
-    output:
-        f"{RESULT_DIR}/run_report.sh"
     message:
         "--- RUNNING MAPPING UNTIL LIBRARIES"
-    shell:
-        "echo 'snakemake mapping_library --report report_libraries.zip' > {output}"
+    run:
+        global REPORT_CMD
+        REPORT_CMD = "snakemake mapping_library --report report_libraries.zip"
 
 rule version:
     """
@@ -452,29 +463,27 @@ rule infer_adapter:
 rule stats:
     input:
         get_qualimap_files(['SM', 'LB', 'LB_rmDup']),
-        get_imputation_files(),
+        get_genotype_files(),
 
 
 ## imputation
 rule imputation:
     input:
-        get_imputation_files(),
+        get_genotype_files(),
 
 
 ##########################################################################################
 onsuccess:
     LOGGER.info("Wow, 'mapache' finished successfully!")
-    if os.path.exists(f"{RESULT_DIR}/run_report.sh"):
-        with open(f"{RESULT_DIR}/run_report.sh","r") as f: txt = f.read().rstrip()
-        LOGGER.info(f"=> To generate the Snakemake report: run '{txt}'.")
-        os.remove(f"{RESULT_DIR}/run_report.sh")
+    if REPORT_CMD:
+        LOGGER.info(f"=> To generate the Snakemake report: run '{REPORT_CMD}'.")
 
     shell("cat {log} > snakemake.run.log")
     email = get_param(["email"], "")
     if fileVerbose.exists():
         fileVerbose.unlink()
     if email != "":
-        Logger.info(f"Sending email to {email}")
+        LOGGER.info(f"Sending email to {email}")
         shell("mail -s \"'Mapache' finished successfully\" {email} < {log}")
 
 
@@ -482,8 +491,6 @@ onerror:
     LOGGER.error("'Mapache' finished with error(s), log stored in 'snakemake.run.log'")
     shell("cat {log} > snakemake.run.log")
     email = get_param(["email"], "")
-    if os.path.exists(f"{RESULT_DIR}/run_report.sh"):
-        os.remove(f"{RESULT_DIR}/run_report.sh")
     if fileVerbose.exists():
         fileVerbose.unlink()
     if email != "":
