@@ -79,7 +79,7 @@ rule get_fasta:
     input:
         lambda wildcards: get_param(["genome", wildcards.genome], ""),
     output:
-        maybe_temp("{folder}/00_reference/{genome}/{genome}.fasta"),
+        "{folder}/00_reference/{genome}/{genome}.fasta",
     localrule: True
     threads: 1
     message:
