@@ -4,7 +4,6 @@ channels:
   - nodefaults
 dependencies:
   - R=4.4
-  - r-ggplot2
   - r-rcolorbrewer
   - r-tidyverse
   - r-svglite
