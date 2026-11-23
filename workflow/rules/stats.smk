@@ -169,7 +169,7 @@ rule read_length:
 rule samtools_idxstats:
     input:
         bam=get_bam_file,
-        bai=lambda wildcards: bam2bai(get_bam_file(wildcards)),
+        bai=lambda wc: get_bam_file(wc) + ".bai",
     output:
         "{folder}/04_stats/01_sparse_stats/{file}.{genome}_idxstats.txt",
     resources:

@@ -249,11 +249,11 @@ def write_log():
         LOGGER.info(f"  - Run preseq")
 
 
-    if len(run_imputation):
+    if genotype_genomes:
         if len(genome) > 1:
-            LOGGER.info(f"  - Imputing {run_imputation}")
+            LOGGER.info(f"  - Genotyping {list(genotype_genomes)}")
         else:
-            LOGGER.info(f"  - Imputing")
+            LOGGER.info(f"  - Genotyping")
 
     # ----------------------------------------------------------------------------------------------------------
     # print a summary of the stats
@@ -695,7 +695,7 @@ def get_paramGrp(keys, def_value, wc, my_dict=config, combination=False):
 
 ## same as above, but a boolean is returned
 ## if it has a dict (group specific setting) a True is returned
-## used at teh beginning to get a global view what is used
+## used at the beginning to get a global view what is used
 def get_param_bool(key, def_value, my_dict=config, combination=False):
     arg = get_param(
         key, def_value[0], my_dict, combination
@@ -1013,11 +1013,6 @@ def get_threads2(module, default=1):
     if type(moduleList) is not list:
         moduleList = [module]
     return int(get_param(moduleList[:-1] + [moduleList[-1] + "_threads"], default))
-
-
-def bam2bai(bam):
-    # return bam.replace('.bam', '.bai')
-    return f"{bam[: len(bam) - 4]}.bai"
 
 
 ##########################################################################################

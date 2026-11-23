@@ -46,7 +46,7 @@ rule realign:
         fai="{folder}/00_reference/{genome}/{genome}.fasta.fai",
         dict="{folder}/00_reference/{genome}/{genome}.dict",
         bam=get_bam_4_realign,
-        bai=lambda wildcards: bam2bai(get_bam_4_realign(wildcards)),
+        bai=lambda wc: get_bam_4_realign(wc) + ".bai",
     output:
         bam=maybe_temp("{folder}/03_sample/01_realigned/01_realign/{sm}.{genome}.bam", "realign"),
         intervals=maybe_temp(

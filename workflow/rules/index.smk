@@ -223,7 +223,7 @@ rule samtools_index_bam_temp:
     input:
         "{file}.bam",
     output:
-        maybe_temp("{file}.bai", "indexing"),
+        maybe_temp("{file}.bam.bai", "indexing"),
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 24),
@@ -248,7 +248,7 @@ rule samtools_index_bam:
     input:
         "{path}/03_sample/03_final_sample/{type}/{sm}.{genome}.bam",
     output:
-        "{path}/03_sample/03_final_sample/{type}/{sm}.{genome}.bai",
+        "{path}/03_sample/03_final_sample/{type}/{sm}.{genome}.bam.bai",
     resources:
         mem_mb=lambda wildcards, attempt: get_memory_alloc("indexing", attempt, 4),
         runtime=lambda wildcards, attempt: get_runtime_alloc("indexing", attempt, 24),
